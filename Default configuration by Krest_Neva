@@ -3,10 +3,12 @@
 #!arguments=captionLang:off, lyricLang:off, blockImmersive:false, debug:false
 #blockShorts:true, blockUpload:false вырезано
 
-#Последние изменения 17.02.2026 01:00
+#Последние изменения 17.02.2026 02:00
 
 #==================================================
 #ИНФОРМАЦИЯℹ️
+
+#Работает только на IOS и macOS. Для доступа с других систем использовать общий доступ к прокси.
 
 #Конфиг создан Кристиной Невской для настоящих ЛОХОВ. Полностью работоспособный с регулярными обновлениями со встроенным скриптом для YouTube и блокировкой рекламы и трекером с аналитикой. RU сервисы и apple, а так же локальные сервера идут напрямую (без VPN). Конфиг адаптирован под постоянное использование (VPN можно не отключать) и не нуждается в переключении между серверами так как делает это автоматически при условии правильной настройки групп прокси в настройках конфигурации.
 #Работает как модуль в Shadowrocket. Настройки этого конфига (модуля) работают вместе с пользовательской конфигурацией и имеют приоритет над ней.
@@ -68,6 +70,7 @@ bypass-system = true
 always-reject-url-rewrite = false
 
 [Rule]
+#Переключение YouTube с QUIC/UDP на TCP/HTTPS
 AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
 AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 
@@ -83,7 +86,7 @@ DOMAIN-KEYWORD,metrica,REJECT,pre-matching,extended-matching
 DOMAIN-KEYWORD,metrika,REJECT,pre-matching,extended-matching
 
 #   #-неакт❌
-#СНГ
+#СНГ REJECT
 #DOMAIN-SUFFIX,ru,REJECT,pre-matching,extended-matching
 #DOMAIN-SUFFIX,su,REJECT,pre-matching,extended-matching
 #DOMAIN-SUFFIX,xn--p1ai,REJECT,pre-matching,extended-matching
@@ -195,7 +198,7 @@ DOMAIN-KEYWORD,instagram,SPEEDPROXY,pre-matching,extended-matching
 #DOMAIN-SUFFIX,office.com,BESTPROXY,pre-matching,extended-matching
 #DOMAIN-SUFFIX,office.net,BESTPROXY,pre-matching,extended-matching
 #DOMAIN-SUFFIX,windows.com,BESTPROXY,pre-matching,extended-matching
-DOMAIN-SUFFIX,windowsupdate.com,DIRECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,windowsupdate.com,DIRECT,pre-matching,extended-matching
 #DOMAIN-SUFFIX,msftconnecttest.com,BESTPROXY,pre-matching,extended-matching
 #DOMAIN-SUFFIX,msftncsi.com,BESTPROXY,pre-matching,extended-matching
 #DOMAIN-SUFFIX,azure.com,BESTPROXY,pre-matching,extended-matching
@@ -247,7 +250,7 @@ DOMAIN-SUFFIX,windowsupdate.com,DIRECT,pre-matching,extended-matching
 DOMAIN-SUFFIX,facetime.apple.com,SPEEDPROXY,pre-matching,extended-matching
 DOMAIN-SUFFIX,stun.apple.com,SPEEDPROXY,pre-matching,extended-matching
 
-#Сервисы Apple🍎
+#Apple🍎
 RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/apple.txt,DIRECT
 RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/icloud.txt,DIRECT
 DOMAIN-SUFFIX,apple.com,DIRECT,pre-matching,extended-matching
@@ -264,7 +267,7 @@ DOMAIN-KEYWORD,apis.apple,DIRECT,pre-matching,extended-matching
 DOMAIN-KEYWORD,mail.me.com,DIRECT,pre-matching,extended-matching
 DOMAIN-SUFFIX,safebrowsing.apple,DIRECT,pre-matching,extended-matching
 
-#RU сервисы🇷🇺
+#RU🇷🇺
 DOMAIN-SUFFIX,ru,DIRECT,pre-matching,extended-matching
 DOMAIN-SUFFIX,su,DIRECT,pre-matching,extended-matching
 DOMAIN-SUFFIX,xn--p1ai,DIRECT,pre-matching,extended-matching
