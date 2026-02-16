@@ -68,9 +68,10 @@ bypass-system = true
 always-reject-url-rewrite = false
 
 [Rule]
-#Реклама, трекеры, аналитика
 AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
 AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
+
+#Реклама, трекеры, аналитика
 RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/reject.txt,REJECT
 DOMAIN-KEYWORD,ads,REJECT,pre-matching,extended-matching
 DOMAIN-KEYWORD,analytics,REJECT,pre-matching,extended-matching
