@@ -1,0 +1,300 @@
+#!name=😻Config by Krest_Neva😻
+#!desc=With YT Premium and AdBlock
+#!arguments=captionLang:off, lyricLang:off, blockImmersive:false, debug:false
+#blockShorts:true, blockUpload:false вырезано
+
+#Последние изменения 17.02.2026 00:00
+
+#==================================================
+#ИНФОРМАЦИЯℹ️
+
+#Конфиг создан Кристиной Невской для настоящих ЛОХОВ Полностью работоспособный с регулярными обновлениями со встроенным скриптом для YouTube и блокировкой рекламы и трекером с аналитикой. RU сервисы и apple, а так же локальные сервера идут напрямую (без VPN). Конфиг адаптирован под постоянное использование (VPN можно не отключать) и не нуждается в переключении между серверами так как делает это автоматически при условии правильной настройки групп прокси в настройках конфигурации.
+#Работает как модуль в Shadowrocket. Настройки этого конфига (модуля) работают вместе с пользовательской конфигурацией и имеют приоритет над ней.
+
+#⚙️НАСТРОЙКИ ОСНОВНОЙ КОНФИГУРАЦИИ:
+#Конфигурация может быть полностью пустой за исключением написанного ниже. Для этого дублируем default.conf, указываем своё название для конфигурации, редактируем текст (стираем полностью) данной конфигурации. Для редактирования текста нужно зажать конфигурацию и выбрать соответствующий пункт.
+
+#Дальше настройка идёт через интерфейс настройки конфигурации.
+#Должен быть установлен сертификат Shadowrocket и быть довереным системой. Расшифровка HTTPS: вкл
+
+#Создать в конфигурации группы прокси строго с таким же названием:
+# 1) «BESTPROXY» - тип: load-balance. Добавить все сервера, кроме РФ. Между ними будет распределяться весь трафик идущий через VPN.
+# 2) «SPEEDPROXY» - тип: fallback. Выбрать наиболее быстрые сервера для YouTube и FaceTime.
+# 3) «GEMINI» - тип: load-balance. Выбрать только сервера для Gemini. Например: США. При отсутствии выбрать несколько других (чтобы не рухнул google). Можно использовать те же что и для «YOUTUBE»
+#При наличии только одного доступного сервера. Добавить во все группы этот один сервер.
+#Кнопка «подписаться» сможет обновлять добавленные сервера с обновлением подписок на VPN.
+#В этих группах выставить настройки:
+#интервал - 500
+#таймаут - 3
+#URL для тестирования:
+#http://www.gstatic.com/generate_204
+
+#⚙️НАСТРОЙКИ ПРИЛОЖЕНИЯ:
+#ГЛАВНАЯ:
+#Маршрутизация - настройка (для работы конфига в целом)
+#Тест подключения - connect
+#НАСТРОЙКИ:
+#По требованию: всегда включено - вкл, по требованию - вкл, «правила по требованию»(снизу): действие - подключить, сеть - any. В настройках iphone включить подключение по запросу у shadowrocket в настройках VPN
+#Туннель: включить только принудительные маршруты
+#UDP: включить реле
+#Включить автообновление модулей и подписок. В подписках включить «Отправить HWID» иначе подписки могут не добавляться.
+#Для добавления подписки VPN нажимается + на главной странице и выбирается тип subscribe после чего вставляется URL. В примечаниях можно самому указать имя подписки.
+#Настроить базу данных Geolite2: включить автообновление. /На данный момент необязательно по причине временного отсутсвия зависящих правил/
+#URL страны: https://github.com/Loyalsoldier/geoip/raw/release/Country.mmdb
+#URL ASN: https://github.com/Loyalsoldier/geoip/raw/release/GeoLite2-ASN.mmdb
+
+#В «разное» включить всё
+
+
+#Чтобы заработал "YouTube Premium" нужно подождать пару минут. Если возникают проблемы с плеером картинка в картинке можно переподключить VPN, смахнуть youtube и открыть заново, но проблема обычно уходит сама. При обновлении модуля возможна длительная обработка в связи с длинными списками правил.
+
+#Жалобы и пожелания направлять моему менеджеру😡
+#==================================================
+
+[General]
+ipv6 = false
+prefer-ipv6 = false
+skip-proxy = apple.com,icloud.com,mzstatic.com,itunes.apple.com,captive.apple.com,gsp1.apple.com,*.local,localhost,apple-pki.com,digicert.com,entrust.net
+always-real-ip = *.apple.com,*.icloud.com,*.itunes.com,*.crashlytics.com,*.mzstatic.com,*.apple-pki.com
+fallback-dns-server = 8.8.8.8,8.8.4.4,1.1.1.1
+#AdGuard DNS
+dns-server = 94.140.14.14,94.140.15.15
+hijack-dns = 8.8.8.8:53
+tun-excluded-routes = 10.0.0.0/8,17.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.0.0.0/24,192.0.2.0/24,192.88.99.0/24,192.168.0.0/16,198.51.100.0/24,203.0.113.0/24,224.0.0.0/4,255.255.255.255/32
+private-ip-answer = true
+dns-over-https = true
+dns-direct-system = false
+bypass-system = true
+always-reject-url-rewrite = false
+
+[Rule]
+#Реклама, трекеры, аналитика
+AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
+AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
+RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/reject.txt,REJECT
+DOMAIN-KEYWORD,ads,REJECT,pre-matching,extended-matching
+DOMAIN-KEYWORD,analytics,REJECT,pre-matching,extended-matching
+DOMAIN-KEYWORD,tracker,REJECT,pre-matching,extended-matching
+DOMAIN-KEYWORD,tracking,REJECT,pre-matching,extended-matching
+DOMAIN-KEYWORD,tracer,REJECT,pre-matching,extended-matching
+DOMAIN-KEYWORD,metrics,REJECT,pre-matching,extended-matching
+DOMAIN-KEYWORD,metrica,REJECT,pre-matching,extended-matching
+DOMAIN-KEYWORD,metrika,REJECT,pre-matching,extended-matching
+
+#   #-неакт❌
+#DOMAIN-SUFFIX,ru,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,su,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,xn--p1ai,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,ua,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,by,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,kz,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,am,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,uz,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,tj,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,cn,REJECT,pre-matching,extended-matching
+
+#VK🔵
+#IP-CIDR,87.240.128.0/18,REJECT,no-resolve
+#IP-CIDR,93.186.224.0/20,REJECT,no-resolve
+#IP-CIDR,95.142.192.0/20,REJECT,no-resolve
+#IP-CIDR,185.71.76.0/22,REJECT,no-resolve
+#DOMAIN-KEYWORD,vkontakte,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,vk.ru,REJECT,pre-matching,extended-matching
+#DOMAIN-KEYWORD,vk.com,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,vk.me,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,vk.cc,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,vk.company,REJECT,pre-matching,extended-matching
+#DOMAIN-KEYWORD,vk-cdn,REJECT,pre-matching,extended-matching
+#DOMAIN-KEYWORD,api.vk,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,vkforms.ru,REJECT,pre-matching,extended-matching
+#DOMAIN-KEYWORD,vkvideo,REJECT,pre-matching,extended-matching
+
+DOMAIN-SUFFIX,max.ru,REJECT,pre-matching,extended-matching
+#НИКАКОГО МАКСА!
+#DOMAIN-SUFFIX,mail.ru,REJECT,pre-matching,extended-matching
+#DOMAIN-KEYWORD,sferum,REJECT,pre-matching,extended-matching
+#DOMAIN-KEYWORD,odnoklassniki,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,ok.ru,REJECT,pre-matching,extended-matching
+#DOMAIN-KEYWORD,tamtam,REJECT,pre-matching,extended-matching
+#DOMAIN-KEYWORD,rutube,REJECT,pre-matching,extended-matching
+#DOMAIN-KEYWORD,blink,REJECT,pre-matching,extended-matching
+#DOMAIN-KEYWORD,yappy,REJECT,pre-matching,extended-matching
+#DOMAIN,yandex.ru,REJECT,pre-matching,extended-matching
+#DOMAIN-KEYWORD,rambler,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,sputnik.ru,REJECT,pre-matching,extended-matching
+#DOMAIN-KEYWORD,2gis,REJECT,pre-matching,extended-matching
+#DOMAIN-KEYWORD,kinopoisk,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,ivi.ru,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,premier.ru,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,kion.ru,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,wink.ru,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,start.ru,REJECT,pre-matching,extended-matching
+#DOMAIN-KEYWORD,beeline,REJECT,pre-matching,extended-matching
+#DOMAIN-KEYWORD,megafon,REJECT,pre-matching,extended-matching
+#DOMAIN-KEYWORD,mts,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,yota.ru,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,cian.ru,REJECT,pre-matching,extended-matching
+#DOMAIN-KEYWORD,dzen,REJECT,pre-matching,extended-matching
+#DOMAIN-KEYWORD,tinkoff,REJECT
+#DOMAIN-KEYWORD,t-bank,REJECT,pre-matching,extended-matching
+#DOMAIN-KEYWORD,tbank,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,creati.win,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,uniproxy.alice.yandex.net,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,rostelecom.ru,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,uxfeedback.ru,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,qq.com,REJECT,pre-matching,extended-matching
+#DOMAIN-KEYWORD,adobe,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,zztfly.com,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,sub.scroogethebest.com,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,apmplus.volces.com,REJECT,pre-matching,extended-matching
+
+#Google, YouTube, Gemini
+DOMAIN-SUFFIX,youtube.com,SPEEDPROXY,pre-matching,extended-matching
+DOMAIN-SUFFIX,youtu.be,SPEEDPROXY,pre-matching,extended-matching
+DOMAIN-KEYWORD,ytimg.com,SPEEDPROXY,pre-matching,extended-matching
+DOMAIN-SUFFIX,googlevideo.com,SPEEDPROXY,pre-matching,extended-matching
+DOMAIN-KEYWORD,gemini,GEMINI,pre-matching,extended-matching
+DOMAIN-SUFFIX,googleapis.com,GEMINI,pre-matching,extended-matching
+DOMAIN-SUFFIX,apis.google.com,GEMINI,pre-matching,extended-matching
+DOMAIN-SUFFIX,googleusercontent.com,GEMINI,pre-matching,extended-matching
+DOMAIN-SUFFIX,gstatic.com,GEMINI,pre-matching,extended-matching
+
+#Telegram
+#RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/telegramcidr.txt,BESTPROXY
+#DOMAIN-KEYWORD,telegram,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,t.me,BESTPROXY,pre-matching,extended-matching
+#IP-ASN,62041,BESTPROXY,no-resolve
+#IP-ASN,59930,BESTPROXY,no-resolve
+#IP-ASN,200693,BESTPROXY,no-resolve
+#IP-ASN,211157,BESTPROXY,no-resolve
+#DOMAIN-SUFFIX,telegra.ph,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,tdesktop.com,BESTPROXY,pre-matching,extended-matching
+
+#DOMAIN-KEYWORD,whatsapp,BESTPROXY,pre-matching,extended-matching
+DOMAIN-KEYWORD,instagram,SPEEDPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,openai.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,chatgpt.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,oaistatic.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,oaiusercontent.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,deepseek.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-KEYWORD,tiktok,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,signal.org,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,facebook.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,fb.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,fbcdn.net,BESTPROXY,pre-matching,extended-matching
+
+#DOMAIN-SUFFIX,microsoft.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,live.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,outlook.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,office.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,office.net,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,windows.com,BESTPROXY,pre-matching,extended-matching
+DOMAIN-SUFFIX,windowsupdate.com,DIRECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,msftconnecttest.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,msftncsi.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,azure.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,azureedge.net,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,azurefd.net,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,visualstudio.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,github.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,githubusercontent.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,githubassets.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,google.com,BESTPROXY,pre-matching,extended-matching
+#IP-CIDR,8.8.8.8/32,BESTPROXY,no-resolve
+#DOMAIN-SUFFIX,android.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,firebaseio.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,recaptcha.net,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-KEYWORD,cloudflare,BESTPROXY,pre-matching,extended-matching
+#IP-ASN,13335,BESTPROXY,no-resolve
+#DOMAIN-SUFFIX,cf-ipfs.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,amazon.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,amazonaws.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,aws.amazon.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,cloudfront.net,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,amazon-adsystem.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,dns.google,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,dns.quad9.net,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,one.one.one.one,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,akamai.net,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,akamaiedge.net,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,akamaized.net,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,edgekey.net,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,edgesuite.net,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,fastly.net,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,fastlydns.net,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,jsdelivr.net,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,unpkg.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,cdnjs.cloudflare.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,auth0.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,okta.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,login.microsoftonline.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,accounts.google.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,hcaptcha.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,challenges.cloudflare.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,gitlab.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,bitbucket.org,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,npmjs.org,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,pypi.org,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,rubygems.org,BESTPROXY,pre-matching,extended-matching
+
+#FaceTime📞
+DOMAIN-SUFFIX,facetime.apple.com,SPEEDPROXY,pre-matching,extended-matching
+DOMAIN-SUFFIX,stun.apple.com,SPEEDPROXY,pre-matching,extended-matching
+
+#Сервисы Apple🍎
+RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/apple.txt,DIRECT
+RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/icloud.txt,DIRECT
+DOMAIN-SUFFIX,apple.com,DIRECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,apple-pki.com,DIRECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,icloud.com,DIRECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,icloud-content.com,DIRECT,pre-matching,extended-matching
+DOMAIN-KEYWORD,apple-intelligence,DIRECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,mzstatic.com,DIRECT,pre-matching,extended-matching
+DOMAIN-KEYWORD,itunes,DIRECT,pre-matching,extended-matching
+DOMAIN-KEYWORD,apple-dns,DIRECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,apple.com,DIRECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,aaplimg.com,DIRECT,pre-matching,extended-matching
+DOMAIN-KEYWORD,apis.apple,DIRECT,pre-matching,extended-matching
+DOMAIN-KEYWORD,mail.me.com,DIRECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,safebrowsing.apple,DIRECT,pre-matching,extended-matching
+
+#RU сервисы🇷🇺
+DOMAIN-SUFFIX,ru,DIRECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,su,DIRECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,xn--p1ai,DIRECT,pre-matching,extended-matching
+#GEOIP,RU,DIRECT
+#GEOIP,SU,DIRECT
+DOMAIN,avito.st,DIRECT,pre-matching,extended-matching
+
+#Глобальный прокси🌍
+FINAL,BESTPROXY
+#FINAL,DIRECT
+#FINAL,REJECT-DROP
+
+#ГЕОРЕСУРСЫ
+#V2Fly
+#Geosite: https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat
+#Geoip: https://github.com/v2fly/geoip/releases/download/202501090053/geoip.dat
+#Loyalsoldier
+#Geosite: https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
+#Geoip: https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
+
+[Host]
+localhost = 127.0.0.1
+
+[URL Rewrite]
+^https?:\/\/[\w-]+\.googlevideo\.com\/(?!(dclk_video_ads|videoplayback\?)).+&oad _ reject-200
+^https?:\/\/(www|s)\.youtube\.com\/api\/stats\/ads _ reject-200
+^https?:\/\/(www|s)\.youtube\.com\/(pagead|ptracking) _ reject-200
+^https?:\/\/s\.youtube\.com\/api\/stats\/qoe\?adcontext _ reject-200
+(^https?:\/\/[\w-]+\.googlevideo\.com\/(?!dclk_video_ads).+?)&ctier=L(&.+?),ctier,(.+) $1$2$3 302
+
+[Map Local]
+^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.+&oad data-type=text data="" status-code=200
+
+[Script]
+youtube.response = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/(youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch))(\?(.*))?$,requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js,argument="{"lyricLang":"{{{lyricLang}}}","captionLang":"{{{captionLang}}}","blockUpload":"{{{blockUpload}}}","blockImmersive":"{{{blockImmersive}}}","blockShorts":"{{{blockShorts}}}","debug":"{{{debug}}}"}"
+
+[MITM]
+hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com
+enable = true
