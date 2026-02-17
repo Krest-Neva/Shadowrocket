@@ -1,29 +1,31 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=With YT Premium and AdBlock
-#!arguments=captionLang:off, lyricLang:off, blockImmersive:false, debug:false
-#blockShorts:true, blockUpload:false вырезано
+#!arguments=captionLang:off, lyricLang:off, blockImmersive:false, debug:false, blockShorts:false, blockUpload:false
 
-#Последние изменения 17.02.2026 12:00
+#Последние изменения 18.02.2026 02:00
 
 #==================================================
 #ИНФОРМАЦИЯℹ️
 
 #Работает только на IOS и macOS. Для доступа с других систем использовать общий доступ к прокси.
 
-#Конфиг создан Кристиной Невской для настоящих котиков. Полностью работоспособный с регулярными обновлениями со встроенным скриптом для YouTube и блокировкой рекламы и трекером с аналитикой. RU сервисы и apple, а так же локальные сервера идут напрямую (без VPN). Конфиг адаптирован под постоянное использование (VPN можно не отключать) и не нуждается в переключении между серверами так как делает это автоматически при условии правильной настройки групп прокси в настройках конфигурации.
-#Работает как модуль в Shadowrocket. Настройки этого конфига (модуля) работают вместе с пользовательской конфигурацией и имеют приоритет над ней.
+#Конфиг создан Кристиной Невской для настоящих котиков. Полностью работоспособный с регулярными обновлениями со встроенным скриптом для YouTube (просмотр видео в фоне и поверх других приложений в режиме картинка в картинке) и блокировкой рекламы и трекером с аналитикой. RU сервисы и apple, а так же локальные сервера идут напрямую (без VPN). Конфиг адаптирован под постоянное использование (VPN можно не отключать) и не нуждается в переключении между серверами так как делает это автоматически при условии правильной настройки групп прокси в настройках конфигурации. Работает на Wi-Fi и мобильной сети.
+#Работает как модуль в Shadowrocket. Настройки этого конфига (модуля) работают вместе с пользовательской конфигурацией и имеют приоритет над ней. Персональный Add-on должен находится выше данного модуля в списке модулей.
 
-#⚙️НАСТРОЙКИ ОСНОВНОЙ КОНФИГУРАЦИИ:
+#➕ДОБАВЛЕНИЕ ПОДПИСКИ
+#Добавляется через + на главной странице, тип subscribe, далее вставляется URL (ключ). В примечаниях указать название VPN сервиса (можно своё)
+
+#📂НАСТРОЙКИ ОСНОВНОЙ КОНФИГУРАЦИИ:
 #Конфигурация может быть полностью пустой за исключением написанного ниже. Для этого находим в настройке локальных файлов (справа от главной) default.conf, обязательно переименовываем её и указываем своё (любое) название для конфигурации, редактируем обычный текст (стираем полностью) данной конфигурации. Для редактирования текста нужно зажать конфигурацию и выбрать соответствующий пункт.
 
 #Дальше настройка идёт через интерфейс редактирования конфигурации.
 #Должен быть установлен сертификат Shadowrocket и быть довереным системой. Расшифровка HTTPS: вкл. Это ключевой момент для работы скрипта для YT
 
 #Создать в конфигурации группы прокси строго с таким же названием:
-# 1) «BESTPROXY» - тип: load-balance. Добавить все сервера, кроме РФ. Между ними будет распределяться весь трафик идущий через VPN.
-# 2) «SPEEDPROXY» - тип: fallback. Выбрать наиболее быстрые сервера для YouTube и FaceTime.
-# 3) «GEMINI» - тип: load-balance. Выбрать только сервера для Gemini. Например: США. При отсутствии выбрать несколько других (чтобы не рухнул google). Можно использовать те же что и для «SPEEDPROXY»
-#При наличии только одного доступного сервера. Добавить во все группы этот один сервер.
+# 1️⃣ «BESTPROXY» - тип: load-balance. Добавить все сервера, кроме РФ. Между ними будет распределяться весь трафик идущий через VPN.
+# 2️⃣ «SPEEDPROXY» - тип: fallback. Выбрать наиболее быстрые сервера для YouTube и FaceTime и прочего. Тип fallback направляет трафик через один сервер с минимальным пингом, который может меняться.
+# 3️⃣ «GEMINI» - тип: load-balance. Выбрать только сервера или сервер для Gemini. Например: США. При отсутствии выбрать несколько других (чтобы не рухнул google). Можно использовать те же что и для «SPEEDPROXY» (при отсутствии специальных для GEMINI)
+#При наличии только одного доступного сервера. Добавить во все группы этот один сервер. Группы прокси обязательно должны содержать сервера.
 #Кнопка «подписаться» сможет обновлять добавленные сервера с обновлением подписок на VPN.
 #В этих группах выставить настройки:
 #интервал - 500
@@ -32,14 +34,14 @@
 #http://www.gstatic.com/generate_204
 
 #⚙️НАСТРОЙКИ ПРИЛОЖЕНИЯ:
-#ГЛАВНАЯ:
+#🏠ГЛАВНАЯ:
 #Маршрутизация - настройка (для работы конфига в целом), включить откат
 #Тест подключения - connect
-#НАСТРОЙКИ:
+#⚙️НАСТРОЙКИ:
 #По требованию: всегда включено - вкл, по требованию - вкл, «правила по требованию»(снизу): действие - подключить, сеть - any. В настройках iphone включить подключение по запросу у shadowrocket в настройках VPN
 #Туннель: включить только принудительные маршруты
 #UDP: включить реле
-#Включить автообновление модулей и подписок. В подписках включить «Отправить HWID» иначе подписки могут не добавляться.
+#Включить автообновление модулей и подписок. В «подписаться» включить «Отправить HWID» иначе подписки могут не добавляться.
 #Для добавления подписки VPN нажимается + на главной странице и выбирается тип subscribe после чего вставляется URL. В примечаниях можно самому указать имя подписки.
 #Настроить базу данных Geolite2: включить автообновление. /На данный момент необязательно по причине временного отсутсвия зависящих правил/
 #URL страны: https://github.com/Loyalsoldier/geoip/raw/release/Country.mmdb
@@ -48,7 +50,7 @@
 #В «разное» включить всё
 
 
-#После всей настройки убедиться что включен данный модуль, а маршрутизация (на главной) идёт по правилам локального файла (настройка), а то есть пользовательской конфигурации.
+#❗️После всей настройки убедиться что включен данный модуль, а маршрутизация (на главной) идёт по правилам локального файла (настройка), а то есть ВЫБРАННОЙ пользовательской конфигурации.
 #Чтобы заработал "YouTube Premium" нужно подождать пару минут. Если возникают проблемы с плеером картинка в картинке можно переподключить VPN, смахнуть youtube и открыть заново, но проблема обычно уходит сама. При обновлении модуля возможна длительная обработка в связи с длинными списками правил.
 
 #Жалобы и пожелания направлять моему менеджеру😡
@@ -87,17 +89,17 @@ DOMAIN-KEYWORD,metrica,REJECT,pre-matching,extended-matching
 DOMAIN-KEYWORD,metrika,REJECT,pre-matching,extended-matching
 
 #   #-неакт❌
-#СНГ
-#DOMAIN-SUFFIX,ru,REJECT,pre-matching,extended-matching
-#DOMAIN-SUFFIX,su,REJECT,pre-matching,extended-matching
-#DOMAIN-SUFFIX,xn--p1ai,REJECT,pre-matching,extended-matching
-#DOMAIN-SUFFIX,ua,REJECT,pre-matching,extended-matching
-#DOMAIN-SUFFIX,by,REJECT,pre-matching,extended-matching
-#DOMAIN-SUFFIX,kz,REJECT,pre-matching,extended-matching
-#DOMAIN-SUFFIX,am,REJECT,pre-matching,extended-matching
-#DOMAIN-SUFFIX,uz,REJECT,pre-matching,extended-matching
-#DOMAIN-SUFFIX,tj,REJECT,pre-matching,extended-matching
-#DOMAIN-SUFFIX,cn,REJECT,pre-matching,extended-matching
+#Регионы
+#🇷🇺DOMAIN-SUFFIX,ru,REJECT,pre-matching,extended-matching
+#🇷🇺DOMAIN-SUFFIX,su,REJECT,pre-matching,extended-matching
+#🇷🇺DOMAIN-SUFFIX,xn--p1ai,REJECT,pre-matching,extended-matching
+#🇺🇦DOMAIN-SUFFIX,ua,REJECT,pre-matching,extended-matching
+#🇧🇾DOMAIN-SUFFIX,by,REJECT,pre-matching,extended-matching
+#🇰🇿DOMAIN-SUFFIX,kz,REJECT,pre-matching,extended-matching
+#🇦🇲DOMAIN-SUFFIX,am,REJECT,pre-matching,extended-matching
+#🇺🇿DOMAIN-SUFFIX,uz,REJECT,pre-matching,extended-matching
+#🇹🇯DOMAIN-SUFFIX,tj,REJECT,pre-matching,extended-matching
+#🇨🇳DOMAIN-SUFFIX,cn,REJECT,pre-matching,extended-matching
 
 #VK🔵
 #IP-CIDR,87.240.128.0/18,REJECT,no-resolve
@@ -117,7 +119,7 @@ DOMAIN-KEYWORD,metrika,REJECT,pre-matching,extended-matching
 
 #Шняга REJECT
 DOMAIN-SUFFIX,max.ru,REJECT,pre-matching,extended-matching
-#НИКАКОГО МАКСА!
+#НИКАКОГО МАКСА!⚠️
 #DOMAIN-SUFFIX,mail.ru,REJECT,pre-matching,extended-matching
 #DOMAIN-KEYWORD,sferum,REJECT,pre-matching,extended-matching
 #DOMAIN-KEYWORD,odnoklassniki,REJECT,pre-matching,extended-matching
@@ -127,27 +129,31 @@ DOMAIN-SUFFIX,max.ru,REJECT,pre-matching,extended-matching
 #DOMAIN-KEYWORD,blink,REJECT,pre-matching,extended-matching
 #DOMAIN-KEYWORD,yappy,REJECT,pre-matching,extended-matching
 #DOMAIN,yandex.ru,REJECT,pre-matching,extended-matching
+#DOMAIN-KEYWORD,dzen,REJECT,pre-matching,extended-matching
 #DOMAIN-KEYWORD,rambler,REJECT,pre-matching,extended-matching
 #DOMAIN-SUFFIX,sputnik.ru,REJECT,pre-matching,extended-matching
 #DOMAIN-KEYWORD,2gis,REJECT,pre-matching,extended-matching
+#Кинотеатры🎬
 #DOMAIN-KEYWORD,kinopoisk,REJECT,pre-matching,extended-matching
 #DOMAIN-SUFFIX,ivi.ru,REJECT,pre-matching,extended-matching
 #DOMAIN-SUFFIX,premier.ru,REJECT,pre-matching,extended-matching
 #DOMAIN-SUFFIX,kion.ru,REJECT,pre-matching,extended-matching
 #DOMAIN-SUFFIX,wink.ru,REJECT,pre-matching,extended-matching
 #DOMAIN-SUFFIX,start.ru,REJECT,pre-matching,extended-matching
+#Операторы связи
 #DOMAIN-KEYWORD,beeline,REJECT,pre-matching,extended-matching
 #DOMAIN-KEYWORD,megafon,REJECT,pre-matching,extended-matching
 #DOMAIN-KEYWORD,mts,REJECT,pre-matching,extended-matching
 #DOMAIN-SUFFIX,yota.ru,REJECT,pre-matching,extended-matching
-#DOMAIN-SUFFIX,cian.ru,REJECT,pre-matching,extended-matching
-#DOMAIN-KEYWORD,dzen,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,rostelecom.ru,REJECT,pre-matching,extended-matching
+#Банки🏦
 #DOMAIN-KEYWORD,tinkoff,REJECT
 #DOMAIN-KEYWORD,t-bank,REJECT,pre-matching,extended-matching
 #DOMAIN-KEYWORD,tbank,REJECT,pre-matching,extended-matching
+#Прочее
+#DOMAIN-SUFFIX,cian.ru,REJECT,pre-matching,extended-matching
 #DOMAIN-SUFFIX,creati.win,REJECT,pre-matching,extended-matching
 #DOMAIN-SUFFIX,uniproxy.alice.yandex.net,REJECT,pre-matching,extended-matching
-#DOMAIN-SUFFIX,rostelecom.ru,REJECT,pre-matching,extended-matching
 #DOMAIN-SUFFIX,uxfeedback.ru,REJECT,pre-matching,extended-matching
 #DOMAIN-SUFFIX,qq.com,REJECT,pre-matching,extended-matching
 #DOMAIN-KEYWORD,adobe,REJECT,pre-matching,extended-matching
@@ -160,6 +166,7 @@ DOMAIN-SUFFIX,youtube.com,SPEEDPROXY,pre-matching,extended-matching
 DOMAIN-SUFFIX,youtu.be,SPEEDPROXY,pre-matching,extended-matching
 DOMAIN-KEYWORD,ytimg.com,SPEEDPROXY,pre-matching,extended-matching
 DOMAIN-SUFFIX,googlevideo.com,SPEEDPROXY,pre-matching,extended-matching
+DOMAIN,youtubei.googleapis.com,SPEEDPROXY,pre-matching,extended-matching
 DOMAIN-KEYWORD,gemini,GEMINI,pre-matching,extended-matching
 DOMAIN-SUFFIX,googleapis.com,GEMINI,pre-matching,extended-matching
 DOMAIN-SUFFIX,apis.google.com,GEMINI,pre-matching,extended-matching
@@ -178,19 +185,21 @@ DOMAIN-SUFFIX,gstatic.com,GEMINI,pre-matching,extended-matching
 #DOMAIN-SUFFIX,tdesktop.com,BESTPROXY,pre-matching,extended-matching
 
 #Шняга PROXY
+#DOMAIN-SUFFIX,signal.org,BESTPROXY,pre-matching,extended-matching
+#Meta
 #DOMAIN-KEYWORD,whatsapp,BESTPROXY,pre-matching,extended-matching
-DOMAIN-KEYWORD,instagram,SPEEDPROXY,pre-matching,extended-matching
+#DOMAIN-KEYWORD,instagram,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,facebook.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,fb.com,BESTPROXY,pre-matching,extended-matching
+#DOMAIN-SUFFIX,fbcdn.net,BESTPROXY,pre-matching,extended-matching
+#Нейросети
 #DOMAIN-SUFFIX,openai.com,BESTPROXY,pre-matching,extended-matching
 #DOMAIN-SUFFIX,chatgpt.com,BESTPROXY,pre-matching,extended-matching
 #DOMAIN-SUFFIX,oaistatic.com,BESTPROXY,pre-matching,extended-matching
 #DOMAIN-SUFFIX,oaiusercontent.com,BESTPROXY,pre-matching,extended-matching
 #DOMAIN-SUFFIX,deepseek.com,BESTPROXY,pre-matching,extended-matching
+
 #DOMAIN-KEYWORD,tiktok,BESTPROXY,pre-matching,extended-matching
-#DOMAIN-SUFFIX,signal.org,BESTPROXY,pre-matching,extended-matching
-#DOMAIN-SUFFIX,facebook.com,BESTPROXY,pre-matching,extended-matching
-#DOMAIN-SUFFIX,fb.com,BESTPROXY,pre-matching,extended-matching
-#DOMAIN-SUFFIX,fbcdn.net,BESTPROXY,pre-matching,extended-matching
-#DOMAIN-KEYWORD,github,BESTPROXY,pre-matching,extended-matching
 
 #Фундамент
 #DOMAIN-SUFFIX,microsoft.com,BESTPROXY,pre-matching,extended-matching
