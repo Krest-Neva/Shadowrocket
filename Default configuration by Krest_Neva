@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=With YT Premium and AdBlock
-#!arguments=captionLang:off, lyricLang:off, blockImmersive:false, debug:false, blockShorts:false, blockUpload:false
-
+#!arguments=captionLang:off, lyricLang:off, blockImmersive:false, debug:false, blockUpload:false
+#blockShorts:false вырезано
 #Последние изменения 18.02.2026 02:00
 
 #==================================================
