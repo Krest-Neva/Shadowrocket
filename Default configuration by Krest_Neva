@@ -3,7 +3,7 @@
 #!arguments=captionLang:off, lyricLang:off, blockImmersive:false, debug:false
 #blockShorts:false, blockUpload:true вырезано
 
-#Последние изменения 18.02.2026 04:00
+#Последние изменения 18.02.2026 12:00
 
 #==================================================
 #ИНФОРМАЦИЯℹ️
@@ -168,6 +168,7 @@ DOMAIN-SUFFIX,youtu.be,SPEEDPROXY,pre-matching,extended-matching
 DOMAIN-KEYWORD,ytimg.com,SPEEDPROXY,pre-matching,extended-matching
 DOMAIN-SUFFIX,googlevideo.com,SPEEDPROXY,pre-matching,extended-matching
 DOMAIN,youtubei.googleapis.com,SPEEDPROXY,pre-matching,extended-matching
+DOMAIN,oauthaccountmanager.googleapis.com,SPEEDPROXY,pre-matching,extended-matching
 DOMAIN-KEYWORD,gemini,GEMINI,pre-matching,extended-matching
 DOMAIN-SUFFIX,googleapis.com,GEMINI,pre-matching,extended-matching
 DOMAIN-SUFFIX,apis.google.com,GEMINI,pre-matching,extended-matching
