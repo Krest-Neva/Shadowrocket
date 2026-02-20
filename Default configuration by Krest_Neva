@@ -3,7 +3,7 @@
 #!arguments=captionLang:off, lyricLang:off, blockImmersive:false, debug:false
 #blockShorts:false, blockUpload:true вырезано
 
-#Последние изменения 18.02.2026 18:00
+#Последние изменения 20.02.2026 10:00
 
 #==================================================
 #ИНФОРМАЦИЯℹ️
@@ -278,6 +278,13 @@ DOMAIN-SUFFIX,aaplimg.com,DIRECT,pre-matching,extended-matching
 DOMAIN-KEYWORD,apis.apple,DIRECT,pre-matching,extended-matching
 DOMAIN-KEYWORD,mail.me.com,DIRECT,pre-matching,extended-matching
 DOMAIN-SUFFIX,safebrowsing.apple,DIRECT,pre-matching,extended-matching
+
+#Xiaomi
+#DOMAIN-KEYWORD,xiaomi,DIRECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,xiaomi.com,DIRECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,xiaomiwear.com,DIRECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,mi.com,DIRECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,miui.com,DIRECT,pre-matching,extended-matching
 
 #RU🇷🇺
 DOMAIN-SUFFIX,ru,DIRECT,pre-matching,extended-matching
