@@ -280,6 +280,10 @@ DOMAIN-KEYWORD,mail.me.com,DIRECT,pre-matching,extended-matching
 DOMAIN-SUFFIX,safebrowsing.apple,DIRECT,pre-matching,extended-matching
 
 #Xiaomi
+IP-ASN,63855,DIRECT,no-resolve
+IP-ASN,63915,DIRECT,no-resolve
+IP-ASN,58836,DIRECT,no-resolve
+IP-ASN,58839,DIRECT,no-resolve
 #DOMAIN-KEYWORD,xiaomi,DIRECT,pre-matching,extended-matching
 DOMAIN-SUFFIX,xiaomi.com,DIRECT,pre-matching,extended-matching
 DOMAIN-SUFFIX,xiaomiwear.com,DIRECT,pre-matching,extended-matching
