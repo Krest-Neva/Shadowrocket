@@ -3,7 +3,7 @@
 #!arguments=captionLang:off, lyricLang:off, blockImmersive:false, debug:false
 #blockShorts:false, blockUpload:true вырезано
 
-#Последние изменения 20.02.2026 20:00
+#Последние изменения 22.02.2026 21:00
 
 #==================================================
 #ИНФОРМАЦИЯℹ️
@@ -288,6 +288,7 @@ IP-ASN,58839,DIRECT,no-resolve
 DOMAIN-SUFFIX,xiaomi.com,DIRECT,pre-matching,extended-matching
 DOMAIN-SUFFIX,xiaomiwear.com,DIRECT,pre-matching,extended-matching
 DOMAIN-SUFFIX,mi.com,DIRECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,mi-img.com,DIRECT,pre-matching,extended-matching
 DOMAIN-SUFFIX,miui.com,DIRECT,pre-matching,extended-matching
 
 #RU🇷🇺
