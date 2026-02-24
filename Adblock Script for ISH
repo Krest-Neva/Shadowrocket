@@ -1,0 +1,160 @@
+#ADGUARD AND LOYALSOLDIER ADBLOCK SCRIPT
+
+#СКРИПТ СОЗДАН ДЛЯ ISH https://apps.apple.com/ru/app/ish-shell/id1436902243
+#ФОРМИРУЕТ СПИСКИ ПРАВИЛ ДЛЯ SHADOWROCKET ДЛЯ БЛОКИРОВКИ РЕКЛАМЫ, ТРЕКЕРОВ И АНАЛИТИКИ.
+
+
+
+clear
+# --- ЧАСТЬ 1: СИСТЕМНАЯ НАСТРОЙКА ---
+# Принудительно выставляем DNS Google
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+
+# Проверка интернета
+echo "[*] Проверка соединения с интернетом..."
+ping -c 3 google.com
+
+# Обновление пакетов
+apk update
+apk upgrade
+apk add python3 py3-pip curl
+
+# --- ЧАСТЬ 2: СОЗДАНИЕ СКРИПТА ---
+cat << 'EOF' > "AdGuard and Loyalsoldier REJECT RULES.py"
+import urllib.request
+import re
+import time
+
+urls = {
+    "Loyalsoldier": "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/reject.txt",
+    "AdGuard": "https://filters.adtidy.org/ios/filters/15_optimized.txt"
+}
+output_file = "AdGuard and Loyalsoldier REJECT RULES"
+exclude_keywords = [
+    "ads", "analytics", "tracker", "tracking", "tracer", 
+    "metrics", "metrica", "metrika", "telemetry", "pixel", 
+    "beacon", "adserver", "doubleclick", "adjust", "appsflyer"
+]
+
+headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1'}
+ip_regex = re.compile(r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})')
+
+def download_file(name, url):
+    print(f"[*] Начинаю скачивание {name}...")
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req) as response:
+            data = response.read().decode('utf-8').splitlines()
+            print(f"[+] {name} успешно загружен ({len(data)} строк).")
+            return data
+    except Exception as e:
+        print(f"[!] Ошибка при загрузке {name}: {e}")
+        return []
+
+all_domains = set()
+all_ips = set()
+stats = {"loyal_total": 0, "adg_total": 0, "excluded": 0}
+
+print("\n--- ЭТАП 1: Загрузка данных ---")
+loyal_data = download_file("Loyalsoldier", urls["Loyalsoldier"])
+adg_data = download_file("AdGuard", urls["AdGuard"])
+
+if not loyal_data and not adg_data:
+    print("[!!!] ОШИБКА: Не удалось загрузить ни один список. Проверьте DNS!")
+    exit()
+
+print("\n--- ЭТАП 2: Обработка Loyalsoldier ---")
+for line in loyal_data:
+    line = line.strip().lower()
+    if not line or line.startswith(('#', '//', '!')): continue
+    
+    if any(kw in line for kw in exclude_keywords):
+        stats["excluded"] += 1
+        continue
+    
+    parts = line.split(',')
+    if len(parts) >= 2:
+        val = parts[1].strip()
+        if "ip-cidr" in parts[0]:
+            all_ips.add(val if '/' in val else f"{val}/32")
+        elif "domain" in parts[0]:
+            all_domains.add(val)
+            stats["loyal_total"] += 1
+
+print(f"[+] Извлечено из Loyalsoldier: {stats['loyal_total']} уникальных доменов.")
+
+print("\n--- ЭТАП 3: Обработка AdGuard ---")
+for line in adg_data:
+    line = line.strip().lower()
+    if not line or line.startswith(('!', '@@', '[', '#')) or '#' in line: continue
+    
+    if any(kw in line for kw in exclude_keywords):
+        stats["excluded"] += 1
+        continue
+    
+    clean_ip_part = line.replace('||', '').split('^')[0].split('$')[0].split('/')[0]
+    if ip_regex.match(clean_ip_part):
+        all_ips.add(f"{clean_ip_part}/32")
+        continue
+    
+    if line.startswith('||'):
+        domain = re.split(r'[\^\/\$\|]', line[2:])[0]
+        if domain and '.' in domain and '*' not in domain:
+            all_domains.add(domain)
+            stats["adg_total"] += 1
+
+print(f"[+] Извлечено из AdGuard: {stats['adg_total']} уникальных доменов.")
+
+print("\n--- ЭТАП 4: Очистка поддоменов ---")
+start_time = time.time()
+sorted_raw = sorted(list(all_domains), key=len)
+optimized_domains = set()
+
+total_to_check = len(sorted_raw)
+for idx, d in enumerate(sorted_raw):
+    if idx % 5000 == 0:
+        print(f"[*] Обработано {idx} из {total_to_check} доменов...")
+    
+    parts = d.split('.')
+    is_redundant = False
+    for i in range(1, len(parts) - 1):
+        parent = ".".join(parts[i:])
+        if parent in optimized_domains:
+            is_redundant = True
+            break
+    if not is_redundant:
+        optimized_domains.add(d)
+
+print(f"[+] Оптимизация завершена за {round(time.time() - start_time, 2)} сек.")
+print(f"[!] Удалено лишних поддоменов: {len(all_domains) - len(optimized_domains)}")
+
+print("\n--- ЭТАП 5: Сборка и сохранение ---")
+final_domains = sorted([f"DOMAIN-SUFFIX,{d},REJECT" for d in optimized_domains])
+final_ips = sorted([f"IP-CIDR,{ip},REJECT" for ip in all_ips])
+
+with open(output_file, 'w', encoding='utf-8') as out:
+    out.write("[Rule]\n")
+    out.write("\n".join(final_domains))
+    if final_ips:
+        out.write("\n\n" + "\n".join(final_ips))
+
+print("\n" + "="*30)
+print(f"Успех! Файл '{output_file}' создан.")
+print(f"Всего уникальных доменов: {len(final_domains)}")
+print(f"Всего IP-адресов: {len(final_ips)}")
+print(f"Удалено правил по ключевым словам: {stats['excluded']}")
+print(f"Итого строк в файле: {len(final_domains) + len(final_ips) + 1}")
+print("="*30)
+EOF
+
+# Принудительно выставляем DNS Google ещё раз
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+
+# Проверка интернета
+echo "[*] Проверка соединения с интернетом..."
+ping -c 3 google.com
+
+# --- ЧАСТЬ 3: ЗАПУСК ---
+python3 "AdGuard and Loyalsoldier REJECT RULES.py"
