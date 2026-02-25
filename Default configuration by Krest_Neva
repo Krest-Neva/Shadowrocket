@@ -78,7 +78,7 @@ always-reject-url-rewrite = false
 AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
 AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 
-#Реклама, трекеры, аналитика
+#Реклама, трекеры, аналитика💩
 RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/AdGuard%20and%20Loyalsoldier%20REJECT%20RULES,REJECT
 DOMAIN-KEYWORD,ads,REJECT,pre-matching,extended-matching
 DOMAIN-KEYWORD,analytics,REJECT,pre-matching,extended-matching
@@ -88,6 +88,14 @@ DOMAIN-KEYWORD,tracer,REJECT,pre-matching,extended-matching
 DOMAIN-KEYWORD,metrics,REJECT,pre-matching,extended-matching
 DOMAIN-KEYWORD,metrica,REJECT,pre-matching,extended-matching
 DOMAIN-KEYWORD,metrika,REJECT,pre-matching,extended-matching
+DOMAIN-KEYWORD,telemetry,REJECT,pre-matching,extended-matching
+DOMAIN-KEYWORD,beacon,REJECT,pre-matching,extended-matching
+DOMAIN-KEYWORD,adserver,REJECT,pre-matching,extended-matching
+DOMAIN-KEYWORD,doubleclick,REJECT,pre-matching,extended-matching
+DOMAIN-KEYWORD,adjust,REJECT,pre-matching,extended-matching
+DOMAIN-KEYWORD,appsflyer,REJECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,pixel.google.com,BESTPROXY,pre-matching,extended-matching
+DOMAIN-KEYWORD,pixel,REJECT,pre-matching,extended-matching
 
 #   #-неакт❌
 #Регионы
