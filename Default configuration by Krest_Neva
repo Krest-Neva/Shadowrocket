@@ -80,6 +80,7 @@ AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 
 #Реклама, трекеры, аналитика💩
 RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/AdGuard%20and%20Loyalsoldier%20REJECT%20RULES,REJECT
+#RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/reject.txt,REJECT
 DOMAIN-KEYWORD,ads,REJECT,pre-matching,extended-matching
 DOMAIN-KEYWORD,analytics,REJECT,pre-matching,extended-matching
 DOMAIN-KEYWORD,tracker,REJECT,pre-matching,extended-matching
