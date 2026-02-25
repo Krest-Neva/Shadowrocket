@@ -1,21 +1,20 @@
 #ADGUARD AND LOYALSOLDIER ADBLOCK SCRIPT
 
 #СКРИПТ СОЗДАН ДЛЯ ISH https://apps.apple.com/ru/app/ish-shell/id1436902243
-#ФОРМИРУЕТ СПИСКИ ПРАВИЛ ДЛЯ SHADOWROCKET ДЛЯ БЛОКИРОВКИ РЕКЛАМЫ, ТРЕКЕРОВ И АНАЛИТИКИ.
+#ФОРМИРУЕТ СПИСОК ПРАВИЛ ДЛЯ SHADOWROCKET ДЛЯ БЛОКИРОВКИ РЕКЛАМЫ, ТРЕКЕРОВ И АНАЛИТИКИ.
+
+
 
 
 
 clear
 # --- ЧАСТЬ 1: СИСТЕМНАЯ НАСТРОЙКА ---
-# Принудительно выставляем DNS Google
 echo "nameserver 8.8.8.8" > /etc/resolv.conf
 echo "nameserver 8.8.4.4" >> /etc/resolv.conf
 
-# Проверка интернета
 echo "[*] Проверка соединения с интернетом..."
 ping -c 3 google.com
 
-# Обновление пакетов
 apk update
 apk upgrade
 apk add python3 py3-pip curl
@@ -68,7 +67,6 @@ print("\n--- ЭТАП 2: Обработка Loyalsoldier ---")
 for line in loyal_data:
     line = line.strip().lower()
     if not line or line.startswith(('#', '//', '!')): continue
-    
     if any(kw in line for kw in exclude_keywords):
         stats["excluded"] += 1
         continue
@@ -82,13 +80,10 @@ for line in loyal_data:
             all_domains.add(val)
             stats["loyal_total"] += 1
 
-print(f"[+] Извлечено из Loyalsoldier: {stats['loyal_total']} уникальных доменов.")
-
 print("\n--- ЭТАП 3: Обработка AdGuard ---")
 for line in adg_data:
     line = line.strip().lower()
     if not line or line.startswith(('!', '@@', '[', '#')) or '#' in line: continue
-    
     if any(kw in line for kw in exclude_keywords):
         stats["excluded"] += 1
         continue
@@ -104,9 +99,7 @@ for line in adg_data:
             all_domains.add(domain)
             stats["adg_total"] += 1
 
-print(f"[+] Извлечено из AdGuard: {stats['adg_total']} уникальных доменов.")
-
-print("\n--- ЭТАП 4: Очистка поддоменов ---")
+print("\n--- ЭТАП 4: Очистка поддоменов (это может занять время) ---")
 start_time = time.time()
 sorted_raw = sorted(list(all_domains), key=len)
 optimized_domains = set()
@@ -126,25 +119,21 @@ for idx, d in enumerate(sorted_raw):
     if not is_redundant:
         optimized_domains.add(d)
 
-print(f"[+] Оптимизация завершена за {round(time.time() - start_time, 2)} сек.")
-print(f"[!] Удалено лишних поддоменов: {len(all_domains) - len(optimized_domains)}")
+print(f"\n[+] Оптимизация завершена за {round(time.time() - start_time, 2)} сек.")
 
-print("\n--- ЭТАП 5: Сборка и сохранение ---")
-final_domains = sorted([f"DOMAIN-SUFFIX,{d},REJECT" for d in optimized_domains])
-final_ips = sorted([f"IP-CIDR,{ip},REJECT" for ip in all_ips])
+final_domains = sorted([f"DOMAIN-SUFFIX,{d}" for d in optimized_domains])
+final_ips = sorted([f"IP-CIDR,{ip}" for ip in all_ips])
 
+# В RULE-SET формат обычно: ТИП,ЗНАЧЕНИЕ (без REJECT в конце каждой строки, 
+# так как действие REJECT указывается в самом Shadowrocket при добавлении ссылки)
 with open(output_file, 'w', encoding='utf-8') as out:
-    out.write("[Rule]\n")
     out.write("\n".join(final_domains))
     if final_ips:
-        out.write("\n\n" + "\n".join(final_ips))
+        out.write("\n" + "\n".join(final_ips))
 
 print("\n" + "="*30)
-print(f"Успех! Файл '{output_file}' создан.")
-print(f"Всего уникальных доменов: {len(final_domains)}")
-print(f"Всего IP-адресов: {len(final_ips)}")
-print(f"Удалено правил по ключевым словам: {stats['excluded']}")
-print(f"Итого строк в файле: {len(final_domains) + len(final_ips) + 1}")
+print(f"Успех! Файл для RULE-SET '{output_file}' создан.")
+print(f"Итого правил: {len(final_domains) + len(final_ips)}")
 print("="*30)
 EOF
 
