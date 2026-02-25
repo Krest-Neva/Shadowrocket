@@ -1,149 +1,200 @@
 #ADGUARD AND LOYALSOLDIER ADBLOCK SCRIPT
-
 #СКРИПТ СОЗДАН ДЛЯ ISH https://apps.apple.com/ru/app/ish-shell/id1436902243
-#ФОРМИРУЕТ СПИСОК ПРАВИЛ ДЛЯ SHADOWROCKET ДЛЯ БЛОКИРОВКИ РЕКЛАМЫ, ТРЕКЕРОВ И АНАЛИТИКИ.
-
+#ФОРМИРУЕТ СПИСОК ПРАВИЛ ДЛЯ SHADOWROCKET ДЛЯ БЛОКИРОВКИ РЕКЛАМЫ, ТРЕКЕРОВ, АНАЛИТИКИ И ФИШИНГОВЫХ САЙТОВ.
 
 
 
 
 clear
-# --- ЧАСТЬ 1: СИСТЕМНАЯ НАСТРОЙКА ---
+# ==========================================
+# --- ЧАСТЬ 1: ПЕРВИЧНАЯ НАСТРОЙКА СЕТИ ---
+# ==========================================
+echo "[*] Настройка DNS (Этап 1)..."
 echo "nameserver 8.8.8.8" > /etc/resolv.conf
 echo "nameserver 8.8.4.4" >> /etc/resolv.conf
 
 echo "[*] Проверка соединения с интернетом..."
 ping -c 3 google.com
 
+echo "[*] Обновление системы и установка зависимостей..."
 apk update
 apk upgrade
 apk add python3 py3-pip curl
 
-# --- ЧАСТЬ 2: СОЗДАНИЕ СКРИПТА ---
-cat << 'EOF' > "AdGuard and Loyalsoldier REJECT RULES.py"
+# ==========================================
+# --- ЧАСТЬ 2: СОЗДАНИЕ ПАРСЕРА ---
+# ==========================================
+cat << 'EOF' > "AdGuard_and_Loyalsoldier_REJECT_RULES.py"
 import urllib.request
+import subprocess
 import re
 import time
 
+# Строгий порядок источников. Для трекеров добавлено зеркало на случай полной блокировки основы.
 urls = {
-    "Loyalsoldier": "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/reject.txt",
-    "AdGuard": "https://filters.adtidy.org/ios/filters/15_optimized.txt"
+    "1) Loyalsoldier": "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/reject.txt",
+    "2) AdGuard (Base)": "https://filters.adtidy.org/ios/filters/15_optimized.txt",
+    "3) Фильтр мобильной рекламы": "https://filters.adtidy.org/ios/filters/11_optimized.txt",
+    "4) Дополнительный фильтр (RU)": "https://filters.adtidy.org/ios/filters/1_optimized.txt",
+    "5) Дополнительный фильтр для блокировка трекеров": [
+        "https://easylist-downloads.adblockplus.org/cntblock.txt",
+        "https://raw.githubusercontent.com/easylist/easylist/master/easyprivacy/easyprivacy_trackers.txt"
+    ],
+    "6) Анти фишинг": "https://malware-filter.gitlab.io/malware-filter/phishing-filter-ag.txt"
 }
-output_file = "AdGuard and Loyalsoldier REJECT RULES"
+
+output_file = "AdGuard_and_Loyalsoldier_REJECT_RULES.list"
 exclude_keywords = [
     "ads", "analytics", "tracker", "tracking", "tracer", 
     "metrics", "metrica", "metrika", "telemetry", "pixel", 
     "beacon", "adserver", "doubleclick", "adjust", "appsflyer"
 ]
 
-headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1'}
-ip_regex = re.compile(r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})')
+headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'}
+ip_regex = re.compile(r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$')
 
-def download_file(name, url):
-    print(f"[*] Начинаю скачивание {name}...")
-    try:
-        req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req) as response:
-            data = response.read().decode('utf-8').splitlines()
-            print(f"[+] {name} успешно загружен ({len(data)} строк).")
-            return data
-    except Exception as e:
-        print(f"[!] Ошибка при загрузке {name}: {e}")
-        return []
+def download_data(name, url_or_urls):
+    print(f"  [*] Скачивание: {name}...")
+    urls_to_try = url_or_urls if isinstance(url_or_urls, list) else [url_or_urls]
+    
+    for url in urls_to_try:
+        # СПОСОБ 1: Стандартный Python (urllib)
+        try:
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                lines = resp.read().decode('utf-8', errors='ignore').splitlines()
+                if len(lines) > 50:
+                    print(f"  [+] Успешно загружено строк: {len(lines)}")
+                    print("  [*] Извлечение доменов...")
+                    return lines
+        except Exception:
+            pass # Если не вышло, переходим ко второму способу
+        
+        # СПОСОБ 2: Системный curl (fallback)
+        try:
+            result = subprocess.run(['curl', '-s', '-L', '-k', '-A', headers['User-Agent'], url], capture_output=True, timeout=20)
+            if result.returncode == 0 and result.stdout:
+                lines = result.stdout.decode('utf-8', errors='ignore').splitlines()
+                if len(lines) > 50:
+                    print(f"  [+] Успешно загружено строк: {len(lines)} (через резервный метод)")
+                    print("  [*] Извлечение доменов...")
+                    return lines
+        except Exception:
+            pass # Если curl тоже не помог, пробуем следующую ссылку из списка (зеркало)
+            
+    print(f"  [!] Ошибка: Не удалось скачать {name} ни одним из способов.")
+    return []
 
 all_domains = set()
 all_ips = set()
-stats = {"loyal_total": 0, "adg_total": 0, "excluded": 0}
+stats = {"excluded": 0}
 
-print("\n--- ЭТАП 1: Загрузка данных ---")
-loyal_data = download_file("Loyalsoldier", urls["Loyalsoldier"])
-adg_data = download_file("AdGuard", urls["AdGuard"])
+print("\n=== ЭТАП 1: ЗАГРУЗКА И ОБРАБОТКА ДАННЫХ ===")
 
-if not loyal_data and not adg_data:
-    print("[!!!] ОШИБКА: Не удалось загрузить ни один список. Проверьте DNS!")
-    exit()
-
-print("\n--- ЭТАП 2: Обработка Loyalsoldier ---")
-for line in loyal_data:
-    line = line.strip().lower()
-    if not line or line.startswith(('#', '//', '!')): continue
-    if any(kw in line for kw in exclude_keywords):
-        stats["excluded"] += 1
-        continue
+for name, url in urls.items():
+    print(f"\n>> Обработка источника: {name}")
+    data = download_data(name, url)
+    local_domain_count = 0
+    local_ip_count = 0
     
-    parts = line.split(',')
-    if len(parts) >= 2:
-        val = parts[1].strip()
-        if "ip-cidr" in parts[0]:
-            all_ips.add(val if '/' in val else f"{val}/32")
-        elif "domain" in parts[0]:
-            all_domains.add(val)
-            stats["loyal_total"] += 1
+    for line in data:
+        line = line.strip().lower()
+        
+        # Пропуск пустых строк, комментариев и косметических правил (CSS/JS)
+        if not line or line.startswith(('!', '[', '@@')) or '##' in line or '#@#' in line or line.startswith('#'):
+            continue
+        
+        # Исключение по ключевым словам
+        if any(kw in line for kw in exclude_keywords):
+            stats["excluded"] += 1
+            continue
 
-print("\n--- ЭТАП 3: Обработка AdGuard ---")
-for line in adg_data:
-    line = line.strip().lower()
-    if not line or line.startswith(('!', '@@', '[', '#')) or '#' in line: continue
-    if any(kw in line for kw in exclude_keywords):
-        stats["excluded"] += 1
-        continue
-    
-    clean_ip_part = line.replace('||', '').split('^')[0].split('$')[0].split('/')[0]
-    if ip_regex.match(clean_ip_part):
-        all_ips.add(f"{clean_ip_part}/32")
-        continue
-    
-    if line.startswith('||'):
-        domain = re.split(r'[\^\/\$\|]', line[2:])[0]
-        if domain and '.' in domain and '*' not in domain:
-            all_domains.add(domain)
-            stats["adg_total"] += 1
+        # ПАРСИНГ ФОРМАТА SURGE (Loyalsoldier)
+        if "," in line and not line.startswith("||"):
+            parts = line.split(',')
+            if len(parts) >= 2:
+                rule_type = parts[0].strip()
+                val = parts[1].strip()
+                if "ip-cidr" in rule_type:
+                    all_ips.add(val if '/' in val else f"{val}/32")
+                    local_ip_count += 1
+                elif "domain" in rule_type:
+                    all_domains.add(val)
+                    local_domain_count += 1
+            continue
 
-print("\n--- ЭТАП 4: Очистка поддоменов (это может занять время) ---")
+        # ПАРСИНГ ФОРМАТА ADGUARD / EASYLIST
+        # Вырезаем домены или IP из синтаксиса ||domain.com^$third-party
+        clean = line.replace('||', '').split('^')[0].split('$')[0].split('/')[0].split(':')[0].split('*')[0]
+        
+        if ip_regex.match(clean):
+            all_ips.add(f"{clean}/32")
+            local_ip_count += 1
+        elif '.' in clean and len(clean) > 3:
+            all_domains.add(clean)
+            local_domain_count += 1
+            
+    print(f"  -> Извлечено доменов: {local_domain_count} | IP: {local_ip_count}")
+
+print("\n=== ЭТАП 2: ОЧИСТКА ПОДДОМЕНОВ И ДУБЛИКАТОВ ===")
+print("[*] Анализ иерархии доменов (это займет некоторое время)...")
 start_time = time.time()
+
+# Сортируем от коротких доменов к длинным для эффективного поиска поддоменов
 sorted_raw = sorted(list(all_domains), key=len)
 optimized_domains = set()
-
 total_to_check = len(sorted_raw)
+
 for idx, d in enumerate(sorted_raw):
-    if idx % 5000 == 0:
-        print(f"[*] Обработано {idx} из {total_to_check} доменов...")
-    
+    if idx % 5000 == 0 and idx > 0:
+        print(f"  [*] Обработано {idx} из {total_to_check} доменов...")
+        
     parts = d.split('.')
     is_redundant = False
+    
+    # Проверяем, есть ли родительский домен уже в нашем очищенном списке
     for i in range(1, len(parts) - 1):
         parent = ".".join(parts[i:])
         if parent in optimized_domains:
             is_redundant = True
             break
+            
     if not is_redundant:
         optimized_domains.add(d)
 
-print(f"\n[+] Оптимизация завершена за {round(time.time() - start_time, 2)} сек.")
+print(f"[+] Оптимизация успешно завершена за {round(time.time() - start_time, 2)} сек.")
 
-final_domains = sorted([f"DOMAIN-SUFFIX,{d}" for d in optimized_domains])
+print("\n=== ЭТАП 3: ФОРМИРОВАНИЕ ФАЙЛА RULE-SET ===")
+print("[*] Сортировка правил по алфавиту и вынос IP-адресов в конец списка...")
+
+final_list = sorted([f"DOMAIN-SUFFIX,{d}" for d in optimized_domains])
 final_ips = sorted([f"IP-CIDR,{ip}" for ip in all_ips])
 
-# В RULE-SET формат обычно: ТИП,ЗНАЧЕНИЕ (без REJECT в конце каждой строки, 
-# так как действие REJECT указывается в самом Shadowrocket при добавлении ссылки)
-with open(output_file, 'w', encoding='utf-8') as out:
-    out.write("\n".join(final_domains))
+with open(output_file, 'w', encoding='utf-8') as f:
+    f.write("\n".join(final_list))
     if final_ips:
-        out.write("\n" + "\n".join(final_ips))
+        f.write("\n" + "\n".join(final_ips))
 
-print("\n" + "="*30)
-print(f"Успех! Файл для RULE-SET '{output_file}' создан.")
-print(f"Итого правил: {len(final_domains) + len(final_ips)}")
-print("="*30)
+print("\n" + "="*45)
+print(f"ГОТОВО! Файл сохранен как: {output_file}")
+print("-" * 45)
+print(f"Уникальных доменов:        {len(optimized_domains)}")
+print(f"Уникальных IP-адресов:     {len(all_ips)}")
+print(f"Удалено по ключевым словам:{stats['excluded']}")
+print("-" * 45)
+print(f"ВСЕГО ПРАВИЛ В ФАЙЛЕ:      {len(final_list) + len(final_ips)}")
+print("="*45)
 EOF
 
-# Принудительно выставляем DNS Google ещё раз
+# ==========================================
+# --- ЧАСТЬ 3: ПОВТОРНАЯ НАСТРОЙКА И ЗАПУСК ---
+# ==========================================
+echo "[*] Настройка DNS (Этап 2 - перед запуском парсера)..."
 echo "nameserver 8.8.8.8" > /etc/resolv.conf
 echo "nameserver 8.8.4.4" >> /etc/resolv.conf
 
-# Проверка интернета
-echo "[*] Проверка соединения с интернетом..."
+echo "[*] Повторная проверка интернета..."
 ping -c 3 google.com
 
-# --- ЧАСТЬ 3: ЗАПУСК ---
-python3 "AdGuard and Loyalsoldier REJECT RULES.py"
+echo "[*] Запуск скрипта генерации правил..."
+python3 "AdGuard_and_Loyalsoldier_REJECT_RULES.py"
