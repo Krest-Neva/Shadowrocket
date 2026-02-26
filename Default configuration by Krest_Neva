@@ -80,6 +80,7 @@ AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
 AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 
 #Реклама, трекеры, аналитика💩 (с защитой от ошибок)
+DOMAIN-SUFFIX,instagram.com,BESTPROXY,pre-matching,extended-matching
 DOMAIN-SUFFIX,github.com,BESTPROXY,pre-matching,extended-matching
 DOMAIN-SUFFIX,githubusercontent.com,BESTPROXY,pre-matching,extended-matching
 RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/AdGuard_and_Loyalsoldier_REJECT_RULES.list,REJECT
