@@ -1,9 +1,8 @@
 #ADGUARD AND LOYALSOLDIER ADBLOCK SCRIPT
 #СКРИПТ СОЗДАН ДЛЯ ISH https://apps.apple.com/ru/app/ish-shell/id1436902243
-#ФОРМИРУЕТ СПИСОК ПРАВИЛ ДЛЯ SHADOWROCKET ДЛЯ БЛОКИРОВКИ РЕКЛАМЫ, ТРЕКЕРОВ, АНАЛИТИКИ И ФИШИНГОВЫХ САЙТОВ.
+#ФОРМИРУЕТ RULE-SET ДЛЯ SHADOWROCKET ДЛЯ БЛОКИРОВКИ РЕКЛАМЫ, ТРЕКЕРОВ, АНАЛИТИКИ И ФИШИНГОВЫХ САЙТОВ.
 
-
-
+#!/bin/sh
 clear
 # ==========================================
 # --- ЧАСТЬ 1: ПЕРВИЧНАЯ НАСТРОЙКА СЕТИ ---
@@ -11,6 +10,9 @@ clear
 echo "[*] Настройка DNS (Этап 1)..."
 echo "nameserver 8.8.8.8" > /etc/resolv.conf
 echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+echo "nameserver 94.140.14.14" >> /etc/resolv.conf
+echo "nameserver 94.140.15.15" >> /etc/resolv.conf
+echo "nameserver 1.1.1.1" >> /etc/resolv.conf
 
 echo "[*] Проверка соединения с интернетом..."
 ping -c 3 google.com
@@ -18,7 +20,15 @@ ping -c 3 google.com
 echo "[*] Обновление системы и установка зависимостей..."
 apk update
 apk upgrade
-apk add python3 py3-pip curl
+# добавляем утилиты для резервного скачивания, а также tor и torsocks
+apk add python3 py3-pip curl wget aria2 git openssl ca-certificates tor torsocks
+
+# ==========================================
+# --- ОЧИСТКА СТАРЫХ ФАЙЛОВ ---
+# ==========================================
+echo "[*] Принудительное удаление старых файлов перед сборкой..."
+rm -f "AdGuard_and_Loyalsoldier_REJECT_RULES.list"
+rm -f "ErrorsAdBlockScript"
 
 # ==========================================
 # --- ЧАСТЬ 2: СОЗДАНИЕ ПАРСЕРА ---
@@ -28,168 +38,473 @@ import urllib.request
 import subprocess
 import re
 import time
+import os
+import sys
+import tempfile
+import math
+import shutil
 
-# Строгий порядок источников. Для трекеров добавлено зеркало на случай полной блокировки основы.
+SCRIPT_START_TIME = time.time()
+
+# -------------------------
+# ИСТОЧНИКИ
+# -------------------------
 urls = {
     "1) Loyalsoldier": "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/reject.txt",
     "2) AdGuard (Base)": "https://filters.adtidy.org/ios/filters/15_optimized.txt",
-    "3) Фильтр мобильной рекламы": "https://filters.adtidy.org/ios/filters/11_optimized.txt",
-    "4) Дополнительный фильтр (RU)": "https://filters.adtidy.org/ios/filters/1_optimized.txt",
-    "5) Дополнительный фильтр для блокировки трекеров": [
+    "3) Дополнение к AdGuard 1": "https://filters.adtidy.org/ios/filters/2_optimized.txt",
+    "4) Дополнение к AdGuard 2": "https://filters.adtidy.org/ios/filters/3_optimized.txt",
+    "5.1) Дополнение к AdGuard 3.1": "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=adblockplus&showintro=0&mimetype=plaintext",
+    "5.2) Дополнение к AdGuard 3.2 (fallback)": "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=adblockplus&mimetype=plaintext",
+    "6) Фильтр мобильной рекламы": "https://filters.adtidy.org/ios/filters/11_optimized.txt",
+    "7) Дополнительный фильтр (RU)": "https://filters.adtidy.org/ios/filters/1_optimized.txt",
+    "8) Дополнительный фильтр для блокировки трекеров": [
         "https://easylist-downloads.adblockplus.org/cntblock.txt",
         "https://raw.githubusercontent.com/easylist/easylist/master/easyprivacy/easyprivacy_trackers.txt"
     ],
-    "6) Анти фишинг": "https://malware-filter.gitlab.io/malware-filter/phishing-filter-ag.txt"
+    "9) Анти фишинг": "https://malware-filter.gitlab.io/malware-filter/phishing-filter-ag.txt"
 }
 
 output_file = "AdGuard_and_Loyalsoldier_REJECT_RULES.list"
 exclude_keywords = [
-    "ads", "analytics", "tracker", "tracking", "tracer", 
-    "metrics", "metrica", "metrika", "telemetry", "pixel", 
+    "ads", "analytics", "tracker", "tracking", "tracer",
+    "metrics", "metrica", "metrika", "telemetry", "pixel",
     "beacon", "adserver", "doubleclick", "adjust", "appsflyer"
 ]
 
-# Список расширений, которые нельзя блокировать как целые домены (защита от мусора)
-dangerous_tlds = {".com", ".net", ".org", ".ru", ".site", ".info", ".xyz", ".bid", ".club", ".shop", ".html", ".xml", ".gif", ".js", ".php", ".top"}
+# Белый список — ТОЛЬКО точные домены (exact match). Не domain-suffix!
+protected_domains = {
+    "facetime.apple.com", "stun.apple.com", "apple.com", "apple-pki.com", "icloud.com",
+    "icloud-content.com", "mzstatic.com", "push.apple.com", "aaplimg.com",
+    "github.com", "githubusercontent.com", "githubassets.com", "google.com", "googleapis.com",
+    "gstatic.com", "ggpht.com", "googlevideo.com", "firebase.google.com",
+    "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com",
+    "microsoft.com", "windows.com", "windowsupdate.com", "msftconnecttest.com", "msftncsi.com",
+    "azure.com", "azureedge.net", "azurefd.net",
+    "amazon.com", "amazonaws.com", "aws.amazon.com", "cloudfront.net", "amazon-adsystem.com",
+    "facebook.com", "fb.com", "fbcdn.net", "youtube.com", "youtu.be", "googleapis.com",
+    "recaptcha.net", "npmjs.org", "pypi.org", "gitlab.com", "bitbucket.org", "cloudflare.com",
+    "one.one.one.one", "dns.google", "quad9.net", "fastly.net", "jsdelivr.net",
+    "unpkg.com", "akamaiedge.net", "akamaized.net", "akamai.net", "auth0.com", "okta.com",
+    "login.microsoftonline.com", "accounts.google.com", "hcaptcha.com", "challenges.cloudflare.com",
+    "firebaseio.com", "android.com"
+}
+
+# Белый список IP — критические адреса, которые нельзя блокировать (DNS и т.д.)
+protected_ips = {
+    "1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4", "9.9.9.9", "149.112.112.112",
+    "94.140.14.14", "94.140.15.15", "94.140.14.15", "94.140.14.1",
+    "76.76.2.0", "76.76.10.0", "208.67.222.222", "208.67.220.220"
+}
+
+dangerous_tlds = {"com", "net", "org", "ru", "site", "info", "xyz", "bid", "club", "shop", "html", "xml", "gif", "js", "php", "top"}
+
+AGGREGATE_THRESHOLD = 0
 
 headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'}
-ip_regex = re.compile(r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$')
+ip_regex = re.compile(r'^(\d{1,3}(?:\.\d{1,3}){3})(?:/\d{1,2})?$')
+
+errors_output_file = "ErrorsAdBlockScript"
+download_report = {}
+failed_lists = []
+
+DNS_SERVERS = [
+    "8.8.8.8",
+    "8.8.4.4",
+    "94.140.14.14",
+    "94.140.15.15",
+    "1.1.1.1"
+]
+
+def setup_dns_and_test():
+    print("    [net] Настройка DNS...")
+    try:
+        with open("/etc/resolv.conf", "w") as f:
+            for dns in DNS_SERVERS:
+                f.write(f"nameserver {dns}\n")
+        result = subprocess.run(
+            ["ping", "-c", "1", "google.com"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=5
+        )
+        if result.returncode == 0:
+            print("    [net] Интернет доступен")
+            return True
+        else:
+            print("    [net] Ping не прошёл")
+            return False
+    except Exception:
+        return False
+
+def full_network_diagnostics():
+    print("    [diag] Выполняется полная диагностика сети (ошибка скачивания)...")
+    try:
+        print("      - Ping 8.8.8.8:")
+        subprocess.run(["ping", "-c", "3", "8.8.8.8"])
+        print("      - Ping google.com:")
+        subprocess.run(["ping", "-c", "3", "google.com"])
+        print("      - Текущий resolv.conf:")
+        subprocess.run(["cat", "/etc/resolv.conf"])
+    except Exception as e:
+        print(f"      [!] Ошибка при диагностике: {e}")
+
+def print_progress(prefix, current, total, bar_len=30, start_time=None):
+    if total <= 0:
+        return
+    frac = current / float(total)
+    filled = int(round(bar_len * frac))
+    bar = '=' * filled + '-' * (bar_len - filled)
+    pct = frac * 100.0
+    elapsed = ''
+    if start_time:
+        sec = time.time() - start_time
+        elapsed = f" | elapsed {int(sec)}s"
+    sys.stdout.write(f"\r{prefix} [{bar}] {current}/{total} ({pct:.1f}%)" + elapsed)
+    sys.stdout.flush()
+    if current == total:
+        sys.stdout.write("\n")
+        sys.stdout.flush()
+
+def download_with_urllib(url, headers, timeout=10):
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        content_length = resp.getheader('Content-Length')
+        try:
+            total = int(content_length) if content_length else None
+        except Exception:
+            total = None
+        out = bytearray()
+        chunk_size = 8192
+        read = 0
+        start = time.time()
+        while True:
+            chunk = resp.read(chunk_size)
+            if not chunk:
+                break
+            out.extend(chunk)
+            read += len(chunk)
+            if total:
+                print_progress("    [dl] urllib", min(read, total), total, start_time=start)
+            else:
+                kb = read // 1024
+                sys.stdout.write(f"\r    [dl] urllib downloaded {kb} KB")
+                sys.stdout.flush()
+        if not total:
+            sys.stdout.write("\n")
+        return out.decode('utf-8', errors='ignore').splitlines(), "urllib"
+
+def download_with_curl_to_file(url, headers, timeout=20, curl_args=None):
+    tmp = tempfile.NamedTemporaryFile(delete=False)
+    tmp.close()
+    base = ['curl', '-L', '--fail', '--silent', '--show-error', '--progress-bar', '-A', headers['User-Agent']]
+    if curl_args:
+        cmd = base + curl_args + ['-o', tmp.name, url]
+    else:
+        cmd = base + ['-o', tmp.name, url]
+    sys.stdout.write("    [dl] curl fallback: starting download (see progress bar)...\n")
+    sys.stdout.flush()
+    try:
+        proc = subprocess.run(cmd, timeout=timeout)
+        if proc.returncode == 0:
+            with open(tmp.name, 'rb') as f:
+                data = f.read().decode('utf-8', errors='ignore').splitlines()
+            os.unlink(tmp.name)
+            return data, "curl " + (" ".join(curl_args) if curl_args else "default")
+        else:
+            try: os.unlink(tmp.name)
+            except Exception: pass
+            return [], None
+    except Exception:
+        try: os.unlink(tmp.name)
+        except Exception: pass
+        return [], None
+
+def try_command_variants(url):
+    ua = headers['User-Agent']
+    variants = []
+    curl_common = ['curl', '-s', '-L', '-k', '-A', ua]
+    variants.append((curl_common + [url], False, "curl default"))
+    variants.append((curl_common + ['--http1.1', url], False, "curl http1.1"))
+    variants.append((curl_common + ['--http2', url], False, "curl http2"))
+    variants.append((curl_common + ['--compressed', url], False, "curl compressed"))
+    variants.append((curl_common + ['--ipv4', url], False, "curl ipv4"))
+    variants.append((curl_common + ['--ipv6', url], False, "curl ipv6"))
+    variants.append((['curl', '-s', '-L', '-k', '-A', 'Wget/1.20', url], False, "curl ua=Wget"))
+
+    if shutil.which('wget'):
+        variants.append((['wget', '-q', '-O', '-', url], False, "wget stdout"))
+        variants.append((['wget', '--no-check-certificate', '-q', '-O', '-', url], False, "wget no-check"))
+
+    if shutil.which('aria2c'):
+        variants.append((['aria2c', '-q', '-x', '4', '-o', 'aria_tmp_dl', url], True, "aria2c"))
+
+    if 'raw.githubusercontent.com' in url or 'githubusercontent' in url:
+        variants.append((['git', 'clone', '--depth', '1', url], True, "git clone (best-effort)"))
+
+    for cmd, is_file_writer, descr in variants:
+        try:
+            sys.stdout.write(f"    [attempt] running: {' '.join(cmd[:6])}... ({descr})\n")
+            sys.stdout.flush()
+            if not is_file_writer:
+                tmp = tempfile.NamedTemporaryFile(delete=False)
+                tmp.close()
+                try:
+                    proc = subprocess.run(cmd, stdout=open(tmp.name, 'wb'), stderr=subprocess.DEVNULL, timeout=20)
+                    if proc.returncode == 0:
+                        with open(tmp.name, 'rb') as f:
+                            data = f.read().decode('utf-8', errors='ignore').splitlines()
+                        os.unlink(tmp.name)
+                        if data and len(data) > 0:
+                            return data, descr
+                    else:
+                        try: os.unlink(tmp.name)
+                        except Exception: pass
+                except Exception:
+                    try: os.unlink(tmp.name)
+                    except Exception: pass
+                    continue
+            else:
+                proc = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=40)
+                if proc.returncode == 0:
+                    if cmd[0] == 'aria2c':
+                        try:
+                            with open('aria_tmp_dl', 'rb') as f:
+                                data = f.read().decode('utf-8', errors='ignore').splitlines()
+                            os.unlink('aria_tmp_dl')
+                            if data and len(data) > 0:
+                                return data, descr
+                        except Exception:
+                            try: os.unlink('aria_tmp_dl')
+                            except Exception: pass
+                            continue
+        except Exception:
+            continue
+    return [], None
+
+def is_protected(d):
+    return d in protected_domains
 
 def is_valid_domain(d):
-    """Валидатор для отсева мусорных правил и обрывков"""
-    if not d or len(d) < 4: return False
-    
-    # Отсев правил, начинающихся с точки или дефиса (твои ошибки в списке)
+    # Если строка пустая, слишком короткая или содержит % (URL-encoded мусор), отсекаем
+    if not d or len(d) < 4 or '%' in d: return False
     if d.startswith('.') or d.startswith('-'): return False
-    
-    # Отсев правил, заканчивающихся на точку или дефис
     if d.endswith('.') or d.endswith('-'): return False
-
-    # Отсев опасных TLD (нельзя блокировать просто .com или .net)
-    if f".{d}" in dangerous_tlds or d in dangerous_tlds: return False
-
-    # Проверка на наличие хотя бы одной точки (обязательно для домена)
     if '.' not in d: return False
-
-    # Отсев технических символов из URL (твои ошибки: ?, |, =, *, & и т.д.)
-    if any(char in d for char in ['?', '|', '=', '*', '(', ')', ',', '&', ':', '[', ']', '/']):
-        return False
-    
+    # Список запрещенных символов в домене
+    if any(char in d for char in ['?', '|', '=', '*', '(', ')', ',', '&', ':', '[', ']', '/', '\\', '%']): return False
+    parts = d.split('.')
+    if len(parts) == 1: return False
+    if parts[-1].lower() in dangerous_tlds and len(parts) == 1: return False
+    if is_protected(d): return False
     return True
 
 def download_data(name, url_or_urls):
-    print(f"  [*] Скачивание: {name}...")
-    urls_to_try = url_or_urls if isinstance(url_or_urls, list) else [url_or_urls]
+    print(f"\n  [*] Скачивание: {name}...")
+    setup_dns_and_test()
     
+    urls_to_try = url_or_urls if isinstance(url_or_urls, list) else [url_or_urls]
+
     for url in urls_to_try:
-        # СПОСОБ 1: Стандартный Python (urllib)
+        for attempt in range(1, 4):
+            try:
+                lines, method = download_with_urllib(url, headers, timeout=10)
+                if len(lines) > 10:
+                    print(f"  [+] Успешно загружено строк: {len(lines)} (method: {method})")
+                    return lines, method
+            except Exception: pass
+
+            try:
+                lines, method = download_with_curl_to_file(url, headers, timeout=20)
+                if lines and len(lines) > 10:
+                    print(f"  [+] Успешно загружено строк: {len(lines)} (method: {method})")
+                    return lines, method
+            except Exception: pass
+
+            try:
+                lines, method = try_command_variants(url)
+                if lines and len(lines) > 10:
+                    print(f"  [+] Успешно загружено строк: {len(lines)} (method: {method})")
+                    return lines, method
+            except Exception: pass
+
+            sys.stdout.write(f"    [!] попытка {attempt} не удалась, повтор через {int(1 + attempt*0.5)}s...\n")
+            sys.stdout.flush()
+            time.sleep(1 + attempt * 0.5)
+
+        # Если обычные методы не помогли - полная диагностика
+        full_network_diagnostics()
+
+        # Tor fallback (только при полной ошибке)
+        print("  [tor] Попытка через Tor...")
         try:
-            req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=20) as resp:
-                lines = resp.read().decode('utf-8', errors='ignore').splitlines()
-                if len(lines) > 50:
-                    print(f"  [+] Успешно загружено строк: {len(lines)}")
-                    print("  [*] Извлечение доменов...")
-                    return lines
+            subprocess.run(["tor"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
         except Exception:
-            pass 
-        
-        # СПОСОБ 2: Системный curl (fallback)
+            pass
+
         try:
-            result = subprocess.run(['curl', '-s', '-L', '-k', '-A', headers['User-Agent'], url], capture_output=True, timeout=20)
-            if result.returncode == 0 and result.stdout:
-                lines = result.stdout.decode('utf-8', errors='ignore').splitlines()
-                if len(lines) > 50:
-                    print(f"  [+] Успешно загружено строк: {len(lines)} (через резервный метод)")
-                    print("  [*] Извлечение доменов...")
-                    return lines
+            lines = []
+            proc = subprocess.run(
+                ["torsocks", "curl", "-s", "-L", url],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                timeout=25
+            )
+            if proc.returncode == 0:
+                lines = proc.stdout.decode("utf-8", errors="ignore").splitlines()
+                if len(lines) > 10:
+                    print("  [+] Успешно через Tor")
+                    return lines, "torsocks curl"
         except Exception:
-            pass 
-            
+            pass
+
+        print("  [tor] Tor fallback не помог.")
+
     print(f"  [!] Ошибка: Не удалось скачать {name} ни одним из способов.")
-    return []
+    return [], None
 
 all_domains = set()
 all_ips = set()
-stats = {"excluded": 0, "junk": 0}
+stats = {"excluded": 0, "junk": 0, "protected": 0}
+errors = []
 
 print("\n=== ЭТАП 1: ЗАГРУЗКА И ОБРАБОТКА ДАННЫХ ===")
 
 for name, url in urls.items():
-    print(f"\n>> Обработка источника: {name}")
-    data = download_data(name, url)
+    lines, method = download_data(name, url)
+    if lines and method:
+        download_report[name] = {"status": "ok", "method": method, "lines": len(lines)}
+    else:
+        download_report[name] = {"status": "failed", "method": None, "lines": 0}
+        failed_lists.append(name)
+        sys.stdout.write(f"[!] Не удалось скачать список: {name}\n")
+        sys.stdout.flush()
+        
+    if not lines:
+        data = []
+    else:
+        data = lines
+
     local_domain_count = 0
     local_ip_count = 0
-    
-    for line in data:
-        line = line.strip().lower()
-        
-        # Пропуск пустых строк, комментариев и косметических правил (CSS/JS)
+    total_lines = len(data)
+    start_parse = time.time()
+    for idx, raw_line in enumerate(data, start=1):
+        if idx % 500 == 0 or idx == total_lines:
+            print_progress("    [parse]", idx, total_lines, bar_len=30, start_time=start_parse)
+
+        line = raw_line.strip().lower()
+
         if not line or line.startswith(('!', '[', '@@')) or '##' in line or '#@#' in line or line.startswith('#'):
             continue
-        
-        # Исключение по ключевым словам
+
         if any(kw in line for kw in exclude_keywords):
             stats["excluded"] += 1
+            errors.append(("excluded_keyword", name, raw_line))
             continue
 
-        # ПАРСИНГ ФОРМАТА SURGE (Loyalsoldier)
         if "," in line and not line.startswith("||"):
-            parts = line.split(',')
+            parts = [p.strip() for p in line.split(',', 2)]
             if len(parts) >= 2:
-                rule_type = parts[0].strip()
-                val = parts[1].strip()
+                rule_type = parts[0]
+                val = parts[1]
                 if "ip-cidr" in rule_type:
-                    all_ips.add(val if '/' in val else f"{val}/32")
-                    local_ip_count += 1
+                    pure_ip = val.split('/')[0]
+                    if pure_ip in protected_ips:
+                        stats["protected"] += 1
+                        errors.append(("protected_ip", name, val))
+                    else:
+                        all_ips.add(val if '/' in val else f"{val}/32")
+                        local_ip_count += 1
                 elif "domain" in rule_type:
                     if is_valid_domain(val):
-                        all_domains.add(val)
-                        local_domain_count += 1
+                        if is_protected(val):
+                            stats["protected"] += 1
+                            errors.append(("protected_domain", name, val))
+                        else:
+                            all_domains.add(val)
+                            local_domain_count += 1
                     else:
                         stats["junk"] += 1
+                        errors.append(("junk_invalid_domain", name, val))
             continue
 
-        # ПАРСИНГ ФОРМАТА ADGUARD / EASYLIST
-        # Вырезаем домены или IP из синтаксиса ||domain.com^$third-party
-        clean = line.replace('||', '').split('^')[0].split('$')[0].split('/')[0].split(':')[0].split('*')[0]
-        
+        clean = line
+        clean = re.sub(r'^[|\s]*\|\|', '', clean)
+        clean = re.sub(r'^\|', '', clean)
+        clean = re.sub(r'^https?://', '', clean)
+        clean = re.sub(r'^www\.', '', clean)
+        clean = clean.split('^')[0].split('$')[0].split('/')[0].split(':')[0].split('*')[0].strip()
+        clean = clean.strip('.').strip()
+
+        if not clean:
+            stats["junk"] += 1
+            errors.append(("junk_empty_after_clean", name, raw_line))
+            continue
+
         if ip_regex.match(clean):
-            all_ips.add(f"{clean}/32")
-            local_ip_count += 1
+            pure_ip = clean.split('/')[0]
+            if pure_ip in protected_ips:
+                stats["protected"] += 1
+                errors.append(("protected_ip", name, clean))
+            else:
+                if '/' in clean:
+                    all_ips.add(clean)
+                else:
+                    all_ips.add(f"{clean}/32")
+                local_ip_count += 1
         elif is_valid_domain(clean):
-            all_domains.add(clean)
-            local_domain_count += 1
+            if is_protected(clean):
+                stats["protected"] += 1
+                errors.append(("protected_domain", name, clean))
+            else:
+                all_domains.add(clean)
+                local_domain_count += 1
         else:
             stats["junk"] += 1
-            
+            errors.append(("junk_invalid_line", name, raw_line))
+
     print(f"  -> Извлечено доменов: {local_domain_count} | IP: {local_ip_count}")
 
 print("\n=== ЭТАП 2: ОЧИСТКА ПОДДОМЕНОВ И ДУБЛИКАТОВ ===")
 print("[*] Анализ иерархии доменов (это займет некоторое время)...")
 start_time = time.time()
 
-# Сортируем от коротких доменов к длинным для эффективного поиска поддоменов
-sorted_raw = sorted(list(all_domains), key=len)
+sorted_raw = sorted(list(all_domains), key=lambda x: x.count('.'))
 optimized_domains = set()
 total_to_check = len(sorted_raw)
+start_opt = time.time()
 
-for idx, d in enumerate(sorted_raw):
-    if idx % 10000 == 0 and idx > 0:
-        print(f"  [*] Обработано {idx} из {total_to_check} доменов...")
-        
-    parts = d.split('.')
-    is_redundant = False
-    
-    # Проверяем, есть ли родительский домен уже в нашем очищенном списке
-    for i in range(1, len(parts) - 1):
-        parent = ".".join(parts[i:])
-        if parent in optimized_domains:
-            is_redundant = True
-            break
-            
-    if not is_redundant:
-        optimized_domains.add(d)
+if AGGREGATE_THRESHOLD and AGGREGATE_THRESHOLD > 1:
+    parent_groups = {}
+    for idx, d in enumerate(sorted_raw, start=1):
+        if idx % 5000 == 0 or idx == total_to_check:
+            print_progress("    [group]", idx, total_to_check, bar_len=30, start_time=start_opt)
+        p = '.'.join(d.split('.')[-2:])
+        parent_groups.setdefault(p, []).append(d)
+    pg_items = list(parent_groups.items())
+    total_pg = len(pg_items)
+    start_replace = time.time()
+    for i, (parent, members) in enumerate(pg_items, start=1):
+        print_progress("    [aggregate]", i, total_pg, bar_len=30, start_time=start_replace)
+        if len(members) >= AGGREGATE_THRESHOLD and not is_protected(parent):
+            optimized_domains.add(parent)
+        else:
+            for m in members:
+                optimized_domains.add(m)
+else:
+    for idx, d in enumerate(sorted_raw, start=1):
+        if idx % 1000 == 0 or idx == total_to_check:
+            print_progress("    [optimize]", idx, total_to_check, bar_len=30, start_time=start_time)
+        parts = d.split('.')
+        is_redundant = False
+        for i in range(1, len(parts) - 1):
+            parent = ".".join(parts[i:])
+            if parent in optimized_domains:
+                is_redundant = True
+                break
+        if not is_redundant:
+            optimized_domains.add(d)
 
 print(f"[+] Оптимизация успешно завершена за {round(time.time() - start_time, 2)} сек.")
 
@@ -199,10 +514,42 @@ print("[*] Сортировка правил по алфавиту и вынос
 final_list = sorted([f"DOMAIN-SUFFIX,{d}" for d in optimized_domains])
 final_ips = sorted([f"IP-CIDR,{ip}" for ip in all_ips])
 
+total_write = len(final_list) + len(final_ips)
+start_write = time.time()
 with open(output_file, 'w', encoding='utf-8') as f:
-    f.write("\n".join(final_list))
+    written = 0
+    for line in final_list:
+        f.write(line + "\n")
+        written += 1
+        if written % 1000 == 0 or written == total_write:
+            print_progress("    [write]", written, total_write, bar_len=30, start_time=start_write)
     if final_ips:
-        f.write("\n" + "\n".join(final_ips))
+        for ipline in final_ips:
+            f.write(ipline + "\n")
+            written += 1
+            if written % 1000 == 0 or written == total_write:
+                print_progress("    [write]", written, total_write, bar_len=30, start_time=start_write)
+
+# === ЗАПИСЬ ФАЙЛА С ОШИБКАМИ И ОТЧЁТОМ ===
+try:
+    total_errors = len(errors)
+    with open(errors_output_file, 'w', encoding='utf-8') as ef:
+        ef.write(f"Download report generated at: {time.ctime()}\n")
+        ef.write("Source\tStatus\tMethod\tLines\n")
+        for name, info in download_report.items():
+            ef.write(f"{name}\t{info['status']}\t{info['method']}\t{info['lines']}\n")
+        ef.write("\n")
+        ef.write("Dropped entries (REASON<TAB>SOURCE<TAB>ORIGINAL_LINE):\n")
+        if total_errors > 0:
+            start_err = time.time()
+            for idx, (reason, src, orig) in enumerate(errors, start=1):
+                ef.write(f"{reason}\t{src}\t{orig}\n")
+                if idx % 1000 == 0 or idx == total_errors:
+                    print_progress("    [errors_write]", idx, total_errors, bar_len=30, start_time=start_err)
+except Exception as e:
+    sys.stdout.write(f"\n[!] Не удалось записать {errors_output_file}: {e}\n")
+
+TOTAL_TIME = round(time.time() - SCRIPT_START_TIME, 2)
 
 print("\n" + "="*45)
 print(f"ГОТОВО! Файл сохранен как: {output_file}")
@@ -211,8 +558,23 @@ print(f"Уникальных доменов:        {len(optimized_domains)}")
 print(f"Уникальных IP-адресов:     {len(all_ips)}")
 print(f"Удалено по ключевым словам:{stats['excluded']}")
 print(f"Отсеяно ошибочно добавленных доменов:  {stats['junk']}")
+print(f"Защищено (white-list):    {stats['protected']}")
 print("-" * 45)
 print(f"ВСЕГО ПРАВИЛ В ФАЙЛЕ:      {len(final_list) + len(final_ips)}")
+print(f"ВСЕГО ОТБРОШЕНО СТРОК:     {len(errors)}")
+print(f"ОБЩЕЕ ВРЕМЯ ВЫПОЛНЕНИЯ:    {TOTAL_TIME} сек.")
+print("-" * 45)
+
+# === ОТЧЁТ О СКАЧИВАНИИ (ВЫВОД В КОНСОЛЬ) ===
+print("Download summary:")
+for name, info in download_report.items():
+    print(f"  - {name}: {info['status']} (method: {info['method']}, lines: {info['lines']})")
+if failed_lists:
+    print("\nFailed to download the following lists:")
+    for name in failed_lists:
+        print(f"  - {name}")
+else:
+    print("\nAll lists downloaded successfully.")
 print("="*45)
 EOF
 
@@ -222,6 +584,9 @@ EOF
 echo "[*] Настройка DNS (Этап 2 - перед запуском парсера)..."
 echo "nameserver 8.8.8.8" > /etc/resolv.conf
 echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+echo "nameserver 94.140.14.14" >> /etc/resolv.conf
+echo "nameserver 94.140.15.15" >> /etc/resolv.conf
+echo "nameserver 1.1.1.1" >> /etc/resolv.conf
 
 echo "[*] Повторная проверка интернета..."
 ping -c 3 google.com
