@@ -1,6 +1,8 @@
 #ADGUARD AND LOYALSOLDIER ADBLOCK SCRIPT
+
 #СКРИПТ СОЗДАН ДЛЯ ISH https://apps.apple.com/ru/app/ish-shell/id1436902243
 #ФОРМИРУЕТ RULE-SET ДЛЯ SHADOWROCKET ДЛЯ БЛОКИРОВКИ РЕКЛАМЫ, ТРЕКЕРОВ, АНАЛИТИКИ И ФИШИНГОВЫХ САЙТОВ.
+
 
 #!/bin/sh
 clear
@@ -20,7 +22,6 @@ ping -c 3 google.com
 echo "[*] Обновление системы и установка зависимостей..."
 apk update
 apk upgrade
-# добавляем утилиты для резервного скачивания, а также tor и torsocks
 apk add python3 py3-pip curl wget aria2 git openssl ca-certificates tor torsocks
 
 # ==========================================
@@ -28,7 +29,7 @@ apk add python3 py3-pip curl wget aria2 git openssl ca-certificates tor torsocks
 # ==========================================
 echo "[*] Принудительное удаление старых файлов перед сборкой..."
 rm -f "AdGuard_and_Loyalsoldier_REJECT_RULES.list"
-rm -f "ErrorsAdBlockScript"
+rm -f "LogsAdBlockScript"
 
 # ==========================================
 # --- ЧАСТЬ 2: СОЗДАНИЕ ПАРСЕРА ---
@@ -47,10 +48,15 @@ import shutil
 SCRIPT_START_TIME = time.time()
 
 # -------------------------
-# ИСТОЧНИКИ
+# ИСТОЧНИКИ (чёрные списки) – добавлены fallback-ссылки
 # -------------------------
 urls = {
-    "1) Loyalsoldier": "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/reject.txt",
+    "1) Loyalsoldier": [
+        "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/reject.txt",
+        "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/ruleset/reject.txt",
+        "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/reject.txt",
+        "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/reject.txt"
+    ],
     "2) AdGuard (Base)": "https://filters.adtidy.org/ios/filters/15_optimized.txt",
     "3) Дополнение к AdGuard 1": "https://filters.adtidy.org/ios/filters/2_optimized.txt",
     "4) Дополнение к AdGuard 2": "https://filters.adtidy.org/ios/filters/3_optimized.txt",
@@ -65,6 +71,36 @@ urls = {
     "9) Анти фишинг": "https://malware-filter.gitlab.io/malware-filter/phishing-filter-ag.txt"
 }
 
+# -------------------------
+# БЕЛЫЕ СПИСКИ (с fallback-ссылками)
+# -------------------------
+white_urls = {
+    "Белый список 1 (Direct)": [
+        "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/direct.txt",
+        "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/ruleset/direct.txt",
+        "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/direct.txt",
+        "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/direct.txt"
+    ],
+    "Белый список 2 (Proxy)": [
+        "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/proxy.txt",
+        "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/ruleset/proxy.txt",
+        "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/proxy.txt",
+        "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/proxy.txt"
+    ],
+    "Белый список Apple": [
+        "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/apple.txt",
+        "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/ruleset/apple.txt",
+        "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/apple.txt",
+        "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/apple.txt"
+    ],
+    "Белый список iCloud": [
+        "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/icloud.txt",
+        "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/ruleset/icloud.txt",
+        "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/icloud.txt",
+        "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/icloud.txt"
+    ]
+}
+
 output_file = "AdGuard_and_Loyalsoldier_REJECT_RULES.list"
 exclude_keywords = [
     "ads", "analytics", "tracker", "tracking", "tracer",
@@ -72,30 +108,56 @@ exclude_keywords = [
     "beacon", "adserver", "doubleclick", "adjust", "appsflyer"
 ]
 
-# Белый список — ТОЛЬКО точные домены (exact match). Не domain-suffix!
+# --- ЗАЩИЩЁННЫЕ СУФФИКСЫ ---
+protected_suffixes = {
+    "apple-pki.com", "icloud.com", "icloud-content.com", "simplex.im", "simplexonflux.com",
+    "googleapis.com", "firebaseio.com", "cloudfront.net", "amazonaws.com",
+    "azureedge.net", "microsoft.com", "jsdelivr.net", "push.apple.com",
+    "appleid.apple.com"
+}
+
+# --- ЗАЩИЩЁННЫЕ ТОЧНЫЕ ДОМЕНЫ ---
 protected_domains = {
     "facetime.apple.com", "stun.apple.com", "apple.com", "apple-pki.com", "icloud.com",
     "icloud-content.com", "mzstatic.com", "push.apple.com", "aaplimg.com",
-    "github.com", "githubusercontent.com", "githubassets.com", "google.com", "googleapis.com",
+    "github.com", "githubusercontent.com", "githubassets.com", "google.com",
     "gstatic.com", "ggpht.com", "googlevideo.com", "firebase.google.com",
     "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com",
     "microsoft.com", "windows.com", "windowsupdate.com", "msftconnecttest.com", "msftncsi.com",
     "azure.com", "azureedge.net", "azurefd.net",
     "amazon.com", "amazonaws.com", "aws.amazon.com", "cloudfront.net", "amazon-adsystem.com",
-    "facebook.com", "fb.com", "fbcdn.net", "youtube.com", "youtu.be", "googleapis.com",
+    "facebook.com", "fb.com", "fbcdn.net", "youtube.com", "youtu.be",
     "recaptcha.net", "npmjs.org", "pypi.org", "gitlab.com", "bitbucket.org", "cloudflare.com",
     "one.one.one.one", "dns.google", "quad9.net", "fastly.net", "jsdelivr.net",
     "unpkg.com", "akamaiedge.net", "akamaized.net", "akamai.net", "auth0.com", "okta.com",
     "login.microsoftonline.com", "accounts.google.com", "hcaptcha.com", "challenges.cloudflare.com",
-    "firebaseio.com", "android.com"
+    "firebaseio.com", "android.com",
+    "instagram.com", "cdninstagram.com", "duckduckgo.com", "ddg.co",
+    "telegram.org", "t.me", "whatsapp.com", "whatsapp.net",
+    "youtube.com", "ytimg.com", "googlevideo.com", "ozon.ru", "wildberries.ru",
+    "yandex.ru", "yandex.com", "finam.ru", "sberbank.ru", "online.sberbank.ru",
+    "alfabank.ru", "alfa.ru", "tbank.ru", "tinkoff.ru", "vtb.ru",
+    "discord.com", "discordapp.com", "facebook.com", "fbcdn.net",
+    "hh.ru", "avito.ru", "avito.st"
 }
 
-# Белый список IP — критические адреса, которые нельзя блокировать (DNS и т.д.)
+# --- ПРИНУДИТЕЛЬНО БЛОКИРУЕМЫЕ СУФФИКСЫ (всегда добавляются в финальный список) ---
+forced_block_suffixes = {
+    "bit.ly", "tinyurl.com", "t.co", "reurl.cc", "is.gd", "ow.ly",
+    "linktr.ee", "about.me", "campaign-archive.com"
+}
+# Принудительно блокируемые домены (пока пусто, для будущего использования)
+forced_block_domains = set()
+
+# Белый список IP
 protected_ips = {
     "1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4", "9.9.9.9", "149.112.112.112",
     "94.140.14.14", "94.140.15.15", "94.140.14.15", "94.140.14.1",
     "76.76.2.0", "76.76.10.0", "208.67.222.222", "208.67.220.220"
 }
+
+# --- ПРИНУДИТЕЛЬНО БЛОКИРУЕМЫЕ IP (всегда добавляются в финальный список) ---
+forced_block_ips = set()
 
 dangerous_tlds = {"com", "net", "org", "ru", "site", "info", "xyz", "bid", "club", "shop", "html", "xml", "gif", "js", "php", "top"}
 
@@ -104,9 +166,10 @@ AGGREGATE_THRESHOLD = 0
 headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'}
 ip_regex = re.compile(r'^(\d{1,3}(?:\.\d{1,3}){3})(?:/\d{1,2})?$')
 
-errors_output_file = "ErrorsAdBlockScript"
+errors_output_file = "LogsAdBlockScript"
 download_report = {}
 failed_lists = []
+white_download_report = {}
 
 DNS_SERVERS = [
     "8.8.8.8",
@@ -282,21 +345,25 @@ def try_command_variants(url):
             continue
     return [], None
 
-def is_protected(d):
-    return d in protected_domains
+def is_protected(domain):
+    if domain in protected_domains:
+        return True, "exact"
+    parts = domain.split('.')
+    for i in range(len(parts)):
+        suffix = '.'.join(parts[i:])
+        if suffix in protected_suffixes:
+            return True, "suffix"
+    return False, None
 
 def is_valid_domain(d):
-    # Если строка пустая, слишком короткая или содержит % (URL-encoded мусор), отсекаем
     if not d or len(d) < 4 or '%' in d: return False
     if d.startswith('.') or d.startswith('-'): return False
     if d.endswith('.') or d.endswith('-'): return False
     if '.' not in d: return False
-    # Список запрещенных символов в домене
     if any(char in d for char in ['?', '|', '=', '*', '(', ')', ',', '&', ':', '[', ']', '/', '\\', '%']): return False
     parts = d.split('.')
     if len(parts) == 1: return False
     if parts[-1].lower() in dangerous_tlds and len(parts) == 1: return False
-    if is_protected(d): return False
     return True
 
 def download_data(name, url_or_urls):
@@ -332,10 +399,8 @@ def download_data(name, url_or_urls):
             sys.stdout.flush()
             time.sleep(1 + attempt * 0.5)
 
-        # Если обычные методы не помогли - полная диагностика
         full_network_diagnostics()
 
-        # Tor fallback (только при полной ошибке)
         print("  [tor] Попытка через Tor...")
         try:
             subprocess.run(["tor"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
@@ -363,12 +428,74 @@ def download_data(name, url_or_urls):
     print(f"  [!] Ошибка: Не удалось скачать {name} ни одним из способов.")
     return [], None
 
+# --- ЗАГРУЗКА БЕЛЫХ СПИСКОВ (с прогресс-баром при парсинге) ---
+print("\n=== ЗАГРУЗКА БЕЛЫХ СПИСКОВ (для пополнения защищённых доменов) ===")
+for name, url in white_urls.items():
+    lines, method = download_data(name, url)
+    if lines and method:
+        white_download_report[name] = {"status": "ok", "method": method, "lines": len(lines)}
+    else:
+        white_download_report[name] = {"status": "failed", "method": None, "lines": 0}
+        sys.stdout.write(f"[!] Не удалось скачать белый список: {name}\n")
+        sys.stdout.flush()
+        continue
+
+    total_lines = len(lines)
+    start_parse = time.time()
+    for idx, raw_line in enumerate(lines, start=1):
+        if idx % 500 == 0 or idx == total_lines:
+            print_progress("    [parse white]", idx, total_lines, bar_len=30, start_time=start_parse)
+
+        line = raw_line.strip()
+        if not line or line.startswith(('#', '!')):
+            continue
+
+        # Строка начинается с точки — добавляем как суффикс
+        if line.startswith('.'):
+            domain = line.lstrip('.').lower()
+            if is_valid_domain(domain):
+                protected_suffixes.add(domain)
+            continue
+
+        # Формат DOMAIN-SUFFIX,domain или DOMAIN,domain
+        if ',' in line:
+            parts = line.split(',', 1)
+            if len(parts) == 2:
+                key = parts[0].lower()
+                val = parts[1].strip().lower()
+                if key.startswith('domain-suffix'):
+                    if is_valid_domain(val):
+                        protected_suffixes.add(val)
+                elif key.startswith('domain'):
+                    if is_valid_domain(val):
+                        protected_domains.add(val)
+                else:
+                    # Если ключ не распознан, но значение похоже на домен — добавим как точный
+                    if is_valid_domain(val):
+                        protected_domains.add(val)
+            continue
+
+        # Простая строка без запятой — считаем доменом
+        if is_valid_domain(line.lower()):
+            protected_domains.add(line.lower())
+
+    # После окончания парсинга выводим новую строку, если прогресс-бар не закончил
+    if total_lines > 0:
+        sys.stdout.write("\n")
+
+# Переносим Apple-домены в суффиксы для большей надёжности (кроме apple.com)
+apple_keys = [d for d in list(protected_domains) if (d.endswith(".apple.com") or d.startswith("apple-") or d.startswith("icloud")) and d != "apple.com"]
+for a in apple_keys:
+    protected_domains.discard(a)
+    protected_suffixes.add(a)
+
+# --- ЭТАП 1: ЗАГРУЗКА И ОБРАБОТКА ЧЁРНЫХ СПИСКОВ ---
+print("\n=== ЭТАП 1: ЗАГРУЗКА И ОБРАБОТКА ЧЁРНЫХ СПИСКОВ ===")
+
 all_domains = set()
 all_ips = set()
-stats = {"excluded": 0, "junk": 0, "protected": 0}
-errors = []
-
-print("\n=== ЭТАП 1: ЗАГРУЗКА И ОБРАБОТКА ДАННЫХ ===")
+stats = {"excluded": 0, "junk": 0, "protected_exact": 0, "protected_suffix": 0}
+errors = []   # каждый элемент: (reason, source, original_line)
 
 for name, url in urls.items():
     lines, method = download_data(name, url)
@@ -411,16 +538,20 @@ for name, url in urls.items():
                 if "ip-cidr" in rule_type:
                     pure_ip = val.split('/')[0]
                     if pure_ip in protected_ips:
-                        stats["protected"] += 1
+                        stats["protected_exact"] += 1
                         errors.append(("protected_ip", name, val))
                     else:
                         all_ips.add(val if '/' in val else f"{val}/32")
                         local_ip_count += 1
                 elif "domain" in rule_type:
                     if is_valid_domain(val):
-                        if is_protected(val):
-                            stats["protected"] += 1
-                            errors.append(("protected_domain", name, val))
+                        protected, reason = is_protected(val)
+                        if protected:
+                            if reason == "exact":
+                                stats["protected_exact"] += 1
+                            else:
+                                stats["protected_suffix"] += 1
+                            errors.append((f"protected_{reason}", name, val))
                         else:
                             all_domains.add(val)
                             local_domain_count += 1
@@ -445,7 +576,7 @@ for name, url in urls.items():
         if ip_regex.match(clean):
             pure_ip = clean.split('/')[0]
             if pure_ip in protected_ips:
-                stats["protected"] += 1
+                stats["protected_exact"] += 1
                 errors.append(("protected_ip", name, clean))
             else:
                 if '/' in clean:
@@ -454,9 +585,13 @@ for name, url in urls.items():
                     all_ips.add(f"{clean}/32")
                 local_ip_count += 1
         elif is_valid_domain(clean):
-            if is_protected(clean):
-                stats["protected"] += 1
-                errors.append(("protected_domain", name, clean))
+            protected, reason = is_protected(clean)
+            if protected:
+                if reason == "exact":
+                    stats["protected_exact"] += 1
+                else:
+                    stats["protected_suffix"] += 1
+                errors.append((f"protected_{reason}", name, clean))
             else:
                 all_domains.add(clean)
                 local_domain_count += 1
@@ -465,6 +600,19 @@ for name, url in urls.items():
             errors.append(("junk_invalid_line", name, raw_line))
 
     print(f"  -> Извлечено доменов: {local_domain_count} | IP: {local_ip_count}")
+
+# Добавляем принудительно блокируемые суффиксы и домены в all_domains (они попадут в финальный список)
+for suffix in forced_block_suffixes:
+    if is_valid_domain(suffix):
+        all_domains.add(suffix)
+for domain in forced_block_domains:
+    if is_valid_domain(domain):
+        all_domains.add(domain)
+
+# Добавляем принудительно блокируемые IP в all_ips
+for ip in forced_block_ips:
+    if ip_regex.match(ip):
+        all_ips.add(ip if '/' in ip else f"{ip}/32")
 
 print("\n=== ЭТАП 2: ОЧИСТКА ПОДДОМЕНОВ И ДУБЛИКАТОВ ===")
 print("[*] Анализ иерархии доменов (это займет некоторое время)...")
@@ -487,7 +635,7 @@ if AGGREGATE_THRESHOLD and AGGREGATE_THRESHOLD > 1:
     start_replace = time.time()
     for i, (parent, members) in enumerate(pg_items, start=1):
         print_progress("    [aggregate]", i, total_pg, bar_len=30, start_time=start_replace)
-        if len(members) >= AGGREGATE_THRESHOLD and not is_protected(parent):
+        if len(members) >= AGGREGATE_THRESHOLD and not is_protected(parent)[0]:
             optimized_domains.add(parent)
         else:
             for m in members:
@@ -530,22 +678,46 @@ with open(output_file, 'w', encoding='utf-8') as f:
             if written % 1000 == 0 or written == total_write:
                 print_progress("    [write]", written, total_write, bar_len=30, start_time=start_write)
 
-# === ЗАПИСЬ ФАЙЛА С ОШИБКАМИ И ОТЧЁТОМ ===
+# === ЗАПИСЬ ЛОГ-ФАЙЛА (LogsAdBlockScript) ===
 try:
-    total_errors = len(errors)
     with open(errors_output_file, 'w', encoding='utf-8') as ef:
-        ef.write(f"Download report generated at: {time.ctime()}\n")
+        ef.write(f"Log generated at: {time.ctime()}\n")
+        ef.write("="*60 + "\n")
+        ef.write("DOWNLOAD REPORT (blacklists)\n")
         ef.write("Source\tStatus\tMethod\tLines\n")
         for name, info in download_report.items():
-            ef.write(f"{name}\t{info['status']}\t{info['method']}\t{info['lines']}\n")
-        ef.write("\n")
-        ef.write("Dropped entries (REASON<TAB>SOURCE<TAB>ORIGINAL_LINE):\n")
-        if total_errors > 0:
-            start_err = time.time()
-            for idx, (reason, src, orig) in enumerate(errors, start=1):
-                ef.write(f"{reason}\t{src}\t{orig}\n")
-                if idx % 1000 == 0 or idx == total_errors:
-                    print_progress("    [errors_write]", idx, total_errors, bar_len=30, start_time=start_err)
+            ef.write(f"{name}\t{info['status']}\t{info.get('method','N/A')}\t{info.get('lines',0)}\n")
+        ef.write("\nDOWNLOAD REPORT (whitelists)\n")
+        ef.write("Source\tStatus\tMethod\tLines\n")
+        for name, info in white_download_report.items():
+            ef.write(f"{name}\t{info['status']}\t{info.get('method','N/A')}\t{info.get('lines',0)}\n")
+
+        ef.write("\n" + "="*60 + "\n")
+        ef.write("PROTECTED SUFFIXES (whitelisted, suffix match)\n")
+        for s in sorted(protected_suffixes):
+            ef.write(f"{s}\n")
+        ef.write("\nPROTECTED DOMAINS (whitelisted, exact match)\n")
+        for d in sorted(protected_domains):
+            ef.write(f"{d}\n")
+
+        ef.write("\n" + "="*60 + "\n")
+        ef.write("EXCLUDED BY KEYWORDS\n")
+        excluded = [(r,s,o) for r,s,o in errors if r == "excluded_keyword"]
+        for reason, src, orig in excluded:
+            ef.write(f"{src}\t{orig}\n")
+
+        ef.write("\nJUNK / INVALID LINES\n")
+        junk = [(r,s,o) for r,s,o in errors if r.startswith("junk")]
+        for reason, src, orig in junk:
+            ef.write(f"{reason}\t{src}\t{orig}\n")
+
+        ef.write("\nPROTECTED ENTRIES (skipped during parsing)\n")
+        prot = [(r,s,o) for r,s,o in errors if r.startswith("protected")]
+        for reason, src, orig in prot:
+            ef.write(f"{reason}\t{src}\t{orig}\n")
+
+        ef.write("\n" + "="*60 + "\n")
+        ef.write(f"Total errors/exclusions: {len(errors)}\n")
 except Exception as e:
     sys.stdout.write(f"\n[!] Не удалось записать {errors_output_file}: {e}\n")
 
@@ -558,23 +730,26 @@ print(f"Уникальных доменов:        {len(optimized_domains)}")
 print(f"Уникальных IP-адресов:     {len(all_ips)}")
 print(f"Удалено по ключевым словам:{stats['excluded']}")
 print(f"Отсеяно ошибочно добавленных доменов:  {stats['junk']}")
-print(f"Защищено (white-list):    {stats['protected']}")
+print(f"Защищено (exact):          {stats['protected_exact']}")
+print(f"Защищено (suffix):         {stats['protected_suffix']}")
 print("-" * 45)
 print(f"ВСЕГО ПРАВИЛ В ФАЙЛЕ:      {len(final_list) + len(final_ips)}")
 print(f"ВСЕГО ОТБРОШЕНО СТРОК:     {len(errors)}")
 print(f"ОБЩЕЕ ВРЕМЯ ВЫПОЛНЕНИЯ:    {TOTAL_TIME} сек.")
 print("-" * 45)
 
-# === ОТЧЁТ О СКАЧИВАНИИ (ВЫВОД В КОНСОЛЬ) ===
-print("Download summary:")
+print("Download summary (blacklists):")
 for name, info in download_report.items():
-    print(f"  - {name}: {info['status']} (method: {info['method']}, lines: {info['lines']})")
+    print(f"  - {name}: {info['status']} (method: {info.get('method','N/A')}, lines: {info.get('lines',0)})")
+print("\nDownload summary (whitelists):")
+for name, info in white_download_report.items():
+    print(f"  - {name}: {info['status']} (method: {info.get('method','N/A')}, lines: {info.get('lines',0)})")
 if failed_lists:
-    print("\nFailed to download the following lists:")
+    print("\nFailed to download the following blacklists:")
     for name in failed_lists:
         print(f"  - {name}")
 else:
-    print("\nAll lists downloaded successfully.")
+    print("\nAll blacklists downloaded successfully.")
 print("="*45)
 EOF
 
