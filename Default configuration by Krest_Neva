@@ -100,6 +100,14 @@ DOMAIN-KEYWORD,adjust,REJECT,pre-matching,extended-matching
 DOMAIN-KEYWORD,appsflyer,REJECT,pre-matching,extended-matching
 DOMAIN-KEYWORD,pixel,REJECT,pre-matching,extended-matching
 
+#DOMAIN-SUFFIX,vk.link,REJECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,app.link,REJECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,mradx.net,REJECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,adjust.com,REJECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,static.rutubelist.ru,REJECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,static.kuper.ru,REJECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,static-origin.kuper.ru,REJECT,pre-matching,extended-matching
+
 #   #-неакт❌
 #Регионы
 #🇷🇺DOMAIN-SUFFIX,ru,REJECT,pre-matching,extended-matching
