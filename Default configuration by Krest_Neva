@@ -3,7 +3,7 @@
 #!arguments=captionLang:off, lyricLang:off, blockImmersive:false, debug:false
 #blockShorts:false, blockUpload:true вырезано
 
-#Последние изменения 03.03.2026 07:00
+#Последние изменения 06.03.2026 22:00
 #Фильтры обновлены 03.03.2026 01:00
 
 #==================================================
@@ -309,6 +309,9 @@ DOMAIN-SUFFIX,xiaomiwear.com,DIRECT,pre-matching,extended-matching
 DOMAIN-SUFFIX,mi.com,DIRECT,pre-matching,extended-matching
 DOMAIN-SUFFIX,mi-img.com,DIRECT,pre-matching,extended-matching
 DOMAIN-SUFFIX,miui.com,DIRECT,pre-matching,extended-matching
+
+#Rostics🍔🍗🍟
+DOMAIN-SUFFIX,api.prod.digital.uni.rest,DIRECT,pre-matching,extended-matching
 
 #RU🇷🇺
 DOMAIN-SUFFIX,ru,DIRECT,pre-matching,extended-matching
