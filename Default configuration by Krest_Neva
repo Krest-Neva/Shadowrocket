@@ -220,7 +220,7 @@ DOMAIN-SUFFIX,gstatic.com,GEMINI,pre-matching,extended-matching
 #DOMAIN-SUFFIX,oaiusercontent.com,BESTPROXY,pre-matching,extended-matching
 #DOMAIN-SUFFIX,deepseek.com,BESTPROXY,pre-matching,extended-matching
 
-#DOMAIN-KEYWORD,tiktok,BESTPROXY,pre-matching,extended-matching
+DOMAIN-KEYWORD,tiktok,TIKTOKPROXY,pre-matching,extended-matching
 
 #Фундамент
 #DOMAIN-SUFFIX,microsoft.com,BESTPROXY,pre-matching,extended-matching
