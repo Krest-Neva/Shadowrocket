@@ -21,11 +21,11 @@
 #Конфигурация может быть полностью пустой за исключением написанного ниже. Для этого находим в настройке локальных файлов (справа от главной) default.conf, обязательно переименовываем её и указываем своё (любое) название для конфигурации, редактируем обычный текст (стираем полностью) данной конфигурации. Для редактирования текста нужно зажать конфигурацию и выбрать соответствующий пункт.
 
 #Дальше настройка идёт через интерфейс редактирования конфигурации.
-#Должен быть установлен сертификат Shadowrocket и быть довереным системой. Расшифровка HTTPS: вкл. Это ключевой момент для работы скрипта для YT
+#Должен быть установлен сертификат Shadowrocket и быть довереным системой. Расшифровка HTTPS: вкл. Это ключевой момент для работы скрипта для YT. Настройка идёт через настройки устройства.
 
 #Создать в конфигурации группы прокси строго с таким же названием:     /Настройка групп прокси теперь автоматизирована Add-onом/
 # 1️⃣ «TIKTOKPROXY» - тип: fallback. Выбрать сервера исключительно для Tiktok. Tiktok заблокирован в Китае, Индии и тд.
-# 2️⃣ «GEMINI» - тип: load-balance. Выбрать только сервера или сервер для Gemini. Например: США, Италия, Франция, Германия, Испания. При отсутствии выбрать несколько других (чтобы не рухнул google). Можно использовать те же что и для «SPEEDPROXY» (при отсутствии специальных для GEMINI)
+# 2️⃣ «GEMINIPROXY» - тип: load-balance. Выбрать только сервера или сервер для Gemini. Например: США, Италия, Франция, Германия, Испания. При отсутствии выбрать несколько других (чтобы не рухнул google). Можно использовать те же что и для «SPEEDPROXY» (при отсутствии специальных для GEMINI)
 # 3️⃣ «SPEEDPROXY» - тип: fallback. Выбрать наиболее быстрые сервера для YouTube и FaceTime и прочего. Тип fallback направляет трафик через один сервер с минимальным пингом, который может меняться.
 # 4️⃣ «BESTPROXY» - тип: load-balance. Добавить все сервера, кроме РФ. Между ними будет распределяться весь трафик идущий через VPN.
 #При наличии только одного доступного сервера. Добавить во все группы этот один сервер. Группы прокси обязательно должны содержать сервера.
@@ -45,7 +45,6 @@
 #Туннель: включить только принудительные маршруты
 #UDP: включить реле
 #Включить автообновление модулей и подписок. В «подписаться» включить «Отправить HWID» иначе подписки могут не добавляться.
-#Для добавления подписки VPN нажимается + на главной странице и выбирается тип subscribe после чего вставляется URL. В примечаниях можно самому указать имя подписки.
 #Настроить базу данных Geolite2: включить автообновление. /На данный момент необязательно по причине временного отсутсвия зависящих правил/
 #URL страны: https://github.com/Loyalsoldier/geoip/raw/release/Country.mmdb
 #URL ASN: https://github.com/Loyalsoldier/geoip/raw/release/GeoLite2-ASN.mmdb
@@ -69,6 +68,8 @@ always-real-ip = *.apple.com,*.icloud.com,*.itunes.com,*.crashlytics.com,*.mzsta
 #AdGuard DNS
 dns-server = 94.140.14.14,94.140.15.15
 fallback-dns-server = 8.8.8.8,8.8.4.4,1.1.1.1
+#dns-server = 8.8.8.8,8.8.4.4
+#fallback-dns-server = 1.1.1.1,94.140.14.14,94.140.15.15
 hijack-dns = 8.8.8.8:53
 tun-excluded-routes = 10.0.0.0/8,17.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.0.0.0/24,192.0.2.0/24,192.88.99.0/24,192.168.0.0/16,198.51.100.0/24,203.0.113.0/24,224.0.0.0/4,255.255.255.255/32
 private-ip-answer = true
@@ -84,6 +85,11 @@ always-reject-url-rewrite = false
 #BESTPROXY = load-balance,🇷🇺 [LTE] РОССИЯ №9/1,🇳🇱 НИДЕРЛАНДЫ,🇲🇩МОЛДОВА,🇷🇺 [LTE] РОССИЯ №9/2,🇮🇹ИТАЛИЯ,🇵🇱ПОЛЬША,🇷🇺 [LTE] РОССИЯ №3,🇪🇸ИСПАНИЯ,🇹🇷ТУРЦИЯ,🇮🇳ИНДИЯ,🇰🇿КАЗАХСТАН,🇯🇵 ЯПОНИЯ,🇰🇿 КАЗАХСТАН,🇱🇻 ЛАТВИЯ | 🎮 ИГРОВОЙ,🇩🇪ГЕРМАНИЯ,🇬🇧АНГЛИЯ,🇺🇸 США,🇺🇸США,🇫🇷 ФРАНЦИЯ,🇵🇱 ПОЛЬША ⚡️,🇷🇺 [LTE] РОССИЯ №7/1,🇨🇳 КИТАЙ,🇭🇺ВЕНГРИЯ,🇷🇺 [LTE] РОССИЯ №7/2,🇷🇺 [LTE] РОССИЯ №7/3,🇧🇷БРАЗИЛИЯ,🇨🇦КАНАДА|GEMINI,🇷🇺 [LTE] РОССИЯ №10/1,🇷🇺 [LTE] РОССИЯ №11,🇱🇻ЛАТВИЯ|TORRENT,🇨🇭ШВЕЙЦАРИЯ,🇫🇷ФРАНЦИЯ,🇷🇺 [LTE] РОССИЯ №10/2,🇱🇹ЛИТВА,🇰🇿 КАЗАХСТАН | РЕЗЕРВ,🇫🇮ФИНЛЯНДИЯ,🇷🇺 [LTE] РОССИЯ №8/1,🇫🇮 ФИНЛЯНДИЯ⚡️,🇦🇹 АВСТРИЯ ⚡️1,🇷🇺 [LTE] РОССИЯ №8/2,🇷🇺 [LTE] РОССИЯ № 12/2,🇫🇮ФИНЛЯНДИЯ-2,🇦🇹 АВСТРИЯ ⚡️2,🇷🇺 [LTE] РОССИЯ № 12,🇳🇱 НИДЕРЛАНДЫ ⚡️,🇸🇪 ШВЕЦИЯ,🇭🇰ГОНКОНГ,🇦🇹 АВСТРИЯ ⚡️3,🇳🇱НИДЕРЛАНДЫ,🇷🇺 [LTE] РОССИЯ № 14,🇷🇺 [LTE] РОССИЯ № 13,🇷🇺 [LTE] РОССИЯ № 15,🇺🇸США-2,🇷🇺 РОССИЯ №2 | YOUTUBE,🇬🇧АНГЛИЯ-2,🇯🇵ЯПОНИЯ,use=true,interval=200,timeout=2,url=http://www.gstatic.com/generate_204
 
 [Rule]
+#Деактивирует все правила и перенаправляет весь трафик по выбранному серверу.
+#FINAL,PROXY
+#Деактивирует все правила и перенаправляет весь трафик напрямую (без VPN).
+#FINAL,DIRECT
+
 #Переключение YouTube с UDP/QUIC на TCP/HTTPS
 AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
 AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
@@ -196,11 +202,11 @@ DOMAIN-KEYWORD,ytimg.com,SPEEDPROXY,pre-matching,extended-matching
 DOMAIN-SUFFIX,googlevideo.com,SPEEDPROXY,pre-matching,extended-matching
 DOMAIN,youtubei.googleapis.com,SPEEDPROXY,pre-matching,extended-matching
 DOMAIN,oauthaccountmanager.googleapis.com,SPEEDPROXY,pre-matching,extended-matching
-DOMAIN-KEYWORD,gemini,GEMINI,pre-matching,extended-matching
-DOMAIN-SUFFIX,googleapis.com,GEMINI,pre-matching,extended-matching
-DOMAIN-SUFFIX,apis.google.com,GEMINI,pre-matching,extended-matching
-DOMAIN-SUFFIX,googleusercontent.com,GEMINI,pre-matching,extended-matching
-DOMAIN-SUFFIX,gstatic.com,GEMINI,pre-matching,extended-matching
+DOMAIN-KEYWORD,gemini,GEMINIPROXY,pre-matching,extended-matching
+DOMAIN-SUFFIX,googleapis.com,GEMINIPROXY,pre-matching,extended-matching
+DOMAIN-SUFFIX,apis.google.com,GEMINIPROXY,pre-matching,extended-matching
+DOMAIN-SUFFIX,googleusercontent.com,GEMINIPROXY,pre-matching,extended-matching
+DOMAIN-SUFFIX,gstatic.com,GEMINIPROXY,pre-matching,extended-matching
 
 #Telegram
 #RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/telegramcidr.txt,BESTPROXY
