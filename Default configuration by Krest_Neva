@@ -3,7 +3,7 @@
 #!arguments=captionLang:off, lyricLang:off, blockImmersive:false, debug:false
 #blockShorts:false, blockUpload:true вырезано
 
-#Последние изменения 07.03.2026 14:00
+#Последние изменения 07.03.2026 19:00
 #Фильтры обновлены 03.03.2026 01:00
 
 #==================================================
@@ -336,7 +336,7 @@ DOMAIN-SUFFIX,su,DIRECT,pre-matching,extended-matching
 DOMAIN-SUFFIX,xn--p1ai,DIRECT,pre-matching,extended-matching
 #GEOIP,RU,DIRECT
 #GEOIP,SU,DIRECT
-DOMAIN,avito.st,DIRECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,avito.st,DIRECT,pre-matching,extended-matching
 
 #Глобальный прокси🌍
 FINAL,BESTPROXY
