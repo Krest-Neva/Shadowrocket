@@ -3,7 +3,7 @@
 #!arguments=captionLang:off, lyricLang:off, blockImmersive:false, debug:false
 #blockShorts:false, blockUpload:true вырезано
 
-#Последние изменения 06.03.2026 22:00
+#Последние изменения 07.03.2026 11:00
 #Фильтры обновлены 03.03.2026 01:00
 
 #==================================================
@@ -312,6 +312,9 @@ DOMAIN-SUFFIX,miui.com,DIRECT,pre-matching,extended-matching
 
 #Rostics🍔🍗🍟
 DOMAIN-SUFFIX,api.prod.digital.uni.rest,DIRECT,pre-matching,extended-matching
+
+#Ozon🛍️
+DOMAIN-SUFFIX,ozonusercontent.com,DIRECT,pre-matching,extended-matching
 
 #RU🇷🇺
 DOMAIN-SUFFIX,ru,DIRECT,pre-matching,extended-matching
