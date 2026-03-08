@@ -234,6 +234,7 @@ DOMAIN-SUFFIX,gstatic.com,GEMINIPROXY,pre-matching,extended-matching
 #DOMAIN-SUFFIX,oaiusercontent.com,BESTPROXY,pre-matching,extended-matching
 #DOMAIN-SUFFIX,deepseek.com,BESTPROXY,pre-matching,extended-matching
 
+#Tiktok
 DOMAIN-KEYWORD,tiktok,TIKTOKPROXY,pre-matching,extended-matching
 
 #Фундамент
@@ -330,13 +331,15 @@ DOMAIN-SUFFIX,api.prod.digital.uni.rest,DIRECT,pre-matching,extended-matching
 #Ozon🛍️
 DOMAIN-SUFFIX,ozonusercontent.com,DIRECT,pre-matching,extended-matching
 
+#Avito
+DOMAIN-SUFFIX,avito.st,DIRECT,pre-matching,extended-matching
+
 #RU🇷🇺
 DOMAIN-SUFFIX,ru,DIRECT,pre-matching,extended-matching
 DOMAIN-SUFFIX,su,DIRECT,pre-matching,extended-matching
 DOMAIN-SUFFIX,xn--p1ai,DIRECT,pre-matching,extended-matching
 #GEOIP,RU,DIRECT
 #GEOIP,SU,DIRECT
-DOMAIN-SUFFIX,avito.st,DIRECT,pre-matching,extended-matching
 
 #Глобальный прокси🌍
 FINAL,BESTPROXY
