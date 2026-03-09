@@ -3,7 +3,7 @@
 #!arguments=captionLang:off, lyricLang:off, blockImmersive:false, debug:false
 #blockShorts:false, blockUpload:true вырезано
 
-#Последние изменения 07.03.2026 19:00
+#Последние изменения 09.03.2026 14:00
 #Фильтры обновлены 03.03.2026 01:00
 
 #==================================================
@@ -95,6 +95,10 @@ AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
 AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 
 #Реклама, трекеры, аналитика💩 (с защитой от ошибок)
+
+#ВРЕМЕННО👇
+DOMAIN-SUFFIX,giphy.com,BESTPROXY,pre-matching,extended-matching
+
 RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/AdGuard_and_Loyalsoldier_REJECT_RULES.list,REJECT
 #RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/reject.txt,REJECT
 DOMAIN-KEYWORD,downloads,BESTPROXY,pre-matching,extended-matching
