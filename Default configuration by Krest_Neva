@@ -338,6 +338,9 @@ DOMAIN-SUFFIX,ozonusercontent.com,DIRECT,pre-matching,extended-matching
 #Avito
 DOMAIN-SUFFIX,avito.st,DIRECT,pre-matching,extended-matching
 
+#Shadow fight 2👊
+DOMAIN-SUFFIX,nekkimobile.ru,SPEEDPROXY,pre-matching,extended-matching
+
 #RU🇷🇺
 DOMAIN-SUFFIX,ru,DIRECT,pre-matching,extended-matching
 DOMAIN-SUFFIX,su,DIRECT,pre-matching,extended-matching
