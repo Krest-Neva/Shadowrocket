@@ -341,6 +341,10 @@ DOMAIN-SUFFIX,avito.st,DIRECT,pre-matching,extended-matching
 #Shadow fight 2👊
 DOMAIN-SUFFIX,nekkimobile.ru,SPEEDPROXY,pre-matching,extended-matching
 
+#Civ7
+DOMAIN-SUFFIX,firaxislive.net,DIRECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,2kcoretech.online,DIRECT,pre-matching,extended-matching
+
 #RU🇷🇺
 DOMAIN-SUFFIX,ru,DIRECT,pre-matching,extended-matching
 DOMAIN-SUFFIX,su,DIRECT,pre-matching,extended-matching
