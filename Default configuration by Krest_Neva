@@ -3,7 +3,7 @@
 #!arguments=captionLang:off, lyricLang:off, blockImmersive:false, debug:false
 #blockShorts:false, blockUpload:true вырезано
 
-#Последние изменения 13.03.2026 18:00
+#Последние изменения 13.03.2026 22:00
 #Фильтры обновлены 03.03.2026 01:00
 
 #==================================================
@@ -97,36 +97,38 @@ AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 
 #Реклама, трекеры, аналитика💩 (с защитой от ошибок)
 
-#ВРЕМЕННО👇
-DOMAIN-SUFFIX,giphy.com,BESTPROXY,pre-matching,extended-matching
+#ВРЕМЕННО👇 (гифки в инсте)
+DOMAIN-SUFFIX,giphy.com,BESTPROXY
 
-RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/AdGuard_and_Loyalsoldier_REJECT_RULES.list,REJECT
-#RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/reject.txt,REJECT
-DOMAIN-KEYWORD,downloads,BESTPROXY,pre-matching,extended-matching
-DOMAIN-SUFFIX,pixel.google.com,BESTPROXY,pre-matching,extended-matching
-DOMAIN-KEYWORD,ads,REJECT,pre-matching,extended-matching
-DOMAIN-KEYWORD,analytics,REJECT,pre-matching,extended-matching
-DOMAIN-KEYWORD,tracker,REJECT,pre-matching,extended-matching
-DOMAIN-KEYWORD,tracking,REJECT,pre-matching,extended-matching
-DOMAIN-KEYWORD,tracer,REJECT,pre-matching,extended-matching
-DOMAIN-KEYWORD,metrics,REJECT,pre-matching,extended-matching
-DOMAIN-KEYWORD,metrica,REJECT,pre-matching,extended-matching
-DOMAIN-KEYWORD,metrika,REJECT,pre-matching,extended-matching
-DOMAIN-KEYWORD,telemetry,REJECT,pre-matching,extended-matching
-DOMAIN-KEYWORD,beacon,REJECT,pre-matching,extended-matching
-DOMAIN-KEYWORD,adserver,REJECT,pre-matching,extended-matching
-DOMAIN-KEYWORD,doubleclick,REJECT,pre-matching,extended-matching
-DOMAIN-KEYWORD,adjust,REJECT,pre-matching,extended-matching
-DOMAIN-KEYWORD,appsflyer,REJECT,pre-matching,extended-matching
-DOMAIN-KEYWORD,pixel,REJECT,pre-matching,extended-matching
+RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/AdGuard_and_Loyalsoldier_REJECT_RULES.list,REJECT-DROP
+#RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/reject.txt,REJECT-DROP
+DOMAIN-KEYWORD,downloads,BESTPROXY
+DOMAIN-SUFFIX,pixel.google.com,BESTPROXY
+DOMAIN-KEYWORD,ads,REJECT-200,pre-matching
+DOMAIN-KEYWORD,analytics,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,tracker,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,tracking,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,tracer,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,metrics,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,metrica,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,metrika,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,telemetry,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,beacon,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,adserver,REJECT-200,pre-matching
+DOMAIN-KEYWORD,doubleclick,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,adjust,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,appsflyer,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,pixel,REJECT-TINYGIF,pre-matching
 
-#DOMAIN-SUFFIX,vk.link,REJECT,pre-matching,extended-matching
-DOMAIN-SUFFIX,app.link,REJECT,pre-matching,extended-matching
-DOMAIN-SUFFIX,mradx.net,REJECT,pre-matching,extended-matching
-DOMAIN-SUFFIX,adjust.com,REJECT,pre-matching,extended-matching
-DOMAIN-SUFFIX,static.rutubelist.ru,REJECT,pre-matching,extended-matching
-DOMAIN-SUFFIX,static.kuper.ru,REJECT,pre-matching,extended-matching
-DOMAIN-SUFFIX,static-origin.kuper.ru,REJECT,pre-matching,extended-matching
+#DOMAIN-SUFFIX,vk.link,REJECT-DROP,pre-matching
+DOMAIN-SUFFIX,app.link,REJECT-DROP,pre-matching
+DOMAIN-SUFFIX,mradx.net,REJECT-DROP,pre-matching
+DOMAIN-SUFFIX,adjust.com,REJECT-DROP,pre-matching
+DOMAIN-SUFFIX,static.rutubelist.ru,REJECT-DICT,pre-matching
+DOMAIN-SUFFIX,static.kuper.ru,REJECT-DICT,pre-matching
+DOMAIN-SUFFIX,static-origin.kuper.ru,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,messenger.yandex,REJECT-DROP,pre-matching
+DOMAIN-SUFFIX,yastatic.net,REJECT-DICT,pre-matching
 
 #Регионы
 #🇷🇺DOMAIN-SUFFIX,ru,REJECT,pre-matching,extended-matching
@@ -157,7 +159,7 @@ DOMAIN-SUFFIX,static-origin.kuper.ru,REJECT,pre-matching,extended-matching
 #DOMAIN-KEYWORD,vkvideo,REJECT,pre-matching,extended-matching
 
 #Шняга REJECT
-DOMAIN-SUFFIX,max.ru,REJECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,max.ru,REJECT-DROP,pre-matching
 #НИКАКОГО МАКСА!⚠️
 #DOMAIN-SUFFIX,mail.ru,REJECT,pre-matching,extended-matching
 #DOMAIN-KEYWORD,sferum,REJECT,pre-matching,extended-matching
@@ -201,17 +203,17 @@ DOMAIN-SUFFIX,max.ru,REJECT,pre-matching,extended-matching
 #DOMAIN-SUFFIX,apmplus.volces.com,REJECT,pre-matching,extended-matching
 
 #Google, YouTube, Gemini
-DOMAIN-SUFFIX,youtube.com,SPEEDPROXY,pre-matching,extended-matching
-DOMAIN-SUFFIX,youtu.be,SPEEDPROXY,pre-matching,extended-matching
-DOMAIN-KEYWORD,ytimg.com,SPEEDPROXY,pre-matching,extended-matching
-DOMAIN-SUFFIX,googlevideo.com,SPEEDPROXY,pre-matching,extended-matching
-DOMAIN,youtubei.googleapis.com,SPEEDPROXY,pre-matching,extended-matching
-DOMAIN,oauthaccountmanager.googleapis.com,SPEEDPROXY,pre-matching,extended-matching
-DOMAIN-KEYWORD,gemini,GEMINIPROXY,pre-matching,extended-matching
-DOMAIN-SUFFIX,googleapis.com,GEMINIPROXY,pre-matching,extended-matching
-DOMAIN-SUFFIX,apis.google.com,GEMINIPROXY,pre-matching,extended-matching
-DOMAIN-SUFFIX,googleusercontent.com,GEMINIPROXY,pre-matching,extended-matching
-DOMAIN-SUFFIX,gstatic.com,GEMINIPROXY,pre-matching,extended-matching
+DOMAIN-SUFFIX,youtube.com,SPEEDPROXY
+DOMAIN-SUFFIX,youtu.be,SPEEDPROXY
+DOMAIN-KEYWORD,ytimg.com,SPEEDPROXY
+DOMAIN-SUFFIX,googlevideo.com,SPEEDPROXY
+DOMAIN,youtubei.googleapis.com,SPEEDPROXY
+DOMAIN,oauthaccountmanager.googleapis.com,SPEEDPROXY
+DOMAIN-KEYWORD,gemini,GEMINIPROXY
+DOMAIN-SUFFIX,googleapis.com,GEMINIPROXY
+DOMAIN-SUFFIX,apis.google.com,GEMINIPROXY
+DOMAIN-SUFFIX,googleusercontent.com,GEMINIPROXY
+DOMAIN-SUFFIX,gstatic.com,GEMINIPROXY
 
 #Telegram
 #RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/telegramcidr.txt,BESTPROXY
@@ -240,7 +242,7 @@ DOMAIN-SUFFIX,gstatic.com,GEMINIPROXY,pre-matching,extended-matching
 #DOMAIN-SUFFIX,deepseek.com,BESTPROXY,pre-matching,extended-matching
 
 #Tiktok
-DOMAIN-KEYWORD,tiktok,TIKTOKPROXY,pre-matching,extended-matching
+DOMAIN-KEYWORD,tiktok,TIKTOKPROXY
 
 #Фундамент
 #DOMAIN-SUFFIX,microsoft.com,BESTPROXY,pre-matching,extended-matching
@@ -298,58 +300,58 @@ DOMAIN-KEYWORD,tiktok,TIKTOKPROXY,pre-matching,extended-matching
 #DOMAIN-SUFFIX,rubygems.org,BESTPROXY,pre-matching,extended-matching
 
 #FaceTime📞
-DOMAIN-SUFFIX,facetime.apple.com,SPEEDPROXY,pre-matching,extended-matching
-DOMAIN-SUFFIX,stun.apple.com,SPEEDPROXY,pre-matching,extended-matching
+DOMAIN-SUFFIX,facetime.apple.com,SPEEDPROXY
+DOMAIN-SUFFIX,stun.apple.com,SPEEDPROXY
 
 #Apple🍎
 RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/apple.txt,DIRECT
 RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/icloud.txt,DIRECT
-DOMAIN-SUFFIX,apple.com,DIRECT,pre-matching,extended-matching
-DOMAIN-SUFFIX,apple-pki.com,DIRECT,pre-matching,extended-matching
-DOMAIN-SUFFIX,icloud.com,DIRECT,pre-matching,extended-matching
-DOMAIN-SUFFIX,icloud-content.com,DIRECT,pre-matching,extended-matching
-DOMAIN-KEYWORD,apple-intelligence,DIRECT,pre-matching,extended-matching
-DOMAIN-SUFFIX,mzstatic.com,DIRECT,pre-matching,extended-matching
-DOMAIN-KEYWORD,itunes,DIRECT,pre-matching,extended-matching
-DOMAIN-KEYWORD,apple-dns,DIRECT,pre-matching,extended-matching
-DOMAIN-SUFFIX,apple.com,DIRECT,pre-matching,extended-matching
-DOMAIN-SUFFIX,aaplimg.com,DIRECT,pre-matching,extended-matching
-DOMAIN-KEYWORD,apis.apple,DIRECT,pre-matching,extended-matching
-DOMAIN-KEYWORD,mail.me.com,DIRECT,pre-matching,extended-matching
-DOMAIN-SUFFIX,safebrowsing.apple,DIRECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,apple.com,DIRECT
+DOMAIN-SUFFIX,apple-pki.com,DIRECT
+DOMAIN-SUFFIX,icloud.com,DIRECT
+DOMAIN-SUFFIX,icloud-content.com,DIRECT
+DOMAIN-KEYWORD,apple-intelligence,DIRECT
+DOMAIN-SUFFIX,mzstatic.com,DIRECT
+DOMAIN-KEYWORD,itunes,DIRECT
+DOMAIN-KEYWORD,apple-dns,DIRECT
+DOMAIN-SUFFIX,apple.com,DIRECT
+DOMAIN-SUFFIX,aaplimg.com,DIRECT
+DOMAIN-KEYWORD,apis.apple,DIRECT
+DOMAIN-KEYWORD,mail.me.com,DIRECT
+DOMAIN-SUFFIX,safebrowsing.apple,DIRECT
 
 #Xiaomi
 IP-ASN,63855,DIRECT,no-resolve
 IP-ASN,63915,DIRECT,no-resolve
 IP-ASN,58836,DIRECT,no-resolve
 IP-ASN,58839,DIRECT,no-resolve
-#DOMAIN-KEYWORD,xiaomi,DIRECT,pre-matching,extended-matching
-DOMAIN-SUFFIX,xiaomi.com,DIRECT,pre-matching,extended-matching
-DOMAIN-SUFFIX,xiaomiwear.com,DIRECT,pre-matching,extended-matching
-DOMAIN-SUFFIX,mi.com,DIRECT,pre-matching,extended-matching
-DOMAIN-SUFFIX,mi-img.com,DIRECT,pre-matching,extended-matching
-DOMAIN-SUFFIX,miui.com,DIRECT,pre-matching,extended-matching
+#DOMAIN-KEYWORD,xiaomi,DIRECT
+DOMAIN-SUFFIX,xiaomi.com,DIRECT
+DOMAIN-SUFFIX,xiaomiwear.com,DIRECT
+DOMAIN-SUFFIX,mi.com,DIRECT
+DOMAIN-SUFFIX,mi-img.com,DIRECT
+DOMAIN-SUFFIX,miui.com,DIRECT
 
 #Rostics🍔🍗🍟
-DOMAIN-SUFFIX,api.prod.digital.uni.rest,DIRECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,api.prod.digital.uni.rest,DIRECT
 
 #Ozon🛍️
-DOMAIN-SUFFIX,ozonusercontent.com,DIRECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,ozonusercontent.com,DIRECT
 
 #Avito
-DOMAIN-SUFFIX,avito.st,DIRECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,avito.st,DIRECT
 
 #Shadow fight 2👊
-DOMAIN-SUFFIX,nekkimobile.ru,SPEEDPROXY,pre-matching,extended-matching
+DOMAIN-SUFFIX,nekkimobile.ru,SPEEDPROXY
 
 #Civ7
-DOMAIN-SUFFIX,firaxislive.net,DIRECT,pre-matching,extended-matching
-DOMAIN-SUFFIX,2kcoretech.online,DIRECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,firaxislive.net,DIRECT
+DOMAIN-SUFFIX,2kcoretech.online,DIRECT
 
 #RU🇷🇺
-DOMAIN-SUFFIX,ru,DIRECT,pre-matching,extended-matching
-DOMAIN-SUFFIX,su,DIRECT,pre-matching,extended-matching
-DOMAIN-SUFFIX,xn--p1ai,DIRECT,pre-matching,extended-matching
+DOMAIN-SUFFIX,ru,DIRECT
+DOMAIN-SUFFIX,su,DIRECT
+DOMAIN-SUFFIX,xn--p1ai,DIRECT
 #GEOIP,RU,DIRECT
 #GEOIP,SU,DIRECT
 
