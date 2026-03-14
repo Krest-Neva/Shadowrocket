@@ -44,11 +44,12 @@ import sys
 import tempfile
 import math
 import shutil
+import ipaddress
 
 SCRIPT_START_TIME = time.time()
 
 # -------------------------
-# ИСТОЧНИКИ (чёрные списки) – добавлены fallback-ссылки
+# ЧЁРНЫЕ СПИСКИ
 # -------------------------
 urls = {
     "1) Loyalsoldier": [
@@ -72,7 +73,7 @@ urls = {
 }
 
 # -------------------------
-# БЕЛЫЕ СПИСКИ (с fallback-ссылками)
+# БЕЛЫЕ СПИСКИ
 # -------------------------
 white_urls = {
     "Белый список 1 (Direct)": [
@@ -108,15 +109,22 @@ exclude_keywords = [
     "beacon", "adserver", "doubleclick", "adjust", "appsflyer"
 ]
 
-# --- ЗАЩИЩЁННЫЕ СУФФИКСЫ ---
+# Предкомпилированная регулярка для ключевых слов
+exclude_pattern = re.compile('|'.join(re.escape(kw) for kw in exclude_keywords))
+
+# Множество недопустимых символов для быстрой проверки
+INVALID_CHARS = set('?|=*(),&:[]/\\%#_')
+
+# --- ЗАЩИЩЁННЫЕ СУФФИКСЫ (ручные) ---
 protected_suffixes = {
     "apple-pki.com", "icloud.com", "icloud-content.com", "simplex.im", "simplexonflux.com",
     "googleapis.com", "firebaseio.com", "cloudfront.net", "amazonaws.com",
     "azureedge.net", "microsoft.com", "jsdelivr.net", "push.apple.com",
-    "appleid.apple.com"
+    "appleid.apple.com",
+    "giphy.com"  # добавлено для гифок в Instagram
 }
 
-# --- ЗАЩИЩЁННЫЕ ТОЧНЫЕ ДОМЕНЫ ---
+# --- ЗАЩИЩЁННЫЕ ТОЧНЫЕ ДОМЕНЫ (ручные) ---
 protected_domains = {
     "facetime.apple.com", "stun.apple.com", "apple.com", "apple-pki.com", "icloud.com",
     "icloud-content.com", "mzstatic.com", "push.apple.com", "aaplimg.com",
@@ -141,6 +149,10 @@ protected_domains = {
     "hh.ru", "avito.ru", "avito.st"
 }
 
+# Сохраняем копии ручных множеств для использования только с Loyalsoldier
+manual_protected_domains = protected_domains.copy()
+manual_protected_suffixes = protected_suffixes.copy()
+
 # --- ПРИНУДИТЕЛЬНО БЛОКИРУЕМЫЕ СУФФИКСЫ (всегда добавляются в финальный список) ---
 forced_block_suffixes = {
     "bit.ly", "tinyurl.com", "t.co", "reurl.cc", "is.gd", "ow.ly",
@@ -164,6 +176,7 @@ dangerous_tlds = {"com", "net", "org", "ru", "site", "info", "xyz", "bid", "club
 AGGREGATE_THRESHOLD = 0
 
 headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'}
+# IP regex всё ещё может использоваться для предварительной фильтрации, но окончательная валидация через ipaddress
 ip_regex = re.compile(r'^(\d{1,3}(?:\.\d{1,3}){3})(?:/\d{1,2})?$')
 
 errors_output_file = "LogsAdBlockScript"
@@ -181,6 +194,9 @@ DNS_SERVERS = [
 
 def setup_dns_and_test():
     print("    [net] Настройка DNS...")
+    # Проверка возможности записи в /etc/resolv.conf (не критично, но предупредим)
+    if not os.access("/etc/resolv.conf", os.W_OK):
+        print("    [net] Предупреждение: нет прав на запись /etc/resolv.conf, DNS может не обновиться.")
     try:
         with open("/etc/resolv.conf", "w") as f:
             for dns in DNS_SERVERS:
@@ -272,16 +288,17 @@ def download_with_curl_to_file(url, headers, timeout=20, curl_args=None):
         if proc.returncode == 0:
             with open(tmp.name, 'rb') as f:
                 data = f.read().decode('utf-8', errors='ignore').splitlines()
-            os.unlink(tmp.name)
             return data, "curl " + (" ".join(curl_args) if curl_args else "default")
         else:
-            try: os.unlink(tmp.name)
-            except Exception: pass
             return [], None
     except Exception:
-        try: os.unlink(tmp.name)
-        except Exception: pass
         return [], None
+    finally:
+        # Гарантированное удаление временного файла
+        try:
+            os.unlink(tmp.name)
+        except Exception:
+            pass
 
 def try_command_variants(url):
     ua = headers['User-Agent']
@@ -302,10 +319,11 @@ def try_command_variants(url):
     if shutil.which('aria2c'):
         variants.append((['aria2c', '-q', '-x', '4', '-o', 'aria_tmp_dl', url], True, "aria2c"))
 
-    if 'raw.githubusercontent.com' in url or 'githubusercontent' in url:
-        variants.append((['git', 'clone', '--depth', '1', url], True, "git clone (best-effort)"))
 
     for cmd, is_file_writer, descr in variants:
+        # Проверяем наличие команды (первые элемент cmd)
+        if not shutil.which(cmd[0]):
+            continue
         try:
             sys.stdout.write(f"    [attempt] running: {' '.join(cmd[:6])}... ({descr})\n")
             sys.stdout.flush()
@@ -317,16 +335,14 @@ def try_command_variants(url):
                     if proc.returncode == 0:
                         with open(tmp.name, 'rb') as f:
                             data = f.read().decode('utf-8', errors='ignore').splitlines()
-                        os.unlink(tmp.name)
-                        if data and len(data) > 0:
-                            return data, descr
-                    else:
-                        try: os.unlink(tmp.name)
-                        except Exception: pass
+                        return data, descr
                 except Exception:
-                    try: os.unlink(tmp.name)
-                    except Exception: pass
-                    continue
+                    pass
+                finally:
+                    try:
+                        os.unlink(tmp.name)
+                    except Exception:
+                        pass
             else:
                 proc = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=40)
                 if proc.returncode == 0:
@@ -334,18 +350,19 @@ def try_command_variants(url):
                         try:
                             with open('aria_tmp_dl', 'rb') as f:
                                 data = f.read().decode('utf-8', errors='ignore').splitlines()
-                            os.unlink('aria_tmp_dl')
-                            if data and len(data) > 0:
-                                return data, descr
+                            return data, descr
                         except Exception:
-                            try: os.unlink('aria_tmp_dl')
-                            except Exception: pass
-                            continue
+                            pass
+                        finally:
+                            try:
+                                os.unlink('aria_tmp_dl')
+                            except Exception:
+                                pass
         except Exception:
             continue
     return [], None
 
-def is_protected(domain):
+def is_protected_full(domain):
     if domain in protected_domains:
         return True, "exact"
     parts = domain.split('.')
@@ -355,16 +372,39 @@ def is_protected(domain):
             return True, "suffix"
     return False, None
 
+def is_protected_manual(domain):
+    if domain in manual_protected_domains:
+        return True, "exact"
+    parts = domain.split('.')
+    for i in range(len(parts)):
+        suffix = '.'.join(parts[i:])
+        if suffix in manual_protected_suffixes:
+            return True, "suffix"
+    return False, None
+
 def is_valid_domain(d):
-    if not d or len(d) < 4 or '%' in d: return False
+    if not d or len(d) < 4: return False
+    # Разрешаем только ASCII символы (латиница, цифры, дефис, точка)
+    if not d.isascii(): return False
     if d.startswith('.') or d.startswith('-'): return False
     if d.endswith('.') or d.endswith('-'): return False
     if '.' not in d: return False
-    if any(char in d for char in ['?', '|', '=', '*', '(', ')', ',', '&', ':', '[', ']', '/', '\\', '%']): return False
+    # Быстрая проверка на плохие символы через множества
+    if not INVALID_CHARS.isdisjoint(d): return False
     parts = d.split('.')
     if len(parts) == 1: return False
     if parts[-1].lower() in dangerous_tlds and len(parts) == 1: return False
     return True
+
+def validate_ip(ip_str):
+    """Проверяет, является ли строка валидным IP/CIDR, возвращает нормализованную строку или None."""
+    try:
+        # Пытаемся распарсить как сеть (CIDR)
+        net = ipaddress.ip_network(ip_str, strict=False)
+        # Если маска не указана, для одиночного IP вернём /32
+        return str(net)
+    except ValueError:
+        return None
 
 def download_data(name, url_or_urls):
     print(f"\n  [*] Скачивание: {name}...")
@@ -402,26 +442,25 @@ def download_data(name, url_or_urls):
         full_network_diagnostics()
 
         print("  [tor] Попытка через Tor...")
-        try:
-            subprocess.run(["tor"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
-        except Exception:
-            pass
-
-        try:
-            lines = []
-            proc = subprocess.run(
-                ["torsocks", "curl", "-s", "-L", url],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.DEVNULL,
-                timeout=25
-            )
-            if proc.returncode == 0:
-                lines = proc.stdout.decode("utf-8", errors="ignore").splitlines()
-                if len(lines) > 10:
-                    print("  [+] Успешно через Tor")
-                    return lines, "torsocks curl"
-        except Exception:
-            pass
+        if shutil.which('tor') and shutil.which('torsocks'):
+            try:
+                # Не запускаем tor, предполагаем что он уже запущен или torsocks работает без запуска
+                lines = []
+                proc = subprocess.run(
+                    ["torsocks", "curl", "-s", "-L", url],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                    timeout=25
+                )
+                if proc.returncode == 0:
+                    lines = proc.stdout.decode("utf-8", errors="ignore").splitlines()
+                    if len(lines) > 10:
+                        print("  [+] Успешно через Tor")
+                        return lines, "torsocks curl"
+            except Exception:
+                pass
+        else:
+            print("  [tor] torsocks или tor не установлены, пропускаем.")
 
         print("  [tor] Tor fallback не помог.")
 
@@ -463,6 +502,8 @@ for name, url in white_urls.items():
             if len(parts) == 2:
                 key = parts[0].lower()
                 val = parts[1].strip().lower()
+                # Отрезаем комментарий после #
+                val = val.split('#')[0].strip()
                 if key.startswith('domain-suffix'):
                     if is_valid_domain(val):
                         protected_suffixes.add(val)
@@ -525,7 +566,8 @@ for name, url in urls.items():
         if not line or line.startswith(('!', '[', '@@')) or '##' in line or '#@#' in line or line.startswith('#'):
             continue
 
-        if any(kw in line for kw in exclude_keywords):
+        # Быстрая проверка ключевых слов с помощью regex
+        if exclude_pattern.search(line):
             stats["excluded"] += 1
             errors.append(("excluded_keyword", name, raw_line))
             continue
@@ -535,17 +577,29 @@ for name, url in urls.items():
             if len(parts) >= 2:
                 rule_type = parts[0]
                 val = parts[1]
+                # Отрезаем комментарий после #
+                val = val.split('#')[0].strip()
                 if "ip-cidr" in rule_type:
-                    pure_ip = val.split('/')[0]
-                    if pure_ip in protected_ips:
-                        stats["protected_exact"] += 1
-                        errors.append(("protected_ip", name, val))
+                    # Валидация IP через ipaddress
+                    validated = validate_ip(val)
+                    if validated:
+                        pure_ip = validated.split('/')[0]
+                        if pure_ip in protected_ips:
+                            stats["protected_exact"] += 1
+                            errors.append(("protected_ip", name, val))
+                        else:
+                            all_ips.add(validated)
+                            local_ip_count += 1
                     else:
-                        all_ips.add(val if '/' in val else f"{val}/32")
-                        local_ip_count += 1
+                        stats["junk"] += 1
+                        errors.append(("junk_invalid_ip", name, val))
                 elif "domain" in rule_type:
                     if is_valid_domain(val):
-                        protected, reason = is_protected(val)
+                        # Для Loyalsoldier используем ручные защищённые множества
+                        if "Loyalsoldier" in name:
+                            protected, reason = is_protected_manual(val)
+                        else:
+                            protected, reason = is_protected_full(val)
                         if protected:
                             if reason == "exact":
                                 stats["protected_exact"] += 1
@@ -567,25 +621,30 @@ for name, url in urls.items():
         clean = re.sub(r'^www\.', '', clean)
         clean = clean.split('^')[0].split('$')[0].split('/')[0].split(':')[0].split('*')[0].strip()
         clean = clean.strip('.').strip()
+        # Отрезаем комментарий после #
+        clean = clean.split('#')[0].strip()
 
         if not clean:
             stats["junk"] += 1
             errors.append(("junk_empty_after_clean", name, raw_line))
             continue
 
-        if ip_regex.match(clean):
-            pure_ip = clean.split('/')[0]
+        # Проверка на IP с использованием ipaddress
+        validated_ip = validate_ip(clean)
+        if validated_ip:
+            pure_ip = validated_ip.split('/')[0]
             if pure_ip in protected_ips:
                 stats["protected_exact"] += 1
                 errors.append(("protected_ip", name, clean))
             else:
-                if '/' in clean:
-                    all_ips.add(clean)
-                else:
-                    all_ips.add(f"{clean}/32")
+                all_ips.add(validated_ip)
                 local_ip_count += 1
         elif is_valid_domain(clean):
-            protected, reason = is_protected(clean)
+            # Для Loyalsoldier используем ручные защищённые множества
+            if "Loyalsoldier" in name:
+                protected, reason = is_protected_manual(clean)
+            else:
+                protected, reason = is_protected_full(clean)
             if protected:
                 if reason == "exact":
                     stats["protected_exact"] += 1
@@ -611,8 +670,9 @@ for domain in forced_block_domains:
 
 # Добавляем принудительно блокируемые IP в all_ips
 for ip in forced_block_ips:
-    if ip_regex.match(ip):
-        all_ips.add(ip if '/' in ip else f"{ip}/32")
+    validated = validate_ip(ip)
+    if validated:
+        all_ips.add(validated)
 
 print("\n=== ЭТАП 2: ОЧИСТКА ПОДДОМЕНОВ И ДУБЛИКАТОВ ===")
 print("[*] Анализ иерархии доменов (это займет некоторое время)...")
@@ -635,7 +695,7 @@ if AGGREGATE_THRESHOLD and AGGREGATE_THRESHOLD > 1:
     start_replace = time.time()
     for i, (parent, members) in enumerate(pg_items, start=1):
         print_progress("    [aggregate]", i, total_pg, bar_len=30, start_time=start_replace)
-        if len(members) >= AGGREGATE_THRESHOLD and not is_protected(parent)[0]:
+        if len(members) >= AGGREGATE_THRESHOLD and not is_protected_full(parent)[0]:
             optimized_domains.add(parent)
         else:
             for m in members:
@@ -768,3 +828,4 @@ ping -c 3 google.com
 
 echo "[*] Запуск скрипта генерации правил..."
 python3 "AdGuard_and_Loyalsoldier_REJECT_RULES.py"
+ВЫПОЛНЕНО
