@@ -1,0 +1,74 @@
+[RULE]
+#YANDEX
+DOMAIN,yandex.ru,REJECT-DICT
+DOMAIN-SUFFIX,ad.mail.ru,REJECT
+DOMAIN-SUFFIX,top-fwz1.mail.ru,REJECT
+DOMAIN-SUFFIX,rs.mail.ru,REJECT
+DOMAIN-SUFFIX,widgets.vk.com,REJECT
+DOMAIN-SUFFIX,promotedby.vk.com,REJECT
+DOMAIN-SUFFIX,adriver.ru,REJECT
+DOMAIN-SUFFIX,criteo.com,REJECT
+DOMAIN-SUFFIX,criteo.net,REJECT
+DOMAIN-SUFFIX,moatads.com,REJECT
+DOMAIN-SUFFIX,scorecardresearch.com,REJECT
+DOMAIN-SUFFIX,serving-sys.com,REJECT
+DOMAIN-SUFFIX,cdn.jsdelivr.net,REJECT
+DOMAIN-SUFFIX,content-sdk.cdn.yandex.net,REJECT
+DOMAIN-SUFFIX,directcdn.net,REJECT
+DOMAIN-SUFFIX,frontend.vh.yandex.ru,REJECT
+DOMAIN-SUFFIX,kp.yandex.ru,REJECT
+DOMAIN-SUFFIX,moikrug.ru,REJECT
+DOMAIN-SUFFIX,offer.cdn.yandex.net,REJECT
+DOMAIN-SUFFIX,ok.video.yandex.ru,REJECT
+DOMAIN-SUFFIX,promocodes.cdn.yandex.net,REJECT
+DOMAIN-SUFFIX,shri.yandex.net,REJECT
+DOMAIN-SUFFIX,spb.video.yandex.ru,REJECT
+DOMAIN-SUFFIX,tm.yandex.ru,REJECT
+DOMAIN-SUFFIX,video.yandex.ru,REJECT
+DOMAIN-SUFFIX,web-antiadblock.nice.x.yandex-team.ru,REJECT
+DOMAIN-SUFFIX,web-usocial.yandex.ru,REJECT
+DOMAIN-SUFFIX,yandexadexchange.net,REJECT
+DOMAIN-SUFFIX,yandex-rtb.cdn.yandex.net,REJECT
+DOMAIN-SUFFIX,yandex-rtb-preview.cdn.yandex.net,REJECT
+DOMAIN-SUFFIX,yanet.ru,REJECT
+DOMAIN-SUFFIX,yanetcom.ru,REJECT
+DOMAIN-SUFFIX,my.com,REJECT
+DOMAIN-SUFFIX,cnt.my.com,REJECT
+DOMAIN-SUFFIX,adj.st,REJECT
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/ad/.*$,REJECT
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/yabs/.*$,REJECT
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/bs/.*$,REJECT
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/direct/.*$,REJECT
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/rtb/.*$,REJECT
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/web-usocial/.*$,REJECT
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/yandex-ads/.*$,REJECT
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/zen/.*\?ad.*$,REJECT
+URL-REGEX,^https?://yandex\.(ru|com)/clck/click.*$,REJECT
+URL-REGEX,^https?://yandex\.(ru|com)/ads/v4/ad.*$,REJECT
+URL-REGEX,^https?://yandex\.(ru|com)/an/count/.*$,REJECT
+URL-REGEX,^https?://yandex\.(ru|com)/an/rtbcount/.*$,REJECT
+URL-REGEX,^https?://baobab\.market\.yandex\.(ru|com)/safeclick/json.*$,REJECT
+URL-REGEX,^https?://media-adv\..*\.yandex\.(ru|com)/.*$,REJECT
+URL-REGEX,^https?://adfstat\.yandex\.(ru|com)/.*$,REJECT
+URL-REGEX,^https?://market\.yandex\.(ru|com)/ecom-assistant\?.*$,REJECT
+URL-REGEX,^https?://ipa\.market\.yandex\.(ru|com)/api/v1\?.*dictionary=1.*$,REJECT
+URL-REGEX,^https?://ipa\.market\.yandex\.(ru|com)/api/v1\?.*name=getToggles.*$,REJECT
+URL-REGEX,^https?://ipa\.market\.yandex\.(ru|com)/api/v1\?.*name=resolveGlobalDeliveryPoint.*$,REJECT
+URL-REGEX,^https?://api\.plus\.yandex\.net:443/.*$,REJECT
+URL-REGEX,^https?://infocenter\.rasp\.yandex-net\.ru:443/.*$,REJECT
+URL-REGEX,^https?://suburban-trains\.s3\.yandex\.net:443/.*$,REJECT
+URL-REGEX,^https?://export\.rasp\.yandex-net\.ru:443/.*$,REJECT
+URL-REGEX,^https?://stable\.carsharing\.yandex\.net:443/.*$,REJECT
+URL-REGEX,^https?://tc\.mobile\.yandex\.net:443/.*$,REJECT
+
+[URL Rewrite]
+^http(s?)://(.*?)\?(.*)&?utm_(.*) http$1://$2?$3 302
+^http(s?)://(.*?)\?(utm_.*)&?(.*) http$1://$2?$3 302
+^http(s?)://(.*?)\?utm_(.*) http$1://$2 302
+^http(s?)://(.*?)\?(.*)&?yclid=(.*) http$1://$2?$3 302
+^http(s?)://(.*?)\?yclid=(.*) http$1://$2 302
+^http://(www\.)?yandex\.ru https://yandex.com 302
+^https://(www\.)?yandex\.ru https://yandex.com 302
+
+[MITM]
+hostname = %APPEND% yandex.ru, yandex.com, *.yandex.ru, *.yandex.com
