@@ -675,7 +675,7 @@ for ip in forced_block_ips:
         all_ips.add(validated)
 
 print("\n=== ЭТАП 2: ОЧИСТКА ПОДДОМЕНОВ И ДУБЛИКАТОВ ===")
-print("[*] Анализ иерархии доменов (это займет некоторое время)...")
+print("[*] Анализ иерархии доменов...")
 start_time = time.time()
 
 sorted_raw = sorted(list(all_domains), key=lambda x: x.count('.'))
@@ -828,4 +828,3 @@ ping -c 3 google.com
 
 echo "[*] Запуск скрипта генерации правил..."
 python3 "AdGuard_and_Loyalsoldier_REJECT_RULES.py"
-ВЫПОЛНЕНО
