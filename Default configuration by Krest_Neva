@@ -468,13 +468,13 @@ localhost = 127.0.0.1
 (^https?:\/\/[\w-]+\.googlevideo\.com\/(?!dclk_video_ads).+?)&ctier=L(&.+?),ctier,(.+) $1$2$3 302
 
 #YANDEX каки✴️
-^http(s?)://(.*?)\?(.*)&?utm_(.*) http$1://$2?$3 302
-^http(s?)://(.*?)\?(utm_.*)&?(.*) http$1://$2?$3 302
-^http(s?)://(.*?)\?utm_(.*) http$1://$2 302
-^http(s?)://(.*?)\?(.*)&?yclid=(.*) http$1://$2?$3 302
-^http(s?)://(.*?)\?yclid=(.*) http$1://$2 302
-^http://(www\.)?yandex\.ru https://yandex.com 302
-^https://(www\.)?yandex\.ru https://yandex.com 302
+#^http(s?)://(.*?)\?(.*)&?utm_(.*) http$1://$2?$3 302
+#^http(s?)://(.*?)\?(utm_.*)&?(.*) http$1://$2?$3 302
+#^http(s?)://(.*?)\?utm_(.*) http$1://$2 302
+#^http(s?)://(.*?)\?(.*)&?yclid=(.*) http$1://$2?$3 302
+#^http(s?)://(.*?)\?yclid=(.*) http$1://$2 302
+#^http://(www\.)?yandex\.ru https://yandex.com 302
+#^https://(www\.)?yandex\.ru https://yandex.com 302
 
 [Map Local]
 ^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.+&oad data-type=text data="" status-code=200
