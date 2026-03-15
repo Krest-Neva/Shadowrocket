@@ -119,6 +119,7 @@ AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 #Реклама, трекеры, аналитика💩
 
 #ВРЕМЕННО
+DOMAIN-SUFFIX,proxyliberty.ru,BESTPROXY
 DOMAIN-SUFFIX,sport24.ru,DIRECT
 DOMAIN-SUFFIX,zr.ru,DIRECT
 
