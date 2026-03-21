@@ -3,7 +3,7 @@
 #!arguments=captionLang:off, lyricLang:off, blockImmersive:false, debug:false
 #blockShorts:false, blockUpload:true вырезано
 
-#Последние изменения 21.03.2026 20:00
+#Последние изменения 21.03.2026 23:00
 #Фильтры обновлены 14.03.2026 03:00
 
 #==================================================
@@ -287,6 +287,36 @@ DOMAIN-SUFFIX,max.ru,REJECT-DROP,pre-matching
 #DOMAIN-SUFFIX,zztfly.com,REJECT-DROP,pre-matching
 #DOMAIN-SUFFIX,sub.scroogethebest.com,REJECT-DROP,pre-matching
 #DOMAIN-SUFFIX,apmplus.volces.com,REJECT-DROP,pre-matching
+
+#Discord
+DOMAIN-SUFFIX,comdiscord.com,DISCORDPROXY
+DOMAIN-SUFFIX,dis.gd,DISCORDPROXY
+DOMAIN-SUFFIX,discord.co,DISCORDPROXY
+DOMAIN-SUFFIX,discord.com,DISCORDPROXY
+DOMAIN-SUFFIX,discord.gg,DISCORDPROXY
+DOMAIN-SUFFIX,discord.gift,DISCORDPROXY
+DOMAIN-SUFFIX,discord.gifts,DISCORDPROXY
+DOMAIN-SUFFIX,discord.media,DISCORDPROXY
+DOMAIN-SUFFIX,discord.new,DISCORDPROXY
+DOMAIN-SUFFIX,discordapp.com,DISCORDPROXY
+DOMAIN-SUFFIX,discordapp.net,DISCORDPROXY
+DOMAIN-SUFFIX,discordcdn.com,DISCORDPROXY
+DOMAIN-SUFFIX,discordstatus.com,DISCORDPROXY
+DOMAIN-SUFFIX,discord.media,DISCORDPROXY
+DOMAIN-SUFFIX,discordapp.io,DISCORDPROXY
+DOMAIN-SUFFIX,discord-activities.com,DISCORDPROXY
+DOMAIN-SUFFIX,discordactivities.com,DISCORDPROXY
+DOMAIN-SUFFIX,discord-attachments-uploads-prd.storage.googleapis.com,DISCORDPROXY
+DOMAIN-SUFFIX,disboard.org,DISCORDPROXY
+DOMAIN-SUFFIX,discordbee.com,DISCORDPROXY
+DOMAIN-SUFFIX,discordbotlist.com,DISCORDPROXY
+DOMAIN-SUFFIX,discordmerch.com,DISCORDPROXY
+DOMAIN-SUFFIX,discords.com,DISCORDPROXY
+DOMAIN-SUFFIX,discordservers.com,DISCORDPROXY
+DOMAIN-SUFFIX,top.gg,DISCORDPROXY
+DOMAIN-SUFFIX,mee6.xyz,DISCORDPROXY
+DOMAIN-SUFFIX,dyno.gg,DISCORDPROXY
+DOMAIN-SUFFIX,disforge.com,DISCORDPROXY
 
 #Google, YouTube, Gemini
 DOMAIN-SUFFIX,youtube.com,SPEEDPROXY
