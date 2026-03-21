@@ -3,7 +3,7 @@
 #!arguments=captionLang:off, lyricLang:off, blockImmersive:false, debug:false
 #blockShorts:false, blockUpload:true вырезано
 
-#Последние изменения 14.03.2026 15:00
+#Последние изменения 21.03.2026 20:00
 #Фильтры обновлены 14.03.2026 03:00
 
 #==================================================
@@ -79,12 +79,6 @@ dns-over-https = true
 dns-direct-system = false
 bypass-system = true
 always-reject-url-rewrite = false
-
-#[Proxy Group]
-#TIKTOKPROXY = fallback,🇫🇮ФИНЛЯНДИЯ,🇩🇪ГЕРМАНИЯ,🇭🇺ВЕНГРИЯ,🇫🇮ФИНЛЯНДИЯ-2,🇫🇷ФРАНЦИЯ,🇱🇻ЛАТВИЯ|TORRENT,🇵🇱ПОЛЬША,🇬🇧АНГЛИЯ-2,🇨🇭ШВЕЙЦАРИЯ,🇱🇹ЛИТВА,🇲🇩МОЛДОВА,🇬🇧АНГЛИЯ,🇮🇹ИТАЛИЯ,🇳🇱НИДЕРЛАНДЫ,use=true,interval=200,timeout=2,url=http://www.gstatic.com/generate_204
-#GEMINI = load-balance,🇺🇸США,🇮🇹ИТАЛИЯ,🇪🇸ИСПАНИЯ,🇨🇦КАНАДА|GEMINI,🇺🇸США-2,🇩🇪ГЕРМАНИЯ,🇫🇷ФРАНЦИЯ,use=true,interval=200,timeout=2,url=http://www.gstatic.com/generate_204
-#SPEEDPROXY = fallback,🇱🇻ЛАТВИЯ|TORRENT,🇭🇺ВЕНГРИЯ,🇲🇩МОЛДОВА,🇷🇺 РОССИЯ №2 | YOUTUBE,🇷🇺 [LTE] РОССИЯ №7/2,🇳🇱НИДЕРЛАНДЫ,🇰🇿 КАЗАХСТАН,🇦🇹 АВСТРИЯ ⚡️3,🇱🇹ЛИТВА,🇫🇮 ФИНЛЯНДИЯ⚡️,🇵🇱ПОЛЬША,🇦🇹 АВСТРИЯ ⚡️1,🇫🇮ФИНЛЯНДИЯ-2,🇰🇿КАЗАХСТАН,🇳🇱 НИДЕРЛАНДЫ,🇳🇱 НИДЕРЛАНДЫ ⚡️,🇰🇿 КАЗАХСТАН | РЕЗЕРВ,🇫🇮ФИНЛЯНДИЯ,🇫🇷ФРАНЦИЯ,🇷🇺 [LTE] РОССИЯ №8/1,🇸🇪 ШВЕЦИЯ,🇩🇪ГЕРМАНИЯ,🇷🇺 [LTE] РОССИЯ №8/2,🇦🇹 АВСТРИЯ ⚡️2,🇷🇺 [LTE] РОССИЯ №3,🇵🇱 ПОЛЬША ⚡️,🇮🇹ИТАЛИЯ,🇷🇺 [LTE] РОССИЯ №7/1,use=true,interval=200,timeout=2,url=http://www.gstatic.com/generate_204
-#BESTPROXY = load-balance,🇷🇺 [LTE] РОССИЯ №9/1,🇳🇱 НИДЕРЛАНДЫ,🇲🇩МОЛДОВА,🇷🇺 [LTE] РОССИЯ №9/2,🇮🇹ИТАЛИЯ,🇵🇱ПОЛЬША,🇷🇺 [LTE] РОССИЯ №3,🇪🇸ИСПАНИЯ,🇹🇷ТУРЦИЯ,🇮🇳ИНДИЯ,🇰🇿КАЗАХСТАН,🇯🇵 ЯПОНИЯ,🇰🇿 КАЗАХСТАН,🇱🇻 ЛАТВИЯ | 🎮 ИГРОВОЙ,🇩🇪ГЕРМАНИЯ,🇬🇧АНГЛИЯ,🇺🇸 США,🇺🇸США,🇫🇷 ФРАНЦИЯ,🇵🇱 ПОЛЬША ⚡️,🇷🇺 [LTE] РОССИЯ №7/1,🇨🇳 КИТАЙ,🇭🇺ВЕНГРИЯ,🇷🇺 [LTE] РОССИЯ №7/2,🇷🇺 [LTE] РОССИЯ №7/3,🇧🇷БРАЗИЛИЯ,🇨🇦КАНАДА|GEMINI,🇷🇺 [LTE] РОССИЯ №10/1,🇷🇺 [LTE] РОССИЯ №11,🇱🇻ЛАТВИЯ|TORRENT,🇨🇭ШВЕЙЦАРИЯ,🇫🇷ФРАНЦИЯ,🇷🇺 [LTE] РОССИЯ №10/2,🇱🇹ЛИТВА,🇰🇿 КАЗАХСТАН | РЕЗЕРВ,🇫🇮ФИНЛЯНДИЯ,🇷🇺 [LTE] РОССИЯ №8/1,🇫🇮 ФИНЛЯНДИЯ⚡️,🇦🇹 АВСТРИЯ ⚡️1,🇷🇺 [LTE] РОССИЯ №8/2,🇷🇺 [LTE] РОССИЯ № 12/2,🇫🇮ФИНЛЯНДИЯ-2,🇦🇹 АВСТРИЯ ⚡️2,🇷🇺 [LTE] РОССИЯ № 12,🇳🇱 НИДЕРЛАНДЫ ⚡️,🇸🇪 ШВЕЦИЯ,🇭🇰ГОНКОНГ,🇦🇹 АВСТРИЯ ⚡️3,🇳🇱НИДЕРЛАНДЫ,🇷🇺 [LTE] РОССИЯ № 14,🇷🇺 [LTE] РОССИЯ № 13,🇷🇺 [LTE] РОССИЯ № 15,🇺🇸США-2,🇷🇺 РОССИЯ №2 | YOUTUBE,🇬🇧АНГЛИЯ-2,🇯🇵ЯПОНИЯ,use=true,interval=200,timeout=2,url=http://www.gstatic.com/generate_204
 
 [Rule]
 #Деактивирует все правила и перенаправляет весь трафик по выбранному серверу.
@@ -306,6 +300,15 @@ DOMAIN-SUFFIX,googleapis.com,GEMINIPROXY
 DOMAIN-SUFFIX,apis.google.com,GEMINIPROXY
 DOMAIN-SUFFIX,googleusercontent.com,GEMINIPROXY
 DOMAIN-SUFFIX,gstatic.com,GEMINIPROXY
+
+#ChatGPT
+DOMAIN-SUFFIX,openai.com,GPTPROXY
+DOMAIN-SUFFIX,oaistatic.com,GPTPROXY
+DOMAIN-SUFFIX,oaiusercontent.com,GPTPROXY
+DOMAIN-SUFFIX,openaiapi-site.azureedge.net,GPTPROXY
+DOMAIN-SUFFIX,stripe.com,GPTPROXY
+DOMAIN-SUFFIX,intercom.io,GPTPROXY
+DOMAIN-SUFFIX,intercomcdn.com,GPTPROXY
 
 #Telegram
 #RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/telegramcidr.txt,BESTPROXY
