@@ -1,3 +1,6 @@
+#!name=Yandex каки
+#!desc=REJECT
+
 [RULE]
 #YANDEX каки✴️
 DOMAIN,yandex.ru,REJECT-DICT,pre-matching
