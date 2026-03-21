@@ -82,7 +82,7 @@ always-reject-url-rewrite = false
 
 [Rule]
 #Локальные сети
-GEOIP:private,DIRECT
+GEOIP,private,DIRECT
 
 #Деактивирует все правила и перенаправляет весь трафик по выбранному серверу.
 #FINAL,PROXY
