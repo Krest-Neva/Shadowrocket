@@ -121,6 +121,7 @@ DOMAIN-SUFFIX,zr.ru,DIRECT
 
 #RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/AdGuard_and_Loyalsoldier_REJECT_RULES.list,REJECT-DROP
 #RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/reject.txt,REJECT-DROP
+DOMAIN-KEYWORD,uploads,DISCORDPROXY
 DOMAIN-KEYWORD,downloads,BESTPROXY
 DOMAIN-SUFFIX,pixel.google.com,BESTPROXY
 DOMAIN-KEYWORD,ads,REJECT-200,pre-matching
