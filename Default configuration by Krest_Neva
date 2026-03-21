@@ -586,7 +586,7 @@ yt.script = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/(yo
 #https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js
 
 [MITM]
-hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com, yandex.ru, yandex.com, ya.ru, yandex.kz, *.yandex.ru, *.yandex.com, *.ya.ru, *.yandex.kz, *.yandex.az, *.yandex.by, *.yandex.co.il, *.yandex.com.am, *.yandex.com.ge, *.yandex.com.tr, *.yandex.ee, *.yandex.fr, *.yandex.lt, *.yandex.lv, *.yandex.md, *.yandex.tj, *.yandex.tm, *.yandex.uz, *.yastatic.net
+hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com, yandex.ru, yandex.com, ya.ru, yandex.kz, *.yandex.ru, *.yandex.com, *.ya.ru, *.yandex.kz, *.yandex.az, *.yandex.by, *.yandex.co.il, *.yandex.com.am, *.yandex.com.ge, *.yandex.com.tr, *.yandex.ee, *.yandex.fr, *.yandex.lt, *.yandex.lv, *.yandex.md, *.yandex.tj, *.yandex.tm, *.yandex.uz, *.yandex.net, *.yastatic.net
 enable = true
 
 # ╱|、           ∧＿∧
