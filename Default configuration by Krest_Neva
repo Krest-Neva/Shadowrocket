@@ -34,6 +34,7 @@
 #интервал - 500 сек. Если постоянно отваливается соединение при агрессивных блокировках следует уменьшать этот интервал вплоть до 90 сек. При слишком малых значениях воможен перегрев устройства и быстрый разряд аккумулятора. В случае нагрева из-за плохого интернета на новых Iphone проблема решается путём настройки экономии данных в настройках Iphone в разделе сотовой связи в SIM или настройках сети Wi-Fi, переключением на 3G или включением режима энергосбережения.
 #таймаут - 2 сек
 #URL для тестирования:
+#http://cp.cloudflare.com/generate_204 (предпочтительный)
 #http://www.gstatic.com/generate_204
 
 #⚙️НАСТРОЙКИ ПРИЛОЖЕНИЯ:
@@ -210,6 +211,7 @@ DOMAIN-KEYWORD,pixel,REJECT-TINYGIF,pre-matching
 #🇷🇺DOMAIN-SUFFIX,ru,REJECT,pre-matching,extended-matching
 #🇷🇺DOMAIN-SUFFIX,su,REJECT,pre-matching,extended-matching
 #🇷🇺DOMAIN-SUFFIX,xn--p1ai,REJECT,pre-matching,extended-matching
+#🇷🇺DOMAIN-SUFFIX,рф,REJECT,pre-matching,extended-matching
 #🇺🇦DOMAIN-SUFFIX,ua,REJECT,pre-matching,extended-matching
 #🇧🇾DOMAIN-SUFFIX,by,REJECT,pre-matching,extended-matching
 #🇰🇿DOMAIN-SUFFIX,kz,REJECT,pre-matching,extended-matching
