@@ -3,6 +3,8 @@
 
 [RULE]
 #YANDEX каки✴️
+DOMAIN-SUFFIX,afisha.yandex.ru,DIRECT
+DOMAIN-SUFFIX,yastatic.net,DIRECT
 DOMAIN,yandex.ru,REJECT-DICT,pre-matching
 DOMAIN-SUFFIX,ad.mail.ru,REJECT,pre-matching
 DOMAIN-SUFFIX,top-fwz1.mail.ru,REJECT,pre-matching
@@ -63,6 +65,7 @@ URL-REGEX,^https?://suburban-trains\.s3\.yandex\.net:443/.*$,REJECT,pre-matching
 URL-REGEX,^https?://export\.rasp\.yandex-net\.ru:443/.*$,REJECT,pre-matching
 URL-REGEX,^https?://stable\.carsharing\.yandex\.net:443/.*$,REJECT,pre-matching
 URL-REGEX,^https?://tc\.mobile\.yandex\.net:443/.*$,REJECT,pre-matching
+URL-REGEX,https://yandex\.com/clck/click.*,REJECT
 
 [URL Rewrite]
 ^http(s?)://(.*?)\?(.*)&?utm_(.*) http$1://$2?$3 302
@@ -74,4 +77,4 @@ URL-REGEX,^https?://tc\.mobile\.yandex\.net:443/.*$,REJECT,pre-matching
 ^https://(www\.)?yandex\.ru https://yandex.com 302
 
 [MITM]
-hostname = %APPEND% yandex.ru, yandex.com, *.yandex.ru, *.yandex.com
+hostname = %APPEND% yandex.ru, yandex.com, *.yandex.ru, *.yandex.com, ya.ru
