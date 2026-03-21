@@ -5,6 +5,19 @@
 #YANDEX каки✴️
 DOMAIN-SUFFIX,afisha.yandex.ru,DIRECT
 DOMAIN-SUFFIX,yastatic.net,DIRECT
+DOMAIN-SUFFIX,sp.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,sp.yandex.com,REJECT,pre-matching
+DOMAIN-SUFFIX,egw.sp.plet.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,log.strm.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,amc.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,adfstat.yandex.ru,REJECT-TINYGIF,pre-matching
+DOMAIN-SUFFIX,strm.yandex.ru,REJECT,pre-matching   # может сломать видео — если будут проблемы, удалить
+DOMAIN-SUFFIX,market-baobab.yandex.ru,REJECT-DICT,pre-matching
+DOMAIN-SUFFIX,media-adv.market.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,mc.yandex.ru,REJECT-TINYGIF,pre-matching
+DOMAIN-SUFFIX,mc.yandex.com,REJECT-TINYGIF,pre-matching
+DOMAIN-SUFFIX,media-adv.market.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,baobab.market.yandex.ru,REJECT-DICT,pre-matching
 DOMAIN,yandex.ru,REJECT-DICT,pre-matching
 DOMAIN-SUFFIX,ad.mail.ru,REJECT,pre-matching
 DOMAIN-SUFFIX,top-fwz1.mail.ru,REJECT,pre-matching
@@ -53,6 +66,7 @@ URL-REGEX,^https?://yandex\.(ru|com)/ads/v4/ad.*$,REJECT-DICT,pre-matching
 URL-REGEX,^https?://yandex\.(ru|com)/an/count/.*$,REJECT,pre-matching
 URL-REGEX,^https?://yandex\.(ru|com)/an/rtbcount/.*$,REJECT,pre-matching
 URL-REGEX,^https?://baobab\.market\.yandex\.(ru|com)/safeclick/json.*$,REJECT-DICT,pre-matching
+URL-REGEX,^https?://([a-z0-9-]+\.)?baobab\.yandex\.(ru|com)/safeclick/.*$,REJECT-DICT,pre-matching
 URL-REGEX,^https?://media-adv\..*\.yandex\.(ru|com)/.*$,REJECT,pre-matching
 URL-REGEX,^https?://adfstat\.yandex\.(ru|com)/.*$,REJECT-TINYGIF,pre-matching
 URL-REGEX,^https?://market\.yandex\.(ru|com)/ecom-assistant\?.*$,REJECT-DICT,pre-matching
@@ -66,6 +80,8 @@ URL-REGEX,^https?://export\.rasp\.yandex-net\.ru:443/.*$,REJECT,pre-matching
 URL-REGEX,^https?://stable\.carsharing\.yandex\.net:443/.*$,REJECT,pre-matching
 URL-REGEX,^https?://tc\.mobile\.yandex\.net:443/.*$,REJECT,pre-matching
 URL-REGEX,https://yandex\.com/clck/click.*,REJECT
+URL-REGEX,^https?://mc\.yandex\.(ru|com)/(metrika|watch|solid\.ws).*$,REJECT-TINYGIF,pre-matching
+URL-REGEX,^https?://sp\.yandex\.(ru|com)/.*$,REJECT,pre-matching
 
 [URL Rewrite]
 ^http(s?)://(.*?)\?(.*)&?utm_(.*) http$1://$2?$3 302
