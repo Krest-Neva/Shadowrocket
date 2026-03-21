@@ -77,4 +77,4 @@ URL-REGEX,https://yandex\.com/clck/click.*,REJECT
 ^https://(www\.)?yandex\.ru https://yandex.com 302
 
 [MITM]
-hostname = %APPEND% yandex.ru, yandex.com, *.yandex.ru, *.yandex.com, ya.ru
+hostname = %APPEND% yandex.ru, yandex.com, ya.ru, *.yandex.ru, *.yandex.com, *.ya.ru
