@@ -3,7 +3,7 @@
 #!arguments=captionLang:off, lyricLang:off, blockImmersive:false, debug:false
 #blockShorts:false, blockUpload:true вырезано
 
-#Последние изменения 21.03.2026 23:00
+#Последние изменения 22.03.2026 00:00
 #Фильтры обновлены 14.03.2026 03:00
 
 #==================================================
@@ -504,6 +504,7 @@ DOMAIN-SUFFIX,2kcoretech.online,DIRECT
 DOMAIN-SUFFIX,ru,DIRECT
 DOMAIN-SUFFIX,su,DIRECT
 DOMAIN-SUFFIX,xn--p1ai,DIRECT
+DOMAIN-SUFFIX,рф,DIRECT
 #GEOIP,RU,DIRECT
 #GEOIP,SU,DIRECT
 
@@ -539,6 +540,43 @@ localhost = 127.0.0.1
 ^http(s?)://(.*?)\?yclid=(.*) http$1://$2 302
 ^http://(www\.)?yandex\.ru https://yandex.com 302
 ^https://(www\.)?yandex\.ru https://yandex.com 302
+#Другие регионы
+^http://(www\.)?yandex\.kz(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.az(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.by(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.co\.il(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.com\.am(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.com\.ge(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.com\.tr(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.ee(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.fr(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.kz(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.lt(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.lv(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.md(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.ru(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.tj(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.tm(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.uz(.*)$ http://yandex.com$2 302
+^http://(www\.)?ya\.ru(.*)$ http://yandex.com$2 302
+^https://(www\.)?yandex\.kz(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.az(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.by(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.co\.il(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.com\.am(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.com\.ge(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.com\.tr(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.ee(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.fr(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.kz(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.lt(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.lv(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.md(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.ru(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.tj(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.tm(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.uz(.*)$ https://yandex.com$2 302
+^https://(www\.)?ya\.ru(.*)$ https://yandex.com$2 302
 
 [Map Local]
 ^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.+&oad data-type=text data="" status-code=200
@@ -548,7 +586,7 @@ yt.script = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/(yo
 #https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js
 
 [MITM]
-hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com, %APPEND% yandex.ru, yandex.com, ya.ru, *.yandex.ru, *.yandex.com, *.ya.ru
+hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com, yandex.ru, yandex.com, ya.ru, yandex.kz, *.yandex.ru, *.yandex.com, *.ya.ru, *.yandex.kz, *.yandex.az, *.yandex.by, *.yandex.co.il, *.yandex.com.am, *.yandex.com.ge, *.yandex.com.tr, *.yandex.ee, *.yandex.fr, *.yandex.lt, *.yandex.lv, *.yandex.md, *.yandex.tj, *.yandex.tm, *.yandex.uz
 enable = true
 
 # ╱|、           ∧＿∧
