@@ -303,12 +303,20 @@ DOMAIN-SUFFIX,gstatic.com,GEMINIPROXY
 
 #ChatGPT
 DOMAIN-SUFFIX,openai.com,GPTPROXY
-DOMAIN-SUFFIX,oaistatic.com,GPTPROXY
-DOMAIN-SUFFIX,oaiusercontent.com,GPTPROXY
 DOMAIN-SUFFIX,openaiapi-site.azureedge.net,GPTPROXY
 DOMAIN-SUFFIX,stripe.com,GPTPROXY
 DOMAIN-SUFFIX,intercom.io,GPTPROXY
 DOMAIN-SUFFIX,intercomcdn.com,GPTPROXY
+DOMAIN-SUFFIX,oaistatic.com,GPTPROXY
+DOMAIN-SUFFIX,oaiusercontent.com,GPTPROXY
+
+#Copilot
+DOMAIN-SUFFIX,static.copilot.microsoft.com,REJECT
+DOMAIN-SUFFIX,microsoft.com,COPILOTPROXY
+DOMAIN-SUFFIX,office.com,COPILOTPROXY
+DOMAIN-SUFFIX,azureedge.net,COPILOTPROXY
+DOMAIN-SUFFIX,msauth.net,COPILOTPROXY
+DOMAIN-SUFFIX,microsoftonline.com,COPILOTPROXY
 
 #Telegram
 #RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/telegramcidr.txt,BESTPROXY
