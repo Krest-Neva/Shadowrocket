@@ -8,7 +8,7 @@
 [Proxy Group]
 TIKTOKPROXY = fallback,🇫🇮ФИНЛЯНДИЯ,🇩🇪ГЕРМАНИЯ,🇭🇺ВЕНГРИЯ,🇫🇮ФИНЛЯНДИЯ-2,🇫🇷ФРАНЦИЯ,🇱🇻ЛАТВИЯ|TORRENT,🇵🇱ПОЛЬША,🇬🇧АНГЛИЯ-2,🇱🇹ЛИТВА,🇨🇭ШВЕЙЦАРИЯ,🇪🇸ИСПАНИЯ,🇬🇧АНГЛИЯ,🇮🇹ИТАЛИЯ,use=true,interval=200,timeout=2,url=http://cp.cloudflare.com/generate_204
 GEMINIPROXY = load-balance,🇺🇸США,🇪🇸ИСПАНИЯ,🇮🇹ИТАЛИЯ,🇨🇦КАНАДА|GEMINI,🇩🇪ГЕРМАНИЯ,🇫🇷ФРАНЦИЯ,use=true,interval=200,timeout=2,url=http://cp.cloudflare.com/generate_204
-SPEEDPROXY = fallback,🇫🇮ФИНЛЯНДИЯ,🇩🇪ГЕРМАНИЯ,🇭🇺ВЕНГРИЯ,🇫🇷ФРАНЦИЯ,🇱🇻ЛАТВИЯ|TORRENT,🇫🇮ФИНЛЯНДИЯ-2,🇵🇱ПОЛЬША,🇹🇷ТУРЦИЯ,🇨🇭ШВЕЙЦАРИЯ,🇱🇹ЛИТВА,🇪🇸ИСПАНИЯ,🇮🇹ИТАЛИЯ,🇰🇿КАЗАХСТАН,use=true,interval=200,timeout=2,url=http://cp.cloudflare.com/generate_204
+SPEEDPROXY = load-balance,🇫🇮ФИНЛЯНДИЯ,🇩🇪ГЕРМАНИЯ,🇭🇺ВЕНГРИЯ,🇫🇷ФРАНЦИЯ,🇱🇻ЛАТВИЯ|TORRENT,🇫🇮ФИНЛЯНДИЯ-2,🇵🇱ПОЛЬША,🇹🇷ТУРЦИЯ,🇨🇭ШВЕЙЦАРИЯ,🇱🇹ЛИТВА,🇪🇸ИСПАНИЯ,🇮🇹ИТАЛИЯ,🇰🇿КАЗАХСТАН,use=true,interval=200,timeout=2,url=http://cp.cloudflare.com/generate_204
 BESTPROXY = load-balance,🇭🇺ВЕНГРИЯ,🇭🇰ГОНКОНГ,🇮🇹ИТАЛИЯ,🇬🇧АНГЛИЯ-2,🇪🇸ИСПАНИЯ,🇺🇸США-2,🇮🇳ИНДИЯ,🇧🇷БРАЗИЛИЯ,🇱🇹ЛИТВА,🇵🇱ПОЛЬША,🇫🇮ФИНЛЯНДИЯ-2,🇰🇿КАЗАХСТАН,🇫🇮ФИНЛЯНДИЯ,🇫🇷ФРАНЦИЯ,🇯🇵ЯПОНИЯ,🇹🇷ТУРЦИЯ,🇨🇦КАНАДА|GEMINI,🇬🇧АНГЛИЯ,🇩🇪ГЕРМАНИЯ,🇨🇭ШВЕЙЦАРИЯ,🇺🇸США,🇱🇻ЛАТВИЯ|TORRENT,use=true,interval=200,timeout=2,url=http://cp.cloudflare.com/generate_204
 
 [Rule]
