@@ -81,6 +81,9 @@ bypass-system = true
 always-reject-url-rewrite = false
 
 [Rule]
+#Локальные сети
+GEOIP:private,DIRECT
+
 #Деактивирует все правила и перенаправляет весь трафик по выбранному серверу.
 #FINAL,PROXY
 #Деактивирует все правила и перенаправляет весь трафик напрямую (без VPN).
