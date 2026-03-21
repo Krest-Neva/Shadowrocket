@@ -141,66 +141,85 @@ DOMAIN-KEYWORD,appsflyer,REJECT-DICT,pre-matching
 DOMAIN-KEYWORD,pixel,REJECT-TINYGIF,pre-matching
 
 #YANDEX каки✴️
-#DOMAIN,yandex.ru,REJECT-DICT,pre-matching
-#DOMAIN-SUFFIX,ad.mail.ru,REJECT,pre-matching
-#DOMAIN-SUFFIX,top-fwz1.mail.ru,REJECT,pre-matching
-#DOMAIN-SUFFIX,rs.mail.ru,REJECT,pre-matching
-#DOMAIN-SUFFIX,widgets.vk.com,REJECT-200,pre-matching
-#DOMAIN-SUFFIX,promotedby.vk.com,REJECT-200,pre-matching
-#DOMAIN-SUFFIX,adriver.ru,REJECT-200,pre-matching
-#DOMAIN-SUFFIX,criteo.com,REJECT-200,pre-matching
-#DOMAIN-SUFFIX,criteo.net,REJECT-200,pre-matching
-#DOMAIN-SUFFIX,moatads.com,REJECT-200,pre-matching
-#DOMAIN-SUFFIX,scorecardresearch.com,REJECT-200,pre-marching
-#DOMAIN-SUFFIX,serving-sys.com,REJECT-200,pre-matching
-#DOMAIN-SUFFIX,cdn.jsdelivr.net,REJECT-200,pre-matching
-#DOMAIN-SUFFIX,content-sdk.cdn.yandex.net,REJECT,pre-matching
-#DOMAIN-SUFFIX,directcdn.net,REJECT,pre-matching
-#DOMAIN-SUFFIX,frontend.vh.yandex.ru,REJECT,pre-matching
-#DOMAIN-SUFFIX,kp.yandex.ru,REJECT,pre-matching
-#DOMAIN-SUFFIX,moikrug.ru,REJECT,pre-matching
-#DOMAIN-SUFFIX,offer.cdn.yandex.net,REJECT,pre-matching
-#DOMAIN-SUFFIX,ok.video.yandex.ru,REJECT,pre-matching
-#DOMAIN-SUFFIX,promocodes.cdn.yandex.net,REJECT,pre-matching
-#DOMAIN-SUFFIX,shri.yandex.net,REJECT,pre-matching
-#DOMAIN-SUFFIX,spb.video.yandex.ru,REJECT,pre-matching
-#DOMAIN-SUFFIX,tm.yandex.ru,REJECT,pre-matching
-#DOMAIN-SUFFIX,video.yandex.ru,REJECT,pre-matching
-#DOMAIN-SUFFIX,web-antiadblock.nice.x.yandex-team.ru,REJECT,pre-matching
-#DOMAIN-SUFFIX,web-usocial.yandex.ru,REJECT,pre-matching
-#DOMAIN-SUFFIX,yandexadexchange.net,REJECT,pre-matching
-#DOMAIN-SUFFIX,yandex-rtb.cdn.yandex.net,REJECT,pre-matching
-#DOMAIN-SUFFIX,yandex-rtb-preview.cdn.yandex.net,REJECT,pre-matching
-#DOMAIN-SUFFIX,yanet.ru,REJECT,pre-matching
-#DOMAIN-SUFFIX,yanetcom.ru,REJECT,pre-matching
-#DOMAIN-SUFFIX,my.com,REJECT,pre-matching
-#DOMAIN-SUFFIX,cnt.my.com,REJECT,pre-matching
-#DOMAIN-SUFFIX,adj.st,REJECT,pre-matching
-#URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/ad/.*$,REJECT-DICT,pre-matching
-#URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/yabs/.*$,REJECT-DICT,pre-matching
-#URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/bs/.*$,REJECT-DICT,pre-matching
-#URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/direct/.*$,REJECT-DICT,pre-matching
-#URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/rtb/.*$,REJECT-DICT,pre-matching
-#URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/web-usocial/.*$,REJECT-DICT,pre-matching
-#URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/yandex-ads/.*$,REJECT-DICT,pre-matching
-#URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/zen/.*\?ad.*$,REJECT-DICT,pre-matching
-#URL-REGEX,^https?://yandex\.(ru|com)/clck/click.*$,REJECT,pre-matching
-#URL-REGEX,^https?://yandex\.(ru|com)/ads/v4/ad.*$,REJECT-DICT,pre-matching
-#URL-REGEX,^https?://yandex\.(ru|com)/an/count/.*$,REJECT,pre-matching
-#URL-REGEX,^https?://yandex\.(ru|com)/an/rtbcount/.*$,REJECT,pre-matching
-#URL-REGEX,^https?://baobab\.market\.yandex\.(ru|com)/safeclick/json.*$,REJECT-DICT,pre-matching
-#URL-REGEX,^https?://media-adv\..*\.yandex\.(ru|com)/.*$,REJECT,pre-matching
-#URL-REGEX,^https?://adfstat\.yandex\.(ru|com)/.*$,REJECT-TINYGIF,pre-matching
-#URL-REGEX,^https?://market\.yandex\.(ru|com)/ecom-assistant\?.*$,REJECT-DICT,pre-matching
-#URL-REGEX,^https?://ipa\.market\.yandex\.(ru|com)/api/v1\?.*dictionary=1.*$,REJECT-DICT,pre-matching
-#URL-REGEX,^https?://ipa\.market\.yandex\.(ru|com)/api/v1\?.*name=getToggles.*$,REJECT-DICT,pre-matching
-#URL-REGEX,^https?://ipa\.market\.yandex\.(ru|com)/api/v1\?.*name=resolveGlobalDeliveryPoint.*$,REJECT-DICT,pre-matching
-#URL-REGEX,^https?://api\.plus\.yandex\.net:443/.*$,REJECT-DICT,pre-matching
-#URL-REGEX,^https?://infocenter\.rasp\.yandex-net\.ru:443/.*$,REJECT,pre-matching
-#URL-REGEX,^https?://suburban-trains\.s3\.yandex\.net:443/.*$,REJECT,pre-matching
-#URL-REGEX,^https?://export\.rasp\.yandex-net\.ru:443/.*$,REJECT,pre-matching
-#URL-REGEX,^https?://stable\.carsharing\.yandex\.net:443/.*$,REJECT,pre-matching
-#URL-REGEX,^https?://tc\.mobile\.yandex\.net:443/.*$,REJECT,pre-matching
+DOMAIN-SUFFIX,afisha.yandex.ru,DIRECT
+DOMAIN-SUFFIX,yastatic.net,DIRECT
+DOMAIN-SUFFIX,sp.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,sp.yandex.com,REJECT,pre-matching
+DOMAIN-SUFFIX,egw.sp.plet.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,log.strm.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,amc.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,adfstat.yandex.ru,REJECT-TINYGIF,pre-matching
+DOMAIN-SUFFIX,strm.yandex.ru,REJECT,pre-matching   # может сломать видео — если будут проблемы, удалить
+DOMAIN-SUFFIX,market-baobab.yandex.ru,REJECT-DICT,pre-matching
+DOMAIN-SUFFIX,media-adv.market.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,mc.yandex.ru,REJECT-TINYGIF,pre-matching
+DOMAIN-SUFFIX,mc.yandex.com,REJECT-TINYGIF,pre-matching
+DOMAIN-SUFFIX,media-adv.market.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,baobab.market.yandex.ru,REJECT-DICT,pre-matching
+DOMAIN,yandex.ru,REJECT-DICT,pre-matching
+DOMAIN-SUFFIX,ad.mail.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,top-fwz1.mail.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,rs.mail.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,widgets.vk.com,REJECT-200,pre-matching
+DOMAIN-SUFFIX,promotedby.vk.com,REJECT-200,pre-matching
+DOMAIN-SUFFIX,adriver.ru,REJECT-200,pre-matching
+DOMAIN-SUFFIX,criteo.com,REJECT-200,pre-matching
+DOMAIN-SUFFIX,criteo.net,REJECT-200,pre-matching
+DOMAIN-SUFFIX,moatads.com,REJECT-200,pre-matching
+DOMAIN-SUFFIX,scorecardresearch.com,REJECT-200,pre-matching
+DOMAIN-SUFFIX,serving-sys.com,REJECT-200,pre-matching
+DOMAIN-SUFFIX,cdn.jsdelivr.net,REJECT-200,pre-matching
+DOMAIN-SUFFIX,content-sdk.cdn.yandex.net,REJECT,pre-matching
+DOMAIN-SUFFIX,directcdn.net,REJECT,pre-matching
+DOMAIN-SUFFIX,frontend.vh.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,kp.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,moikrug.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,offer.cdn.yandex.net,REJECT,pre-matching
+DOMAIN-SUFFIX,ok.video.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,promocodes.cdn.yandex.net,REJECT,pre-matching
+DOMAIN-SUFFIX,shri.yandex.net,REJECT,pre-matching
+DOMAIN-SUFFIX,spb.video.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,tm.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,video.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,web-antiadblock.nice.x.yandex-team.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,web-usocial.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,yandexadexchange.net,REJECT,pre-matching
+DOMAIN-SUFFIX,yandex-rtb.cdn.yandex.net,REJECT,pre-matching
+DOMAIN-SUFFIX,yandex-rtb-preview.cdn.yandex.net,REJECT,pre-matching
+DOMAIN-SUFFIX,yanet.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,yanetcom.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,my.com,REJECT,pre-matching
+DOMAIN-SUFFIX,cnt.my.com,REJECT,pre-matching
+DOMAIN-SUFFIX,adj.st,REJECT,pre-matching
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/ad/.*$,REJECT-DICT,pre-matching
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/yabs/.*$,REJECT-DICT,pre-matching
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/bs/.*$,REJECT-DICT,pre-matching
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/direct/.*$,REJECT-DICT,pre-matching
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/rtb/.*$,REJECT-DICT,pre-matching
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/web-usocial/.*$,REJECT-DICT,pre-matching
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/yandex-ads/.*$,REJECT-DICT,pre-matching
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/zen/.*\?ad.*$,REJECT-DICT,pre-matching
+URL-REGEX,^https?://yandex\.(ru|com)/clck/click.*$,REJECT,pre-matching
+URL-REGEX,^https?://yandex\.(ru|com)/ads/v4/ad.*$,REJECT-DICT,pre-matching
+URL-REGEX,^https?://yandex\.(ru|com)/an/count/.*$,REJECT,pre-matching
+URL-REGEX,^https?://yandex\.(ru|com)/an/rtbcount/.*$,REJECT,pre-matching
+URL-REGEX,^https?://baobab\.market\.yandex\.(ru|com)/safeclick/json.*$,REJECT-DICT,pre-matching
+URL-REGEX,^https?://([a-z0-9-]+\.)?baobab\.yandex\.(ru|com)/safeclick/.*$,REJECT-DICT,pre-matching
+URL-REGEX,^https?://media-adv\..*\.yandex\.(ru|com)/.*$,REJECT,pre-matching
+URL-REGEX,^https?://adfstat\.yandex\.(ru|com)/.*$,REJECT-TINYGIF,pre-matching
+URL-REGEX,^https?://market\.yandex\.(ru|com)/ecom-assistant\?.*$,REJECT-DICT,pre-matching
+URL-REGEX,^https?://ipa\.market\.yandex\.(ru|com)/api/v1\?.*dictionary=1.*$,REJECT-DICT,pre-matching
+URL-REGEX,^https?://ipa\.market\.yandex\.(ru|com)/api/v1\?.*name=getToggles.*$,REJECT-DICT,pre-matching
+URL-REGEX,^https?://ipa\.market\.yandex\.(ru|com)/api/v1\?.*name=resolveGlobalDeliveryPoint.*$,REJECT-DICT,pre-matching
+URL-REGEX,^https?://api\.plus\.yandex\.net:443/.*$,REJECT-DICT,pre-matching
+URL-REGEX,^https?://infocenter\.rasp\.yandex-net\.ru:443/.*$,REJECT,pre-matching
+URL-REGEX,^https?://suburban-trains\.s3\.yandex\.net:443/.*$,REJECT,pre-matching
+URL-REGEX,^https?://export\.rasp\.yandex-net\.ru:443/.*$,REJECT,pre-matching
+URL-REGEX,^https?://stable\.carsharing\.yandex\.net:443/.*$,REJECT,pre-matching
+URL-REGEX,^https?://tc\.mobile\.yandex\.net:443/.*$,REJECT,pre-matching
+URL-REGEX,https://yandex\.com/clck/click.*,REJECT
+URL-REGEX,^https?://mc\.yandex\.(ru|com)/(metrika|watch|solid\.ws).*$,REJECT-TINYGIF,pre-matching
+URL-REGEX,^https?://sp\.yandex\.(ru|com)/.*$,REJECT,pre-matching
 
 #Регионы
 #🇷🇺DOMAIN-SUFFIX,ru,REJECT,pre-matching,extended-matching
@@ -245,7 +264,6 @@ DOMAIN-SUFFIX,static.rutubelist.ru,REJECT-DICT,pre-matching
 DOMAIN-SUFFIX,static.kuper.ru,REJECT-DICT,pre-matching
 DOMAIN-SUFFIX,static-origin.kuper.ru,REJECT-DICT,pre-matching
 DOMAIN-KEYWORD,messenger.yandex,REJECT-DROP,pre-matching
-DOMAIN-SUFFIX,yastatic.net,REJECT-DICT,pre-matching
 DOMAIN-SUFFIX,max.ru,REJECT-DROP,pre-matching
 #НИКАКОГО МАКСА!⚠️
 #DOMAIN-SUFFIX,mail.ru,REJECT-DROP,pre-matching
@@ -514,13 +532,13 @@ localhost = 127.0.0.1
 (^https?:\/\/[\w-]+\.googlevideo\.com\/(?!dclk_video_ads).+?)&ctier=L(&.+?),ctier,(.+) $1$2$3 302
 
 #YANDEX каки✴️
-#^http(s?)://(.*?)\?(.*)&?utm_(.*) http$1://$2?$3 302
-#^http(s?)://(.*?)\?(utm_.*)&?(.*) http$1://$2?$3 302
-#^http(s?)://(.*?)\?utm_(.*) http$1://$2 302
-#^http(s?)://(.*?)\?(.*)&?yclid=(.*) http$1://$2?$3 302
-#^http(s?)://(.*?)\?yclid=(.*) http$1://$2 302
-#^http://(www\.)?yandex\.ru https://yandex.com 302
-#^https://(www\.)?yandex\.ru https://yandex.com 302
+^http(s?)://(.*?)\?(.*)&?utm_(.*) http$1://$2?$3 302
+^http(s?)://(.*?)\?(utm_.*)&?(.*) http$1://$2?$3 302
+^http(s?)://(.*?)\?utm_(.*) http$1://$2 302
+^http(s?)://(.*?)\?(.*)&?yclid=(.*) http$1://$2?$3 302
+^http(s?)://(.*?)\?yclid=(.*) http$1://$2 302
+^http://(www\.)?yandex\.ru https://yandex.com 302
+^https://(www\.)?yandex\.ru https://yandex.com 302
 
 [Map Local]
 ^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.+&oad data-type=text data="" status-code=200
@@ -530,7 +548,7 @@ yt.script = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/(yo
 #https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js
 
 [MITM]
-hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com, %APPEND% yandex.ru, yandex.com, *.yandex.ru, *.yandex.com
+hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com, %APPEND% yandex.ru, yandex.com, ya.ru, *.yandex.ru, *.yandex.com, *.ya.ru
 enable = true
 
 # ╱|、           ∧＿∧
