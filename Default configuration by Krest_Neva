@@ -152,7 +152,7 @@ DOMAIN-SUFFIX,egw.sp.plet.yandex.ru,REJECT,pre-matching
 DOMAIN-SUFFIX,log.strm.yandex.ru,REJECT,pre-matching
 DOMAIN-SUFFIX,amc.yandex.ru,REJECT,pre-matching
 DOMAIN-SUFFIX,adfstat.yandex.ru,REJECT-TINYGIF,pre-matching
-DOMAIN-SUFFIX,strm.yandex.ru,REJECT,pre-matching   # может сломать видео — если будут проблемы, удалить
+DOMAIN-SUFFIX,strm.yandex.ru,REJECT,pre-matching
 DOMAIN-SUFFIX,market-baobab.yandex.ru,REJECT-DICT,pre-matching
 DOMAIN-SUFFIX,media-adv.market.yandex.ru,REJECT,pre-matching
 DOMAIN-SUFFIX,mc.yandex.ru,REJECT-TINYGIF,pre-matching
@@ -203,6 +203,7 @@ URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/web-usocial/.*$,REJECT-DICT
 URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/yandex-ads/.*$,REJECT-DICT
 URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/zen/.*\?ad.*$,REJECT-DICT
 URL-REGEX,^https?://yandex\.(ru|com)/clck/click.*$,REJECT
+URL-REGEX,https://yandex\.com/clck/click.*,REJECT
 URL-REGEX,^https?://yandex\.(ru|com)/ads/v4/ad.*$,REJECT-DICT
 URL-REGEX,^https?://yandex\.(ru|com)/an/count/.*$,REJECT
 URL-REGEX,^https?://yandex\.(ru|com)/an/rtbcount/.*$,REJECT
@@ -220,7 +221,6 @@ URL-REGEX,^https?://suburban-trains\.s3\.yandex\.net:443/.*$,REJECT
 URL-REGEX,^https?://export\.rasp\.yandex-net\.ru:443/.*$,REJECT
 URL-REGEX,^https?://stable\.carsharing\.yandex\.net:443/.*$,REJECT
 URL-REGEX,^https?://tc\.mobile\.yandex\.net:443/.*$,REJECT
-URL-REGEX,https://yandex\.com/clck/click.*,REJECT
 URL-REGEX,^https?://mc\.yandex\.(ru|com)/(metrika|watch|solid\.ws).*$,REJECT-TINYGIF
 URL-REGEX,^https?://sp\.yandex\.(ru|com)/.*$,REJECT
 
