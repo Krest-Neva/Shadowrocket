@@ -3,8 +3,8 @@
 #!arguments=captionLang:off, lyricLang:off, blockImmersive:false, debug:false
 #blockShorts:false, blockUpload:true вырезано
 
-#Последние изменения 22.03.2026 00:00
-#Фильтры обновлены 14.03.2026 03:00
+#Последние изменения 22.03.2026 18:00
+#Фильтры обновлены 14.03.2026 03:00 (временно отключены)
 
 #==================================================
 #ИНФОРМАЦИЯℹ️
@@ -66,6 +66,11 @@ ipv6 = false
 prefer-ipv6 = false
 skip-proxy = apple.com,icloud.com,mzstatic.com,itunes.apple.com,captive.apple.com,gsp1.apple.com,*.local,localhost,apple-pki.com,digicert.com,entrust.net
 always-real-ip = *.apple.com,*.icloud.com,*.itunes.com,*.crashlytics.com,*.mzstatic.com,*.apple-pki.com
+tun-excluded-routes = 10.0.0.0/8,17.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.0.0.0/24,192.0.2.0/24,192.88.99.0/24,192.168.0.0/16,198.51.100.0/24,203.0.113.0/24,224.0.0.0/4,255.255.255.255/32
+dns-over-https = true
+dns-direct-system = false
+dns-fallback-system = false
+dns-direct-fallback-proxy = true
 #AdGuard DNS
 #dns-server = 94.140.14.14,94.140.15.15
 #fallback-dns-server = 8.8.8.8,8.8.4.4,1.1.1.1
@@ -73,12 +78,11 @@ always-real-ip = *.apple.com,*.icloud.com,*.itunes.com,*.crashlytics.com,*.mzsta
 dns-server = https://dns.google/dns-query,https://security.cloudflare-dns.com/dns-query
 fallback-dns-server = https://dns.adguard-dns.com/dns-query
 hijack-dns = 8.8.8.8:53
-tun-excluded-routes = 10.0.0.0/8,17.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.0.0.0/24,192.0.2.0/24,192.88.99.0/24,192.168.0.0/16,198.51.100.0/24,203.0.113.0/24,224.0.0.0/4,255.255.255.255/32
 private-ip-answer = true
-dns-over-https = true
-dns-direct-system = false
 bypass-system = true
 always-reject-url-rewrite = false
+icmp-auto-reply = false
+udp-policy-not-supported-behaviour = REJECT
 
 [Rule]
 #Локальные сети
