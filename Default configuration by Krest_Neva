@@ -375,15 +375,26 @@ DOMAIN-SUFFIX,msauth.net,COPILOTPROXY
 DOMAIN-SUFFIX,microsoftonline.com,COPILOTPROXY
 
 #Telegram
-#RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/telegramcidr.txt,BESTPROXY
-#IP-ASN,62041,BESTPROXY,no-resolve
-#IP-ASN,59930,BESTPROXY,no-resolve
-#IP-ASN,200693,BESTPROXY,no-resolve
-#IP-ASN,211157,BESTPROXY,no-resolve
-#DOMAIN-KEYWORD,telegram,BESTPROXY
-#DOMAIN-SUFFIX,t.me,BESTPROXY
-#DOMAIN-SUFFIX,telegra.ph,BESTPROXY
-#DOMAIN-SUFFIX,tdesktop.com,BESTPROXY
+RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/telegramcidr.txt,TGPROXY
+IP-ASN,62041,TGPROXY,no-resolve
+IP-ASN,59930,TGPROXY,no-resolve
+IP-ASN,200693,TGPROXY,no-resolve
+IP-ASN,211157,TGPROXY,no-resolve
+IP-CIDR,91.108.56.0/22,TGPROXY,no-resolve
+IP-CIDR,91.108.4.0/22,TGPROXY,no-resolve
+IP-CIDR,149.154.160.0/22,TGPROXY,no-resolve
+IP-CIDR,149.154.164.0/22,TGPROXY,no-resolve
+IP-CIDR,149.154.168.0/22,TGPROXY,no-resolve
+IP-CIDR,149.154.172.0/22,TGPROXY,no-resolve
+IP-CIDR,185.76.151.0/24,TGPROXY,no-resolve
+IP-CIDR,95.161.64.0/20,TGPROXY,no-resolve
+DOMAIN-SUFFIX,telegram.org,TGPROXY
+DOMAIN-SUFFIX,telegram.me,TGPROXY
+DOMAIN-SUFFIX,t.me,TGPROXY
+DOMAIN-SUFFIX,telegra.ph,TGPROXY
+DOMAIN-SUFFIX,tdesktop.com,TGPROXY
+DOMAIN-SUFFIX,tg.dev,TGPROXY
+DOMAIN-SUFFIX,telegram-cdn.org,TGPROXY
 
 #Шняга PROXY
 #DOMAIN-SUFFIX,signal.org,BESTPROXY
