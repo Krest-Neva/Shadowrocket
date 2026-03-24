@@ -3,8 +3,8 @@
 #!arguments=captionLang:off, lyricLang:off, blockImmersive:false, debug:false
 #blockShorts:false, blockUpload:true вырезано
 
-#Последние изменения 22.03.2026 18:00
-#Фильтры обновлены 14.03.2026 03:00 (временно отключены)
+#Последние изменения 25.03.2026 00:00
+#Фильтры обновлены 25.03.2026 00:00
 
 #==================================================
 #ИНФОРМАЦИЯℹ️
@@ -118,16 +118,8 @@ GEOIP,private,DIRECT
 AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
 AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 
-#Реклама, трекеры, аналитика💩
-
-#ВРЕМЕННО
-DOMAIN-SUFFIX,citilink.ru,DIRECT
-DOMAIN-SUFFIX,proxyliberty.ru,BESTPROXY
-DOMAIN-SUFFIX,sport24.ru,DIRECT
-DOMAIN-SUFFIX,zr.ru,DIRECT
-
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/AdGuard_and_Loyalsoldier_REJECT_RULES.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/reject.txt,REJECT-DROP
+#Реклама, трекеры, аналитика, фишинг и остальная кака💩
+RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT-RULES.list,REJECT-DROP
 DOMAIN-KEYWORD,uploads,DISCORDPROXY
 DOMAIN-KEYWORD,downloads,BESTPROXY
 DOMAIN-SUFFIX,pixel.google.com,BESTPROXY
@@ -264,13 +256,6 @@ URL-REGEX,^https?://sp\.yandex\.(ru|com)/.*$,REJECT
 #DOMAIN-KEYWORD,vkvideo,REJECT-DROP,pre-matching
 
 #Шняга REJECT
-#DOMAIN-SUFFIX,vk.link,REJECT-DROP,pre-matching
-DOMAIN-SUFFIX,app.link,REJECT-DROP,pre-matching
-DOMAIN-SUFFIX,mradx.net,REJECT-DROP,pre-matching
-DOMAIN-SUFFIX,adjust.com,REJECT-DROP,pre-matching
-DOMAIN-SUFFIX,static.rutubelist.ru,REJECT-DICT,pre-matching
-DOMAIN-SUFFIX,static.kuper.ru,REJECT-DICT,pre-matching
-DOMAIN-SUFFIX,static-origin.kuper.ru,REJECT-DICT,pre-matching
 DOMAIN-SUFFIX,max.ru,REJECT-DROP,pre-matching
 #НИКАКОГО МАКСА!⚠️
 #DOMAIN-SUFFIX,mail.ru,REJECT-DROP,pre-matching
@@ -313,6 +298,8 @@ DOMAIN-SUFFIX,max.ru,REJECT-DROP,pre-matching
 #DOMAIN-SUFFIX,zztfly.com,REJECT-DROP,pre-matching
 #DOMAIN-SUFFIX,sub.scroogethebest.com,REJECT-DROP,pre-matching
 #DOMAIN-SUFFIX,apmplus.volces.com,REJECT-DROP,pre-matching
+
+DOMAIN-SUFFIX,proxyliberty.ru,BESTPROXY
 
 #Discord
 DOMAIN-SUFFIX,comdiscord.com,DISCORDPROXY
