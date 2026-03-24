@@ -1,4 +1,4 @@
-#ADGUARD AND LOYALSOLDIER ADBLOCK SCRIPT
+#ADBLOCK SCRIPT
 
 #СКРИПТ СОЗДАН ДЛЯ ISH https://apps.apple.com/ru/app/ish-shell/id1436902243
 #ФОРМИРУЕТ RULE-SET ДЛЯ SHADOWROCKET ДЛЯ БЛОКИРОВКИ РЕКЛАМЫ, ТРЕКЕРОВ, АНАЛИТИКИ И ФИШИНГОВЫХ САЙТОВ.
@@ -22,7 +22,23 @@ ping -c 3 google.com
 echo "[*] Обновление системы и установка зависимостей..."
 apk update
 apk upgrade
-apk add python3 py3-pip curl wget aria2 git openssl ca-certificates tor torsocks
+apk add python3 py3-pip curl wget aria2 git openssl ca-certificates tor torsocks obfs4proxy
+
+echo "[*] Настройка мостов Tor (obfs4 и webtunnel)..."
+cat << 'EOF' > /etc/tor/torrc
+UseBridges 1
+ClientTransportPlugin obfs4 exec /usr/bin/obfs4proxy
+Bridge obfs4 85.190.99.11:9443 52192491E209B87F869C13CADC0EB69F07C3ECFC cert=MbTy8UwrcxKjuJbF+V4OYrUGPwDtiYIpUsmznZwuOBwOe6swh23vTsJwGHzgpEIRoQqYYQ iat-mode=0
+Bridge obfs4 57.129.122.32:9443 B2DB88669B2390BA7079C7A4BEE78B8FCF844428 cert=1x43OiW8jB97CmzR8B1aahcnHmnhVa+6Qd+MR1wi0N6Z4XYO4j+EVJ376WXivxD2LtP/RA iat-mode=0
+Bridge obfs4 91.134.99.182:26566 B5D7274F4267D73372BBF8C6446C3AF2D4399A4B cert=eXB5PBSwA+Y6Selwz245/3gZWsskMoJDZcBBccAxrqTtT7OLAwSguf9z2tHU5mV3YkgjIw iat-mode=0
+Bridge obfs4 157.180.65.109:22530 FD109070400963AF84C09A419B1F0C5E1E923CA3 cert=kw1Q+JOt45xn1RgkV37IK7+0KYT4gaMnAz1+F+sJ4yviq7WzlruQdYntW4GZhSSeeQ5STQ iat-mode=0
+
+ClientTransportPlugin webtunnel exec /usr/bin/webtunnel
+Bridge webtunnel [2001:db8:50c6:f177:293a:6612:f682:feb0]:443 6736F1245C77FBDCE4252F5711DE3137A7C10125 url=https://www.itssohotrightnow.com/0bc106e5688f206329e24a350b084c43 ver=0.0.3
+Bridge webtunnel [2001:db8:1f1e:4d2f:321b:6626:823e:c504]:443 4946C9B8410CF59953455C158F957CAB2055A61D url=https://mstdn.party/fooghee7naChifi0 ver=0.0.2
+Bridge webtunnel [2001:db8:43cc:d277:5ba1:dcd1:516e:d983]:443 AD62C15FAC9C8695F41F4BB5D1F16373F906177F url=https://mitch.pmvl.eu/r9mZqSFwOHSQATtQoPWwZQk9 ver=0.0.1
+Bridge webtunnel [2001:db8:8ed6:e6c9:5fc9:9f20:a373:2374]:443 1636A2EFFBAA4B162F5FF461A1663EB55C41AE11 url=https://hanoi.delivery/roQFPLtlspWT6yIKeXD6lEci ver=0.0.3
+EOF
 
 # ==========================================
 # --- ОЧИСТКА СТАРЫХ ФАЙЛОВ ---
@@ -34,7 +50,8 @@ rm -f "LogsAdBlockScript"
 # ==========================================
 # --- ЧАСТЬ 2: СОЗДАНИЕ ПАРСЕРА ---
 # ==========================================
-cat << 'EOF' > "AdGuard_and_Loyalsoldier_REJECT_RULES.py"
+cat << 'EOF' >
+"AdGuard_and_Loyalsoldier_REJECT_RULES.py"
 import urllib.request
 import subprocess
 import re
@@ -69,7 +86,20 @@ urls = {
         "https://easylist-downloads.adblockplus.org/cntblock.txt",
         "https://raw.githubusercontent.com/easylist/easylist/master/easyprivacy/easyprivacy_trackers.txt"
     ],
-    "9) Анти фишинг": "https://malware-filter.gitlab.io/malware-filter/phishing-filter-ag.txt"
+    "9) Анти фишинг": "https://malware-filter.gitlab.io/malware-filter/phishing-filter-ag.txt",
+    "10) OISD": [
+        "https://big.oisd.nl", "https://small.oisd.nl/domainset",
+        "https://cdn.jsdelivr.net/gh/SJvV/oisd@main/domainset.txt",
+        "https://raw.githubusercontent.com/SJvV/oisd/main/domainset.txt"
+    ],
+    "11) HaGeZi Pro": [
+        "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/pro.txt",
+        "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@main/adblock/pro.txt"
+    ],
+    "12) StevenBlack Hosts": [
+        "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",
+        "https://cdn.jsdelivr.net/gh/StevenBlack/hosts@master/hosts"
+    ]
 }
 
 # -------------------------
@@ -99,14 +129,20 @@ white_urls = {
         "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/ruleset/icloud.txt",
         "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/icloud.txt",
         "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/icloud.txt"
+    ],
+    "Белый список AnudeepND (Global)": [
+        "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt",
+        "https://cdn.jsdelivr.net/gh/anudeepND/whitelist@master/domains/whitelist.txt"
+    ],
+    "РФ БС для моб.": [
+        "https://cdn.jsdelivr.net/gh/hxehex/russia-mobile-internet-whitelist@main/whitelist.txt",
+        "https://raw.githubusercontent.com/hxehex/russia-mobile-internet-whitelist/main/whitelist.txt"
     ]
 }
 
 output_file = "AdGuard_and_Loyalsoldier_REJECT_RULES.list"
 exclude_keywords = [
-    "ads", "analytics", "tracker", "tracking", "tracer",
-    "metrics", "metrica", "metrika", "telemetry", "pixel",
-    "beacon", "adserver", "doubleclick", "adjust", "appsflyer"
+    "ads", "analytics", "tracker", "tracking", "tracer", "metrics", "metrica", "metrika", "telemetry", "pixel", "beacon", "adserver", "doubleclick", "adjust", "appsflyer", "messenger.yandex"
 ]
 
 # Предкомпилированная регулярка для ключевых слов
@@ -117,55 +153,29 @@ INVALID_CHARS = set('?|=*(),&:[]/\\%#_')
 
 # --- ЗАЩИЩЁННЫЕ СУФФИКСЫ (ручные) ---
 protected_suffixes = {
-    "apple-pki.com", "icloud.com", "icloud-content.com", "simplex.im", "simplexonflux.com",
-    "googleapis.com", "firebaseio.com", "cloudfront.net", "amazonaws.com",
-    "azureedge.net", "microsoft.com", "jsdelivr.net", "push.apple.com",
-    "appleid.apple.com",
-    "giphy.com"  # добавлено для гифок в Instagram
+   "apple-pki.com", "icloud.com", "icloud-content.com", "mzstatic.com", "push.apple.com", "appleid.apple.com",
+    "simplex.im", "simplexonflux.com", "telegram.org", "t.me", "telegram.me", "telegra.ph", "tg.dev", "cdn.telegram-cdn.org",
+    "whatsapp.com", "whatsapp.net", "wa.me", "youtube.com", "youtu.be", "ytimg.com", "googlevideo.com", "youtube.googleapis.com"
 }
 
 # --- ЗАЩИЩЁННЫЕ ТОЧНЫЕ ДОМЕНЫ (ручные) ---
 protected_domains = {
-    "facetime.apple.com", "stun.apple.com", "apple.com", "apple-pki.com", "icloud.com",
-    "icloud-content.com", "mzstatic.com", "push.apple.com", "aaplimg.com",
-    "github.com", "githubusercontent.com", "githubassets.com", "google.com",
-    "gstatic.com", "ggpht.com", "googlevideo.com", "firebase.google.com",
-    "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com",
-    "microsoft.com", "windows.com", "windowsupdate.com", "msftconnecttest.com", "msftncsi.com",
-    "azure.com", "azureedge.net", "azurefd.net",
-    "amazon.com", "amazonaws.com", "aws.amazon.com", "cloudfront.net", "amazon-adsystem.com",
-    "facebook.com", "fb.com", "fbcdn.net", "youtube.com", "youtu.be",
-    "recaptcha.net", "npmjs.org", "pypi.org", "gitlab.com", "bitbucket.org", "cloudflare.com",
-    "one.one.one.one", "dns.google", "quad9.net", "fastly.net", "jsdelivr.net",
-    "unpkg.com", "akamaiedge.net", "akamaized.net", "akamai.net", "auth0.com", "okta.com",
-    "login.microsoftonline.com", "accounts.google.com", "hcaptcha.com", "challenges.cloudflare.com",
-    "firebaseio.com", "android.com",
-    "instagram.com", "cdninstagram.com", "duckduckgo.com", "ddg.co",
-    "telegram.org", "t.me", "whatsapp.com", "whatsapp.net",
-    "youtube.com", "ytimg.com", "googlevideo.com", "ozon.ru", "wildberries.ru",
-    "yandex.ru", "yandex.com", "finam.ru", "sberbank.ru", "online.sberbank.ru",
-    "alfabank.ru", "alfa.ru", "tbank.ru", "tinkoff.ru", "vtb.ru",
-    "discord.com", "discordapp.com", "facebook.com", "fbcdn.net",
-    "hh.ru", "avito.ru", "avito.st"
+   "raw.githubusercontent.com", "cdn-apple.com", "apple-dns.net", "ls.apple.com", "facetime.apple.com", "stun.apple.com", "apple.com", "aaplimg.com", "github.com", "githubusercontent.com", "githubassets.com", "google.com", "gstatic.com", "ggpht.com", "firebase.google.com", "googleapis.com", "firebaseio.com", "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com", "microsoft.com", "windows.com", "windowsupdate.com", "msftconnecttest.com", "msftncsi.com", "azure.com", "azureedge.net", "azurefd.net", "amazon.com", "amazonaws.com", "aws.amazon.com", "cloudfront.net", "cloudflare.com", "fastly.net", "jsdelivr.net", "unpkg.com", "akamaiedge.net", "akamaized.net", "akamai.net", "auth0.com", "okta.com", "login.microsoftonline.com", "accounts.google.com", "hcaptcha.com", "challenges.cloudflare.com", "recaptcha.net", "facebook.com", "fb.com", "fbcdn.net", "graph.instagram.com", "graph.facebook.com", "instagram.com", "cdninstagram.com", "discord.com", "discordapp.com", "duckduckgo.com", "ddg.co", "giphy.com", "habr.com", "yandex.ru", "yandex.com", "yandex.by", "yandex.kz", "mail.yandex.ru", "passport.yandex.ru", "api.yandex.ru", "mail.ru", "e.mail.ru", "vk.com", "api.vk.com", "ozon.ru", "wildberries.ru", "avito.ru", "avito.st", "hh.ru", "sberbank.ru", "online.sberbank.ru", "alfabank.ru", "alfa.ru", "tbank.ru", "tinkoff.ru", "vtb.ru", "finam.ru", "63.ru", "aif.ru", "amic.ru", "angliya.com", "ap22.ru", "asiaplustj.info", "avesta.tj", "azerisport.com", "belta.by", "championat.com", "chita.ru", "citilink.ru", "civil.ge", "click-or-die.ru", "dni.ru", "e1.ru", "echo.az", "echo.msk.ru", "fedpress.ru", "f1news.ru", "fontanka.ru", "football.by", "gazeta.ru", "gazetanovgorod.ru", "golosarmenii.am", "government.ru", "gundogar-news.com", "hronikatm.com", "infoabad.com", "inosmi.ru", "interfax.ru", "itogi.ru", "izvestia.ru", "kp.ru", "kremlin.ru", "lenta.ru", "matchtv.ru", "meduza.io", "mn.ru", "ng.ru", "novayagazeta.ru", "newsvl.ru", "og.ru", "ok.ru", "politikus.info", "ppt.ru", "pressball.by", "progorodsamara.ru", "radiomayak.ru", "rbc.ru", "rg.ru", "ria.ru", "rskrf.ru", "rutube.ru", "sovsport.ru", "sport-express.ru", "sport24.ru", "sportbox.ru", "sports.ru", "tass.ru", "trud.ru", "utro.ru", "ytro.ru", "zr.ru", "one.one.one.one", "dns.google", "quad9.net", "npmjs.org", "pypi.org", "gitlab.com", "bitbucket.org", "android.com", "yastatic.net"
 }
 
-# Сохраняем копии ручных множеств для использования только с Loyalsoldier
 manual_protected_domains = protected_domains.copy()
 manual_protected_suffixes = protected_suffixes.copy()
 
 # --- ПРИНУДИТЕЛЬНО БЛОКИРУЕМЫЕ СУФФИКСЫ (всегда добавляются в финальный список) ---
 forced_block_suffixes = {
-    "bit.ly", "tinyurl.com", "t.co", "reurl.cc", "is.gd", "ow.ly",
-    "linktr.ee", "about.me", "campaign-archive.com"
+    "bit.ly", "tinyurl.com", "t.co", "reurl.cc", "is.gd", "ow.ly", "linktr.ee", "about.me", "campaign-archive.com", "vk.link", "app.link", "mradx.net", "adjust.com", "static.rutubelist.ru", "static.kuper.ru", "static-origin.kuper.ru", "max.ru", "zztfly.com", "sub.scroogethebest.com", "apmplus.volces.com", "googleadservices.com", "doubleclick.net", "googlesyndication.com", "google-analytics.com", "googletagmanager.com", "app-measurement.com", "crashlytics.com", "branch.io", "amplitude.com", "mixpanel.com", "hotjar.com", "yandexmetrica.ru", "mc.yandex.ru", "metrika.yandex.ru", "top.mail.ru", "adriver.ru", "adfox.ru", "pixel.facebook.com", "analytics.facebook.com", "connect.facebook.net", "tr.facebook.com"
 }
 # Принудительно блокируемые домены (пока пусто, для будущего использования)
 forced_block_domains = set()
 
 # Белый список IP
 protected_ips = {
-    "1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4", "9.9.9.9", "149.112.112.112",
-    "94.140.14.14", "94.140.15.15", "94.140.14.15", "94.140.14.1",
-    "76.76.2.0", "76.76.10.0", "208.67.222.222", "208.67.220.220"
+    "1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4", "9.9.9.9", "149.112.112.112", "94.140.14.14", "94.140.15.15", "94.140.14.15", "94.140.14.1", "76.76.2.0", "76.76.10.0", "208.67.222.222", "208.67.220.220", "212.13.114.252", "212.111.75.55", "195.230.90.26", "194.247.146.200", "195.2.83.118", "195.133.107.200", "195.146.64.44", "195.230.90.32", "194.67.20.14"
 }
 
 # --- ПРИНУДИТЕЛЬНО БЛОКИРУЕМЫЕ IP (всегда добавляются в финальный список) ---
@@ -183,6 +193,7 @@ errors_output_file = "LogsAdBlockScript"
 download_report = {}
 failed_lists = []
 white_download_report = {}
+failed_white_lists = []
 
 DNS_SERVERS = [
     "8.8.8.8",
@@ -194,7 +205,6 @@ DNS_SERVERS = [
 
 def setup_dns_and_test():
     print("    [net] Настройка DNS...")
-    # Проверка возможности записи в /etc/resolv.conf (не критично, но предупредим)
     if not os.access("/etc/resolv.conf", os.W_OK):
         print("    [net] Предупреждение: нет прав на запись /etc/resolv.conf, DNS может не обновиться.")
     try:
@@ -202,7 +212,7 @@ def setup_dns_and_test():
             for dns in DNS_SERVERS:
                 f.write(f"nameserver {dns}\n")
         result = subprocess.run(
-            ["ping", "-c", "1", "google.com"],
+            ["ping", "-c", "3", "google.com"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             timeout=5
@@ -397,10 +407,13 @@ def is_valid_domain(d):
     return True
 
 def validate_ip(ip_str):
-    """Проверяет, является ли строка валидным IP/CIDR, возвращает нормализованную строку или None."""
+    """Проверяет, является ли строка валидным IP/CIDR, и отбраковывает локальные адреса (0.0.0.0, 127.x.x.x)"""
     try:
-        # Пытаемся распарсить как сеть (CIDR)
         net = ipaddress.ip_network(ip_str, strict=False)
+        # Отбраковываем пустышки и локалхосты
+        addr = str(net.network_address)
+        if addr.startswith(('0.', '127.', '255.')):
+            return None
         # Если маска не указана, для одиночного IP вернём /32
         return str(net)
     except ValueError:
@@ -416,21 +429,21 @@ def download_data(name, url_or_urls):
         for attempt in range(1, 4):
             try:
                 lines, method = download_with_urllib(url, headers, timeout=10)
-                if len(lines) > 10:
+                if lines and len(lines) > 10 and not any("<html" in str(l).lower() for l in lines[:15]):
                     print(f"  [+] Успешно загружено строк: {len(lines)} (method: {method})")
                     return lines, method
             except Exception: pass
 
             try:
                 lines, method = download_with_curl_to_file(url, headers, timeout=20)
-                if lines and len(lines) > 10:
+                if lines and len(lines) > 10 and not any("<html" in str(l).lower() for l in lines[:15]):
                     print(f"  [+] Успешно загружено строк: {len(lines)} (method: {method})")
                     return lines, method
             except Exception: pass
 
             try:
                 lines, method = try_command_variants(url)
-                if lines and len(lines) > 10:
+                if lines and len(lines) > 10 and not any("<html" in str(l).lower() for l in lines[:15]):
                     print(f"  [+] Успешно загружено строк: {len(lines)} (method: {method})")
                     return lines, method
             except Exception: pass
@@ -454,7 +467,7 @@ def download_data(name, url_or_urls):
                 )
                 if proc.returncode == 0:
                     lines = proc.stdout.decode("utf-8", errors="ignore").splitlines()
-                    if len(lines) > 10:
+                    if lines and len(lines) > 10 and not any("<html" in str(l).lower() for l in lines[:15]):
                         print("  [+] Успешно через Tor")
                         return lines, "torsocks curl"
             except Exception:
@@ -467,7 +480,50 @@ def download_data(name, url_or_urls):
     print(f"  [!] Ошибка: Не удалось скачать {name} ни одним из способов.")
     return [], None
 
-# --- ЗАГРУЗКА БЕЛЫХ СПИСКОВ (с прогресс-баром при парсинге) ---
+def save_logs():
+    try:
+        with open(errors_output_file, 'w', encoding='utf-8') as ef:
+            ef.write(f"Log generated at: {time.ctime()}\n")
+            ef.write("="*60 + "\n")
+            ef.write("DOWNLOAD REPORT (blacklists)\n")
+            ef.write("Source\tStatus\tMethod\tLines\n")
+            for name, info in download_report.items():
+                ef.write(f"{name}\t{info['status']}\t{info.get('method','N/A')}\t{info.get('lines',0)}\n")
+            ef.write("\nDOWNLOAD REPORT (whitelists)\n")
+            ef.write("Source\tStatus\tMethod\tLines\n")
+            for name, info in white_download_report.items():
+                ef.write(f"{name}\t{info['status']}\t{info.get('method','N/A')}\t{info.get('lines',0)}\n")
+
+            ef.write("\n" + "="*60 + "\n")
+            ef.write("PROTECTED SUFFIXES (whitelisted, suffix match)\n")
+            for s in sorted(protected_suffixes):
+                ef.write(f"{s}\n")
+            ef.write("\nPROTECTED DOMAINS (whitelisted, exact match)\n")
+            for d in sorted(protected_domains):
+                ef.write(f"{d}\n")
+
+            ef.write("\n" + "="*60 + "\n")
+            ef.write("EXCLUDED BY KEYWORDS\n")
+            excluded = [(r,s,o) for r,s,o in errors if r == "excluded_keyword"]
+            for reason, src, orig in excluded:
+                ef.write(f"{src}\t{orig}\n")
+
+            ef.write("\nJUNK / INVALID LINES (или пропущенные пути)\n")
+            junk = [(r,s,o) for r,s,o in errors if r.startswith("junk") or r == "skipped_path_rule"]
+            for reason, src, orig in junk:
+                ef.write(f"{reason}\t{src}\t{orig}\n")
+
+            ef.write("\nPROTECTED ENTRIES (skipped during parsing)\n")
+            prot = [(r,s,o) for r,s,o in errors if r.startswith("protected")]
+            for reason, src, orig in prot:
+                ef.write(f"{reason}\t{src}\t{orig}\n")
+
+            ef.write("\n" + "="*60 + "\n")
+            ef.write(f"Total errors/exclusions: {len(errors)}\n")
+    except Exception as e:
+        sys.stdout.write(f"\n[!] Не удалось записать {errors_output_file}: {e}\n")
+
+# --- ЗАГРУЗКА БЕЛЫХ СПИСКОВ ---
 print("\n=== ЗАГРУЗКА БЕЛЫХ СПИСКОВ (для пополнения защищённых доменов) ===")
 for name, url in white_urls.items():
     lines, method = download_data(name, url)
@@ -475,6 +531,7 @@ for name, url in white_urls.items():
         white_download_report[name] = {"status": "ok", "method": method, "lines": len(lines)}
     else:
         white_download_report[name] = {"status": "failed", "method": None, "lines": 0}
+        failed_white_lists.append(name)
         sys.stdout.write(f"[!] Не удалось скачать белый список: {name}\n")
         sys.stdout.flush()
         continue
@@ -530,7 +587,6 @@ for a in apple_keys:
     protected_domains.discard(a)
     protected_suffixes.add(a)
 
-# --- ЭТАП 1: ЗАГРУЗКА И ОБРАБОТКА ЧЁРНЫХ СПИСКОВ ---
 print("\n=== ЭТАП 1: ЗАГРУЗКА И ОБРАБОТКА ЧЁРНЫХ СПИСКОВ ===")
 
 all_domains = set()
@@ -615,14 +671,27 @@ for name, url in urls.items():
             continue
 
         clean = line
+        
+        # Отрезаем комментарий после #
+        clean = clean.split('#')[0].strip()
+
+        # Поддержка формата hosts (как у StevenBlack: "0.0.0.0 domain.com")
+        if clean.startswith(('0.0.0.0 ', '127.0.0.1 ')):
+            clean = clean.split(' ', 1)[1].strip()
+
         clean = re.sub(r'^[|\s]*\|\|', '', clean)
         clean = re.sub(r'^\|', '', clean)
         clean = re.sub(r'^https?://', '', clean)
         clean = re.sub(r'^www\.', '', clean)
-        clean = clean.split('^')[0].split('$')[0].split('/')[0].split(':')[0].split('*')[0].strip()
+        
+        # ВАЖНО: Пропускаем правила с путями (слэшем), так как мы блокируем только домены
+        if '/' in clean.split('^')[0].split('$')[0]:
+            stats["junk"] += 1
+            errors.append(("skipped_path_rule", name, raw_line))
+            continue
+
+        clean = clean.split('^')[0].split('$')[0].split(':')[0].split('*')[0].strip()
         clean = clean.strip('.').strip()
-        # Отрезаем комментарий после #
-        clean = clean.split('#')[0].strip()
 
         if not clean:
             stats["junk"] += 1
@@ -738,48 +807,203 @@ with open(output_file, 'w', encoding='utf-8') as f:
             if written % 1000 == 0 or written == total_write:
                 print_progress("    [write]", written, total_write, bar_len=30, start_time=start_write)
 
-# === ЗАПИСЬ ЛОГ-ФАЙЛА (LogsAdBlockScript) ===
-try:
-    with open(errors_output_file, 'w', encoding='utf-8') as ef:
-        ef.write(f"Log generated at: {time.ctime()}\n")
-        ef.write("="*60 + "\n")
-        ef.write("DOWNLOAD REPORT (blacklists)\n")
-        ef.write("Source\tStatus\tMethod\tLines\n")
-        for name, info in download_report.items():
-            ef.write(f"{name}\t{info['status']}\t{info.get('method','N/A')}\t{info.get('lines',0)}\n")
-        ef.write("\nDOWNLOAD REPORT (whitelists)\n")
-        ef.write("Source\tStatus\tMethod\tLines\n")
-        for name, info in white_download_report.items():
-            ef.write(f"{name}\t{info['status']}\t{info.get('method','N/A')}\t{info.get('lines',0)}\n")
+save_logs()
 
-        ef.write("\n" + "="*60 + "\n")
-        ef.write("PROTECTED SUFFIXES (whitelisted, suffix match)\n")
-        for s in sorted(protected_suffixes):
-            ef.write(f"{s}\n")
-        ef.write("\nPROTECTED DOMAINS (whitelisted, exact match)\n")
-        for d in sorted(protected_domains):
-            ef.write(f"{d}\n")
+# ==========================================
+# --- ИНТЕРАКТИВНЫЙ БЛОК ПОВТОРНОЙ ЗАГРУЗКИ ---
+# ==========================================
+while failed_lists or failed_white_lists:
+    print("\n" + "="*45)
+    print("ВНИМАНИЕ: Некоторые списки не удалось скачать:")
+    for w in failed_white_lists:
+        print(f"  [Белый]  - {w}")
+    for b in failed_lists:
+        print(f"  [Черный] - {b}")
+    print("="*45)
 
-        ef.write("\n" + "="*60 + "\n")
-        ef.write("EXCLUDED BY KEYWORDS\n")
-        excluded = [(r,s,o) for r,s,o in errors if r == "excluded_keyword"]
-        for reason, src, orig in excluded:
-            ef.write(f"{src}\t{orig}\n")
+    target = failed_white_lists[0] if failed_white_lists else failed_lists[0]
+    is_white = target in failed_white_lists
 
-        ef.write("\nJUNK / INVALID LINES\n")
-        junk = [(r,s,o) for r,s,o in errors if r.startswith("junk")]
-        for reason, src, orig in junk:
-            ef.write(f"{reason}\t{src}\t{orig}\n")
+    print(f"\n[?] Хотите попытаться скачать '{target}' ещё раз?")
+    print("  1 - Да (попробовать стандартные ссылки)")
+    print("  2 - Нет (пропустить этот список)")
+    print("  3 - Вручную (я введу новую рабочую ссылку)")
+    ans = input("Ваш выбор (1/2/3): ").strip()
 
-        ef.write("\nPROTECTED ENTRIES (skipped during parsing)\n")
-        prot = [(r,s,o) for r,s,o in errors if r.startswith("protected")]
-        for reason, src, orig in prot:
-            ef.write(f"{reason}\t{src}\t{orig}\n")
+    if ans == '2':
+        if is_white:
+            failed_white_lists.remove(target)
+        else:
+            failed_lists.remove(target)
+        continue
+    elif ans in ('1', '3'):
+        setup_dns_and_test()
+        url_to_try = ""
+        if ans == '3':
+            url_to_try = input("Введите полную ссылку (https://...): ").strip()
+        else:
+            url_to_try = white_urls[target] if is_white else urls[target]
 
-        ef.write("\n" + "="*60 + "\n")
-        ef.write(f"Total errors/exclusions: {len(errors)}\n")
-except Exception as e:
-    sys.stdout.write(f"\n[!] Не удалось записать {errors_output_file}: {e}\n")
+        lines, method = download_data(target, url_to_try)
+
+        if not lines:
+            print("  [!] Загрузка снова не удалась или получена страница с ошибкой (HTML).")
+            continue
+
+        print(f"  [+] Успешно скачано ({method}). Интеграция в правила...")
+
+        total_lines = len(lines)
+        start_parse = time.time()
+
+        if is_white:
+            for idx, raw_line in enumerate(lines, start=1):
+                if idx % 500 == 0 or idx == total_lines:
+                    print_progress("    [parse white retry]", idx, total_lines, bar_len=30, start_time=start_parse)
+                line = raw_line.strip()
+                if not line or line.startswith(('#', '!')): continue
+                if line.startswith('.'):
+                    domain = line.lstrip('.').lower()
+                    if is_valid_domain(domain): protected_suffixes.add(domain)
+                    continue
+                if ',' in line:
+                    parts = line.split(',', 1)
+                    if len(parts) == 2:
+                        key = parts[0].lower()
+                        val = parts[1].strip().lower().split('#')[0].strip()
+                        if key.startswith('domain-suffix'):
+                            if is_valid_domain(val): protected_suffixes.add(val)
+                        elif key.startswith('domain'):
+                            if is_valid_domain(val): protected_domains.add(val)
+                        else:
+                            if is_valid_domain(val): protected_domains.add(val)
+                    continue
+                if is_valid_domain(line.lower()): protected_domains.add(line.lower())
+
+            apple_keys = [d for d in list(protected_domains) if (d.endswith(".apple.com") or d.startswith("apple-") or d.startswith("icloud")) and d != "apple.com"]
+            for a in apple_keys:
+                protected_domains.discard(a)
+                protected_suffixes.add(a)
+
+            print("  [*] Очистка черного списка от новых белых доменов...")
+            to_remove = set()
+            for d in all_domains:
+                prot, reason = is_protected_full(d)
+                if prot:
+                    to_remove.add(d)
+            for d in to_remove:
+                all_domains.remove(d)
+
+            failed_white_lists.remove(target)
+            white_download_report[target] = {"status": "ok (retry)", "method": method, "lines": len(lines)}
+        else:
+            for idx, raw_line in enumerate(lines, start=1):
+                if idx % 500 == 0 or idx == total_lines:
+                    print_progress("    [parse retry]", idx, total_lines, bar_len=30, start_time=start_parse)
+                line = raw_line.strip().lower()
+                if not line or line.startswith(('!', '[', '@@')) or '##' in line or '#@#' in line or line.startswith('#'): continue
+                if exclude_pattern.search(line): continue
+                if "," in line and not line.startswith("||"):
+                    parts = [p.strip() for p in line.split(',', 2)]
+                    if len(parts) >= 2:
+                        rule_type = parts[0]
+                        val = parts[1].split('#')[0].strip()
+                        if "ip-cidr" in rule_type:
+                            validated = validate_ip(val)
+                            if validated:
+                                pure_ip = validated.split('/')[0]
+                                if pure_ip not in protected_ips:
+                                    all_ips.add(validated)
+                        elif "domain" in rule_type:
+                            if is_valid_domain(val):
+                                protected, reason = is_protected_manual(val) if "Loyalsoldier" in target else is_protected_full(val)
+                                if not protected:
+                                    all_domains.add(val)
+                    continue
+
+                clean = line.split('#')[0].strip()
+                if clean.startswith(('0.0.0.0 ', '127.0.0.1 ')):
+                    clean = clean.split(' ', 1)[1].strip()
+                clean = re.sub(r'^[|\s]*\|\|', '', clean)
+                clean = re.sub(r'^\|', '', clean)
+                clean = re.sub(r'^https?://', '', clean)
+                clean = re.sub(r'^www\.', '', clean)
+                if '/' in clean.split('^')[0].split('$')[0]: continue
+                clean = clean.split('^')[0].split('$')[0].split(':')[0].split('*')[0].strip()
+                clean = clean.strip('.').strip()
+
+                if not clean: continue
+                validated_ip = validate_ip(clean)
+                if validated_ip:
+                    pure_ip = validated_ip.split('/')[0]
+                    if pure_ip not in protected_ips:
+                        all_ips.add(validated_ip)
+                elif is_valid_domain(clean):
+                    protected, reason = is_protected_manual(clean) if "Loyalsoldier" in target else is_protected_full(clean)
+                    if not protected:
+                        all_domains.add(clean)
+
+            failed_lists.remove(target)
+            download_report[target] = {"status": "ok (retry)", "method": method, "lines": len(lines)}
+
+        print("  [*] Пересборка финального списка...")
+        sorted_raw = sorted(list(all_domains), key=lambda x: x.count('.'))
+        optimized_domains = set()
+        total_to_check = len(sorted_raw)
+        start_opt = time.time()
+
+        if AGGREGATE_THRESHOLD and AGGREGATE_THRESHOLD > 1:
+            parent_groups = {}
+            for idx, d in enumerate(sorted_raw, start=1):
+                if idx % 5000 == 0 or idx == total_to_check:
+                    print_progress("    [group]", idx, total_to_check, bar_len=30, start_time=start_opt)
+                p = '.'.join(d.split('.')[-2:])
+                parent_groups.setdefault(p, []).append(d)
+            pg_items = list(parent_groups.items())
+            total_pg = len(pg_items)
+            start_replace = time.time()
+            for i, (parent, members) in enumerate(pg_items, start=1):
+                print_progress("    [aggregate]", i, total_pg, bar_len=30, start_time=start_replace)
+                if len(members) >= AGGREGATE_THRESHOLD and not is_protected_full(parent)[0]:
+                    optimized_domains.add(parent)
+                else:
+                    for m in members: optimized_domains.add(m)
+        else:
+            for idx, d in enumerate(sorted_raw, start=1):
+                if idx % 1000 == 0 or idx == total_to_check:
+                    print_progress("    [optimize]", idx, total_to_check, bar_len=30, start_time=start_opt)
+                parts = d.split('.')
+                is_redundant = False
+                for i in range(1, len(parts) - 1):
+                    if ".".join(parts[i:]) in optimized_domains:
+                        is_redundant = True
+                        break
+                if not is_redundant:
+                    optimized_domains.add(d)
+
+        final_list = sorted([f"DOMAIN-SUFFIX,{d}" for d in optimized_domains])
+        final_ips = sorted([f"IP-CIDR,{ip}" for ip in all_ips])
+
+        total_write = len(final_list) + len(final_ips)
+        start_write = time.time()
+        with open(output_file, 'w', encoding='utf-8') as f:
+            written = 0
+            for line in final_list:
+                f.write(line + "\n")
+                written += 1
+                if written % 1000 == 0 or written == total_write:
+                    print_progress("    [write]", written, total_write, bar_len=30, start_time=start_write)
+            if final_ips:
+                for ipline in final_ips:
+                    f.write(ipline + "\n")
+                    written += 1
+                    if written % 1000 == 0 or written == total_write:
+                        print_progress("    [write]", written, total_write, bar_len=30, start_time=start_write)
+
+        save_logs()
+        print("  [+] Файлы успешно обновлены (rule-set и log)!")
+    else:
+        print("  [!] Неверный ввод.")
+
 
 TOTAL_TIME = round(time.time() - SCRIPT_START_TIME, 2)
 
@@ -804,12 +1028,10 @@ for name, info in download_report.items():
 print("\nDownload summary (whitelists):")
 for name, info in white_download_report.items():
     print(f"  - {name}: {info['status']} (method: {info.get('method','N/A')}, lines: {info.get('lines',0)})")
-if failed_lists:
-    print("\nFailed to download the following blacklists:")
-    for name in failed_lists:
-        print(f"  - {name}")
+if failed_lists or failed_white_lists:
+    print("\nSome lists were skipped intentionally.")
 else:
-    print("\nAll blacklists downloaded successfully.")
+    print("\nAll lists processed successfully.")
 print("="*45)
 EOF
 
