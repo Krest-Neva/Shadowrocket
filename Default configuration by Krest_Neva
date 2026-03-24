@@ -64,8 +64,8 @@
 [General]
 ipv6 = false
 prefer-ipv6 = false
-skip-proxy = apple.com,icloud.com,mzstatic.com,itunes.apple.com,captive.apple.com,gsp1.apple.com,*.local,localhost,apple-pki.com,digicert.com,entrust.net
-always-real-ip = *.apple.com,*.icloud.com,*.itunes.com,*.crashlytics.com,*.mzstatic.com,*.apple-pki.com
+skip-proxy = apple.com,icloud.com,*.cdn-apple.com,*.mzstatic.com,itunes.apple.com,captive.apple.com,gsp1.apple.com,*.local,localhost,apple-pki.com,digicert.com,entrust.net,
+always-real-ip = *.apple.com,*.icloud.com,*.itunes.com,*.mzstatic.com,*.apple-pki.com,*.push.apple.com
 tun-excluded-routes = 10.0.0.0/8,17.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.0.0.0/24,192.0.2.0/24,192.88.99.0/24,192.168.0.0/16,198.51.100.0/24,203.0.113.0/24,224.0.0.0/4,255.255.255.255/32
 dns-over-https = true
 dns-direct-system = false
@@ -87,32 +87,6 @@ udp-policy-not-supported-behaviour = REJECT
 [Rule]
 #Локальные сети
 GEOIP,private,DIRECT
-
-#Деактивирует все правила и перенаправляет весь трафик по выбранному серверу.
-#FINAL,PROXY
-#Деактивирует все правила и перенаправляет весь трафик напрямую (без VPN).
-#FINAL,DIRECT
-
-#macOS
-#PROCESS-NAME,v2ray,DIRECT
-#PROCESS-NAME,xray,DIRECT
-#PROCESS-NAME,clash,DIRECT
-#PROCESS-NAME,naive,DIRECT
-#PROCESS-NAME,trojan,DIRECT
-#PROCESS-NAME,trojan-go,DIRECT
-#PROCESS-NAME,ss-local,DIRECT
-#PROCESS-NAME,privoxy,DIRECT
-#PROCESS-NAME,leaf,DIRECT
-#PROCESS-NAME,Thunder,BESTPROXY
-#PROCESS-NAME,DownloadService,BESTPROXY
-#PROCESS-NAME,qBittorrent,BESTPROXY
-#PROCESS-NAME,Transmission,BESTPROXY
-#PROCESS-NAME,fdm,BESTPROXY
-#PROCESS-NAME,aria2c,BESTPROXY
-#PROCESS-NAME,Folx,BESTPROXY
-#PROCESS-NAME,NetTransport,BESTPROXY
-#PROCESS-NAME,uTorrent,BESTPROXY
-#PROCESS-NAME,WebTorrent,BESTPROXY
 
 #Переключение YouTube с UDP/QUIC на TCP/HTTPS
 AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
@@ -221,80 +195,8 @@ URL-REGEX,^https?://tc\.mobile\.yandex\.net:443/.*$,REJECT
 URL-REGEX,^https?://mc\.yandex\.(ru|com)/(metrika|watch|solid\.ws).*$,REJECT-TINYGIF
 URL-REGEX,^https?://sp\.yandex\.(ru|com)/.*$,REJECT
 
-#Регионы
-#🇷🇺DOMAIN-SUFFIX,ru,REJECT,pre-matching,extended-matching
-#🇷🇺DOMAIN-SUFFIX,su,REJECT,pre-matching,extended-matching
-#🇷🇺DOMAIN-SUFFIX,xn--p1ai,REJECT,pre-matching,extended-matching
-#🇷🇺DOMAIN-SUFFIX,рф,REJECT,pre-matching,extended-matching
-#🇺🇦DOMAIN-SUFFIX,ua,REJECT,pre-matching,extended-matching
-#🇧🇾DOMAIN-SUFFIX,by,REJECT,pre-matching,extended-matching
-#🇰🇿DOMAIN-SUFFIX,kz,REJECT,pre-matching,extended-matching
-#🇦🇲DOMAIN-SUFFIX,am,REJECT,pre-matching,extended-matching
-#🇺🇿DOMAIN-SUFFIX,uz,REJECT,pre-matching,extended-matching
-#🇹🇯DOMAIN-SUFFIX,tj,REJECT,pre-matching,extended-matching
-#🇨🇳DOMAIN-SUFFIX,cn,REJECT,pre-matching,extended-matching
-
-#VK🔵
-#IP-ASN,196645,REJECT-DROP,no-resolve
-#IP-ASN,47541,REJECT-DROP,no-resolve
-#IP-ASN,47542,REJECT-DROP,no-resolve
-#IP-ASN,51101,REJECT-DROP,no-resolve
-#IP-ASN,31133,REJECT-DROP,no-resolve
-#IP-CIDR,87.240.128.0/18,REJECT-DROP,no-resolve
-#IP-CIDR,93.186.224.0/20,REJECT-DROP,no-resolve
-#IP-CIDR,95.142.192.0/20,REJECT-DROP,no-resolve
-#IP-CIDR,185.71.76.0/22,REJECT-DROP,no-resolve
-#DOMAIN-KEYWORD,vkontakte,REJECT-DROP,pre-matching
-#DOMAIN-SUFFIX,vk.ru,REJECT-DROP,pre-matching
-#DOMAIN-KEYWORD,vk.com,REJECT-DROP,pre-matching
-#DOMAIN-SUFFIX,vk.me,REJECT-DROP,pre-matching
-#DOMAIN-SUFFIX,vk.cc,REJECT-DROP,pre-matching
-#DOMAIN-SUFFIX,vk.company,REJECT-DROP,pre-matching
-#DOMAIN-KEYWORD,vk-cdn,REJECT-DROP,pre-matching
-#DOMAIN-KEYWORD,api.vk,REJECT-DROP,pre-matching
-#DOMAIN-SUFFIX,vkforms.ru,REJECT-DROP,pre-matching
-#DOMAIN-KEYWORD,vkvideo,REJECT-DROP,pre-matching
-
-#Шняга REJECT
 DOMAIN-SUFFIX,max.ru,REJECT-DROP,pre-matching
 #НИКАКОГО МАКСА!⚠️
-#DOMAIN-SUFFIX,mail.ru,REJECT-DROP,pre-matching
-#DOMAIN-KEYWORD,sferum,REJECT-DROP,pre-matching
-#DOMAIN-KEYWORD,odnoklassniki,REJECT-DROP,pre-matching
-#DOMAIN-SUFFIX,ok.ru,REJECT-DROP,pre-matching
-#DOMAIN-KEYWORD,tamtam,REJECT-DROP,pre-matching
-#DOMAIN-KEYWORD,rutube,REJECT-DROP,pre-matching
-#DOMAIN-KEYWORD,blink,REJECT-DROP,pre-matching
-#DOMAIN-KEYWORD,yappy,REJECT-DROP,pre-matching
-#DOMAIN,yandex.ru,REJECT-200,pre-matching
-#DOMAIN-KEYWORD,dzen,REJECT-DROP,pre-matching
-#DOMAIN-KEYWORD,rambler,REJECT-DROP,pre-matching
-#DOMAIN-SUFFIX,sputnik.ru,REJECT-DROP,pre-matching
-#DOMAIN-KEYWORD,2gis,REJECT-DROP,pre-matching
-#Кинотеатры🎬
-#DOMAIN-KEYWORD,kinopoisk,REJECT-DROP,pre-matching
-#DOMAIN-SUFFIX,ivi.ru,REJECT-DROP,pre-matching
-#DOMAIN-SUFFIX,premier.ru,REJECT-DROP,pre-matching
-#DOMAIN-SUFFIX,kion.ru,REJECT-DROP,pre-matching
-#DOMAIN-SUFFIX,wink.ru,REJECT-DROP,pre-matching
-#DOMAIN-SUFFIX,start.ru,REJECT-DROP,pre-matching
-#Операторы связи
-#DOMAIN-KEYWORD,beeline,REJECT-DROP,pre-matching
-#DOMAIN-KEYWORD,megafon,REJECT-DROP,pre-matching
-#DOMAIN-KEYWORD,mts,REJECT-DROP,pre-matching
-#DOMAIN-SUFFIX,yota.ru,REJECT-DROP,pre-matching
-#DOMAIN-SUFFIX,rostelecom.ru,REJECT-DROP,pre-matching
-#Банки🏦
-#DOMAIN-KEYWORD,tinkoff,REJECT-DROP,pre-matching
-#DOMAIN-KEYWORD,t-bank,REJECT-DROP,pre-matching
-#DOMAIN-KEYWORD,tbank,REJECT-DROP,pre-matching
-#Прочее
-#DOMAIN-SUFFIX,cian.ru,REJECT-DROP,pre-matching
-#DOMAIN-SUFFIX,creati.win,REJECT-DROP,pre-matching
-#DOMAIN-SUFFIX,uniproxy.alice.yandex.net,REJECT-DROP,pre-matching
-#DOMAIN-SUFFIX,uxfeedback.ru,REJECT-DROP,pre-matching
-#DOMAIN-SUFFIX,qq.com,REJECT-DROP,pre-matching
-#DOMAIN-KEYWORD,adobe,REJECT-DROP,pre-matching
 
 DOMAIN-SUFFIX,proxyliberty.ru,BESTPROXY
 
@@ -385,19 +287,6 @@ DOMAIN-SUFFIX,tdesktop.com,TGPROXY
 DOMAIN-SUFFIX,tg.dev,TGPROXY
 DOMAIN-SUFFIX,telegram-cdn.org,TGPROXY
 
-#Шняга PROXY
-#DOMAIN-SUFFIX,signal.org,BESTPROXY
-#Meta
-#DOMAIN-KEYWORD,whatsapp,BESTPROXY
-#DOMAIN-KEYWORD,instagram,BESTPROXY
-#DOMAIN-SUFFIX,facebook.com,BESTPROXY
-#DOMAIN-SUFFIX,fb.com,BESTPROXY
-#DOMAIN-SUFFIX,fbcdn.net,BESTPROXY
-#Нейросети
-#DOMAIN-SUFFIX,openai.com,BESTPROXY
-#DOMAIN-SUFFIX,chatgpt.com,BESTPROXY
-#DOMAIN-SUFFIX,oaistatic.com,BESTPROXY
-#DOMAIN-SUFFIX,oaiusercontent.com,BESTPROXY
 DOMAIN-SUFFIX,deepseek.com,BESTPROXY
 
 #Tiktok
@@ -468,61 +357,6 @@ DOMAIN-SUFFIX,spark.meta.com,INSTPROXY
 DOMAIN-SUFFIX,audio-ig.com,INSTPROXY
 DOMAIN-SUFFIX,audio-sg.instagram.com,INSTPROXY
 
-#Фундамент
-#DOMAIN-SUFFIX,microsoft.com,BESTPROXY
-#DOMAIN-SUFFIX,live.com,BESTPROXY
-#DOMAIN-SUFFIX,outlook.com,BESTPROXY
-#DOMAIN-SUFFIX,office.com,BESTPROXY
-#DOMAIN-SUFFIX,office.net,BESTPROXY
-#DOMAIN-SUFFIX,windows.com,BESTPROXY
-#DOMAIN-SUFFIX,windowsupdate.com,DIRECT
-#DOMAIN-SUFFIX,msftconnecttest.com,BESTPROXY
-#DOMAIN-SUFFIX,msftncsi.com,BESTPROXY
-#DOMAIN-SUFFIX,azure.com,BESTPROXY
-#DOMAIN-SUFFIX,azureedge.net,BESTPROXY
-#DOMAIN-SUFFIX,azurefd.net,BESTPROXY
-#DOMAIN-SUFFIX,visualstudio.com,BESTPROXY
-#DOMAIN-SUFFIX,github.com,BESTPROXY
-#DOMAIN-SUFFIX,githubusercontent.com,BESTPROXY
-#DOMAIN-SUFFIX,githubassets.com,BESTPROXY
-#DOMAIN-SUFFIX,google.com,BESTPROXY
-#IP-CIDR,8.8.8.8/32,BESTPROXY,no-resolve
-#DOMAIN-SUFFIX,android.com,BESTPROXY
-#DOMAIN-SUFFIX,firebaseio.com,BESTPROXY
-#DOMAIN-SUFFIX,recaptcha.net,BESTPROXY
-#DOMAIN-KEYWORD,cloudflare,BESTPROXY
-#IP-ASN,13335,BESTPROXY,no-resolve
-#DOMAIN-SUFFIX,cf-ipfs.com,BESTPROXY
-#DOMAIN-SUFFIX,amazon.com,BESTPROXY
-#DOMAIN-SUFFIX,amazonaws.com,BESTPROXY
-#DOMAIN-SUFFIX,aws.amazon.com,BESTPROXY
-#DOMAIN-SUFFIX,cloudfront.net,BESTPROXY
-#DOMAIN-SUFFIX,amazon-adsystem.com,BESTPROXY
-#DOMAIN-SUFFIX,dns.google,BESTPROXY
-#DOMAIN-SUFFIX,dns.quad9.net,BESTPROXY
-#DOMAIN-SUFFIX,one.one.one.one,BESTPROXY
-#DOMAIN-SUFFIX,akamai.net,BESTPROXY
-#DOMAIN-SUFFIX,akamaiedge.net,BESTPROXY
-#DOMAIN-SUFFIX,akamaized.net,BESTPROXY
-#DOMAIN-SUFFIX,edgekey.net,BESTPROXY
-#DOMAIN-SUFFIX,edgesuite.net,BESTPROXY
-#DOMAIN-SUFFIX,fastly.net,BESTPROXY
-#DOMAIN-SUFFIX,fastlydns.net,BESTPROXY
-#DOMAIN-SUFFIX,jsdelivr.net,BESTPROXY,
-#DOMAIN-SUFFIX,unpkg.com,BESTPROXY
-#DOMAIN-SUFFIX,cdnjs.cloudflare.com,BESTPROXY
-#DOMAIN-SUFFIX,auth0.com,BESTPROXY
-#DOMAIN-SUFFIX,okta.com,BESTPROXY
-#DOMAIN-SUFFIX,login.microsoftonline.com,BESTPROXY
-#DOMAIN-SUFFIX,accounts.google.com,BESTPROXY
-#DOMAIN-SUFFIX,hcaptcha.com,BESTPROXY
-#DOMAIN-SUFFIX,challenges.cloudflare.com,BESTPROXY
-#DOMAIN-SUFFIX,gitlab.com,BESTPROXY
-#DOMAIN-SUFFIX,bitbucket.org,BESTPROXY
-#DOMAIN-SUFFIX,npmjs.org,BESTPROXY
-#DOMAIN-SUFFIX,pypi.org,BESTPROXY
-#DOMAIN-SUFFIX,rubygems.org,BESTPROXY
-
 #FaceTime📞
 DOMAIN-SUFFIX,facetime.apple.com,SPEEDPROXY
 DOMAIN-SUFFIX,stun.apple.com,SPEEDPROXY
@@ -581,16 +415,6 @@ GEOIP,ru,DIRECT
 
 #Глобальный прокси🌍
 FINAL,BESTPROXY
-#FINAL,DIRECT
-#FINAL,REJECT
-
-#ГЕОРЕСУРСЫ
-#V2Fly
-#Geosite: https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat
-#Geoip: https://github.com/v2fly/geoip/releases/download/202501090053/geoip.dat
-#Loyalsoldier
-#Geosite: https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
-#Geoip: https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
 
 [Host]
 localhost = 127.0.0.1
