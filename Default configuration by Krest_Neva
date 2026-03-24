@@ -146,6 +146,7 @@ DOMAIN-KEYWORD,doubleclick,REJECT-DICT,pre-matching
 DOMAIN-KEYWORD,adjust,REJECT-DICT,pre-matching
 DOMAIN-KEYWORD,appsflyer,REJECT-DICT,pre-matching
 DOMAIN-KEYWORD,pixel,REJECT-TINYGIF,pre-matching
+DOMAIN-KEYWORD,messenger.yandex,REJECT-DROP,pre-matching
 
 #YANDEX каки✴️
 DOMAIN-SUFFIX,afisha.yandex.ru,DIRECT
@@ -270,7 +271,6 @@ DOMAIN-SUFFIX,adjust.com,REJECT-DROP,pre-matching
 DOMAIN-SUFFIX,static.rutubelist.ru,REJECT-DICT,pre-matching
 DOMAIN-SUFFIX,static.kuper.ru,REJECT-DICT,pre-matching
 DOMAIN-SUFFIX,static-origin.kuper.ru,REJECT-DICT,pre-matching
-DOMAIN-KEYWORD,messenger.yandex,REJECT-DROP,pre-matching
 DOMAIN-SUFFIX,max.ru,REJECT-DROP,pre-matching
 #НИКАКОГО МАКСА!⚠️
 #DOMAIN-SUFFIX,mail.ru,REJECT-DROP,pre-matching
