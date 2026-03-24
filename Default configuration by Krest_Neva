@@ -295,9 +295,6 @@ DOMAIN-SUFFIX,max.ru,REJECT-DROP,pre-matching
 #DOMAIN-SUFFIX,uxfeedback.ru,REJECT-DROP,pre-matching
 #DOMAIN-SUFFIX,qq.com,REJECT-DROP,pre-matching
 #DOMAIN-KEYWORD,adobe,REJECT-DROP,pre-matching
-#DOMAIN-SUFFIX,zztfly.com,REJECT-DROP,pre-matching
-#DOMAIN-SUFFIX,sub.scroogethebest.com,REJECT-DROP,pre-matching
-#DOMAIN-SUFFIX,apmplus.volces.com,REJECT-DROP,pre-matching
 
 DOMAIN-SUFFIX,proxyliberty.ru,BESTPROXY
 
