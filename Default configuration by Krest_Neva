@@ -124,11 +124,10 @@ DOMAIN-SUFFIX,log.strm.yandex.ru,REJECT,pre-matching
 DOMAIN-SUFFIX,amc.yandex.ru,REJECT,pre-matching
 DOMAIN-SUFFIX,adfstat.yandex.ru,REJECT-TINYGIF,pre-matching
 DOMAIN-SUFFIX,strm.yandex.ru,REJECT,pre-matching
-DOMAIN-SUFFIX,market-baobab.yandex.ru,REJECT-DICT,pre-matching
 DOMAIN-SUFFIX,media-adv.market.yandex.ru,REJECT,pre-matching
 DOMAIN-SUFFIX,mc.yandex.ru,REJECT-TINYGIF,pre-matching
 DOMAIN-SUFFIX,mc.yandex.com,REJECT-TINYGIF,pre-matching
-DOMAIN-SUFFIX,media-adv.market.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,market-baobab.yandex.ru,REJECT-DICT,pre-matching
 DOMAIN-SUFFIX,baobab.market.yandex.ru,REJECT-DICT,pre-matching
 DOMAIN,yandex.ru,REJECT-DICT,pre-matching
 DOMAIN-SUFFIX,ad.mail.ru,REJECT,pre-matching
