@@ -50,8 +50,7 @@ rm -f "LogsAdBlockScript"
 # ==========================================
 # --- ЧАСТЬ 2: СОЗДАНИЕ ПАРСЕРА ---
 # ==========================================
-cat << 'EOF' >
-"REJECT_RULES.py"
+cat << 'EOF' > "REJECT_RULES.py"
 import urllib.request
 import subprocess
 import re
