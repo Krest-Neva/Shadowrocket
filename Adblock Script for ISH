@@ -44,14 +44,14 @@ EOF
 # --- ОЧИСТКА СТАРЫХ ФАЙЛОВ ---
 # ==========================================
 echo "[*] Принудительное удаление старых файлов перед сборкой..."
-rm -f "AdGuard_and_Loyalsoldier_REJECT_RULES.list"
+rm -f "REJECT_RULES.list"
 rm -f "LogsAdBlockScript"
 
 # ==========================================
 # --- ЧАСТЬ 2: СОЗДАНИЕ ПАРСЕРА ---
 # ==========================================
 cat << 'EOF' >
-"AdGuard_and_Loyalsoldier_REJECT_RULES.py"
+"REJECT_RULES.py"
 import urllib.request
 import subprocess
 import re
@@ -140,7 +140,7 @@ white_urls = {
     ]
 }
 
-output_file = "AdGuard_and_Loyalsoldier_REJECT_RULES.list"
+output_file = "REJECT_RULES.list"
 exclude_keywords = [
     "ads", "analytics", "tracker", "tracking", "tracer", "metrics", "metrica", "metrika", "telemetry", "pixel", "beacon", "adserver", "doubleclick", "adjust", "appsflyer", "messenger.yandex"
 ]
@@ -1049,4 +1049,4 @@ echo "[*] Повторная проверка интернета..."
 ping -c 3 google.com
 
 echo "[*] Запуск скрипта генерации правил..."
-python3 "AdGuard_and_Loyalsoldier_REJECT_RULES.py"
+python3 "REJECT_RULES.py"
