@@ -1,45 +1,50 @@
 let body = $response.body;
-if (body) {
-    try {
-        let obj = JSON.parse(body);
-        let modified = false;
-        const adPatterns = /^(?:ad|ads|advert|banner|promo|direct|sponsor|sponsored|metrica|statistics|analytics|survey|widget|tracking)/i;
-        const adPattern2 = /@monetize|UrbanAds|HorizontalIncut|Madv|MediaCarousel|searchIncut/i;
-        function scanner(node) {
-            if (!node || typeof node !== 'object') return node;
-            if (Array.isArray(node)) {
-                return node.filter(item => {
-                    if (item && typeof item === 'object') {
-                        // Удаляем объект, если явно рекламный
-                        if (item.is_ad === true || item.is_promoted === true ||
-                            adPattern2.test(item.widgetName) || adPattern2.test(item.apiaryWidgetName) ||
-                            item.dataAuto === 'searchIncut' || item.dataZoneData?.bannerUrl) {
-                            modified = true;
-                            return false;
-                        }
-                        scanner(item);
-                    }
-                    return true;
-                });
-            }
-            Object.keys(node).forEach(key => {
-                if (adPatterns.test(key)) {
-                    delete node[key];
-                    modified = true;
-                } else {
-                    // Например, если поле widgetName содержит рекламу
-                    if ((key === 'widgetName' || key === 'apiaryWidgetName') && adPattern2.test(node[key])) {
-                        delete node[key];
+if (!body) { $done({}); return; }
+try {
+    let obj = JSON.parse(body);
+    let modified = false;
+    const adKeyPattern = /^(?:ad|ads|advert|banner|promo|direct|sponsor|sponsored|metrica|statistics|analytics|survey|widget|tracking)/i;
+    const monetizePattern = /@monetize|UrbanAds|HorizontalIncut|Madv|MediaCarousel|searchIncut/i;
+    function scan(node) {
+        if (!node || typeof node !== 'object') return node;
+        if (Array.isArray(node)) {
+            return node.filter(item => {
+                if (item && typeof item === 'object') {
+                    if (item.is_ad === true || item.is_promoted === true ||
+                        (item.type && adKeyPattern.test(item.type.toString())) ||
+                        (item.layout && adKeyPattern.test(item.layout.toString())) ||
+                        (item.widgetName && monetizePattern.test(item.widgetName.toString())) ||
+                        (item.apiaryWidgetName && monetizePattern.test(item.apiaryWidgetName.toString())) ||
+                        item.dataAuto === 'searchIncut' ||
+                        item.dataZoneData?.bannerUrl
+                    ) {
                         modified = true;
-                    } else {
-                        scanner(node[key]);
+                        return false;
                     }
+                    scan(item);
                 }
+                return true;
             });
-            return node;
         }
-        obj = scanner(obj);
-        if (modified) body = JSON.stringify(obj);
-    } catch (e) {}
+        for (let key of Object.keys(node)) {
+            if (adKeyPattern.test(key) ||
+                (key === 'widgetName' && monetizePattern.test(node[key])) ||
+                (key === 'apiaryWidgetName' && monetizePattern.test(node[key])) ||
+                key === 'dataAuto' || key === 'dataZoneData' ||
+                key === 'banner' || key === 'banners'
+            ) {
+                delete node[key];
+                modified = true;
+            } else {
+                scan(node[key]);
+            }
+        }
+        return node;
+    }
+    obj = scan(obj);
+    if (modified) {
+        body = JSON.stringify(obj);
+    }
+} catch(e) {
 }
 $done({ body });
