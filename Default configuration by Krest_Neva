@@ -3,8 +3,8 @@
 #!arguments=captionLang:off, lyricLang:off, blockImmersive:false, debug:false
 #blockShorts:false, blockUpload:true вырезано
 
-#Последние изменения 25.03.2026 00:00
-#Фильтры обновлены 25.03.2026 00:00
+#Последние изменения 26.03.2026 04:00
+#Фильтры обновлены 26.03.2026 04:00
 
 #==================================================
 #ИНФОРМАЦИЯℹ️
@@ -93,6 +93,7 @@ AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
 AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 
 #Реклама, трекеры, аналитика, фишинг и остальная кака💩
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT-RULES-PLUS.list,REJECT-DROP
 RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT-RULES.list,REJECT-DROP
 DOMAIN-KEYWORD,uploads,DISCORDPROXY
 DOMAIN-KEYWORD,downloads,BESTPROXY
