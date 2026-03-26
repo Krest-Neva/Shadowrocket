@@ -1,50 +1,53 @@
 let body = $response.body;
-if (!body) { $done({}); return; }
+if (!body) $done({});
 try {
-    let obj = JSON.parse(body);
+    let json = JSON.parse(body);
     let modified = false;
-    const adKeyPattern = /^(?:ad|ads|advert|banner|promo|direct|sponsor|sponsored|metrica|statistics|analytics|survey|widget|tracking)/i;
-    const monetizePattern = /@monetize|UrbanAds|HorizontalIncut|Madv|MediaCarousel|searchIncut/i;
-    function scan(node) {
-        if (!node || typeof node !== 'object') return node;
-        if (Array.isArray(node)) {
-            return node.filter(item => {
+    const adPattern = /^(?:ad|ads|advert|banner|promo|direct|sponsor|sponsored|metrica|statistics|analytics|survey|widget|tracking)/i;
+    const monetPattern = /@monetize|UrbanAds|HorizontalIncut|Madv|MediaCarousel|searchIncut/i;
+
+    function scanner(obj) {
+        if (!obj || typeof obj !== 'object') return obj;
+        if (Array.isArray(obj)) {
+            return obj.filter(item => {
                 if (item && typeof item === 'object') {
-                    if (item.is_ad === true || item.is_promoted === true ||
-                        (item.type && adKeyPattern.test(item.type.toString())) ||
-                        (item.layout && adKeyPattern.test(item.layout.toString())) ||
-                        (item.widgetName && monetizePattern.test(item.widgetName.toString())) ||
-                        (item.apiaryWidgetName && monetizePattern.test(item.apiaryWidgetName.toString())) ||
+                    if (
+                        item.is_ad === true ||
+                        item.is_promoted === true ||
+                        (item.type && adPattern.test(item.type.toString())) ||
+                        (item.layout && adPattern.test(item.layout.toString())) ||
+                        (item.widgetName && monetPattern.test(item.widgetName.toString())) ||
+                        (item.apiaryWidgetName && monetPattern.test(item.apiaryWidgetName.toString())) ||
                         item.dataAuto === 'searchIncut' ||
                         item.dataZoneData?.bannerUrl
                     ) {
                         modified = true;
                         return false;
                     }
-                    scan(item);
+                    scanner(item);
                 }
                 return true;
             });
         }
-        for (let key of Object.keys(node)) {
-            if (adKeyPattern.test(key) ||
-                (key === 'widgetName' && monetizePattern.test(node[key])) ||
-                (key === 'apiaryWidgetName' && monetizePattern.test(node[key])) ||
-                key === 'dataAuto' || key === 'dataZoneData' ||
-                key === 'banner' || key === 'banners'
+        for (let key in obj) {
+            if (adPattern.test(key) ||
+                (key === 'widgetName' && monetPattern.test(obj[key])) ||
+                (key === 'apiaryWidgetName' && monetPattern.test(obj[key])) ||
+                key === 'dataAuto' ||
+                key === 'dataZoneData' ||
+                key === 'banner' ||
+                key === 'banners'
             ) {
-                delete node[key];
+                delete obj[key];
                 modified = true;
             } else {
-                scan(node[key]);
+                scanner(obj[key]);
             }
         }
-        return node;
+        return obj;
     }
-    obj = scan(obj);
-    if (modified) {
-        body = JSON.stringify(obj);
-    }
-} catch(e) {
-}
+
+    json = scanner(json);
+    if (modified) body = JSON.stringify(json);
+} catch(e) {}
 $done({ body });
