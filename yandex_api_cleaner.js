@@ -3,9 +3,8 @@ if (!body) $done({});
 try {
     let json = JSON.parse(body);
     let modified = false;
-    const adPattern = /^(?:ad|ads|advert|banner|promo|direct|sponsor|sponsored|metrica|statistics|analytics|survey|widget|tracking)/i;
+    const adKeyPattern = /^(?:ad|ads|advert|direct|sponsor|sponsored|metrica|statistics|analytics|survey|tracking)$/i;
     const monetPattern = /@monetize|UrbanAds|HorizontalIncut|Madv|MediaCarousel|searchIncut/i;
-
     function scanner(obj) {
         if (!obj || typeof obj !== 'object') return obj;
         if (Array.isArray(obj)) {
@@ -14,12 +13,12 @@ try {
                     if (
                         item.is_ad === true ||
                         item.is_promoted === true ||
-                        (item.type && adPattern.test(item.type.toString())) ||
-                        (item.layout && adPattern.test(item.layout.toString())) ||
+                        (item.type && item.type === 'ad') ||           // точно 'ad', а не содержит
+                        (item.layout && item.layout === 'ad') ||       // точно 'ad'
                         (item.widgetName && monetPattern.test(item.widgetName.toString())) ||
                         (item.apiaryWidgetName && monetPattern.test(item.apiaryWidgetName.toString())) ||
-                        item.dataAuto === 'searchIncut' ||
-                        item.dataZoneData?.bannerUrl
+                        (item.dataAuto === 'searchIncut') ||
+                        (item.dataZoneData && item.dataZoneData.bannerUrl)
                     ) {
                         modified = true;
                         return false;
@@ -30,14 +29,7 @@ try {
             });
         }
         for (let key in obj) {
-            if (adPattern.test(key) ||
-                (key === 'widgetName' && monetPattern.test(obj[key])) ||
-                (key === 'apiaryWidgetName' && monetPattern.test(obj[key])) ||
-                key === 'dataAuto' ||
-                key === 'dataZoneData' ||
-                key === 'banner' ||
-                key === 'banners'
-            ) {
+            if (adKeyPattern.test(key)) {
                 delete obj[key];
                 modified = true;
             } else {
@@ -46,8 +38,10 @@ try {
         }
         return obj;
     }
-
     json = scanner(json);
-    if (modified) body = JSON.stringify(json);
-} catch(e) {}
+    if (modified) {
+        body = JSON.stringify(json);
+    }
+} catch(e) {
+}
 $done({ body });
