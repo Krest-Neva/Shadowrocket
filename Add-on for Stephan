@@ -18,6 +18,8 @@ BESTPROXY = load-balance,🇫🇷ФРАНЦИЯ,🇧🇷БРАЗИЛИЯ,🇹�
 
 [Rule]
 #Дополнение
+RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT-RULES-PLUS.list,REJECT-DROP
+DOMAIN-KEYWORD,porn,REJECT-DROP
 DOMAIN-KEYWORD,uploads,DISCORDPROXY
 DOMAIN-KEYWORD,downloads,BESTPROXY
 DOMAIN-SUFFIX,pixel.google.com,BESTPROXY
