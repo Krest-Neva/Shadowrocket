@@ -3,7 +3,7 @@
 #!arguments=captionLang:off, lyricLang:off, blockImmersive:false, debug:false
 #blockShorts:false, blockUpload:true вырезано
 
-#Последние изменения 26.03.2026 04:00
+#Последние изменения 27.03.2026 04:00
 #Фильтры обновлены 26.03.2026 04:00
 
 #==================================================
@@ -71,13 +71,9 @@ dns-over-https = true
 dns-direct-system = false
 dns-fallback-system = false
 dns-direct-fallback-proxy = true
-#AdGuard DNS
-#dns-server = 94.140.14.14,94.140.15.15
-#fallback-dns-server = 8.8.8.8,8.8.4.4,1.1.1.1
-#Google DNS (с Cloudflare)
-dns-server = https://dns.google/dns-query,https://security.cloudflare-dns.com/dns-query
-fallback-dns-server = https://dns.adguard-dns.com/dns-query
-hijack-dns = 8.8.8.8:53
+dns-server = 1.1.1.1,https://dns.comss.one/dns-query,https://dns.quad9.net/dns-query,https://dns.adguard.com/dns-query
+fallback-dns-server = 8.8.8.8,77.88.8.8
+hijack-dns = *:53
 private-ip-answer = true
 bypass-system = true
 always-reject-url-rewrite = false
