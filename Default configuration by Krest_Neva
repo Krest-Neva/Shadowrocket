@@ -90,7 +90,7 @@ AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 
 #Реклама, трекеры, аналитика, фишинг и остальная кака💩
 #RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT-RULES-PLUS.list,REJECT-DROP
-RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT-RULES.list,REJECT-DROP
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT-RULES.list,REJECT-DROP
 DOMAIN-KEYWORD,uploads,DISCORDPROXY
 DOMAIN-KEYWORD,downloads,BESTPROXY
 DOMAIN-SUFFIX,pixel.google.com,BESTPROXY
