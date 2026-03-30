@@ -3,7 +3,7 @@
 #!arguments=captionLang:off, lyricLang:off, blockImmersive:false, debug:false
 #blockShorts:false, blockUpload:true вырезано
 
-#Последние изменения 27.03.2026 04:00
+#Последние изменения 30.03.2026 15:00
 #Фильтры обновлены 26.03.2026 04:00
 
 #==================================================
@@ -71,8 +71,8 @@ dns-over-https = true
 dns-direct-system = false
 dns-fallback-system = false
 dns-direct-fallback-proxy = true
-dns-server = https://dns.comss.one/dns-query,https://dns.quad9.net/dns-query,https://dns.adguard.com/dns-query,94.140.14.14
-fallback-dns-server = 76.76.2.0,8.8.8.8
+dns-server = https://76.76.2.22/dns-query#proxy,https://9.9.9.9/dns-query#direct,https://94.140.14.14/dns-query#proxy
+fallback-dns-server = https://1.1.1.1/dns-query#proxy,https://8.8.8.8/dns-query#direct
 hijack-dns = *:53
 private-ip-answer = true
 bypass-system = true
