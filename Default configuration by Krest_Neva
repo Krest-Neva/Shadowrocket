@@ -64,15 +64,15 @@
 [General]
 ipv6 = false
 prefer-ipv6 = false
-skip-proxy = apple.com,icloud.com,*.cdn-apple.com,*.mzstatic.com,itunes.apple.com,captive.apple.com,gsp1.apple.com,*.local,localhost,apple-pki.com,digicert.com,entrust.net,
+skip-proxy = apple.com,icloud.com,*.cdn-apple.com,*.mzstatic.com,itunes.apple.com,captive.apple.com,gsp1.apple.com,*.local,localhost,apple-pki.com,digicert.com,entrust.net
 always-real-ip = *.apple.com,*.icloud.com,*.itunes.com,*.mzstatic.com,*.apple-pki.com,*.push.apple.com
 tun-excluded-routes = 10.0.0.0/8,17.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.0.0.0/24,192.0.2.0/24,192.88.99.0/24,192.168.0.0/16,198.51.100.0/24,203.0.113.0/24,224.0.0.0/4,255.255.255.255/32
 dns-over-https = true
 dns-direct-system = false
 dns-fallback-system = false
 dns-direct-fallback-proxy = true
-dns-server = https://dns.comss.one/dns-query,https://94.140.14.14/dns-query#proxy,https://9.9.9.9/dns-query#direct
-fallback-dns-server = https://1.1.1.1/dns-query#proxy,https://1.0.0.1/dns-query#proxy,https://8.8.8.8/dns-query#direct,https://8.8.4.4/dns-query#direct
+dns-server = https://dns.comss.one/dns-query#proxy,https://dns.comss.one/dns-query,https://94.140.14.14/dns-query#proxy,https://doh.dns.sb/dns-query#proxy,https://9.9.9.9/dns-query#direct
+fallback-dns-server = https://1.1.1.1/dns-query#proxy,https://1.0.0.1/dns-query#proxy,https://8.8.8.8/dns-query#direct,https://8.8.4.4/dns-query#direct,https://dns.alidns.com/dns-query,https://doh.libredns.gr/dns-query
 hijack-dns = *:53
 private-ip-answer = true
 bypass-system = true
