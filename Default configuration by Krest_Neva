@@ -62,7 +62,7 @@
 #   #-неакт❌
 
 [General]
-ipv6 = false
+ipv6 = true
 prefer-ipv6 = false
 skip-proxy = apple.com,icloud.com,*.cdn-apple.com,*.mzstatic.com,itunes.apple.com,captive.apple.com,gsp1.apple.com,*.local,localhost,apple-pki.com,digicert.com,entrust.net
 always-real-ip = *.apple.com,*.icloud.com,*.itunes.com,*.mzstatic.com,*.apple-pki.com,*.push.apple.com
