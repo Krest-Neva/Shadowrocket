@@ -1,47 +1,39 @@
 let body = $response.body;
 if (!body) $done({});
 try {
-    let json = JSON.parse(body);
+    let obj = JSON.parse(body);
     let modified = false;
-    const adKeyPattern = /^(?:ad|ads|advert|direct|sponsor|sponsored|metrica|statistics|analytics|survey|tracking)$/i;
-    const monetPattern = /@monetize|UrbanAds|HorizontalIncut|Madv|MediaCarousel|searchIncut/i;
-    function scanner(obj) {
-        if (!obj || typeof obj !== 'object') return obj;
-        if (Array.isArray(obj)) {
-            return obj.filter(item => {
+    function cleanAds(data) {
+        if (!data || typeof data !== 'object') return;
+
+        if (Array.isArray(data)) {
+            for (let i = data.length - 1; i >= 0; i--) {
+                let item = data[i];
                 if (item && typeof item === 'object') {
-                    if (
-                        item.is_ad === true ||
-                        item.is_promoted === true ||
-                        (item.type && item.type === 'ad') ||           // точно 'ad', а не содержит
-                        (item.layout && item.layout === 'ad') ||       // точно 'ad'
-                        (item.widgetName && monetPattern.test(item.widgetName.toString())) ||
-                        (item.apiaryWidgetName && monetPattern.test(item.apiaryWidgetName.toString())) ||
-                        (item.dataAuto === 'searchIncut') ||
-                        (item.dataZoneData && item.dataZoneData.bannerUrl)
-                    ) {
+                    let isAd = item.is_ad === true ||
+                               item.is_promoted === true ||
+                               item.type === 'ad' ||
+                               item.layout === 'ad' ||
+                               item.dataAuto === 'searchIncut' ||
+                               (item.widgetName && typeof item.widgetName === 'string' && item.widgetName.toLowerCase().includes('searchincut'));
+                    if (isAd) {
+                        data.splice(i, 1);
                         modified = true;
-                        return false;
+                    } else {
+                        cleanAds(item);
                     }
-                    scanner(item);
                 }
-                return true;
-            });
-        }
-        for (let key in obj) {
-            if (adKeyPattern.test(key)) {
-                delete obj[key];
-                modified = true;
-            } else {
-                scanner(obj[key]);
+            }
+        } else {
+            for (let key in data) {
+                cleanAds(data[key]);
             }
         }
-        return obj;
     }
-    json = scanner(json);
+    cleanAds(obj);
     if (modified) {
-        body = JSON.stringify(json);
+        body = JSON.stringify(obj);
     }
-} catch(e) {
+} catch (e) {
 }
 $done({ body });
