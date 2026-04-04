@@ -111,6 +111,8 @@ DOMAIN-KEYWORD,pixel,REJECT-TINYGIF,pre-matching
 DOMAIN-KEYWORD,messenger.yandex,REJECT-DROP,pre-matching
 
 #YANDEX каки✴️
+DOMAIN-SUFFIX,kinopoisk.ru,DIRECT
+IP-CIDR,5.28.195.2,DIRECT,no-resolve
 DOMAIN-SUFFIX,afisha.yandex.ru,DIRECT
 DOMAIN-SUFFIX,yastatic.net,DIRECT
 DOMAIN-SUFFIX,sp.yandex.ru,REJECT,pre-matching
@@ -424,11 +426,22 @@ localhost = 127.0.0.1
 (^https?:\/\/[\w-]+\.googlevideo\.com\/(?!dclk_video_ads).+?)&ctier=L(&.+?),ctier,(.+) $1$2$3 302
 
 #YANDEX каки✴️
-^http(s?)://(.*?)\?(.*)&?utm_(.*) http$1://$2?$3 302
-^http(s?)://(.*?)\?(utm_.*)&?(.*) http$1://$2?$3 302
-^http(s?)://(.*?)\?utm_(.*) http$1://$2 302
-^http(s?)://(.*?)\?(.*)&?yclid=(.*) http$1://$2?$3 302
-^http(s?)://(.*?)\?yclid=(.*) http$1://$2 302
+#UTM
+^(https?:\/\/[^?]+)\?(.+)&utm_[^&]+(.*)$ $1?$2$3 302
+^(https?:\/\/[^?]+)\?utm_[^&]+&(.+)$ $1?$2 302
+^(https?:\/\/[^?]+)\?utm_[^&]+$ $1 302
+#Yandex (yclid)
+^(https?:\/\/[^?]+)\?(.+)&yclid=[^&]+(.*)$ $1?$2$3 302
+^(https?:\/\/[^?]+)\?yclid=[^&]+&(.+)$ $1?$2 302
+^(https?:\/\/[^?]+)\?yclid=[^&]+$ $1 302
+#Facebook (fbclid)
+^(https?:\/\/[^?]+)\?(.+)&fbclid=[^&]+(.*)$ $1?$2$3 302
+^(https?:\/\/[^?]+)\?fbclid=[^&]+&(.+)$ $1?$2 302
+^(https?:\/\/[^?]+)\?fbclid=[^&]+$ $1 302
+#Google Ads (gclid)
+^(https?:\/\/[^?]+)\?(.+)&gclid=[^&]+(.*)$ $1?$2$3 302
+^(https?:\/\/[^?]+)\?gclid=[^&]+&(.+)$ $1?$2 302
+^(https?:\/\/[^?]+)\?gclid=[^&]+$ $1 302
 ^http://(www\.)?yandex\.ru https://yandex.com 302
 ^https://(www\.)?yandex\.ru https://yandex.com 302
 #Другие регионы
