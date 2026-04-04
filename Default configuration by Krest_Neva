@@ -439,9 +439,9 @@ localhost = 127.0.0.1
 ^(https?:\/\/[^?]+)\?(.+)&gclid=[^&]+(.*)$ $1?$2$3 302
 ^(https?:\/\/[^?]+)\?gclid=[^&]+&(.+)$ $1?$2 302
 ^(https?:\/\/[^?]+)\?gclid=[^&]+$ $1 302
+#Регионы
 ^http://(www\.)?yandex\.ru https://yandex.com 302
 ^https://(www\.)?yandex\.ru https://yandex.com 302
-#Другие регионы
 ^http://(www\.)?yandex\.kz(.*)$ http://yandex.com$2 302
 ^http://(www\.)?yandex\.az(.*)$ http://yandex.com$2 302
 ^http://(www\.)?yandex\.by(.*)$ http://yandex.com$2 302
