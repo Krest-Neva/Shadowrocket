@@ -111,8 +111,6 @@ DOMAIN-KEYWORD,pixel,REJECT-TINYGIF,pre-matching
 DOMAIN-KEYWORD,messenger.yandex,REJECT-DROP,pre-matching
 
 #YANDEX каки✴️
-DOMAIN-SUFFIX,kinopoisk.ru,DIRECT
-IP-CIDR,5.28.195.2,DIRECT,no-resolve
 DOMAIN-SUFFIX,afisha.yandex.ru,DIRECT
 DOMAIN-SUFFIX,yastatic.net,DIRECT
 DOMAIN-SUFFIX,sp.yandex.ru,REJECT,pre-matching
