@@ -153,7 +153,7 @@ white_urls = {
 output_file = "REJECT_RULES.list"
 output_file_plus = "REJECT_RULES_PLUS.list"
 exclude_keywords = [
-    "ads", "analytics", "tracker", "tracking", "tracer", "metrics", "metrica", "metrika", "telemetry", "pixel", "beacon", "adserver", "doubleclick", "adjust", "appsflyer", "messenger.yandex"
+    "ads", "analytics", "tracker", "tracking", "tracer", "metrics", "metrica", "metrika", "telemetry", "pixel", "beacon", "adserver", "doubleclick", "adjust", "appsflyer", "messenger.yandex", "vetmanager"
 ]
 
 # Предкомпилированная регулярка для ключевых слов
