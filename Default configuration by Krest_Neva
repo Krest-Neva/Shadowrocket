@@ -472,7 +472,7 @@ localhost = 127.0.0.1
 ^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.+&oad data-type=text data="" status-code=200
 
 [Script]
-yt.script = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/(youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch))(\?(.*))?$,requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/yt.script.js,argument={"lyricLang":"off","captionLang":"ru","blockUpload":true,"blockImmersive":false,"blockShorts":false,"debug":false}
+yt.script = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/(youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch))(\?(.*))?$,requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/yt.script.js,argument={"lyricLang":"off","captionLang":"off","blockUpload":true,"blockImmersive":false,"blockShorts":false,"debug":false}
 
 [MITM]
 hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com, *.yandex.*, *.ya.ru, *.yastatic.net
