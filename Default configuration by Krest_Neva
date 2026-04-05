@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=With YT Premium and AdBlock
 
-#Последние изменения 05.04.2026 02:00
+#Последние изменения 05.04.2026 12:00
 #Фильтры обновлены 26.03.2026 04:00
 
 #==================================================
@@ -226,6 +226,14 @@ URL-REGEX,^https?://sp\.yandex\.(ru|com)/.*$,REJECT
 DOMAIN-SUFFIX,max.ru,REJECT-DROP,pre-matching
 #НИКАКОГО МАКСА!⚠️
 
+#GitHub
+DOMAIN-SUFFIX,github.com,SPEEDPROXY
+DOMAIN-SUFFIX,github.io,SPEEDPROXY
+DOMAIN-SUFFIX,github.dev,SPEEDPROXY
+DOMAIN-SUFFIX,githubusercontent.com,SPEEDPROXY
+DOMAIN-SUFFIX,githubassets.com,SPEEDPROXY
+
+#VPN
 DOMAIN-SUFFIX,proxyliberty.ru,BESTPROXY
 
 #Discord
