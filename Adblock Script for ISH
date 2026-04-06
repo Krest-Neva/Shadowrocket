@@ -44,8 +44,7 @@ EOF
 # --- ОЧИСТКА СТАРЫХ ФАЙЛОВ ---
 # ==========================================
 echo "[*] Принудительное удаление старых файлов перед сборкой..."
-rm -f "REJECT_RULES.list"
-rm -f "REJECT_RULES_PLUS.list"
+rm -f REJECT_RULES*.list
 rm -f "LogsAdBlockScript"
 
 # ==========================================
@@ -67,20 +66,19 @@ print("\n" + "="*45)
 print("Настройка списков OISD")
 print("1 - Обычные (Big/Full)")
 print("2 - Короткие (Small)")
-oisd_choice = input("Ваш выбор (1/2) [по умолчанию 1]: ").strip()
-if oisd_choice == '2':
-    oisd_main_url = "https://dl.oisd.nl/oisd_small_surge.list"
-    oisd_nsfw_url = "https://dl.oisd.nl/oisd_nsfw_small_surge.list"
-else:
-    oisd_main_url = "https://dl.oisd.nl/oisd_big_surge.list"
-    oisd_nsfw_url = "https://dl.oisd.nl/oisd_nsfw_surge.list"
+print("3 - Скачать все (Обычные + Короткие)")
+oisd_choice = input("Ваш выбор (1/2/3) [по умолчанию 1]: ").strip()
+if oisd_choice not in ('1', '2', '3'):
+    oisd_choice = '1'
+
+oisd_main_url = "https://dl.oisd.nl/oisd_big_surge.list"
+oisd_nsfw_url = "https://dl.oisd.nl/oisd_nsfw_surge.list"
+oisd_small_url = "https://dl.oisd.nl/oisd_small_surge.list"
+oisd_nsfw_small_url = "https://dl.oisd.nl/oisd_nsfw_small_surge.list"
 print("="*45 + "\n")
 
 SCRIPT_START_TIME = time.time()
 
-# -------------------------
-# ЧЁРНЫЕ СПИСКИ
-# -------------------------
 urls = {
     "1) Loyalsoldier": [
         "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/reject.txt",
@@ -99,22 +97,25 @@ urls = {
         "https://easylist-downloads.adblockplus.org/cntblock.txt",
         "https://raw.githubusercontent.com/easylist/easylist/master/easyprivacy/easyprivacy_trackers.txt"
     ],
-    "9) Анти фишинг": "https://malware-filter.gitlab.io/malware-filter/phishing-filter-ag.txt",
-    "10.1) OISD": [oisd_main_url],
-    "10.2) OISD NSFW": [oisd_nsfw_url],
-    "11) HaGeZi Pro": [
-        "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/pro.txt",
-        "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@main/adblock/pro.txt"
-    ],
-    "12) StevenBlack Hosts": [
-        "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",
-        "https://cdn.jsdelivr.net/gh/StevenBlack/hosts@master/hosts"
-    ]
+    "9) Анти фишинг": "https://malware-filter.gitlab.io/malware-filter/phishing-filter-ag.txt"
 }
 
-# -------------------------
-# БЕЛЫЕ СПИСКИ
-# -------------------------
+if oisd_choice in ('1', '3'):
+    urls["10.1) OISD"] = [oisd_main_url]
+    urls["10.2) OISD NSFW"] = [oisd_nsfw_url]
+if oisd_choice in ('2', '3'):
+    urls["10.3) OISD Small"] = [oisd_small_url]
+    urls["10.4) OISD NSFW Small"] = [oisd_nsfw_small_url]
+
+urls["11) HaGeZi Pro"] = [
+    "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/pro.txt",
+    "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@main/adblock/pro.txt"
+]
+urls["12) StevenBlack Hosts"] = [
+    "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",
+    "https://cdn.jsdelivr.net/gh/StevenBlack/hosts@master/hosts"
+]
+
 white_urls = {
     "Белый список 1 (Direct)": [
         "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/direct.txt",
@@ -150,43 +151,36 @@ white_urls = {
     ]
 }
 
-output_file = "REJECT_RULES.list"
-output_file_plus = "REJECT_RULES_PLUS.list"
 exclude_keywords = [
     "ads", "analytics", "tracker", "tracking", "tracer", "metrics", "metrica", "metrika", "telemetry", "pixel", "beacon", "adserver", "doubleclick", "adjust", "appsflyer", "messenger.yandex", "vetmanager"
 ]
 
-# Предкомпилированная регулярка для ключевых слов
 exclude_pattern = re.compile('|'.join(re.escape(kw) for kw in exclude_keywords))
 
-# Множество недопустимых символов для быстрой проверки
 INVALID_CHARS = set('?|=*(),&:[]/\\%#_')
 
-# --- ЗАЩИЩЁННЫЕ СУФФИКСЫ (ручные) ---
 protected_suffixes = {
    "apple-pki.com", "icloud.com", "icloud-content.com", "mzstatic.com", "push.apple.com", "appleid.apple.com",
     "simplex.im", "simplexonflux.com", "telegram.org", "t.me", "telegram.me", "telegra.ph", "tg.dev", "cdn.telegram-cdn.org",
     "whatsapp.com", "whatsapp.net", "wa.me", "youtube.com", "youtu.be", "ytimg.com", "googlevideo.com", "youtube.googleapis.com"
 }
 
-# --- ЗАЩИЩЁННЫЕ ТОЧНЫЕ ДОМЕНЫ (ручные) ---
 protected_domains = {
    "raw.githubusercontent.com", "cdn-apple.com", "apple-dns.net", "ls.apple.com", "facetime.apple.com", "stun.apple.com", "apple.com", "aaplimg.com", "github.com", "githubusercontent.com", "githubassets.com", "google.com", "gstatic.com", "ggpht.com", "firebase.google.com", "googleapis.com", "firebaseio.com", "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com", "microsoft.com", "windows.com", "windowsupdate.com", "msftconnecttest.com", "msftncsi.com", "azure.com", "azureedge.net", "azurefd.net", "amazon.com", "amazonaws.com", "aws.amazon.com", "cloudfront.net", "cloudflare.com", "fastly.net", "jsdelivr.net", "unpkg.com", "akamaiedge.net", "akamaized.net", "akamai.net", "auth0.com", "okta.com", "login.microsoftonline.com", "accounts.google.com", "hcaptcha.com", "challenges.cloudflare.com", "recaptcha.net", "facebook.com", "fb.com", "fbcdn.net", "graph.instagram.com", "graph.facebook.com", "instagram.com", "cdninstagram.com", "discord.com", "discordapp.com", "duckduckgo.com", "ddg.co", "giphy.com", "habr.com", "yandex.ru", "yandex.com", "yandex.by", "yandex.kz", "mail.yandex.ru", "passport.yandex.ru", "api.yandex.ru", "mail.ru", "e.mail.ru", "vk.com", "api.vk.com", "ozon.ru", "wildberries.ru", "avito.ru", "avito.st", "hh.ru", "sberbank.ru", "online.sberbank.ru", "alfabank.ru", "alfa.ru", "tbank.ru", "tinkoff.ru", "vtb.ru", "finam.ru", "63.ru", "aif.ru", "amic.ru", "angliya.com", "ap22.ru", "asiaplustj.info", "avesta.tj", "azerisport.com", "belta.by", "championat.com", "chita.ru", "citilink.ru", "civil.ge", "click-or-die.ru", "dni.ru", "e1.ru", "echo.az", "echo.msk.ru", "fedpress.ru", "f1news.ru", "fontanka.ru", "football.by", "gazeta.ru", "gazetanovgorod.ru", "golosarmenii.am", "government.ru", "gundogar-news.com", "hronikatm.com", "infoabad.com", "inosmi.ru", "interfax.ru", "itogi.ru", "izvestia.ru", "kp.ru", "kremlin.ru", "lenta.ru", "matchtv.ru", "meduza.io", "mn.ru", "ng.ru", "novayagazeta.ru", "newsvl.ru", "og.ru", "ok.ru", "politikus.info", "ppt.ru", "pressball.by", "progorodsamara.ru", "radiomayak.ru", "rbc.ru", "rg.ru", "ria.ru", "rskrf.ru", "rutube.ru", "sovsport.ru", "sport-express.ru", "sport24.ru", "sportbox.ru", "sports.ru", "tass.ru", "trud.ru", "utro.ru", "ytro.ru", "zr.ru", "one.one.one.one", "dns.google", "quad9.net", "npmjs.org", "pypi.org", "gitlab.com", "bitbucket.org", "android.com", "yastatic.net", "dft.ru", "afisha.ru", "gosuslugi.ru", "yandex.ru"
 }
 
-# --- ПРИНУДИТЕЛЬНО БЛОКИРУЕМЫЕ СУФФИКСЫ (всегда добавляются в финальный список) ---
+manual_protected_domains = protected_domains.copy()
+manual_protected_suffixes = protected_suffixes.copy()
+
 forced_block_suffixes = {
     "bit.ly", "tinyurl.com", "t.co", "reurl.cc", "is.gd", "ow.ly", "linktr.ee", "about.me", "campaign-archive.com", "vk.link", "app.link", "mradx.net", "adjust.com", "static.rutubelist.ru", "static.kuper.ru", "static-origin.kuper.ru", "max.ru", "zztfly.com", "sub.scroogethebest.com", "apmplus.volces.com", "googleadservices.com", "doubleclick.net", "googlesyndication.com", "google-analytics.com", "googletagmanager.com", "app-measurement.com", "crashlytics.com", "branch.io", "amplitude.com", "mixpanel.com", "hotjar.com", "yandexmetrica.ru", "mc.yandex.ru", "metrika.yandex.ru", "top.mail.ru", "adriver.ru", "adfox.ru", "pixel.facebook.com", "analytics.facebook.com", "connect.facebook.net", "tr.facebook.com"
 }
-# Принудительно блокируемые домены (пока пусто, для будущего использования)
 forced_block_domains = set()
 
-# Белый список IP
 protected_ips = {
     "1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4", "9.9.9.9", "149.112.112.112", "94.140.14.14", "94.140.15.15", "94.140.14.15", "94.140.14.1", "76.76.2.0", "76.76.10.0", "208.67.222.222", "208.67.220.220", "212.13.114.252", "212.111.75.55", "195.230.90.26", "194.247.146.200", "195.2.83.118", "195.133.107.200", "195.146.64.44", "195.230.90.32", "194.67.20.14"
 }
 
-# --- ПРИНУДИТЕЛЬНО БЛОКИРУЕМЫЕ IP (всегда добавляются в финальный список) ---
 forced_block_ips = set()
 
 dangerous_tlds = {"com", "net", "org", "ru", "site", "info", "xyz", "bid", "club", "shop", "html", "xml", "gif", "js", "php", "top"}
@@ -194,7 +188,6 @@ dangerous_tlds = {"com", "net", "org", "ru", "site", "info", "xyz", "bid", "club
 AGGREGATE_THRESHOLD = 0
 
 headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'}
-# IP regex всё ещё может использоваться для предварительной фильтрации, но окончательная валидация через ipaddress
 ip_regex = re.compile(r'^(\d{1,3}(?:\.\d{1,3}){3})(?:/\d{1,2})?$')
 
 errors_output_file = "LogsAdBlockScript"
@@ -202,6 +195,29 @@ download_report = {}
 failed_lists = []
 white_download_report = {}
 failed_white_lists = []
+
+all_domains = set()
+all_ips = set()
+oisd_domains = set()
+oisd_ips = set()
+nsfw_domains = set()
+nsfw_ips = set()
+oisd_small_domains = set()
+oisd_small_ips = set()
+nsfw_small_domains = set()
+nsfw_small_ips = set()
+
+optimized_domains = set()
+optimized_domains_plus = set()
+optimized_domains_sm = set()
+optimized_domains_plus_sm = set()
+final_list_len = 0
+final_list_plus_len = 0
+final_list_sm_len = 0
+final_list_plus_sm_len = 0
+
+stats = {"excluded": 0, "junk": 0, "protected_exact": 0, "protected_suffix": 0}
+errors = []
 
 DNS_SERVERS = [
     "8.8.8.8",
@@ -387,6 +403,16 @@ def is_protected_full(domain):
             return True, "suffix"
     return False, None
 
+def is_protected_manual(domain):
+    if domain in manual_protected_domains:
+        return True, "exact"
+    parts = domain.split('.')
+    for i in range(len(parts)):
+        suffix = '.'.join(parts[i:])
+        if suffix in manual_protected_suffixes:
+            return True, "suffix"
+    return False, None
+
 def is_valid_domain(d):
     if not d or len(d) < 4: return False
     if not d.isascii(): return False
@@ -549,6 +575,57 @@ def optimize_domain_set(source_domains, log_prefix):
                 opt_set.add(d)
     return opt_set
 
+def build_and_write():
+    global optimized_domains, optimized_domains_plus, optimized_domains_sm, optimized_domains_plus_sm
+    global final_list_len, final_list_plus_len, final_list_sm_len, final_list_plus_sm_len
+    
+    def write_chunks(base_name, domains_set, ips_set, log_prefix):
+        final_list = sorted([f"DOMAIN-SUFFIX,{d}" for d in domains_set])
+        final_ips = sorted([f"IP-CIDR,{ip}" for ip in ips_set])
+        combined = final_list + final_ips
+        total = len(combined)
+        if total == 0: return 0
+        
+        chunk_size = 100000
+        chunks = math.ceil(total / chunk_size)
+        for i in range(chunks):
+            chunk_data = combined[i*chunk_size : (i+1)*chunk_size]
+            out_name = f"{base_name}_{i+1}.list"
+            start_write = time.time()
+            with open(out_name, 'w', encoding='utf-8') as f:
+                written = 0
+                for line in chunk_data:
+                    f.write(line + "\n")
+                    written += 1
+                    if written % 1000 == 0 or written == len(chunk_data):
+                        print_progress(f"    [{log_prefix} {i+1}/{chunks}]", written, len(chunk_data), bar_len=30, start_time=start_write)
+        return total
+
+    total_rules = 0
+    if oisd_choice in ('1', '3'):
+        print("[*] Оптимизация стандартного списка...")
+        optimized_domains = optimize_domain_set(all_domains | oisd_domains, "opt std")
+        print("[*] Оптимизация расширенного списка (PLUS)...")
+        optimized_domains_plus = optimize_domain_set(all_domains | oisd_domains | nsfw_domains, "opt plus")
+        
+        print("[*] Формирование и запись файлов STD и PLUS...")
+        final_list_len = write_chunks("REJECT_RULES", optimized_domains, all_ips | oisd_ips, "write std")
+        final_list_plus_len = write_chunks("REJECT_RULES_PLUS", optimized_domains_plus, all_ips | oisd_ips | nsfw_ips, "write plus")
+        total_rules += final_list_len + final_list_plus_len
+
+    if oisd_choice in ('2', '3'):
+        print("[*] Оптимизация малого списка (SMALL)...")
+        optimized_domains_sm = optimize_domain_set(all_domains | oisd_small_domains, "opt sm")
+        print("[*] Оптимизация малого расширенного списка (PLUS SMALL)...")
+        optimized_domains_plus_sm = optimize_domain_set(all_domains | oisd_small_domains | nsfw_small_domains, "opt plus sm")
+        
+        print("[*] Формирование и запись файлов SMALL и PLUS SMALL...")
+        final_list_sm_len = write_chunks("REJECT_RULES_SMALL", optimized_domains_sm, all_ips | oisd_small_ips, "write sm")
+        final_list_plus_sm_len = write_chunks("REJECT_RULES_PLUS_SMALL", optimized_domains_plus_sm, all_ips | oisd_small_ips | nsfw_small_ips, "write plus sm")
+        total_rules += final_list_sm_len + final_list_plus_sm_len
+
+    save_logs()
+    return total_rules
 
 # --- ЗАГРУЗКА БЕЛЫХ СПИСКОВ ---
 print("\n=== ЗАГРУЗКА БЕЛЫХ СПИСКОВ (для пополнения защищённых доменов) ===")
@@ -609,13 +686,6 @@ for a in apple_keys:
 
 print("\n=== ЭТАП 1: ЗАГРУЗКА И ОБРАБОТКА ЧЁРНЫХ СПИСКОВ ===")
 
-all_domains = set()
-all_ips = set()
-nsfw_domains = set()
-nsfw_ips = set()
-stats = {"excluded": 0, "junk": 0, "protected_exact": 0, "protected_suffix": 0}
-errors = []   
-
 for name, url in urls.items():
     lines, method = download_data(name, url)
     if lines and method:
@@ -635,6 +705,13 @@ for name, url in urls.items():
     local_ip_count = 0
     total_lines = len(data)
     start_parse = time.time()
+    
+    is_oisd_nsfw = "10.2) OISD NSFW" in name
+    is_oisd_main = "10.1) OISD" in name
+    is_oisd_nsfw_sm = "10.4) OISD NSFW Small" in name
+    is_oisd_sm = "10.3) OISD Small" in name
+    is_any_oisd = "OISD" in name
+
     for idx, raw_line in enumerate(data, start=1):
         if idx % 500 == 0 or idx == total_lines:
             print_progress("    [parse]", idx, total_lines, bar_len=30, start_time=start_parse)
@@ -659,27 +736,23 @@ for name, url in urls.items():
                     validated = validate_ip(val)
                     if validated:
                         pure_ip = validated.split('/')[0]
-                        is_protected_ip = False if "OISD" in name else (pure_ip in protected_ips)
+                        is_protected_ip = False if is_any_oisd else (pure_ip in protected_ips)
                         if is_protected_ip:
                             stats["protected_exact"] += 1
                             errors.append(("protected_ip", name, val))
                         else:
-                            if "10.2) OISD NSFW" in name:
-                                nsfw_ips.add(validated)
-                            else:
-                                all_ips.add(validated)
+                            if is_oisd_nsfw: nsfw_ips.add(validated)
+                            elif is_oisd_main: oisd_ips.add(validated)
+                            elif is_oisd_nsfw_sm: nsfw_small_ips.add(validated)
+                            elif is_oisd_sm: oisd_small_ips.add(validated)
+                            else: all_ips.add(validated)
                             local_ip_count += 1
                     else:
                         stats["junk"] += 1
                         errors.append(("junk_invalid_ip", name, val))
                 elif "domain" in rule_type:
                     if is_valid_domain(val):
-                        if "OISD" in name:
-                            protected = False
-                            reason = None
-                        else:
-                            protected, reason = is_protected_full(val)
-                        
+                        protected, reason = (False, None) if is_any_oisd else is_protected_full(val)
                         if protected:
                             if reason == "exact":
                                 stats["protected_exact"] += 1
@@ -687,10 +760,11 @@ for name, url in urls.items():
                                 stats["protected_suffix"] += 1
                             errors.append((f"protected_{reason}", name, val))
                         else:
-                            if "10.2) OISD NSFW" in name:
-                                nsfw_domains.add(val)
-                            else:
-                                all_domains.add(val)
+                            if is_oisd_nsfw: nsfw_domains.add(val)
+                            elif is_oisd_main: oisd_domains.add(val)
+                            elif is_oisd_nsfw_sm: nsfw_small_domains.add(val)
+                            elif is_oisd_sm: oisd_small_domains.add(val)
+                            else: all_domains.add(val)
                             local_domain_count += 1
                     else:
                         stats["junk"] += 1
@@ -698,7 +772,6 @@ for name, url in urls.items():
             continue
 
         clean = line
-        
         clean = clean.split('#')[0].strip()
 
         if clean.startswith(('0.0.0.0 ', '127.0.0.1 ')):
@@ -725,23 +798,19 @@ for name, url in urls.items():
         validated_ip = validate_ip(clean)
         if validated_ip:
             pure_ip = validated_ip.split('/')[0]
-            is_protected_ip = False if "OISD" in name else (pure_ip in protected_ips)
+            is_protected_ip = False if is_any_oisd else (pure_ip in protected_ips)
             if is_protected_ip:
                 stats["protected_exact"] += 1
                 errors.append(("protected_ip", name, clean))
             else:
-                if "10.2) OISD NSFW" in name:
-                    nsfw_ips.add(validated_ip)
-                else:
-                    all_ips.add(validated_ip)
+                if is_oisd_nsfw: nsfw_ips.add(validated_ip)
+                elif is_oisd_main: oisd_ips.add(validated_ip)
+                elif is_oisd_nsfw_sm: nsfw_small_ips.add(validated_ip)
+                elif is_oisd_sm: oisd_small_ips.add(validated_ip)
+                else: all_ips.add(validated_ip)
                 local_ip_count += 1
         elif is_valid_domain(clean):
-            if "OISD" in name:
-                protected = False
-                reason = None
-            else:
-                protected, reason = is_protected_full(clean)
-                
+            protected, reason = (False, None) if is_any_oisd else is_protected_full(clean)
             if protected:
                 if reason == "exact":
                     stats["protected_exact"] += 1
@@ -749,10 +818,11 @@ for name, url in urls.items():
                     stats["protected_suffix"] += 1
                 errors.append((f"protected_{reason}", name, clean))
             else:
-                if "10.2) OISD NSFW" in name:
-                    nsfw_domains.add(clean)
-                else:
-                    all_domains.add(clean)
+                if is_oisd_nsfw: nsfw_domains.add(clean)
+                elif is_oisd_main: oisd_domains.add(clean)
+                elif is_oisd_nsfw_sm: nsfw_small_domains.add(clean)
+                elif is_oisd_sm: oisd_small_domains.add(clean)
+                else: all_domains.add(clean)
                 local_domain_count += 1
         else:
             stats["junk"] += 1
@@ -773,60 +843,8 @@ for ip in forced_block_ips:
         all_ips.add(validated)
 
 print("\n=== ЭТАП 2: ОЧИСТКА ПОДДОМЕНОВ И ДУБЛИКАТОВ ===")
-start_time = time.time()
-
-print("[*] Оптимизация стандартного списка...")
-optimized_domains = optimize_domain_set(all_domains, "opt std")
-
-print("[*] Оптимизация расширенного списка (PLUS)...")
-optimized_domains_plus = optimize_domain_set(all_domains | nsfw_domains, "opt plus")
-
-print(f"[+] Оптимизация успешно завершена за {round(time.time() - start_time, 2)} сек.")
-
-print("\n=== ЭТАП 3: ФОРМИРОВАНИЕ ФАЙЛОВ RULE-SET ===")
-print("[*] Сортировка правил по алфавиту и вынос IP-адресов в конец списка...")
-
-final_list = sorted([f"DOMAIN-SUFFIX,{d}" for d in optimized_domains])
-final_ips = sorted([f"IP-CIDR,{ip}" for ip in all_ips])
-
-final_list_plus = sorted([f"DOMAIN-SUFFIX,{d}" for d in optimized_domains_plus])
-final_ips_plus = sorted([f"IP-CIDR,{ip}" for ip in (all_ips | nsfw_ips)])
-
-total_write = len(final_list) + len(final_ips)
-start_write = time.time()
-print(f"[*] Запись {output_file}...")
-with open(output_file, 'w', encoding='utf-8') as f:
-    written = 0
-    for line in final_list:
-        f.write(line + "\n")
-        written += 1
-        if written % 1000 == 0 or written == total_write:
-            print_progress("    [write std]", written, total_write, bar_len=30, start_time=start_write)
-    if final_ips:
-        for ipline in final_ips:
-            f.write(ipline + "\n")
-            written += 1
-            if written % 1000 == 0 or written == total_write:
-                print_progress("    [write std]", written, total_write, bar_len=30, start_time=start_write)
-
-total_write_plus = len(final_list_plus) + len(final_ips_plus)
-start_write_plus = time.time()
-print(f"[*] Запись {output_file_plus}...")
-with open(output_file_plus, 'w', encoding='utf-8') as f:
-    written = 0
-    for line in final_list_plus:
-        f.write(line + "\n")
-        written += 1
-        if written % 1000 == 0 or written == total_write_plus:
-            print_progress("    [write plus]", written, total_write_plus, bar_len=30, start_time=start_write_plus)
-    if final_ips_plus:
-        for ipline in final_ips_plus:
-            f.write(ipline + "\n")
-            written += 1
-            if written % 1000 == 0 or written == total_write_plus:
-                print_progress("    [write plus]", written, total_write_plus, bar_len=30, start_time=start_write_plus)
-
-save_logs()
+print("=== ЭТАП 3: ФОРМИРОВАНИЕ ФАЙЛОВ RULE-SET ===")
+build_and_write()
 
 # ==========================================
 # --- ИНТЕРАКТИВНЫЙ БЛОК ПОВТОРНОЙ ЗАГРУЗКИ ---
@@ -909,16 +927,16 @@ while failed_lists or failed_white_lists:
                 prot, reason = is_protected_full(d)
                 if prot: to_remove.add(d)
             for d in to_remove: all_domains.remove(d)
-            
-            to_remove_nsfw = set()
-            for d in nsfw_domains:
-                prot, reason = is_protected_full(d)
-                if prot: to_remove_nsfw.add(d)
-            for d in to_remove_nsfw: nsfw_domains.remove(d)
 
             failed_white_lists.remove(target)
             white_download_report[target] = {"status": "ok (retry)", "method": method, "lines": len(lines)}
         else:
+            is_oisd_nsfw = "10.2) OISD NSFW" in target
+            is_oisd_main = "10.1) OISD" in target
+            is_oisd_nsfw_sm = "10.4) OISD NSFW Small" in target
+            is_oisd_sm = "10.3) OISD Small" in target
+            is_any_oisd = "OISD" in target
+
             for idx, raw_line in enumerate(lines, start=1):
                 if idx % 500 == 0 or idx == total_lines:
                     print_progress("    [parse retry]", idx, total_lines, bar_len=30, start_time=start_parse)
@@ -934,23 +952,22 @@ while failed_lists or failed_white_lists:
                             validated = validate_ip(val)
                             if validated:
                                 pure_ip = validated.split('/')[0]
-                                is_protected_ip = False if "OISD" in target else (pure_ip in protected_ips)
+                                is_protected_ip = False if is_any_oisd else (pure_ip in protected_ips)
                                 if not is_protected_ip:
-                                    if "10.2) OISD NSFW" in target:
-                                        nsfw_ips.add(validated)
-                                    else:
-                                        all_ips.add(validated)
+                                    if is_oisd_nsfw: nsfw_ips.add(validated)
+                                    elif is_oisd_main: oisd_ips.add(validated)
+                                    elif is_oisd_nsfw_sm: nsfw_small_ips.add(validated)
+                                    elif is_oisd_sm: oisd_small_ips.add(validated)
+                                    else: all_ips.add(validated)
                         elif "domain" in rule_type:
                             if is_valid_domain(val):
-                                if "OISD" in target:
-                                    protected = False
-                                else:
-                                    protected, reason = is_protected_full(val)
+                                protected, reason = (False, None) if is_any_oisd else is_protected_full(val)
                                 if not protected:
-                                    if "10.2) OISD NSFW" in target:
-                                        nsfw_domains.add(val)
-                                    else:
-                                        all_domains.add(val)
+                                    if is_oisd_nsfw: nsfw_domains.add(val)
+                                    elif is_oisd_main: oisd_domains.add(val)
+                                    elif is_oisd_nsfw_sm: nsfw_small_domains.add(val)
+                                    elif is_oisd_sm: oisd_small_domains.add(val)
+                                    else: all_domains.add(val)
                     continue
 
                 clean = line.split('#')[0].strip()
@@ -968,89 +985,52 @@ while failed_lists or failed_white_lists:
                 validated_ip = validate_ip(clean)
                 if validated_ip:
                     pure_ip = validated_ip.split('/')[0]
-                    is_protected_ip = False if "OISD" in target else (pure_ip in protected_ips)
+                    is_protected_ip = False if is_any_oisd else (pure_ip in protected_ips)
                     if not is_protected_ip:
-                        if "10.2) OISD NSFW" in target:
-                            nsfw_ips.add(validated_ip)
-                        else:
-                            all_ips.add(validated_ip)
+                        if is_oisd_nsfw: nsfw_ips.add(validated_ip)
+                        elif is_oisd_main: oisd_ips.add(validated_ip)
+                        elif is_oisd_nsfw_sm: nsfw_small_ips.add(validated_ip)
+                        elif is_oisd_sm: oisd_small_ips.add(validated_ip)
+                        else: all_ips.add(validated_ip)
                 elif is_valid_domain(clean):
-                    if "OISD" in target:
-                        protected = False
-                    else:
-                        protected, reason = is_protected_full(clean)
+                    protected, reason = (False, None) if is_any_oisd else is_protected_full(clean)
                     if not protected:
-                        if "10.2) OISD NSFW" in target:
-                            nsfw_domains.add(clean)
-                        else:
-                            all_domains.add(clean)
+                        if is_oisd_nsfw: nsfw_domains.add(clean)
+                        elif is_oisd_main: oisd_domains.add(clean)
+                        elif is_oisd_nsfw_sm: nsfw_small_domains.add(clean)
+                        elif is_oisd_sm: oisd_small_domains.add(clean)
+                        else: all_domains.add(clean)
 
             failed_lists.remove(target)
             download_report[target] = {"status": "ok (retry)", "method": method, "lines": len(lines)}
 
         print("  [*] Пересборка финальных списков...")
-        start_opt = time.time()
-        optimized_domains = optimize_domain_set(all_domains, "opt std")
-        optimized_domains_plus = optimize_domain_set(all_domains | nsfw_domains, "opt plus")
-
-        final_list = sorted([f"DOMAIN-SUFFIX,{d}" for d in optimized_domains])
-        final_ips = sorted([f"IP-CIDR,{ip}" for ip in all_ips])
-
-        final_list_plus = sorted([f"DOMAIN-SUFFIX,{d}" for d in optimized_domains_plus])
-        final_ips_plus = sorted([f"IP-CIDR,{ip}" for ip in (all_ips | nsfw_ips)])
-
-        total_write = len(final_list) + len(final_ips)
-        start_write = time.time()
-        with open(output_file, 'w', encoding='utf-8') as f:
-            written = 0
-            for line in final_list:
-                f.write(line + "\n")
-                written += 1
-                if written % 1000 == 0 or written == total_write:
-                    print_progress("    [write std]", written, total_write, bar_len=30, start_time=start_write)
-            if final_ips:
-                for ipline in final_ips:
-                    f.write(ipline + "\n")
-                    written += 1
-                    if written % 1000 == 0 or written == total_write:
-                        print_progress("    [write std]", written, total_write, bar_len=30, start_time=start_write)
-
-        total_write_plus = len(final_list_plus) + len(final_ips_plus)
-        start_write_plus = time.time()
-        with open(output_file_plus, 'w', encoding='utf-8') as f:
-            written = 0
-            for line in final_list_plus:
-                f.write(line + "\n")
-                written += 1
-                if written % 1000 == 0 or written == total_write_plus:
-                    print_progress("    [write plus]", written, total_write_plus, bar_len=30, start_time=start_write_plus)
-            if final_ips_plus:
-                for ipline in final_ips_plus:
-                    f.write(ipline + "\n")
-                    written += 1
-                    if written % 1000 == 0 or written == total_write_plus:
-                        print_progress("    [write plus]", written, total_write_plus, bar_len=30, start_time=start_write_plus)
-
-        save_logs()
+        build_and_write()
         print("  [+] Файлы успешно обновлены (rule-set и log)!")
     else:
         print("  [!] Неверный ввод.")
 
-
 TOTAL_TIME = round(time.time() - SCRIPT_START_TIME, 2)
 
 print("\n" + "="*45)
-print(f"ГОТОВО! Файлы сохранены как: {output_file} и {output_file_plus}")
+print(f"ГОТОВО! Файлы успешно разделены и сохранены.")
 print("-" * 45)
-print(f"Уникальных доменов (Std/Plus): {len(optimized_domains)} / {len(optimized_domains_plus)}")
-print(f"Уникальных IP (Std/Plus):      {len(all_ips)} / {len(all_ips | nsfw_ips)}")
+if oisd_choice in ('1', '3'):
+    print(f"Уникальных доменов (Std/Plus): {len(optimized_domains)} / {len(optimized_domains_plus)}")
+if oisd_choice in ('2', '3'):
+    print(f"Уникальных доменов (Sm/PlusSm):{len(optimized_domains_sm)} / {len(optimized_domains_plus_sm)}")
+print(f"Уникальных IP-адресов:         {len(all_ips)}")
 print(f"Удалено по ключевым словам:    {stats['excluded']}")
 print(f"Отсеяно ошибочно добавленных:  {stats['junk']}")
 print(f"Защищено (exact):              {stats['protected_exact']}")
 print(f"Защищено (suffix):             {stats['protected_suffix']}")
 print("-" * 45)
-print(f"ПРАВИЛ В ФАЙЛЕ STD:        {len(final_list) + len(final_ips)}")
-print(f"ПРАВИЛ В ФАЙЛЕ PLUS:       {len(final_list_plus) + len(final_ips_plus)}")
+if oisd_choice in ('1', '3'):
+    print(f"ПРАВИЛ В ФАЙЛАХ STD:       {final_list_len}")
+    print(f"ПРАВИЛ В ФАЙЛАХ PLUS:      {final_list_plus_len}")
+if oisd_choice in ('2', '3'):
+    print(f"ПРАВИЛ В ФАЙЛАХ SMALL:     {final_list_sm_len}")
+    print(f"ПРАВИЛ В ФАЙЛАХ PLUS SMALL:{final_list_plus_sm_len}")
 print(f"ВСЕГО ОТБРОШЕНО СТРОК:     {len(errors)}")
 print(f"ОБЩЕЕ ВРЕМЯ ВЫПОЛНЕНИЯ:    {TOTAL_TIME} сек.")
 print("-" * 45)
