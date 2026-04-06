@@ -62,14 +62,21 @@ import math
 import shutil
 import ipaddress
 
-print("\n" + "="*45)
-print("Настройка списков OISD")
-print("1 - Обычные (Big/Full)")
-print("2 - Короткие (Small)")
-print("3 - Скачать все (Обычные + Короткие)")
-oisd_choice = input("Ваш выбор (1/2/3) [по умолчанию 1]: ").strip()
-if oisd_choice not in ('1', '2', '3'):
-    oisd_choice = '1'
+while True:
+    print("\n" + "="*45)
+    print("Настройка списков OISD")
+    print("1 - Обычные (Big/Full)")
+    print("2 - Короткие (Small)")
+    print("3 - Скачать все (Обычные + Короткие)")
+    oisd_choice = input("Ваш выбор (1/2/3) [по умолчанию 1]: ").strip()
+    if not oisd_choice: oisd_choice = '1'
+    
+    mapping = {'1': 'Обычные (Big/Full)', '2': 'Короткие (Small)', '3': 'Скачать все (Обычные + Короткие)'}
+    choice_str = mapping.get(oisd_choice, 'Обычные (Big/Full)')
+    
+    confirm = input(f"Вы выбрали: {choice_str}. Подтвердить выбор? (y/n): ").strip().lower()
+    if confirm == 'y':
+        break
 
 oisd_main_url = "https://dl.oisd.nl/oisd_big_surge.list"
 oisd_nsfw_url = "https://dl.oisd.nl/oisd_nsfw_surge.list"
@@ -176,6 +183,8 @@ forced_block_suffixes = {
     "bit.ly", "tinyurl.com", "t.co", "reurl.cc", "is.gd", "ow.ly", "linktr.ee", "about.me", "campaign-archive.com", "vk.link", "app.link", "mradx.net", "adjust.com", "static.rutubelist.ru", "static.kuper.ru", "static-origin.kuper.ru", "max.ru", "zztfly.com", "sub.scroogethebest.com", "apmplus.volces.com", "googleadservices.com", "doubleclick.net", "googlesyndication.com", "google-analytics.com", "googletagmanager.com", "app-measurement.com", "crashlytics.com", "branch.io", "amplitude.com", "mixpanel.com", "hotjar.com", "yandexmetrica.ru", "mc.yandex.ru", "metrika.yandex.ru", "top.mail.ru", "adriver.ru", "adfox.ru", "pixel.facebook.com", "analytics.facebook.com", "connect.facebook.net", "tr.facebook.com"
 }
 forced_block_domains = set()
+
+plus_forced_block_suffixes = {"yabuchka.net", "xcelebs.ru"}
 
 protected_ips = {
     "1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4", "9.9.9.9", "149.112.112.112", "94.140.14.14", "94.140.15.15", "94.140.14.15", "94.140.14.1", "76.76.2.0", "76.76.10.0", "208.67.222.222", "208.67.220.220", "212.13.114.252", "212.111.75.55", "195.230.90.26", "194.247.146.200", "195.2.83.118", "195.133.107.200", "195.146.64.44", "195.230.90.32", "194.67.20.14"
@@ -310,12 +319,12 @@ def download_with_urllib(url, headers, timeout=10):
 def download_with_curl_to_file(url, headers, timeout=20, curl_args=None):
     tmp = tempfile.NamedTemporaryFile(delete=False)
     tmp.close()
-    base = ['curl', '-L', '--fail', '--silent', '--show-error', '--progress-bar', '-A', headers['User-Agent']]
+    base = ['curl', '-L', '--fail', '--show-error', '--progress-bar', '-A', headers['User-Agent']]
     if curl_args:
         cmd = base + curl_args + ['-o', tmp.name, url]
     else:
         cmd = base + ['-o', tmp.name, url]
-    sys.stdout.write("    [dl] curl fallback: starting download (see progress bar)...\n")
+    sys.stdout.write(f"    [dl] curl: {url}\n")
     sys.stdout.flush()
     try:
         proc = subprocess.run(cmd, timeout=timeout)
@@ -346,11 +355,11 @@ def try_command_variants(url):
     variants.append((['curl', '-s', '-L', '-k', '-A', 'Wget/1.20', url], False, "curl ua=Wget"))
 
     if shutil.which('wget'):
-        variants.append((['wget', '-q', '-O', '-', url], False, "wget stdout"))
-        variants.append((['wget', '--no-check-certificate', '-q', '-O', '-', url], False, "wget no-check"))
+        variants.append((['wget', '-q', '--show-progress', '-O', '-', url], False, "wget stdout"))
+        variants.append((['wget', '--no-check-certificate', '-q', '--show-progress', '-O', '-', url], False, "wget no-check"))
 
     if shutil.which('aria2c'):
-        variants.append((['aria2c', '-q', '-x', '4', '-o', 'aria_tmp_dl', url], True, "aria2c"))
+        variants.append((['aria2c', '-q', '--summary-interval=1', '-x', '4', '-o', 'aria_tmp_dl', url], True, "aria2c"))
 
     for cmd, is_file_writer, descr in variants:
         if not shutil.which(cmd[0]):
@@ -579,8 +588,14 @@ def build_and_write():
     global optimized_domains, optimized_domains_plus, optimized_domains_sm, optimized_domains_plus_sm
     global final_list_len, final_list_plus_len, final_list_sm_len, final_list_plus_sm_len
     
-    def write_chunks(base_name, domains_set, ips_set, log_prefix):
+    def write_chunks(base_name, domains_set, ips_set, log_prefix, is_plus=False):
         final_list = sorted([f"DOMAIN-SUFFIX,{d}" for d in domains_set])
+        if is_plus:
+            for sfx in plus_forced_block_suffixes:
+                if f"DOMAIN-SUFFIX,{sfx}" not in final_list:
+                    final_list.append(f"DOMAIN-SUFFIX,{sfx}")
+            final_list.sort()
+            
         final_ips = sorted([f"IP-CIDR,{ip}" for ip in ips_set])
         combined = final_list + final_ips
         total = len(combined)
@@ -610,7 +625,7 @@ def build_and_write():
         
         print("[*] Формирование и запись файлов STD и PLUS...")
         final_list_len = write_chunks("REJECT_RULES", optimized_domains, all_ips | oisd_ips, "write std")
-        final_list_plus_len = write_chunks("REJECT_RULES_PLUS", optimized_domains_plus, all_ips | oisd_ips | nsfw_ips, "write plus")
+        final_list_plus_len = write_chunks("REJECT_RULES_PLUS", optimized_domains_plus, all_ips | oisd_ips | nsfw_ips, "write plus", is_plus=True)
         total_rules += final_list_len + final_list_plus_len
 
     if oisd_choice in ('2', '3'):
@@ -621,7 +636,7 @@ def build_and_write():
         
         print("[*] Формирование и запись файлов SMALL и PLUS SMALL...")
         final_list_sm_len = write_chunks("REJECT_RULES_SMALL", optimized_domains_sm, all_ips | oisd_small_ips, "write sm")
-        final_list_plus_sm_len = write_chunks("REJECT_RULES_PLUS_SMALL", optimized_domains_plus_sm, all_ips | oisd_small_ips | nsfw_small_ips, "write plus sm")
+        final_list_plus_sm_len = write_chunks("REJECT_RULES_PLUS_SMALL", optimized_domains_plus_sm, all_ips | oisd_small_ips | nsfw_small_ips, "write plus sm", is_plus=True)
         total_rules += final_list_sm_len + final_list_plus_sm_len
 
     save_logs()
@@ -1029,7 +1044,7 @@ if oisd_choice in ('1', '3'):
     print(f"ПРАВИЛ В ФАЙЛАХ STD:       {final_list_len}")
     print(f"ПРАВИЛ В ФАЙЛАХ PLUS:      {final_list_plus_len}")
 if oisd_choice in ('2', '3'):
-    print(f"ПРАВИЛ В ФАЙЛАХ SMALL:     {final_list_sm_len}")
+    print(f"ПРАВИЛ В ФАЙЛАХ STD SMALL:     {final_list_sm_len}")
     print(f"ПРАВИЛ В ФАЙЛАХ PLUS SMALL:{final_list_plus_sm_len}")
 print(f"ВСЕГО ОТБРОШЕНО СТРОК:     {len(errors)}")
 print(f"ОБЩЕЕ ВРЕМЯ ВЫПОЛНЕНИЯ:    {TOTAL_TIME} сек.")
