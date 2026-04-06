@@ -53,21 +53,33 @@ import math
 import shutil
 import ipaddress
 
+# Улучшенный блок выбора списков
 while True:
     print("\n" + "="*45)
     print("Настройка списков OISD")
     print("1 - Обычные (Big/Full)")
     print("2 - Короткие (Small)")
     print("3 - Скачать все (Обычные + Короткие)")
-    oisd_choice = input("Ваш выбор (1/2/3) [по умолчанию 3]: ").strip()
-    if not oisd_choice: oisd_choice = '3'
     
-    mapping = {'1': 'Обычные (Big/Full)', '2': 'Короткие (Small)', '3': 'Скачать все (Обычные + Короткие)'}
-    choice_str = mapping.get(oisd_choice, 'Обычные (Big/Full)')
+    raw_oisd = input("Ваш выбор (1/2/3) [по умолчанию 3]: ").strip()
+    # Если нажали Enter — выбираем 3, иначе берем ввод
+    oisd_choice = raw_oisd if raw_oisd in ('1', '2', '3') else '3'
     
-    confirm = input(f"Вы выбрали: {choice_str}. Подтвердить выбор? (y/n): ").strip().lower()
-    if confirm == 'y':
+    mapping = {
+        '1': 'Обычные (Big/Full)', 
+        '2': 'Короткие (Small)', 
+        '3': 'Скачать все (Обычные + Короткие)'
+    }
+    choice_str = mapping[oisd_choice]
+    
+    print(f" -> Выбрано: {choice_str}")
+    confirm = input(f"Подтвердить выбор? (y/n) [по умолчанию y]: ").strip().lower()
+    
+    # Исправление: если нажали просто Enter или ввели 'y', то выходим из цикла
+    if confirm in ('y', 'yes', ''):
         break
+    else:
+        print("Повторите ввод...")
 
 oisd_main_url = "https://dl.oisd.nl/oisd_big_surge.list"
 oisd_nsfw_url = "https://dl.oisd.nl/oisd_nsfw_surge.list"
@@ -665,7 +677,6 @@ def build_and_write():
 
     return total_rules
 
-# --- ЗАГРУЗКА БЕЛЫХ СПИСКОВ ---
 print("\n=== ЗАГРУЗКА БЕЛЫХ СПИСКОВ (для пополнения защищённых доменов) ===")
 for name, url in white_urls.items():
     lines, method = download_data(name, url)
