@@ -1102,7 +1102,7 @@ if oisd_choice in ('1', '3'):
     print(f"ПРАВИЛ В ФАЙЛАХ STD:       {final_list_len}")
     print(f"ПРАВИЛ В ФАЙЛАХ PLUS:      {final_list_plus_len}")
 if oisd_choice in ('2', '3'):
-    print(f"ПРАВИЛ В ФАЙЛАХ STD SMALL:     {final_list_sm_len}")
+    print(f"ПРАВИЛ В ФАЙЛАХ STD SMALL: {final_list_sm_len}")
     print(f"ПРАВИЛ В ФАЙЛАХ PLUS SMALL:{final_list_plus_sm_len}")
 print(f"ВСЕГО ОТБРОШЕНО СТРОК:     {len(errors)}")
 print(f"ОБЩЕЕ ВРЕМЯ ВЫПОЛНЕНИЯ:    {TOTAL_TIME} сек.")
