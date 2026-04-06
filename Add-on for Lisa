@@ -19,4 +19,4 @@ BESTPROXY = load-balance,🇷🇺 [LTE] РОССИЯ №9/1,🇷🇺 [LTE] РО�
 [Rule]
 DOMAIN-SUFFIX,kinopoisk.ru,DIRECT,pre-matching
 IP-CIDR,5.28.195.2,DIRECT,no-resolve
-RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT-RULES.list,REJECT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT-RULES.list,REJECT
