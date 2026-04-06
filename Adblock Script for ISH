@@ -902,8 +902,7 @@ for ip in forced_block_ips:
     if validated:
         all_ips.add(validated)
 
-print("\n=== ЭТАП 2: ОЧИСТКА ПОДДОМЕНОВ И ДУБЛИКАТОВ ===")
-print("=== ЭТАП 3: ФОРМИРОВАНИЕ ФАЙЛОВ RULE-SET ===")
+print("\n=== ОЧИСТКА ПОДДОМЕНОВ И ДУБЛИКАТОВ И ФОРМИРОВАНИЕ RULE-SET ===")
 build_and_write()
 
 while failed_lists or failed_white_lists:
