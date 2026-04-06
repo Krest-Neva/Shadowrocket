@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=With YT Premium and AdBlock
 
-#Последние изменения 05.04.2026 12:00
+#Последние изменения 06.04.2026 14:00
 #Фильтры обновлены 26.03.2026 04:00
 
 #==================================================
@@ -326,6 +326,8 @@ DOMAIN-SUFFIX,googleusercontent.com,GEMINIPROXY
 DOMAIN-SUFFIX,gstatic.com,GEMINIPROXY
 
 #ChatGPT
+DOMAIN-SUFFIX,chatgpt.com,GPTPROXY
+DOMAIN-SUFFIX,ingest.us.sentry.io,GPTPROXY
 DOMAIN-SUFFIX,openai.com,GPTPROXY
 DOMAIN-SUFFIX,openaiapi-site.azureedge.net,GPTPROXY
 DOMAIN-SUFFIX,stripe.com,GPTPROXY
