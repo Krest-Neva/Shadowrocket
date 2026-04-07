@@ -173,7 +173,7 @@ protected_suffixes = {
 }
 
 protected_domains = {
-   "raw.githubusercontent.com", "cdn-apple.com", "apple-dns.net", "ls.apple.com", "facetime.apple.com", "stun.apple.com", "apple.com", "aaplimg.com", "github.com", "githubusercontent.com", "githubassets.com", "google.com", "gstatic.com", "ggpht.com", "firebase.google.com", "googleapis.com", "firebaseio.com", "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com", "microsoft.com", "windows.com", "windowsupdate.com", "msftconnecttest.com", "msftncsi.com", "azure.com", "azureedge.net", "azurefd.net", "amazon.com", "amazonaws.com", "aws.amazon.com", "cloudfront.net", "cloudflare.com", "fastly.net", "jsdelivr.net", "unpkg.com", "akamaiedge.net", "akamaized.net", "akamai.net", "auth0.com", "okta.com", "login.microsoftonline.com", "accounts.google.com", "hcaptcha.com", "challenges.cloudflare.com", "recaptcha.net", "facebook.com", "fb.com", "fbcdn.net", "graph.instagram.com", "graph.facebook.com", "instagram.com", "cdninstagram.com", "discord.com", "discordapp.com", "duckduckgo.com", "ddg.co", "giphy.com", "habr.com", "yandex.ru", "yandex.com", "yandex.by", "yandex.kz", "mail.yandex.ru", "passport.yandex.ru", "api.yandex.ru", "mail.ru", "e.mail.ru", "vk.com", "api.vk.com", "ozon.ru", "wildberries.ru", "avito.ru", "avito.st", "hh.ru", "sberbank.ru", "online.sberbank.ru", "alfabank.ru", "alfa.ru", "tbank.ru", "tinkoff.ru", "vtb.ru", "finam.ru", "63.ru", "aif.ru", "amic.ru", "angliya.com", "ap22.ru", "asiaplustj.info", "avesta.tj", "azerisport.com", "belta.by", "championat.com", "chita.ru", "citilink.ru", "civil.ge", "click-or-die.ru", "dni.ru", "e1.ru", "echo.az", "echo.msk.ru", "fedpress.ru", "f1news.ru", "fontanka.ru", "football.by", "gazeta.ru", "gazetanovgorod.ru", "golosarmenii.am", "government.ru", "gundogar-news.com", "hronikatm.com", "infoabad.com", "inosmi.ru", "interfax.ru", "itogi.ru", "izvestia.ru", "kp.ru", "kremlin.ru", "lenta.ru", "matchtv.ru", "meduza.io", "mn.ru", "ng.ru", "novayagazeta.ru", "newsvl.ru", "og.ru", "ok.ru", "politikus.info", "ppt.ru", "pressball.by", "progorodsamara.ru", "radiomayak.ru", "rbc.ru", "rg.ru", "ria.ru", "rskrf.ru", "rutube.ru", "sovsport.ru", "sport-express.ru", "sport24.ru", "sportbox.ru", "sports.ru", "tass.ru", "trud.ru", "utro.ru", "ytro.ru", "zr.ru", "one.one.one.one", "dns.google", "quad9.net", "npmjs.org", "pypi.org", "gitlab.com", "bitbucket.org", "android.com", "yastatic.net", "dft.ru", "afisha.ru", "gosuslugi.ru", "yandex.ru"
+   "raw.githubusercontent.com", "cdn-apple.com", "apple-dns.net", "ls.apple.com", "facetime.apple.com", "stun.apple.com", "apple.com", "aaplimg.com", "github.com", "githubusercontent.com", "githubassets.com", "google.com", "gstatic.com", "ggpht.com", "firebase.google.com", "googleapis.com", "firebaseio.com", "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com", "microsoft.com", "windows.com", "windowsupdate.com", "msftconnecttest.com", "msftncsi.com", "azure.com", "azureedge.net", "azurefd.net", "amazon.com", "amazonaws.com", "aws.amazon.com", "cloudfront.net", "cloudflare.com", "fastly.net", "jsdelivr.net", "unpkg.com", "akamaiedge.net", "akamaized.net", "akamai.net", "auth0.com", "okta.com", "login.microsoftonline.com", "accounts.google.com", "hcaptcha.com", "challenges.cloudflare.com", "recaptcha.net", "facebook.com", "fb.com", "fbcdn.net", "graph.instagram.com", "graph.facebook.com", "instagram.com", "cdninstagram.com", "discord.com", "discordapp.com", "duckduckgo.com", "ddg.co", "giphy.com", "habr.com", "yandex.ru", "yandex.com", "yandex.by", "yandex.kz", "mail.yandex.ru", "passport.yandex.ru", "api.yandex.ru", "mail.ru", "e.mail.ru", "vk.com", "api.vk.com", "ozon.ru", "wildberries.ru", "avito.ru", "avito.st", "hh.ru", "sberbank.ru", "online.sberbank.ru", "alfabank.ru", "alfa.ru", "tbank.ru", "tinkoff.ru", "vtb.ru", "finam.ru", "63.ru", "aif.ru", "amic.ru", "angliya.com", "ap22.ru", "asiaplustj.info", "avesta.tj", "azerisport.com", "belta.by", "championat.com", "chita.ru", "citilink.ru", "civil.ge", "click-or-die.ru", "dni.ru", "e1.ru", "echo.az", "echo.msk.ru", "fedpress.ru", "f1news.ru", "fontanka.ru", "gazeta.ru", "gazetanovgorod.ru", "golosarmenii.am", "government.ru", "gundogar-news.com", "hronikatm.com", "infoabad.com", "inosmi.ru", "interfax.ru", "itogi.ru", "izvestia.ru", "kp.ru", "kremlin.ru", "lenta.ru", "matchtv.ru", "meduza.io", "mn.ru", "ng.ru", "novayagazeta.ru", "newsvl.ru", "og.ru", "ok.ru", "politikus.info", "ppt.ru", "pressball.by", "progorodsamara.ru", "radiomayak.ru", "rbc.ru", "rg.ru", "ria.ru", "rskrf.ru", "rutube.ru", "sovsport.ru", "sport-express.ru", "sport24.ru", "sportbox.ru", "sports.ru", "tass.ru", "trud.ru", "utro.ru", "ytro.ru", "zr.ru", "one.one.one.one", "dns.google", "quad9.net", "npmjs.org", "pypi.org", "gitlab.com", "bitbucket.org", "android.com", "yastatic.net", "dft.ru", "afisha.ru", "gosuslugi.ru", "yandex.ru"
 }
 
 manual_protected_domains = protected_domains.copy()
@@ -237,9 +237,11 @@ DNS_SERVERS = [
 ]
 
 def setup_dns_and_test():
-    print("    [net] Настройка DNS...")
+    sys.stdout.write("\r    [net] Настройка DNS...\033[K")
+    sys.stdout.flush()
     if not os.access("/etc/resolv.conf", os.W_OK):
-        print("    [net] Предупреждение: нет прав на запись /etc/resolv.conf, DNS может не обновиться.")
+        sys.stdout.write("\r    [net] Предупреждение: нет прав на запись /etc/resolv.conf\033[K")
+        sys.stdout.flush()
     try:
         with open("/etc/resolv.conf", "w") as f:
             for dns in DNS_SERVERS:
@@ -251,10 +253,12 @@ def setup_dns_and_test():
             timeout=5
         )
         if result.returncode == 0:
-            print("    [net] Интернет доступен")
+            sys.stdout.write("\r    [net] Интернет доступен\033[K")
+            sys.stdout.flush()
             return True
         else:
-            print("    [net] Ping не прошёл")
+            sys.stdout.write("\r    [net] Ping не прошёл\033[K")
+            sys.stdout.flush()
             return False
     except Exception:
         return False
@@ -282,7 +286,7 @@ def print_progress(prefix, current, total, bar_len=10, start_time=None):
     if start_time:
         sec = time.time() - start_time
         elapsed = f" | {int(sec)}s"
-    sys.stdout.write(f"\r{prefix} [{bar}] {current}/{total} ({pct:.1f}%){elapsed}   ")
+    sys.stdout.write(f"\r{prefix} [{bar}] {current}/{total} ({pct:.1f}%){elapsed}\033[K")
     sys.stdout.flush()
     if current == total:
         sys.stdout.write("\n")
@@ -310,7 +314,7 @@ def download_with_urllib(url, headers, timeout=30):
                 print_progress("  [dl] urllib", min(read, total), total, start_time=start)
             else:
                 kb = read // 1024
-                sys.stdout.write(f"\r  [dl] urllib {kb} KB   ")
+                sys.stdout.write(f"\r  [dl] urllib {kb} KB\033[K")
                 sys.stdout.flush()
         
         if total and read < total * 0.95:
@@ -328,7 +332,7 @@ def download_with_curl_to_file(url, headers, timeout=120, curl_args=None):
         cmd = base + curl_args + ['-o', tmp.name, url]
     else:
         cmd = base + ['-o', tmp.name, url]
-    sys.stdout.write(f"    [dl] curl: {url}\n")
+    sys.stdout.write(f"\r    [dl] curl: {url[:50]}...\033[K")
     sys.stdout.flush()
     try:
         proc = subprocess.run(cmd, timeout=timeout)
@@ -369,7 +373,7 @@ def try_command_variants(url):
         if not shutil.which(cmd[0]):
             continue
         try:
-            sys.stdout.write(f"    [attempt] running: {' '.join(cmd[:6])}... ({descr})\n")
+            sys.stdout.write(f"\r    [attempt] running: {cmd[0]}... ({descr})\033[K")
             sys.stdout.flush()
             if not is_file_writer:
                 tmp = tempfile.NamedTemporaryFile(delete=False)
@@ -459,31 +463,32 @@ def download_data(name, url_or_urls):
             try:
                 lines, method = download_with_urllib(url, headers, timeout=30)
                 if lines and len(lines) > 10 and not any("<html" in str(l).lower() for l in lines[:15]):
-                    print(f"  [+] Успешно загружено строк: {len(lines)} (method: {method})")
+                    print(f"\r  [+] Успешно загружено строк: {len(lines)} (method: {method})\033[K")
                     return lines, method
             except Exception: pass
 
             try:
                 lines, method = download_with_curl_to_file(url, headers, timeout=120)
                 if lines and len(lines) > 10 and not any("<html" in str(l).lower() for l in lines[:15]):
-                    print(f"  [+] Успешно загружено строк: {len(lines)} (method: {method})")
+                    print(f"\r  [+] Успешно загружено строк: {len(lines)} (method: {method})\033[K")
                     return lines, method
             except Exception: pass
 
             try:
                 lines, method = try_command_variants(url)
                 if lines and len(lines) > 10 and not any("<html" in str(l).lower() for l in lines[:15]):
-                    print(f"  [+] Успешно загружено строк: {len(lines)} (method: {method})")
+                    print(f"\r  [+] Успешно загружено строк: {len(lines)} (method: {method})\033[K")
                     return lines, method
             except Exception: pass
 
-            sys.stdout.write(f"    [!] попытка {attempt} не удалась, повтор через {int(1 + attempt*0.5)}s...\n")
+            sys.stdout.write(f"\r    [!] попытка {attempt} не удалась, повтор через {int(1 + attempt*0.5)}s...\033[K")
             sys.stdout.flush()
             time.sleep(1 + attempt * 0.5)
 
         full_network_diagnostics()
 
-        print("  [tor] Попытка через Tor...")
+        sys.stdout.write("\r  [tor] Попытка через Tor...\033[K")
+        sys.stdout.flush()
         if shutil.which('tor') and shutil.which('torsocks'):
             try:
                 lines = []
@@ -496,16 +501,18 @@ def download_data(name, url_or_urls):
                 if proc.returncode == 0:
                     lines = proc.stdout.decode("utf-8", errors="ignore").splitlines()
                     if lines and len(lines) > 10 and not any("<html" in str(l).lower() for l in lines[:15]):
-                        print("  [+] Успешно через Tor")
+                        print(f"\r  [+] Успешно через Tor\033[K")
                         return lines, "torsocks curl"
             except Exception:
                 pass
         else:
-            print("  [tor] torsocks или tor не установлены, пропускаем.")
+            sys.stdout.write("\r  [tor] torsocks или tor не установлены, пропускаем.\033[K")
+            sys.stdout.flush()
 
-        print("  [tor] Tor fallback не помог.")
+        sys.stdout.write("\r  [tor] Tor fallback не помог.\033[K\n")
+        sys.stdout.flush()
 
-    print(f"  [!] Ошибка: Не удалось скачать {name} ни одним из способов.")
+    print(f"\r  [!] Ошибка: Не удалось скачать {name} ни одним из способов.\033[K")
     return [], None
 
 def save_logs(total_time_val=None):
@@ -683,7 +690,7 @@ for name, url in white_urls.items():
     else:
         white_download_report[name] = {"status": "failed", "method": None, "lines": 0}
         failed_white_lists.append(name)
-        sys.stdout.write(f"[!] Не удалось скачать белый список: {name}\n")
+        sys.stdout.write(f"\r[!] Не удалось скачать белый список: {name}\033[K\n")
         sys.stdout.flush()
         continue
 
@@ -745,7 +752,7 @@ for name, url in urls.items():
     else:
         download_report[name] = {"status": "failed", "method": None, "lines": 0}
         failed_lists.append(name)
-        sys.stdout.write(f"[!] Не удалось скачать список: {name}\n")
+        sys.stdout.write(f"\r[!] Не удалось скачать список: {name}\033[K\n")
         sys.stdout.flush()
         
     if not lines:
