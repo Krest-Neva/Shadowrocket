@@ -265,7 +265,7 @@ def full_network_diagnostics():
     except Exception as e:
         print(f"      [!] Ошибка при диагностике: {e}")
 
-def print_progress(prefix, current, total, bar_len=10, start_time=None):
+def print_progress(prefix, current, total, bar_len=5, start_time=None):
     if total <= 0:
         return
     now = time.time()
