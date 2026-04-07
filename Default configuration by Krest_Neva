@@ -235,7 +235,7 @@ DOMAIN-SUFFIX,criteo.net,REJECT-200,pre-matching
 DOMAIN-SUFFIX,moatads.com,REJECT-200,pre-matching
 DOMAIN-SUFFIX,scorecardresearch.com,REJECT-200,pre-matching
 DOMAIN-SUFFIX,serving-sys.com,REJECT-200,pre-matching
-DOMAIN-SUFFIX,cdn.jsdelivr.net,REJECT-200,pre-matching
+#DOMAIN-SUFFIX,cdn.jsdelivr.net,REJECT-200,pre-matching
 DOMAIN-SUFFIX,content-sdk.cdn.yandex.net,REJECT,pre-matching
 DOMAIN-SUFFIX,directcdn.net,REJECT,pre-matching
 DOMAIN-SUFFIX,frontend.vh.yandex.ru,REJECT,pre-matching
