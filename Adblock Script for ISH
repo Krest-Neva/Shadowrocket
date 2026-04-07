@@ -6,7 +6,7 @@
 
 #!/bin/sh
 clear
-echo "[*] Настройка DNS (Этап 1)..."
+echo "[*] Настройка DNS..."
 echo "nameserver 8.8.8.8" > /etc/resolv.conf
 echo "nameserver 8.8.4.4" >> /etc/resolv.conf
 echo "nameserver 94.140.14.14" >> /etc/resolv.conf
@@ -566,7 +566,7 @@ def save_logs(total_time_val=None):
                     ef.write(f"ПРАВИЛ В ФАЙЛАХ STD:       {final_list_len}\n")
                     ef.write(f"ПРАВИЛ В ФАЙЛАХ PLUS:      {final_list_plus_len}\n")
                 if oisd_choice in ('2', '3'):
-                    ef.write(f"ПРАВИЛ В ФАЙЛАХ SMALL:     {final_list_sm_len}\n")
+                    ef.write(f"ПРАВИЛ В ФАЙЛАХ STD SMALL: {final_list_sm_len}\n")
                     ef.write(f"ПРАВИЛ В ФАЙЛАХ PLUS SMALL:{final_list_plus_sm_len}\n")
                 ef.write(f"ВСЕГО ОТБРОШЕНО СТРОК:     {len(errors)}\n")
                 ef.write(f"ОБЩЕЕ ВРЕМЯ ВЫПОЛНЕНИЯ:    {total_time_val} сек.\n")
@@ -674,7 +674,7 @@ def build_and_write():
 
     return total_rules
 
-print("\n=== ЗАГРУЗКА БЕЛЫХ СПИСКОВ (для пополнения защищённых доменов) ===")
+print("\n=== ЗАГРУЗКА БЕЛЫХ СПИСКОВ ===")
 for name, url in white_urls.items():
     lines, method = download_data(name, url)
     local_white_count = 0
@@ -736,7 +736,7 @@ for a in apple_keys:
     protected_domains.discard(a)
     protected_suffixes.add(a)
 
-print("\n=== ЭТАП 1: ЗАГРУЗКА И ОБРАБОТКА ЧЁРНЫХ СПИСКОВ ===")
+print("\n=== ЗАГРУЗКА И ОБРАБОТКА ЧЁРНЫХ СПИСКОВ ===")
 
 for name, url in urls.items():
     lines, method = download_data(name, url)
@@ -1121,7 +1121,7 @@ else:
 print("="*45)
 EOF
 
-echo "[*] Настройка DNS (Этап 2 - перед запуском парсера)..."
+echo "[*] Настройка DNS перед запуском парсера..."
 echo "nameserver 8.8.8.8" > /etc/resolv.conf
 echo "nameserver 8.8.4.4" >> /etc/resolv.conf
 echo "nameserver 94.140.14.14" >> /etc/resolv.conf
