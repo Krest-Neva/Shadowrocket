@@ -6,6 +6,7 @@
 
 #!/bin/sh
 clear
+
 echo "[*] Настройка DNS..."
 echo "nameserver 8.8.8.8" > /etc/resolv.conf
 echo "nameserver 8.8.4.4" >> /etc/resolv.conf
@@ -14,7 +15,7 @@ echo "nameserver 94.140.15.15" >> /etc/resolv.conf
 echo "nameserver 1.1.1.1" >> /etc/resolv.conf
 
 echo "[*] Проверка соединения с интернетом..."
-ping -c 3 google.com
+ping -c 3 google.com || echo "[!] Пинг не прошел, но продолжаем выполнение..."
 
 echo "[*] Обновление системы и установка зависимостей..."
 apk update
@@ -22,6 +23,7 @@ apk upgrade
 apk add python3 py3-pip curl wget aria2 git openssl ca-certificates tor torsocks obfs4proxy
 
 echo "[*] Настройка мостов Tor (obfs4 и webtunnel)..."
+mkdir -p /etc/tor
 cat << 'EOF' > /etc/tor/torrc
 UseBridges 1
 ClientTransportPlugin obfs4 exec /usr/bin/obfs4proxy
@@ -173,7 +175,7 @@ protected_suffixes = {
 }
 
 protected_domains = {
-   "raw.githubusercontent.com", "cdn-apple.com", "apple-dns.net", "ls.apple.com", "facetime.apple.com", "stun.apple.com", "apple.com", "aaplimg.com", "github.com", "githubusercontent.com", "githubassets.com", "google.com", "gstatic.com", "ggpht.com", "firebase.google.com", "googleapis.com", "firebaseio.com", "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com", "microsoft.com", "windows.com", "windowsupdate.com", "msftconnecttest.com", "msftncsi.com", "azure.com", "azureedge.net", "azurefd.net", "amazon.com", "amazonaws.com", "aws.amazon.com", "cloudfront.net", "cloudflare.com", "fastly.net", "jsdelivr.net", "unpkg.com", "akamaiedge.net", "akamaized.net", "akamai.net", "auth0.com", "okta.com", "login.microsoftonline.com", "accounts.google.com", "hcaptcha.com", "challenges.cloudflare.com", "recaptcha.net", "facebook.com", "fb.com", "fbcdn.net", "graph.instagram.com", "graph.facebook.com", "instagram.com", "cdninstagram.com", "discord.com", "discordapp.com", "duckduckgo.com", "ddg.co", "giphy.com", "habr.com", "yandex.ru", "yandex.com", "yandex.by", "yandex.kz", "mail.yandex.ru", "passport.yandex.ru", "api.yandex.ru", "mail.ru", "e.mail.ru", "vk.com", "api.vk.com", "ozon.ru", "wildberries.ru", "avito.ru", "avito.st", "hh.ru", "sberbank.ru", "online.sberbank.ru", "alfabank.ru", "alfa.ru", "tbank.ru", "tinkoff.ru", "vtb.ru", "finam.ru", "63.ru", "aif.ru", "amic.ru", "angliya.com", "ap22.ru", "asiaplustj.info", "avesta.tj", "azerisport.com", "belta.by", "championat.com", "chita.ru", "citilink.ru", "civil.ge", "click-or-die.ru", "dni.ru", "e1.ru", "echo.az", "echo.msk.ru", "fedpress.ru", "f1news.ru", "fontanka.ru", "gazeta.ru", "gazetanovgorod.ru", "golosarmenii.am", "government.ru", "gundogar-news.com", "hronikatm.com", "infoabad.com", "inosmi.ru", "interfax.ru", "itogi.ru", "izvestia.ru", "kp.ru", "kremlin.ru", "lenta.ru", "matchtv.ru", "meduza.io", "mn.ru", "ng.ru", "novayagazeta.ru", "newsvl.ru", "og.ru", "ok.ru", "politikus.info", "ppt.ru", "pressball.by", "progorodsamara.ru", "radiomayak.ru", "rbc.ru", "rg.ru", "ria.ru", "rskrf.ru", "rutube.ru", "sovsport.ru", "sport-express.ru", "sport24.ru", "sportbox.ru", "sports.ru", "tass.ru", "trud.ru", "utro.ru", "ytro.ru", "zr.ru", "one.one.one.one", "dns.google", "quad9.net", "npmjs.org", "pypi.org", "gitlab.com", "bitbucket.org", "android.com", "yastatic.net", "dft.ru", "afisha.ru", "gosuslugi.ru", "yandex.ru"
+   "raw.githubusercontent.com", "cdn-apple.com", "apple-dns.net", "ls.apple.com", "facetime.apple.com", "stun.apple.com", "apple.com", "aaplimg.com", "github.com", "githubusercontent.com", "githubassets.com", "google.com", "gstatic.com", "ggpht.com", "firebase.google.com", "googleapis.com", "firebaseio.com", "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com", "microsoft.com", "windows.com", "windowsupdate.com", "msftconnecttest.com", "msftncsi.com", "azure.com", "azureedge.net", "azurefd.net", "amazon.com", "amazonaws.com", "aws.amazon.com", "cloudfront.net", "cloudflare.com", "fastly.net", "jsdelivr.net", "unpkg.com", "akamaiedge.net", "akamaized.net", "akamai.net", "auth0.com", "okta.com", "login.microsoftonline.com", "accounts.google.com", "hcaptcha.com", "challenges.cloudflare.com", "recaptcha.net", "facebook.com", "fb.com", "fbcdn.net", "graph.instagram.com", "graph.facebook.com", "instagram.com", "cdninstagram.com", "discord.com", "discordapp.com", "duckduckgo.com", "ddg.co", "giphy.com", "habr.com", "yandex.ru", "yandex.com", "yandex.by", "yandex.kz", "mail.yandex.ru", "passport.yandex.ru", "api.yandex.ru", "mail.ru", "e.mail.ru", "vk.com", "api.vk.com", "ozon.ru", "wildberries.ru", "avito.ru", "avito.st", "hh.ru", "sberbank.ru", "online.sberbank.ru", "alfabank.ru", "alfa.ru", "tbank.ru", "tinkoff.ru", "vtb.ru", "finam.ru", "63.ru", "aif.ru", "amic.ru", "angliya.com", "ap22.ru", "asiaplustj.info", "avesta.tj", "azerisport.com", "belta.by", "championat.com", "chita.ru", "citilink.ru", "civil.ge", "click-or-die.ru", "dni.ru", "e1.ru", "echo.az", "echo.msk.ru", "fedpress.ru", "f1news.ru", "fontanka.ru", "gazeta.ru", "gazetanovgorod.ru", "golosarmenii.am", "government.ru", "gundogar-news.com", "hronikatm.com", "infoabad.com", "inosmi.ru", "interfax.ru", "itogi.ru", "izvestia.ru", "kp.ru", "kremlin.ru", "lenta.ru", "matchtv.ru", "meduza.io", "mn.ru", "ng.ru", "novayagazeta.ru", "newsvl.ru", "og.ru", "ok.ru", "politikus.info", "ppt.ru", "pressball.by", "progorodsamara.ru", "radiomayak.ru", "rbc.ru", "rg.ru", "ria.ru", "rskrf.ru", "rutube.ru", "sovsport.ru", "sport-express.ru", "sport24.ru", "sportbox.ru", "sports.ru", "tass.ru", "trud.ru", "utro.ru", "ytro.ru", "zr.ru", "one.one.one.one", "dns.google", "quad9.net", "npmjs.org", "pypi.org", "gitlab.com", "bitbucket.org", "android.com", "yastatic.net", "dft.ru", "afisha.ru", "gosuslugi.ru"
 }
 
 manual_protected_domains = protected_domains.copy()
@@ -239,9 +241,6 @@ DNS_SERVERS = [
 def setup_dns_and_test():
     sys.stdout.write("\r    [net] Настройка DNS...\033[K")
     sys.stdout.flush()
-    if not os.access("/etc/resolv.conf", os.W_OK):
-        sys.stdout.write("\r    [net] Предупреждение: нет прав на запись /etc/resolv.conf\033[K")
-        sys.stdout.flush()
     try:
         with open("/etc/resolv.conf", "w") as f:
             for dns in DNS_SERVERS:
@@ -276,8 +275,7 @@ def full_network_diagnostics():
         print(f"      [!] Ошибка при диагностике: {e}")
 
 def print_progress(prefix, current, total, bar_len=10, start_time=None):
-    if total <= 0:
-        return
+    if total <= 0: return
     frac = current / float(total)
     filled = int(round(bar_len * frac))
     bar = '=' * filled + '-' * (bar_len - filled)
@@ -306,8 +304,7 @@ def download_with_urllib(url, headers, timeout=30):
         start = time.time()
         while True:
             chunk = resp.read(chunk_size)
-            if not chunk:
-                break
+            if not chunk: break
             out.extend(chunk)
             read += len(chunk)
             if total:
@@ -320,8 +317,7 @@ def download_with_urllib(url, headers, timeout=30):
         if total and read < total * 0.95:
             raise Exception(f"Incomplete download: {read}/{total} bytes")
 
-        if not total:
-            sys.stdout.write("\n")
+        if not total: sys.stdout.write("\n")
         return out.decode('utf-8', errors='ignore').splitlines(), "urllib"
 
 def download_with_curl_to_file(url, headers, timeout=120, curl_args=None):
@@ -345,10 +341,8 @@ def download_with_curl_to_file(url, headers, timeout=120, curl_args=None):
     except Exception:
         return [], None
     finally:
-        try:
-            os.unlink(tmp.name)
-        except Exception:
-            pass
+        try: os.unlink(tmp.name)
+        except Exception: pass
 
 def try_command_variants(url):
     ua = headers['User-Agent']
@@ -370,8 +364,7 @@ def try_command_variants(url):
         variants.append((['aria2c', '-q', '--summary-interval=1', '-x', '4', '-o', 'aria_tmp_dl', url], True, "aria2c"))
 
     for cmd, is_file_writer, descr in variants:
-        if not shutil.which(cmd[0]):
-            continue
+        if not shutil.which(cmd[0]): continue
         try:
             sys.stdout.write(f"\r    [attempt] running: {cmd[0]}... ({descr})\033[K")
             sys.stdout.flush()
@@ -384,13 +377,10 @@ def try_command_variants(url):
                         with open(tmp.name, 'rb') as f:
                             data = f.read().decode('utf-8', errors='ignore').splitlines()
                         return data, descr
-                except Exception:
-                    pass
+                except Exception: pass
                 finally:
-                    try:
-                        os.unlink(tmp.name)
-                    except Exception:
-                        pass
+                    try: os.unlink(tmp.name)
+                    except Exception: pass
             else:
                 proc = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
                 if proc.returncode == 0:
@@ -399,35 +389,27 @@ def try_command_variants(url):
                             with open('aria_tmp_dl', 'rb') as f:
                                 data = f.read().decode('utf-8', errors='ignore').splitlines()
                             return data, descr
-                        except Exception:
-                            pass
+                        except Exception: pass
                         finally:
-                            try:
-                                os.unlink('aria_tmp_dl')
-                            except Exception:
-                                pass
-        except Exception:
-            continue
+                            try: os.unlink('aria_tmp_dl')
+                            except Exception: pass
+        except Exception: continue
     return [], None
 
 def is_protected_full(domain):
-    if domain in protected_domains:
-        return True, "exact"
+    if domain in protected_domains: return True, "exact"
     parts = domain.split('.')
     for i in range(len(parts)):
         suffix = '.'.join(parts[i:])
-        if suffix in protected_suffixes:
-            return True, "suffix"
+        if suffix in protected_suffixes: return True, "suffix"
     return False, None
 
 def is_protected_manual(domain):
-    if domain in manual_protected_domains:
-        return True, "exact"
+    if domain in manual_protected_domains: return True, "exact"
     parts = domain.split('.')
     for i in range(len(parts)):
         suffix = '.'.join(parts[i:])
-        if suffix in manual_protected_suffixes:
-            return True, "suffix"
+        if suffix in manual_protected_suffixes: return True, "suffix"
     return False, None
 
 def is_valid_domain(d):
@@ -446,8 +428,7 @@ def validate_ip(ip_str):
     try:
         net = ipaddress.ip_network(ip_str, strict=False)
         addr = str(net.network_address)
-        if addr.startswith(('0.', '127.', '255.')):
-            return None
+        if addr.startswith(('0.', '127.', '255.')): return None
         return str(net)
     except ValueError:
         return None
@@ -455,7 +436,6 @@ def validate_ip(ip_str):
 def download_data(name, url_or_urls):
     print(f"\n  [*] Скачивание: {name}...")
     setup_dns_and_test()
-    
     urls_to_try = url_or_urls if isinstance(url_or_urls, list) else [url_or_urls]
 
     for url in urls_to_try:
@@ -503,8 +483,7 @@ def download_data(name, url_or_urls):
                     if lines and len(lines) > 10 and not any("<html" in str(l).lower() for l in lines[:15]):
                         print(f"\r  [+] Успешно через Tor\033[K")
                         return lines, "torsocks curl"
-            except Exception:
-                pass
+            except Exception: pass
         else:
             sys.stdout.write("\r  [tor] torsocks или tor не установлены, пропускаем.\033[K")
             sys.stdout.flush()
@@ -533,27 +512,22 @@ def save_logs(total_time_val=None):
 
             ef.write("\n" + "="*60 + "\n")
             ef.write("PROTECTED SUFFIXES (whitelisted, suffix match)\n")
-            for s in sorted(protected_suffixes):
-                ef.write(f"{s}\n")
+            for s in sorted(protected_suffixes): ef.write(f"{s}\n")
             ef.write("\nPROTECTED DOMAINS (whitelisted, exact match)\n")
-            for d in sorted(protected_domains):
-                ef.write(f"{d}\n")
+            for d in sorted(protected_domains): ef.write(f"{d}\n")
 
             ef.write("\n" + "="*60 + "\n")
             ef.write("EXCLUDED BY KEYWORDS\n")
             excluded = [(r,s,o) for r,s,o in errors if r == "excluded_keyword"]
-            for reason, src, orig in excluded:
-                ef.write(f"{src}\t{orig}\n")
+            for reason, src, orig in excluded: ef.write(f"{src}\t{orig}\n")
 
             ef.write("\nJUNK / INVALID LINES (или пропущенные пути)\n")
             junk = [(r,s,o) for r,s,o in errors if r.startswith("junk") or r == "skipped_path_rule"]
-            for reason, src, orig in junk:
-                ef.write(f"{reason}\t{src}\t{orig}\n")
+            for reason, src, orig in junk: ef.write(f"{reason}\t{src}\t{orig}\n")
 
             ef.write("\nPROTECTED ENTRIES (skipped during parsing)\n")
             prot = [(r,s,o) for r,s,o in errors if r.startswith("protected")]
-            for reason, src, orig in prot:
-                ef.write(f"{reason}\t{src}\t{orig}\n")
+            for reason, src, orig in prot: ef.write(f"{reason}\t{src}\t{orig}\n")
 
             if total_time_val is not None:
                 ef.write("\n" + "="*60 + "\n")
@@ -638,8 +612,7 @@ def build_and_write():
         if total == 0: return 0
         
         with open(f"{base_name}.list", 'w', encoding='utf-8') as full_f:
-            for line in combined:
-                full_f.write(line + "\n")
+            for line in combined: full_f.write(line + "\n")
         
         chunk_size = 100000
         chunks = math.ceil(total / chunk_size)
@@ -701,8 +674,7 @@ for name, url in white_urls.items():
             print_progress("  [w-parse]", idx, total_lines, start_time=start_parse)
 
         line = raw_line.strip()
-        if not line or line.startswith(('#', '!')):
-            continue
+        if not line or line.startswith(('#', '!')): continue
 
         if line.startswith('.'):
             domain = line.lstrip('.').lower()
@@ -715,8 +687,7 @@ for name, url in white_urls.items():
             parts = line.split(',', 1)
             if len(parts) == 2:
                 key = parts[0].lower()
-                val = parts[1].strip().lower()
-                val = val.split('#')[0].strip()
+                val = parts[1].strip().lower().split('#')[0].strip()
                 if key.startswith('domain-suffix'):
                     if is_valid_domain(val):
                         protected_suffixes.add(val)
@@ -755,11 +726,7 @@ for name, url in urls.items():
         sys.stdout.write(f"\r[!] Не удалось скачать список: {name}\033[K\n")
         sys.stdout.flush()
         
-    if not lines:
-        data = []
-    else:
-        data = lines
-
+    data = lines if lines else []
     local_domain_count = 0
     local_ip_count = 0
     total_lines = len(data)
@@ -777,8 +744,7 @@ for name, url in urls.items():
 
         line = raw_line.strip().lower()
 
-        if not line or line.startswith(('!', '[', '@@')) or '##' in line or '#@#' in line or line.startswith('#'):
-            continue
+        if not line or line.startswith(('!', '[', '@@')) or '##' in line or '#@#' in line or line.startswith('#'): continue
 
         if exclude_pattern.search(line):
             stats["excluded"] += 1
@@ -789,8 +755,7 @@ for name, url in urls.items():
             parts = [p.strip() for p in line.split(',', 2)]
             if len(parts) >= 2:
                 rule_type = parts[0]
-                val = parts[1]
-                val = val.split('#')[0].strip()
+                val = parts[1].split('#')[0].strip()
                 if "ip-cidr" in rule_type:
                     validated = validate_ip(val)
                     if validated:
@@ -813,10 +778,8 @@ for name, url in urls.items():
                     if is_valid_domain(val):
                         protected, reason = (False, None) if is_any_oisd else is_protected_full(val)
                         if protected:
-                            if reason == "exact":
-                                stats["protected_exact"] += 1
-                            else:
-                                stats["protected_suffix"] += 1
+                            if reason == "exact": stats["protected_exact"] += 1
+                            else: stats["protected_suffix"] += 1
                             errors.append((f"protected_{reason}", name, val))
                         else:
                             if is_oisd_nsfw: nsfw_domains.add(val)
@@ -830,9 +793,7 @@ for name, url in urls.items():
                         errors.append(("junk_invalid_domain", name, val))
             continue
 
-        clean = line
-        clean = clean.split('#')[0].strip()
-
+        clean = line.split('#')[0].strip()
         if clean.startswith(('0.0.0.0 ', '127.0.0.1 ')):
             clean = clean.split(' ', 1)[1].strip()
 
@@ -871,10 +832,8 @@ for name, url in urls.items():
         elif is_valid_domain(clean):
             protected, reason = (False, None) if is_any_oisd else is_protected_full(clean)
             if protected:
-                if reason == "exact":
-                    stats["protected_exact"] += 1
-                else:
-                    stats["protected_suffix"] += 1
+                if reason == "exact": stats["protected_exact"] += 1
+                else: stats["protected_suffix"] += 1
                 errors.append((f"protected_{reason}", name, clean))
             else:
                 if is_oisd_nsfw: nsfw_domains.add(clean)
@@ -894,16 +853,13 @@ for name, url in urls.items():
     print(f"  -> Извлечено доменов: {local_domain_count} | IP: {local_ip_count}")
 
 for suffix in forced_block_suffixes:
-    if is_valid_domain(suffix):
-        all_domains.add(suffix)
+    if is_valid_domain(suffix): all_domains.add(suffix)
 for domain in forced_block_domains:
-    if is_valid_domain(domain):
-        all_domains.add(domain)
+    if is_valid_domain(domain): all_domains.add(domain)
 
 for ip in forced_block_ips:
     validated = validate_ip(ip)
-    if validated:
-        all_ips.add(validated)
+    if validated: all_ips.add(validated)
 
 print("\n=== ОЧИСТКА ПОДДОМЕНОВ И ДУБЛИКАТОВ И ФОРМИРОВАНИЕ RULE-SET ===")
 build_and_write()
@@ -911,10 +867,8 @@ build_and_write()
 while failed_lists or failed_white_lists:
     print("\n" + "="*45)
     print("ВНИМАНИЕ: Некоторые списки не удалось скачать:")
-    for w in failed_white_lists:
-        print(f"  [Белый]  - {w}")
-    for b in failed_lists:
-        print(f"  [Черный] - {b}")
+    for w in failed_white_lists: print(f"  [Белый]  - {w}")
+    for b in failed_lists: print(f"  [Черный] - {b}")
     print("="*45)
 
     target = failed_white_lists[0] if failed_white_lists else failed_lists[0]
@@ -927,10 +881,8 @@ while failed_lists or failed_white_lists:
     ans = input("Ваш выбор (1/2/3): ").strip()
 
     if ans == '2':
-        if is_white:
-            failed_white_lists.remove(target)
-        else:
-            failed_lists.remove(target)
+        if is_white: failed_white_lists.remove(target)
+        else: failed_lists.remove(target)
         continue
     elif ans in ('1', '3'):
         setup_dns_and_test()
@@ -1136,7 +1088,7 @@ echo "nameserver 94.140.15.15" >> /etc/resolv.conf
 echo "nameserver 1.1.1.1" >> /etc/resolv.conf
 
 echo "[*] Повторная проверка интернета..."
-ping -c 3 google.com
+ping -c 3 google.com || echo "[!] Пинг не прошел, но скрипт будет запущен..."
 
 echo "[*] Запуск скрипта генерации правил..."
 python3 "REJECT_RULES.py"
