@@ -3,7 +3,7 @@
 
 #Включает в себя полную настройку групп прокси и перенаправление ВК напрямую (без VPN).
 
-#Последние изменения 02.04.2026 06:00
+#Последние изменения 07.04.2026 23:00
 
 [Proxy Group]
 INSTPROXY = load-balance,🇭🇺ВЕНГРИЯ,🇮🇹ИТАЛИЯ,🇲🇩МОЛДОВА,🇬🇧АНГЛИЯ-2,🇪🇸ИСПАНИЯ,🇳🇱НИДЕРЛАНДЫ,🇺🇸США-2,🇮🇳ИНДИЯ,🇧🇷БРАЗИЛИЯ,🇱🇹ЛИТВА,🇫🇮ФИНЛЯНДИЯ-2,🇵🇱ПОЛЬША,🇰🇿КАЗАХСТАН,🇫🇮ФИНЛЯНДИЯ,🇫🇷ФРАНЦИЯ,🇹🇷ТУРЦИЯ,🇯🇵ЯПОНИЯ,🇨🇦КАНАДА|GEMINI,🇬🇧АНГЛИЯ,🇩🇪ГЕРМАНИЯ,🇨🇭ШВЕЙЦАРИЯ,🇺🇸США,🇱🇻ЛАТВИЯ|TORRENT,use=true,interval=120,timeout=2,url=https://fbcdn.net
@@ -20,7 +20,32 @@ BESTPROXY = load-balance,🇫🇷ФРАНЦИЯ,🇧🇷БРАЗИЛИЯ,🇹�
 #Дополнение
 DOMAIN-SUFFIX,kinopoisk.ru,DIRECT,pre-matching
 IP-CIDR,5.28.195.2,DIRECT,no-resolve
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT-RULES.list,REJECT-DROP
+RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_STD.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_PLUS.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_STD_SMALL.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_PLUS_SMALL.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_1.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_2.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_3.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_4.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_5.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_6.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_1.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_2.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_3.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_4.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_5.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_6.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_7.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_8.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_9.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_10.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_SMALL_1.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_SMALL_2.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_SMALL_3.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_SMALL_1.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_SMALL_2.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_SMALL_3.list,REJECT-DICT
 DOMAIN-KEYWORD,uploads,DISCORDPROXY
 DOMAIN-KEYWORD,downloads,BESTPROXY
 DOMAIN-SUFFIX,pixel.google.com,BESTPROXY
