@@ -576,7 +576,7 @@ def optimize_domain_set(source_domains, log_prefix):
     if AGGREGATE_THRESHOLD and AGGREGATE_THRESHOLD > 1:
         parent_groups = {}
         for idx, d in enumerate(sorted_raw, start=1):
-            if idx % 5000 == 0 or idx == total_to_check:
+            if idx % 1000 == 0 or idx == total_to_check:
                 print_progress(f"  [{log_prefix} group]", idx, total_to_check, start_time=start_opt)
             p = '.'.join(d.split('.')[-2:])
             parent_groups.setdefault(p, []).append(d)
@@ -683,7 +683,7 @@ for name, url in white_urls.items():
     total_lines = len(lines)
     start_parse = time.time()
     for idx, raw_line in enumerate(lines, start=1):
-        if idx % 500 == 0 or idx == total_lines:
+        if idx % 100 == 0 or idx == total_lines:
             print_progress("  [w-parse]", idx, total_lines, start_time=start_parse)
 
         line = raw_line.strip()
@@ -753,7 +753,7 @@ for name, url in urls.items():
     is_any_oisd = "OISD" in name
 
     for idx, raw_line in enumerate(data, start=1):
-        if idx % 500 == 0 or idx == total_lines:
+        if idx % 100 == 0 or idx == total_lines:
             print_progress("  [b-parse]", idx, total_lines, start_time=start_parse)
 
         line = raw_line.strip().lower()
@@ -952,7 +952,7 @@ while failed_lists or failed_white_lists:
 
         if is_white:
             for idx, raw_line in enumerate(lines, start=1):
-                if idx % 500 == 0 or idx == total_lines:
+                if idx % 100 == 0 or idx == total_lines:
                     print_progress("  [rw-parse]", idx, total_lines, start_time=start_parse)
                 line = raw_line.strip()
                 if not line or line.startswith(('#', '!')):
@@ -1012,7 +1012,7 @@ while failed_lists or failed_white_lists:
             local_ip_retry = 0
 
             for idx, raw_line in enumerate(lines, start=1):
-                if idx % 500 == 0 or idx == total_lines:
+                if idx % 100 == 0 or idx == total_lines:
                     print_progress("  [r-parse]", idx, total_lines, start_time=start_parse)
                 line = raw_line.strip().lower()
                 if not line or line.startswith(('!', '[', '@@')) or '##' in line or '#@#' in line or line.startswith('#'):
