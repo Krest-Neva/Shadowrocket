@@ -1,7 +1,7 @@
 #!name=Add-on for Kongodemor😎
 #!desc=Этот модуль должен находиться выше
 
-#Включает в себя полную настройку групп прокси и перенаправление ВК напрямую (без VPN).
+#Включает в себя полную настройку групп прокси и прочие индивидуальные правила.
 
 #Последние изменения 07.04.2026 23:00
 
@@ -46,39 +46,3 @@ RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/ma
 #RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_SMALL_1.list,REJECT-DICT
 #RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_SMALL_2.list,REJECT-DICT
 #RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_SMALL_3.list,REJECT-DICT
-DOMAIN-KEYWORD,uploads,DISCORDPROXY
-DOMAIN-KEYWORD,downloads,BESTPROXY
-DOMAIN-SUFFIX,pixel.google.com,BESTPROXY
-DOMAIN-KEYWORD,ads,REJECT-200,pre-matching
-DOMAIN-KEYWORD,analytics,REJECT-DICT,pre-matching
-DOMAIN-KEYWORD,tracker,REJECT-DICT,pre-matching
-DOMAIN-KEYWORD,tracking,REJECT-DICT,pre-matching
-DOMAIN-KEYWORD,tracer,REJECT-DICT,pre-matching
-DOMAIN-KEYWORD,metrics,REJECT-DICT,pre-matching
-DOMAIN-KEYWORD,metrica,REJECT-DICT,pre-matching
-DOMAIN-KEYWORD,metrika,REJECT-DICT,pre-matching
-DOMAIN-KEYWORD,telemetry,REJECT-DICT,pre-matching
-DOMAIN-KEYWORD,beacon,REJECT-DICT,pre-matching
-DOMAIN-KEYWORD,adserver,REJECT-200,pre-matching
-DOMAIN-KEYWORD,doubleclick,REJECT-DICT,pre-matching
-DOMAIN-KEYWORD,adjust,REJECT-DICT,pre-matching
-DOMAIN-KEYWORD,appsflyer,REJECT-DICT,pre-matching
-DOMAIN-KEYWORD,pixel,REJECT-TINYGIF,pre-matching
-
-#VK🔵
-IP-ASN,196645,DIRECT,no-resolve
-IP-ASN,47541,DIRECT,no-resolve
-IP-ASN,47542,DIRECT,no-resolve
-IP-ASN,51101,DIRECT,no-resolve
-IP-ASN,31133,DIRECT,no-resolve
-IP-CIDR,87.240.128.0/18,DIRECT,no-resolve
-IP-CIDR,93.186.224.0/20,DIRECT,no-resolve
-IP-CIDR,95.142.192.0/20,DIRECT,no-resolve
-IP-CIDR,185.71.76.0/22,DIRECT,no-resolve
-DOMAIN-KEYWORD,vkontakte,DIRECT
-DOMAIN-KEYWORD,vk.com,DIRECT
-DOMAIN-SUFFIX,vk.me,DIRECT
-DOMAIN-SUFFIX,vk.cc,DIRECT
-DOMAIN-SUFFIX,vk.company,DIRECT
-DOMAIN-KEYWORD,vk-cdn,DIRECT
-DOMAIN-KEYWORD,vkvideo,DIRECT
