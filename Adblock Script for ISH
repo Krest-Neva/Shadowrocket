@@ -15,42 +15,17 @@ echo "nameserver 94.140.15.15" >> /etc/resolv.conf
 echo "nameserver 1.1.1.1" >> /etc/resolv.conf
 
 echo "[*] Проверка соединения с интернетом..."
-if ! ping -c 3 google.com > /dev/null 2>&1; then
+while ! ping -c 3 google.com > /dev/null 2>&1; do
     echo "[!] ОШИБКА: Нет подключения к интернету!"
-    exit 1
-fi
+    echo "[*] Повторная проверка через 5 секунд..."
+    sleep 5
+done
 echo "[+] Интернет доступен."
 
 echo "[*] Обновление системы и установка зависимостей..."
 apk update
 apk upgrade
-apk add python3 curl wget aria2 openssl ca-certificates tor torsocks bind-tools bash py3-pip git
-
-if ! apk add obfs4proxy; then
-    echo "[*] obfs4proxy не найден, устанавливаем lyrebird..."
-    apk add lyrebird
-fi
-
-if [ ! -f /usr/bin/obfs4proxy ] && [ -f /usr/bin/lyrebird ]; then
-    ln -s /usr/bin/lyrebird /usr/bin/obfs4proxy 2>/dev/null
-fi
-
-echo "[*] Настройка мостов Tor (obfs4 и webtunnel)..."
-mkdir -p /etc/tor
-cat << 'EOF' > /etc/tor/torrc
-UseBridges 1
-ClientTransportPlugin obfs4 exec /usr/bin/obfs4proxy
-Bridge obfs4 85.190.99.11:9443 52192491E209B87F869C13CADC0EB69F07C3ECFC cert=MbTy8UwrcxKjuJbF+V4OYrUGPwDtiYIpUsmznZwuOBwOe6swh23vTsJwGHzgpEIRoQqYYQ iat-mode=0
-Bridge obfs4 57.129.122.32:9443 B2DB88669B2390BA7079C7A4BEE78B8FCF844428 cert=1x43OiW8jB97CmzR8B1aahcnHmnhVa+6Qd+MR1wi0N6Z4XYO4j+EVJ376WXivxD2LtP/RA iat-mode=0
-Bridge obfs4 91.134.99.182:26566 B5D7274F4267D73372BBF8C6446C3AF2D4399A4B cert=eXB5PBSwA+Y6Selwz245/3gZWsskMoJDZcBBccAxrqTtT7OLAwSguf9z2tHU5mV3YkgjIw iat-mode=0
-Bridge obfs4 157.180.65.109:22530 FD109070400963AF84C09A419B1F0C5E1E923CA3 cert=kw1Q+JOt45xn1RgkV37IK7+0KYT4gaMnAz1+F+sJ4yviq7WzlruQdYntW4GZhSSeeQ5STQ iat-mode=0
-
-ClientTransportPlugin webtunnel exec /usr/bin/webtunnel
-Bridge webtunnel [2001:db8:50c6:f177:293a:6612:f682:feb0]:443 6736F1245C77FBDCE4252F5711DE3137A7C10125 url=https://www.itssohotrightnow.com/0bc106e5688f206329e24a350b084c43 ver=0.0.3
-Bridge webtunnel [2001:db8:1f1e:4d2f:321b:6626:823e:c504]:443 4946C9B8410CF59953455C158F957CAB2055A61D url=https://mstdn.party/fooghee7naChifi0 ver=0.0.2
-Bridge webtunnel [2001:db8:43cc:d277:5ba1:dcd1:516e:d983]:443 AD62C15FAC9C8695F41F4BB5D1F16373F906177F url=https://mitch.pmvl.eu/r9mZqSFwOHSQATtQoPWwZQk9 ver=0.0.1
-Bridge webtunnel [2001:db8:8ed6:e6c9:5fc9:9f20:a373:2374]:443 1636A2EFFBAA4B162F5FF461A1663EB55C41AE11 url=https://hanoi.delivery/roQFPLtlspWT6yIKeXD6lEci ver=0.0.3
-EOF
+apk add python3 curl wget aria2 openssl ca-certificates bind-tools bash py3-pip git
 
 echo "[*] Принудительное удаление старых файлов перед сборкой..."
 rm -f REJECT_RULES*.list
@@ -188,7 +163,7 @@ protected_suffixes = {
 }
 
 protected_domains = {
-   "raw.githubusercontent.com", "cdn-apple.com", "apple-dns.net", "ls.apple.com", "facetime.apple.com", "stun.apple.com", "apple.com", "aaplimg.com", "github.com", "githubusercontent.com", "githubassets.com", "google.com", "gstatic.com", "ggpht.com", "firebase.google.com", "googleapis.com", "firebaseio.com", "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com", "microsoft.com", "windows.com", "windowsupdate.com", "msftconnecttest.com", "msftncsi.com", "azure.com", "azureedge.net", "azurefd.net", "amazon.com", "amazonaws.com", "aws.amazon.com", "cloudfront.net", "cloudflare.com", "fastly.net", "jsdelivr.net", "unpkg.com", "akamaiedge.net", "akamaized.net", "akamai.net", "auth0.com", "okta.com", "login.microsoftonline.com", "accounts.google.com", "hcaptcha.com", "challenges.cloudflare.com", "recaptcha.net", "facebook.com", "fb.com", "fbcdn.net", "graph.instagram.com", "graph.facebook.com", "instagram.com", "cdninstagram.com", "discord.com", "discordapp.com", "duckduckgo.com", "ddg.co", "giphy.com", "habr.com", "yandex.ru", "yandex.com", "yandex.by", "yandex.kz", "mail.yandex.ru", "passport.yandex.ru", "api.yandex.ru", "mail.ru", "e.mail.ru", "vk.com", "api.vk.com", "ozon.ru", "wildberries.ru", "avito.ru", "avito.st", "hh.ru", "sberbank.ru", "online.sberbank.ru", "alfabank.ru", "alfa.ru", "tbank.ru", "tinkoff.ru", "vtb.ru", "finam.ru", "63.ru", "aif.ru", "amic.ru", "angliya.com", "ap22.ru", "asiaplustj.info", "avesta.tj", "azerisport.com", "belta.by", "championat.com", "chita.ru", "citilink.ru", "civil.ge", "click-or-die.ru", "dni.ru", "e1.ru", "echo.az", "echo.msk.ru", "fedpress.ru", "f1news.ru", "fontanka.ru", "gazeta.ru", "gazetanovgorod.ru", "golosarmenii.am", "government.ru", "gundogar-news.com", "hronikatm.com", "infoabad.com", "inosmi.ru", "interfax.ru", "itogi.ru", "izvestia.ru", "kp.ru", "kremlin.ru", "lenta.ru", "matchtv.ru", "meduza.io", "mn.ru", "ng.ru", "novayagazeta.ru", "newsvl.ru", "og.ru", "ok.ru", "politikus.info", "ppt.ru", "pressball.by", "progorodsamara.ru", "radiomayak.ru", "rbc.ru", "rg.ru", "ria.ru", "rskrf.ru", "rutube.ru", "sovsport.ru", "sport-express.ru", "sport24.ru", "sportbox.ru", "sports.ru", "tass.ru", "trud.ru", "utro.ru", "ytro.ru", "zr.ru", "one.one.one.one", "dns.google", "quad9.net", "npmjs.org", "pypi.org", "gitlab.com", "bitbucket.org", "android.com", "yastatic.net", "dft.ru", "afisha.ru", "gosuslugi.ru", "yandex.ru"
+    "raw.githubusercontent.com", "cdn-apple.com", "apple-dns.net", "ls.apple.com", "facetime.apple.com", "stun.apple.com", "apple.com", "aaplimg.com", "github.com", "githubusercontent.com", "githubassets.com", "google.com", "gstatic.com", "ggpht.com", "firebase.google.com", "googleapis.com", "firebaseio.com", "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com", "microsoft.com", "windows.com", "windowsupdate.com", "msftconnecttest.com", "msftncsi.com", "azure.com", "azureedge.net", "azurefd.net", "amazon.com", "amazonaws.com", "aws.amazon.com", "cloudfront.net", "cloudflare.com", "fastly.net", "jsdelivr.net", "unpkg.com", "akamaiedge.net", "akamaized.net", "akamai.net", "auth0.com", "okta.com", "login.microsoftonline.com", "accounts.google.com", "hcaptcha.com", "challenges.cloudflare.com", "recaptcha.net", "facebook.com", "fb.com", "fbcdn.net", "graph.instagram.com", "graph.facebook.com", "instagram.com", "cdninstagram.com", "discord.com", "discordapp.com", "duckduckgo.com", "ddg.co", "giphy.com", "habr.com", "yandex.ru", "yandex.com", "yandex.by", "yandex.kz", "mail.yandex.ru", "passport.yandex.ru", "api.yandex.ru", "mail.ru", "e.mail.ru", "vk.com", "api.vk.com", "ozon.ru", "wildberries.ru", "avito.ru", "avito.st", "hh.ru", "sberbank.ru", "online.sberbank.ru", "alfabank.ru", "alfa.ru", "tbank.ru", "tinkoff.ru", "vtb.ru", "finam.ru", "63.ru", "aif.ru", "amic.ru", "angliya.com", "ap22.ru", "asiaplustj.info", "avesta.tj", "azerisport.com", "belta.by", "championat.com", "chita.ru", "citilink.ru", "civil.ge", "click-or-die.ru", "dni.ru", "e1.ru", "echo.az", "echo.msk.ru", "fedpress.ru", "f1news.ru", "fontanka.ru", "gazeta.ru", "gazetanovgorod.ru", "golosarmenii.am", "government.ru", "gundogar-news.com", "hronikatm.com", "infoabad.com", "inosmi.ru", "interfax.ru", "itogi.ru", "izvestia.ru", "kp.ru", "kremlin.ru", "lenta.ru", "matchtv.ru", "meduza.io", "mn.ru", "ng.ru", "novayagazeta.ru", "newsvl.ru", "og.ru", "ok.ru", "politikus.info", "ppt.ru", "pressball.by", "progorodsamara.ru", "radiomayak.ru", "rbc.ru", "rg.ru", "ria.ru", "rskrf.ru", "rutube.ru", "sovsport.ru", "sport-express.ru", "sport24.ru", "sportbox.ru", "sports.ru", "tass.ru", "trud.ru", "utro.ru", "ytro.ru", "zr.ru", "one.one.one.one", "dns.google", "quad9.net", "npmjs.org", "pypi.org", "gitlab.com", "bitbucket.org", "android.com", "yastatic.net", "dft.ru", "afisha.ru", "gosuslugi.ru", "yandex.ru"
 }
 
 manual_protected_domains = protected_domains.copy()
@@ -251,29 +226,32 @@ DNS_SERVERS = [
     "1.1.1.1"
 ]
 
+_progress_state = {}
+
 def setup_dns_and_test():
-    sys.stdout.write("\r    [net] Настройка DNS...\033[K")
-    sys.stdout.flush()
-    try:
-        with open("/etc/resolv.conf", "w") as f:
-            for dns in DNS_SERVERS:
-                f.write(f"nameserver {dns}\n")
-        result = subprocess.run(
-            ["ping", "-c", "3", "google.com"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            timeout=5
-        )
-        if result.returncode == 0:
-            sys.stdout.write("\r    [net] Интернет доступен\033[K")
-            sys.stdout.flush()
-            return True
-        else:
+    while True:
+        sys.stdout.write("\r    [net] Настройка DNS...\033[K")
+        sys.stdout.flush()
+        try:
+            with open("/etc/resolv.conf", "w") as f:
+                for dns in DNS_SERVERS:
+                    f.write(f"nameserver {dns}\n")
+            result = subprocess.run(
+                ["ping", "-c", "3", "google.com"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=5
+            )
+            if result.returncode == 0:
+                sys.stdout.write("\r    [net] Интернет доступен\033[K")
+                sys.stdout.flush()
+                return True
             sys.stdout.write("\r    [net] Ping не прошёл\033[K")
             sys.stdout.flush()
-            return False
-    except Exception:
-        return False
+        except Exception as e:
+            sys.stdout.write(f"\r    [net] Ошибка проверки сети: {e}\033[K")
+            sys.stdout.flush()
+        time.sleep(5)
 
 def full_network_diagnostics():
     print("    [diag] Выполняется полная диагностика сети (ошибка скачивания)...")
@@ -288,7 +266,13 @@ def full_network_diagnostics():
         print(f"      [!] Ошибка при диагностике: {e}")
 
 def print_progress(prefix, current, total, bar_len=10, start_time=None):
-    if total <= 0: return
+    if total <= 0:
+        return
+    now = time.time()
+    if "[dl]" in prefix:
+        state = _progress_state.get(prefix)
+        if state is not None and current != total and now - state["time"] < 0.25:
+            return
     frac = current / float(total)
     filled = int(round(bar_len * frac))
     bar = '=' * filled + '-' * (bar_len - filled)
@@ -297,11 +281,13 @@ def print_progress(prefix, current, total, bar_len=10, start_time=None):
     if start_time:
         sec = time.time() - start_time
         elapsed = f" | {int(sec)}s"
-    sys.stdout.write(f"\r{prefix} [{bar}] {current}/{total} ({pct:.1f}%){elapsed}\033[K")
+    sys.stdout.write(f"\r\033[2K{prefix} [{bar}] {current}/{total} ({pct:.1f}%){elapsed}")
     sys.stdout.flush()
     if current == total:
         sys.stdout.write("\n")
         sys.stdout.flush()
+    if "[dl]" in prefix:
+        _progress_state[prefix] = {"time": now, "current": current}
 
 def download_with_urllib(url, headers, timeout=30):
     req = urllib.request.Request(url, headers=headers)
@@ -315,22 +301,26 @@ def download_with_urllib(url, headers, timeout=30):
         chunk_size = 8192
         read = 0
         start = time.time()
+        last_unknown_report = 0.0
         while True:
             chunk = resp.read(chunk_size)
-            if not chunk: break
+            if not chunk:
+                break
             out.extend(chunk)
             read += len(chunk)
             if total:
                 print_progress("  [dl] urllib", min(read, total), total, start_time=start)
             else:
-                kb = read // 1024
-                sys.stdout.write(f"\r  [dl] urllib {kb} KB\033[K")
-                sys.stdout.flush()
-        
+                now = time.time()
+                if now - last_unknown_report >= 0.25:
+                    kb = read // 1024
+                    sys.stdout.write(f"\r\033[2K  [dl] urllib {kb} KB")
+                    sys.stdout.flush()
+                    last_unknown_report = now
         if total and read < total * 0.95:
             raise Exception(f"Incomplete download: {read}/{total} bytes")
-
-        if not total: sys.stdout.write("\n")
+        if not total:
+            sys.stdout.write("\n")
         return out.decode('utf-8', errors='ignore').splitlines(), "urllib"
 
 def download_with_curl_to_file(url, headers, timeout=15, curl_args=None):
@@ -354,8 +344,10 @@ def download_with_curl_to_file(url, headers, timeout=15, curl_args=None):
     except Exception:
         return [], None
     finally:
-        try: os.unlink(tmp.name)
-        except Exception: pass
+        try:
+            os.unlink(tmp.name)
+        except Exception:
+            pass
 
 def try_command_variants(url):
     ua = headers['User-Agent']
@@ -377,7 +369,8 @@ def try_command_variants(url):
         variants.append((['aria2c', '-q', '--summary-interval=1', '-x', '4', '-o', 'aria_tmp_dl', url], True, "aria2c"))
 
     for cmd, is_file_writer, descr in variants:
-        if not shutil.which(cmd[0]): continue
+        if not shutil.which(cmd[0]):
+            continue
         try:
             sys.stdout.write(f"\r    [attempt] running: {cmd[0]}... ({descr})\033[K")
             sys.stdout.flush()
@@ -390,10 +383,13 @@ def try_command_variants(url):
                         with open(tmp.name, 'rb') as f:
                             data = f.read().decode('utf-8', errors='ignore').splitlines()
                         return data, descr
-                except Exception: pass
+                except Exception:
+                    pass
                 finally:
-                    try: os.unlink(tmp.name)
-                    except Exception: pass
+                    try:
+                        os.unlink(tmp.name)
+                    except Exception:
+                        pass
             else:
                 proc = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15)
                 if proc.returncode == 0:
@@ -402,46 +398,63 @@ def try_command_variants(url):
                             with open('aria_tmp_dl', 'rb') as f:
                                 data = f.read().decode('utf-8', errors='ignore').splitlines()
                             return data, descr
-                        except Exception: pass
+                        except Exception:
+                            pass
                         finally:
-                            try: os.unlink('aria_tmp_dl')
-                            except Exception: pass
-        except Exception: continue
+                            try:
+                                os.unlink('aria_tmp_dl')
+                            except Exception:
+                                pass
+        except Exception:
+            continue
     return [], None
 
 def is_protected_full(domain):
-    if domain in protected_domains: return True, "exact"
+    if domain in protected_domains:
+        return True, "exact"
     parts = domain.split('.')
     for i in range(len(parts)):
         suffix = '.'.join(parts[i:])
-        if suffix in protected_suffixes: return True, "suffix"
+        if suffix in protected_suffixes:
+            return True, "suffix"
     return False, None
 
 def is_protected_manual(domain):
-    if domain in manual_protected_domains: return True, "exact"
+    if domain in manual_protected_domains:
+        return True, "exact"
     parts = domain.split('.')
     for i in range(len(parts)):
         suffix = '.'.join(parts[i:])
-        if suffix in manual_protected_suffixes: return True, "suffix"
+        if suffix in manual_protected_suffixes:
+            return True, "suffix"
     return False, None
 
 def is_valid_domain(d):
-    if not d or len(d) < 4: return False
-    if not d.isascii(): return False
-    if d.startswith('.') or d.startswith('-'): return False
-    if d.endswith('.') or d.endswith('-'): return False
-    if '.' not in d: return False
-    if not INVALID_CHARS.isdisjoint(d): return False
+    if not d or len(d) < 4:
+        return False
+    if not d.isascii():
+        return False
+    if d.startswith('.') or d.startswith('-'):
+        return False
+    if d.endswith('.') or d.endswith('-'):
+        return False
+    if '.' not in d:
+        return False
+    if not INVALID_CHARS.isdisjoint(d):
+        return False
     parts = d.split('.')
-    if len(parts) == 1: return False
-    if parts[-1].lower() in dangerous_tlds and len(parts) == 1: return False
+    if len(parts) == 1:
+        return False
+    if parts[-1].lower() in dangerous_tlds and len(parts) == 1:
+        return False
     return True
 
 def validate_ip(ip_str):
     try:
         net = ipaddress.ip_network(ip_str, strict=False)
         addr = str(net.network_address)
-        if addr.startswith(('0.', '127.', '255.')): return None
+        if addr.startswith(('0.', '127.', '255.')):
+            return None
         return str(net)
     except ValueError:
         return None
@@ -458,51 +471,30 @@ def download_data(name, url_or_urls):
                 if lines and len(lines) > 10 and not any("<html" in str(l).lower() for l in lines[:15]):
                     print(f"\r  [+] Успешно загружено строк: {len(lines)} (method: {method})\033[K")
                     return lines, method
-            except Exception: pass
+            except Exception:
+                pass
 
             try:
                 lines, method = download_with_curl_to_file(url, headers, timeout=15)
                 if lines and len(lines) > 10 and not any("<html" in str(l).lower() for l in lines[:15]):
                     print(f"\r  [+] Успешно загружено строк: {len(lines)} (method: {method})\033[K")
                     return lines, method
-            except Exception: pass
+            except Exception:
+                pass
 
             try:
                 lines, method = try_command_variants(url)
                 if lines and len(lines) > 10 and not any("<html" in str(l).lower() for l in lines[:15]):
                     print(f"\r  [+] Успешно загружено строк: {len(lines)} (method: {method})\033[K")
                     return lines, method
-            except Exception: pass
+            except Exception:
+                pass
 
             sys.stdout.write(f"\r    [!] попытка {attempt} не удалась, повтор через {int(1 + attempt*0.5)}s...\033[K")
             sys.stdout.flush()
             time.sleep(1 + attempt * 0.5)
 
         full_network_diagnostics()
-
-        sys.stdout.write("\r  [tor] Попытка через Tor...\033[K")
-        sys.stdout.flush()
-        if shutil.which('tor') and shutil.which('torsocks'):
-            try:
-                lines = []
-                proc = subprocess.run(
-                    ["torsocks", "curl", "-s", "-L", url],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.DEVNULL,
-                    timeout=15
-                )
-                if proc.returncode == 0:
-                    lines = proc.stdout.decode("utf-8", errors="ignore").splitlines()
-                    if lines and len(lines) > 10 and not any("<html" in str(l).lower() for l in lines[:15]):
-                        print(f"\r  [+] Успешно через Tor\033[K")
-                        return lines, "torsocks curl"
-            except Exception: pass
-        else:
-            sys.stdout.write("\r  [tor] torsocks или tor не установлены, пропускаем.\033[K")
-            sys.stdout.flush()
-
-        sys.stdout.write("\r  [tor] Tor fallback не помог.\033[K\n")
-        sys.stdout.flush()
 
     print(f"\r  [!] Ошибка: Не удалось скачать {name} ни одним из способов.\033[K")
     return [], None
@@ -525,22 +517,27 @@ def save_logs(total_time_val=None):
 
             ef.write("\n" + "="*60 + "\n")
             ef.write("PROTECTED SUFFIXES (whitelisted, suffix match)\n")
-            for s in sorted(protected_suffixes): ef.write(f"{s}\n")
+            for s in sorted(protected_suffixes):
+                ef.write(f"{s}\n")
             ef.write("\nPROTECTED DOMAINS (whitelisted, exact match)\n")
-            for d in sorted(protected_domains): ef.write(f"{d}\n")
+            for d in sorted(protected_domains):
+                ef.write(f"{d}\n")
 
             ef.write("\n" + "="*60 + "\n")
             ef.write("EXCLUDED BY KEYWORDS\n")
             excluded = [(r,s,o) for r,s,o in errors if r == "excluded_keyword"]
-            for reason, src, orig in excluded: ef.write(f"{src}\t{orig}\n")
+            for reason, src, orig in excluded:
+                ef.write(f"{src}\t{orig}\n")
 
             ef.write("\nJUNK / INVALID LINES (или пропущенные пути)\n")
             junk = [(r,s,o) for r,s,o in errors if r.startswith("junk") or r == "skipped_path_rule"]
-            for reason, src, orig in junk: ef.write(f"{reason}\t{src}\t{orig}\n")
+            for reason, src, orig in junk:
+                ef.write(f"{reason}\t{src}\t{orig}\n")
 
             ef.write("\nPROTECTED ENTRIES (skipped during parsing)\n")
             prot = [(r,s,o) for r,s,o in errors if r.startswith("protected")]
-            for reason, src, orig in prot: ef.write(f"{reason}\t{src}\t{orig}\n")
+            for reason, src, orig in prot:
+                ef.write(f"{reason}\t{src}\t{orig}\n")
 
             if total_time_val is not None:
                 ef.write("\n" + "="*60 + "\n")
@@ -592,7 +589,8 @@ def optimize_domain_set(source_domains, log_prefix):
             if len(members) >= AGGREGATE_THRESHOLD and not is_protected_full(parent)[0]:
                 opt_set.add(parent)
             else:
-                for m in members: opt_set.add(m)
+                for m in members:
+                    opt_set.add(m)
     else:
         for idx, d in enumerate(sorted_raw, start=1):
             if idx % 1000 == 0 or idx == total_to_check:
@@ -622,10 +620,12 @@ def build_and_write():
         final_ips = sorted([f"IP-CIDR,{ip}" for ip in ips_set])
         combined = final_list + final_ips
         total = len(combined)
-        if total == 0: return 0
+        if total == 0:
+            return 0
         
         with open(f"{base_name}.list", 'w', encoding='utf-8') as full_f:
-            for line in combined: full_f.write(line + "\n")
+            for line in combined:
+                full_f.write(line + "\n")
         
         chunk_size = 100000
         chunks = math.ceil(total / chunk_size)
@@ -687,7 +687,8 @@ for name, url in white_urls.items():
             print_progress("  [w-parse]", idx, total_lines, start_time=start_parse)
 
         line = raw_line.strip()
-        if not line or line.startswith(('#', '!')): continue
+        if not line or line.startswith(('#', '!')):
+            continue
 
         if line.startswith('.'):
             domain = line.lstrip('.').lower()
@@ -757,7 +758,8 @@ for name, url in urls.items():
 
         line = raw_line.strip().lower()
 
-        if not line or line.startswith(('!', '[', '@@')) or '##' in line or '#@#' in line or line.startswith('#'): continue
+        if not line or line.startswith(('!', '[', '@@')) or '##' in line or '#@#' in line or line.startswith('#'):
+            continue
 
         if exclude_pattern.search(line):
             stats["excluded"] += 1
@@ -778,11 +780,16 @@ for name, url in urls.items():
                             stats["protected_exact"] += 1
                             errors.append(("protected_ip", name, val))
                         else:
-                            if is_oisd_nsfw: nsfw_ips.add(validated)
-                            elif is_oisd_main: oisd_ips.add(validated)
-                            elif is_oisd_nsfw_sm: nsfw_small_ips.add(validated)
-                            elif is_oisd_sm: oisd_small_ips.add(validated)
-                            else: all_ips.add(validated)
+                            if is_oisd_nsfw:
+                                nsfw_ips.add(validated)
+                            elif is_oisd_main:
+                                oisd_ips.add(validated)
+                            elif is_oisd_nsfw_sm:
+                                nsfw_small_ips.add(validated)
+                            elif is_oisd_sm:
+                                oisd_small_ips.add(validated)
+                            else:
+                                all_ips.add(validated)
                             local_ip_count += 1
                     else:
                         stats["junk"] += 1
@@ -791,15 +798,22 @@ for name, url in urls.items():
                     if is_valid_domain(val):
                         protected, reason = (False, None) if is_any_oisd else is_protected_full(val)
                         if protected:
-                            if reason == "exact": stats["protected_exact"] += 1
-                            else: stats["protected_suffix"] += 1
+                            if reason == "exact":
+                                stats["protected_exact"] += 1
+                            else:
+                                stats["protected_suffix"] += 1
                             errors.append((f"protected_{reason}", name, val))
                         else:
-                            if is_oisd_nsfw: nsfw_domains.add(val)
-                            elif is_oisd_main: oisd_domains.add(val)
-                            elif is_oisd_nsfw_sm: nsfw_small_domains.add(val)
-                            elif is_oisd_sm: oisd_small_domains.add(val)
-                            else: all_domains.add(val)
+                            if is_oisd_nsfw:
+                                nsfw_domains.add(val)
+                            elif is_oisd_main:
+                                oisd_domains.add(val)
+                            elif is_oisd_nsfw_sm:
+                                nsfw_small_domains.add(val)
+                            elif is_oisd_sm:
+                                oisd_small_domains.add(val)
+                            else:
+                                all_domains.add(val)
                             local_domain_count += 1
                     else:
                         stats["junk"] += 1
@@ -836,24 +850,36 @@ for name, url in urls.items():
                 stats["protected_exact"] += 1
                 errors.append(("protected_ip", name, clean))
             else:
-                if is_oisd_nsfw: nsfw_ips.add(validated_ip)
-                elif is_oisd_main: oisd_ips.add(validated_ip)
-                elif is_oisd_nsfw_sm: nsfw_small_ips.add(validated_ip)
-                elif is_oisd_sm: oisd_small_ips.add(validated_ip)
-                else: all_ips.add(validated_ip)
+                if is_oisd_nsfw:
+                    nsfw_ips.add(validated_ip)
+                elif is_oisd_main:
+                    oisd_ips.add(validated_ip)
+                elif is_oisd_nsfw_sm:
+                    nsfw_small_ips.add(validated_ip)
+                elif is_oisd_sm:
+                    oisd_small_ips.add(validated_ip)
+                else:
+                    all_ips.add(validated_ip)
                 local_ip_count += 1
         elif is_valid_domain(clean):
             protected, reason = (False, None) if is_any_oisd else is_protected_full(clean)
             if protected:
-                if reason == "exact": stats["protected_exact"] += 1
-                else: stats["protected_suffix"] += 1
+                if reason == "exact":
+                    stats["protected_exact"] += 1
+                else:
+                    stats["protected_suffix"] += 1
                 errors.append((f"protected_{reason}", name, clean))
             else:
-                if is_oisd_nsfw: nsfw_domains.add(clean)
-                elif is_oisd_main: oisd_domains.add(clean)
-                elif is_oisd_nsfw_sm: nsfw_small_domains.add(clean)
-                elif is_oisd_sm: oisd_small_domains.add(clean)
-                else: all_domains.add(clean)
+                if is_oisd_nsfw:
+                    nsfw_domains.add(clean)
+                elif is_oisd_main:
+                    oisd_domains.add(clean)
+                elif is_oisd_nsfw_sm:
+                    nsfw_small_domains.add(clean)
+                elif is_oisd_sm:
+                    oisd_small_domains.add(clean)
+                else:
+                    all_domains.add(clean)
                 local_domain_count += 1
         else:
             stats["junk"] += 1
@@ -866,13 +892,16 @@ for name, url in urls.items():
     print(f"  -> Извлечено доменов: {local_domain_count} | IP: {local_ip_count}")
 
 for suffix in forced_block_suffixes:
-    if is_valid_domain(suffix): all_domains.add(suffix)
+    if is_valid_domain(suffix):
+        all_domains.add(suffix)
 for domain in forced_block_domains:
-    if is_valid_domain(domain): all_domains.add(domain)
+    if is_valid_domain(domain):
+        all_domains.add(domain)
 
 for ip in forced_block_ips:
     validated = validate_ip(ip)
-    if validated: all_ips.add(validated)
+    if validated:
+        all_ips.add(validated)
 
 print("\n=== ОЧИСТКА ПОДДОМЕНОВ И ДУБЛИКАТОВ И ФОРМИРОВАНИЕ RULE-SET ===")
 build_and_write()
@@ -880,8 +909,10 @@ build_and_write()
 while failed_lists or failed_white_lists:
     print("\n" + "="*45)
     print("ВНИМАНИЕ: Некоторые списки не удалось скачать:")
-    for w in failed_white_lists: print(f"  [Белый]  - {w}")
-    for b in failed_lists: print(f"  [Черный] - {b}")
+    for w in failed_white_lists:
+        print(f"  [Белый]  - {w}")
+    for b in failed_lists:
+        print(f"  [Черный] - {b}")
     print("="*45)
 
     target = failed_white_lists[0] if failed_white_lists else failed_lists[0]
@@ -894,8 +925,10 @@ while failed_lists or failed_white_lists:
     ans = input("Ваш выбор (1/2/3): ").strip()
 
     if ans == '2':
-        if is_white: failed_white_lists.remove(target)
-        else: failed_lists.remove(target)
+        if is_white:
+            failed_white_lists.remove(target)
+        else:
+            failed_lists.remove(target)
         continue
     elif ans in ('1', '3'):
         setup_dns_and_test()
@@ -922,7 +955,8 @@ while failed_lists or failed_white_lists:
                 if idx % 500 == 0 or idx == total_lines:
                     print_progress("  [rw-parse]", idx, total_lines, start_time=start_parse)
                 line = raw_line.strip()
-                if not line or line.startswith(('#', '!')): continue
+                if not line or line.startswith(('#', '!')):
+                    continue
                 if line.startswith('.'):
                     domain = line.lstrip('.').lower()
                     if is_valid_domain(domain): 
@@ -960,8 +994,10 @@ while failed_lists or failed_white_lists:
             to_remove = set()
             for d in all_domains:
                 prot, reason = is_protected_full(d)
-                if prot: to_remove.add(d)
-            for d in to_remove: all_domains.remove(d)
+                if prot:
+                    to_remove.add(d)
+            for d in to_remove:
+                all_domains.remove(d)
 
             failed_white_lists.remove(target)
             white_download_report[target] = {"status": "ok (retry)", "method": method, "lines": len(lines), "extracted": local_extracted_count}
@@ -979,8 +1015,10 @@ while failed_lists or failed_white_lists:
                 if idx % 500 == 0 or idx == total_lines:
                     print_progress("  [r-parse]", idx, total_lines, start_time=start_parse)
                 line = raw_line.strip().lower()
-                if not line or line.startswith(('!', '[', '@@')) or '##' in line or '#@#' in line or line.startswith('#'): continue
-                if exclude_pattern.search(line): continue
+                if not line or line.startswith(('!', '[', '@@')) or '##' in line or '#@#' in line or line.startswith('#'):
+                    continue
+                if exclude_pattern.search(line):
+                    continue
                 if "," in line and not line.startswith("||"):
                     parts = [p.strip() for p in line.split(',', 2)]
                     if len(parts) >= 2:
@@ -992,21 +1030,31 @@ while failed_lists or failed_white_lists:
                                 pure_ip = validated.split('/')[0]
                                 is_protected_ip = False if is_any_oisd else (pure_ip in protected_ips)
                                 if not is_protected_ip:
-                                    if is_oisd_nsfw: nsfw_ips.add(validated)
-                                    elif is_oisd_main: oisd_ips.add(validated)
-                                    elif is_oisd_nsfw_sm: nsfw_small_ips.add(validated)
-                                    elif is_oisd_sm: oisd_small_ips.add(validated)
-                                    else: all_ips.add(validated)
+                                    if is_oisd_nsfw:
+                                        nsfw_ips.add(validated)
+                                    elif is_oisd_main:
+                                        oisd_ips.add(validated)
+                                    elif is_oisd_nsfw_sm:
+                                        nsfw_small_ips.add(validated)
+                                    elif is_oisd_sm:
+                                        oisd_small_ips.add(validated)
+                                    else:
+                                        all_ips.add(validated)
                                     local_ip_retry += 1
                         elif "domain" in rule_type:
                             if is_valid_domain(val):
                                 protected, reason = (False, None) if is_any_oisd else is_protected_full(val)
                                 if not protected:
-                                    if is_oisd_nsfw: nsfw_domains.add(val)
-                                    elif is_oisd_main: oisd_domains.add(val)
-                                    elif is_oisd_nsfw_sm: nsfw_small_domains.add(val)
-                                    elif is_oisd_sm: oisd_small_domains.add(val)
-                                    else: all_domains.add(val)
+                                    if is_oisd_nsfw:
+                                        nsfw_domains.add(val)
+                                    elif is_oisd_main:
+                                        oisd_domains.add(val)
+                                    elif is_oisd_nsfw_sm:
+                                        nsfw_small_domains.add(val)
+                                    elif is_oisd_sm:
+                                        oisd_small_domains.add(val)
+                                    else:
+                                        all_domains.add(val)
                                     local_domain_retry += 1
                     continue
 
@@ -1017,30 +1065,42 @@ while failed_lists or failed_white_lists:
                 clean = re.sub(r'^\|', '', clean)
                 clean = re.sub(r'^https?://', '', clean)
                 clean = re.sub(r'^www\.', '', clean)
-                if '/' in clean.split('^')[0].split('$')[0]: continue
+                if '/' in clean.split('^')[0].split('$')[0]:
+                    continue
                 clean = clean.split('^')[0].split('$')[0].split(':')[0].split('*')[0].strip()
                 clean = clean.strip('.').strip()
 
-                if not clean: continue
+                if not clean:
+                    continue
                 validated_ip = validate_ip(clean)
                 if validated_ip:
                     pure_ip = validated_ip.split('/')[0]
                     is_protected_ip = False if is_any_oisd else (pure_ip in protected_ips)
                     if not is_protected_ip:
-                        if is_oisd_nsfw: nsfw_ips.add(validated_ip)
-                        elif is_oisd_main: oisd_ips.add(validated_ip)
-                        elif is_oisd_nsfw_sm: nsfw_small_ips.add(validated_ip)
-                        elif is_oisd_sm: oisd_small_ips.add(validated_ip)
-                        else: all_ips.add(validated_ip)
+                        if is_oisd_nsfw:
+                            nsfw_ips.add(validated_ip)
+                        elif is_oisd_main:
+                            oisd_ips.add(validated_ip)
+                        elif is_oisd_nsfw_sm:
+                            nsfw_small_ips.add(validated_ip)
+                        elif is_oisd_sm:
+                            oisd_small_ips.add(validated_ip)
+                        else:
+                            all_ips.add(validated_ip)
                         local_ip_retry += 1
                 elif is_valid_domain(clean):
                     protected, reason = (False, None) if is_any_oisd else is_protected_full(clean)
                     if not protected:
-                        if is_oisd_nsfw: nsfw_domains.add(clean)
-                        elif is_oisd_main: oisd_domains.add(clean)
-                        elif is_oisd_nsfw_sm: nsfw_small_domains.add(clean)
-                        elif is_oisd_sm: oisd_small_domains.add(clean)
-                        else: all_domains.add(clean)
+                        if is_oisd_nsfw:
+                            nsfw_domains.add(clean)
+                        elif is_oisd_main:
+                            oisd_domains.add(clean)
+                        elif is_oisd_nsfw_sm:
+                            nsfw_small_domains.add(clean)
+                        elif is_oisd_sm:
+                            oisd_small_domains.add(clean)
+                        else:
+                            all_domains.add(clean)
                         local_domain_retry += 1
 
             failed_lists.remove(target)
@@ -1071,7 +1131,7 @@ if oisd_choice in ('1', '3'):
     print(f"ПРАВИЛ В ФАЙЛАХ STD:       {final_list_len}")
     print(f"ПРАВИЛ В ФАЙЛАХ PLUS:      {final_list_plus_len}")
 if oisd_choice in ('2', '3'):
-    print(f"ПРАВИЛ В ФАЙЛАХ STD SMALL:  {final_list_sm_len}")
+    print(f"ПРАВИЛ В ФАЙЛАХ STD SMALL: {final_list_sm_len}")
     print(f"ПРАВИЛ В ФАЙЛАХ PLUS SMALL:{final_list_plus_sm_len}")
 print(f"ВСЕГО ОТБРОШЕНО СТРОК:     {len(errors)}")
 print(f"ОБЩЕЕ ВРЕМЯ ВЫПОЛНЕНИЯ:    {TOTAL_TIME} сек.")
@@ -1101,11 +1161,11 @@ echo "nameserver 94.140.15.15" >> /etc/resolv.conf
 echo "nameserver 1.1.1.1" >> /etc/resolv.conf
 
 echo "[*] Повторная проверка интернета..."
-if ! ping -c 3 google.com > /dev/null 2>&1; then
+while ! ping -c 3 google.com > /dev/null 2>&1; do
     echo "[!] ОШИБКА: Соединение потеряно."
-    echo "    Скрипт остановлен."
-    exit 1
-fi
+    echo "[*] Повторная проверка через 5 секунд..."
+    sleep 5
+done
 
 echo "[*] Запуск скрипта генерации правил..."
 python3 "REJECT_RULES.py"
