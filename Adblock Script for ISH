@@ -15,12 +15,25 @@ echo "nameserver 94.140.15.15" >> /etc/resolv.conf
 echo "nameserver 1.1.1.1" >> /etc/resolv.conf
 
 echo "[*] Проверка соединения с интернетом..."
-ping -c 3 google.com || echo "[!] Пинг не прошел, но продолжаем выполнение..."
+if ! ping -c 3 google.com > /dev/null 2>&1; then
+    echo "[!] ОШИБКА: Нет подключения к интернету!"
+    exit 1
+fi
+echo "[+] Интернет доступен."
 
 echo "[*] Обновление системы и установка зависимостей..."
 apk update
 apk upgrade
-apk add python3 py3-pip curl wget aria2 git openssl ca-certificates tor torsocks obfs4proxy
+apk add python3 curl wget aria2 openssl ca-certificates tor torsocks bind-tools bash py3-pip git
+
+if ! apk add obfs4proxy; then
+    echo "[*] obfs4proxy не найден, устанавливаем lyrebird..."
+    apk add lyrebird
+fi
+
+if [ ! -f /usr/bin/obfs4proxy ] && [ -f /usr/bin/lyrebird ]; then
+    ln -s /usr/bin/lyrebird /usr/bin/obfs4proxy 2>/dev/null
+fi
 
 echo "[*] Настройка мостов Tor (obfs4 и webtunnel)..."
 mkdir -p /etc/tor
@@ -1088,7 +1101,11 @@ echo "nameserver 94.140.15.15" >> /etc/resolv.conf
 echo "nameserver 1.1.1.1" >> /etc/resolv.conf
 
 echo "[*] Повторная проверка интернета..."
-ping -c 3 google.com || echo "[!] Пинг не прошел, но скрипт будет запущен..."
+if ! ping -c 3 google.com > /dev/null 2>&1; then
+    echo "[!] ОШИБКА: Соединение потеряно."
+    echo "    Скрипт остановлен."
+    exit 1
+fi
 
 echo "[*] Запуск скрипта генерации правил..."
 python3 "REJECT_RULES.py"
