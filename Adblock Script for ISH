@@ -73,7 +73,7 @@ while True:
     print(f" -> Выбрано: {choice_str}")
     confirm = input(f"Подтвердить выбор? (y/n) [по умолчанию y]: ").strip().lower()
     
-    if confirm in ('y', 'yes', ''):
+    if confirm in ('y', 'yes'):
         break
     else:
         print("Повторите ввод...")
