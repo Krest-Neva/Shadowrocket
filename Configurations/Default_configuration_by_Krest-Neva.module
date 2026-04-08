@@ -1,0 +1,601 @@
+#!name=😻Config by Krest_Neva😻
+#!desc=With YT Premium and AdBlock
+
+#Последние изменения 07.04.2026 23:00
+#Фильтры обновлены 07.04.2026 23:00
+
+#==================================================
+# ℹ️ ИНФОРМАЦИЯ О КОНФИГУРАЦИИ
+
+# Данный конфиг предназначен исключительно для систем iOS и macOS.
+# Для доступа с других платформ используйте функцию «Общий доступ к прокси».
+
+# Конфигурация создана Кристиной Невской специально для «настоящих котиков».
+# Включает регулярные обновления маршрутизации и скрипты для получения премиум-функций,
+# а также блокировку рекламы, трекеров, систем аналитики и фишинговых сайтов.
+
+# ПРИНЦИП РАБОТЫ:
+# Локальные сервера, RU-сервисы и ресурсы, которые нельзя пускать через прокси,
+# работают напрямую (без VPN) для обеспечения максимальной скорости.
+# Конфиг адаптирован для постоянного использования без необходимости отключать VPN.
+# Автоматическое переключение обеспечивается индивидуально настроенными группами прокси.
+
+# Конфигурация работает как модуль в Shadowrocket. Настройки модуля имеют приоритет
+# над основной конфигурацией. Персональный Add-on должен находиться выше данного модуля.
+
+# ➕ ДОБАВЛЕНИЕ ПОДПИСКИ:
+# 1. На главной странице нажмите «+».
+# 2. Выберите тип «Subscribe».
+# 3. Вставьте ваш URL (ключ).
+# 4. В поле «Примечания» укажите название вашего VPN-сервиса.
+
+# 📂 НАСТРОЙКИ ОСНОВНОЙ КОНФИГУРАЦИИ:
+# Основной файл конфигурации должен быть пустым (за исключением настроек ниже).
+# 1. Перейдите в раздел локальных файлов (кнопка справа на главной).
+# 2. Найдите default.conf, переименуйте его (название может быть любым).
+# 3. Нажмите на файл и выберите «Редактировать текст».
+# 4. Полностью удалите всё содержимое.
+# 5. Если файла нет, выберите «Восстановить конфигурацию по умолчанию» и повторите действия.
+
+# 🔐 НАСТРОЙКА HTTPS И СЕРТИФИКАТОВ:
+# Дальнейшая настройка выполняется через интерфейс редактирования (кнопка «i»).
+# Необходимо установить и сделать доверенным корневой сертификат Shadowrocket:
+# 1. Включите «Расшифровка HTTPS». Приложение предложит установить сертификат — подтвердите.
+# 2. В настройках iPhone (в самом верху) появится профиль сертификата — установите его.
+# 3. Перейдите в «Настройки» -> «Основные» -> «Об этом устройстве» -> «Доверие сертификатам» (внизу).
+# 4. Включите доверие для сертификата Shadowrocket.
+# 5. В разделе «VPN и управление устройством» убедитесь, что профиль установлен и доверен.
+# 6. Вернитесь в Shadowrocket и проверьте статус в разделе расшифровки HTTPS.
+
+# ЗАЧЕМ ЭТО НУЖНО: 
+# Расшифровка HTTPS необходима для глубокой фильтрации трафика и работы скриптов.
+# Это позволяет, например, использовать YouTube в режиме «Картинка в картинке» 
+# и слушать видео с выключенным экраном без рекламы.
+
+# 🌐 НАСТРОЙКА ГРУПП ПРОКСИ:
+# Группы позволяют автоматически выбирать рабочие сервера. При сбое соединения 
+# система сама переключится на доступный узел на основе теста через специальный URL.
+
+# СПИСОК ГРУПП:
+# 1️⃣ «INSTPROXY» (load-balance) — Тест: https://fbcdn.net
+# 2️⃣ «TGPROXY» (load-balance) — Тест: https://www.telegram.org
+# 3️⃣ «DISCORDPROXY» (fallback) — Тест: https://discord.com/api/v9/gateway
+# 4️⃣ «TIKTOKPROXY» (url-test) — Тест: https://www.tiktok.com/favicon.ico
+# 5️⃣ «COPILOTPROXY» (load-balance) — Тест: https://login.microsoftonline.com/favicon.ico
+# 6️⃣ «GPTPROXY» (load-balance) — Тест: https://chat.openai.com/favicon.ico
+# 7️⃣ «GEMINIPROXY» (load-balance) — Тест: https://www.google.com/generate_204
+# 8️⃣ «SPEEDPROXY» (url-test) — Тест: https://www.youtube.com/generate_204
+# 9️⃣ «BESTPROXY» (load-balance) — Тест: http://cp.cloudflare.com/generate_204
+
+# ОПИСАНИЕ СТРАТЕГИЙ:
+# — load-balance: Распределяет трафик между несколькими быстрыми серверами одновременно (наиболее быстро).
+# — url-test: Выбирает один самый быстрый сервер по минимальной задержке (наиболее быстро, но для сервисов чувствительных к быстрой смене ip-адреса).
+# — fallback: Выбирает первый доступный сервер в списке (наиболее стабильно).
+
+# РЕКОМЕНДУЕМЫЕ ТАЙМ-АУТЫ:
+# — Тайм-аут: около 2 сек.
+# — Интервал проверки: 200 сек (при стабильной работе) или 60 сек (при частых сбоях).
+
+# 🧩 МОДУЛИ:
+# В разделе локальных файлов (справа на главной) есть пункт «Модули». 
+# Через «+» вставляется ссылка на модули. Они имеют приоритет над основным конфигом.
+
+# ⚙️ НАСТРОЙКИ ПРИЛОЖЕНИЯ:
+
+# 🏠 ВКЛАДКА «ГЛАВНАЯ»:
+# — Маршрутизация: выберите «Настройка» (для работы правил и модулей).
+# — Откат: рекомендуется отключить.
+# — Тест подключения: тип «connect». URL: http://cp.cloudflare.com/generate_204
+# (Важно: если сервер не пингует Google, это не значит, что он не работает с другими сервисами).
+
+# ⚙️ ВКЛАДКА «НАСТРОЙКИ»:
+# — По требованию: «Всегда включено» — Вкл, «По требованию» — Вкл.
+# — Правила по требованию (внизу): Действие — «Подключить», Сеть — «Any». 
+# — (Опционально): В настройках iOS (раздел VPN) включите «Подключение по запросу» для SR.
+# — Туннель: Активируйте «Только принудительные маршруты».
+# — UDP: Включите «Реле».
+# — Подписки: Включите автообновление и опцию «Отправить HWID».
+# — База данных Geolite2: Включите автообновление с минимальным интервалом.
+#   URL Country: https://github.com/Loyalsoldier/geoip/raw/release/Country.mmdb
+#   URL ASN: https://github.com/Loyalsoldier/geoip/raw/release/GeoLite2-ASN.mmdb
+# — Разное: Включите «Модерируемый механизм политики» и «Исключение маршрутов 0.0.0.0/31».
+
+# 📈 РАЗДЕЛ «ДАННЫЕ»:
+# — Включите «Автосинхронизация iCloud».
+# — Включите логирование прокси и DNS.
+# — Активируйте «Перезаписать существующий» и «Автоматическое переименование».
+
+# 👍 РЕЖИМЫ ИСПОЛЬЗОВАНИЯ (НА ГЛАВНОЙ):
+# 1. Настройка — использование правил конфигурации и модулей (рекомендуется).
+# 2. Прокси — весь трафик идет через VPN.
+# 3. Напрямую — весь трафик идет в обход VPN.
+
+# Обратную связь, жалобы (с прикрепленными логами) и пожелания 
+# направляйте моему менеджеру😡
+#==================================================
+
+#   #-неакт❌
+
+[General]
+#Поддержка ipv6
+ipv6 = true
+#Приоритет ipv6
+prefer-ipv6 = false
+#Не проксировать
+skip-proxy = apple.com,icloud.com,*.cdn-apple.com,*.mzstatic.com,itunes.apple.com,captive.apple.com,gsp1.apple.com,*.local,localhost,apple-pki.com,digicert.com,entrust.net
+#Всегда реальный ip
+always-real-ip = *.apple.com,*.icloud.com,*.itunes.com,*.mzstatic.com,*.apple-pki.com,*.push.apple.com
+#Исключённые маршруты
+tun-excluded-routes = 10.0.0.0/8,17.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.0.0.0/24,192.0.2.0/24,192.88.99.0/24,192.168.0.0/16,198.51.100.0/24,203.0.113.0/24,224.0.0.0/4,255.255.255.255/32,fc00::/7,fe80::/10
+#Использование доменных DNS
+dns-over-https = true
+#Системный DNS
+dns-direct-system = false
+#Резервный системный DNS
+dns-fallback-system = false
+#Проксирование DNS если прямое соединение не работает
+dns-direct-fallback-proxy = true
+#DNS сервера
+dns-server = https://dns.comss.one/dns-query#proxy,https://dns.comss.one/dns-query,https://94.140.14.14/dns-query#proxy,https://doh.dns.sb/dns-query#proxy,https://9.9.9.9/dns-query#direct
+#Резервные DNS сервера
+fallback-dns-server = https://1.1.1.1/dns-query#proxy,https://1.0.0.1/dns-query#proxy,https://8.8.8.8/dns-query#direct,https://8.8.4.4/dns-query#direct,https://dns.alidns.com/dns-query,https://doh.libredns.gr/dns-query
+#Перехват DNS
+hijack-dns = *:53
+#DNS-запросы для частных ip-адресов
+private-ip-answer = true
+#Игнорирование системных настроек прокси
+bypass-system = true
+#Принудительное отклонение перезаписи URL
+always-reject-url-rewrite = false
+#Автоматический ответ на ICMP-запросы
+icmp-auto-reply = false
+#Действие при отсутствии поддержки UDP
+udp-policy-not-supported-behaviour = REJECT
+#Не использовать localhost для прокси серверов
+use-local-host-item-for-proxy = false
+
+[Rule]
+#Локальные сети
+GEOIP,private,DIRECT
+
+#Переключение YouTube с UDP/QUIC на TCP/HTTPS
+AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
+AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
+
+#Реклама, трекеры, аналитика, фишинг и остальная кака💩
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_STD.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_PLUS.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_STD_SMALL.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_PLUS_SMALL.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_1.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_2.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_3.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_4.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_5.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_6.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_1.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_2.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_3.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_4.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_5.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_6.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_7.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_8.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_9.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_10.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_SMALL_1.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_SMALL_2.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_SMALL_3.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_SMALL_1.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_SMALL_2.list,REJECT-DICT
+#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_SMALL_3.list,REJECT-DICT
+DOMAIN-KEYWORD,upload,DISCORDPROXY
+DOMAIN-KEYWORD,download,BESTPROXY
+DOMAIN-SUFFIX,pixel.google.com,BESTPROXY
+DOMAIN-KEYWORD,ads,REJECT-200,pre-matching
+DOMAIN-KEYWORD,analytics,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,tracker,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,tracking,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,tracer,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,metrics,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,metrica,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,metrika,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,telemetry,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,beacon,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,adserver,REJECT-200,pre-matching
+DOMAIN-KEYWORD,doubleclick,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,adjust,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,appsflyer,REJECT-DICT,pre-matching
+DOMAIN-KEYWORD,pixel,REJECT-TINYGIF,pre-matching
+
+#YANDEX каки✴️
+DOMAIN-SUFFIX,afisha.yandex.ru,DIRECT
+DOMAIN-SUFFIX,yastatic.net,DIRECT
+DOMAIN-SUFFIX,sp.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,sp.yandex.com,REJECT,pre-matching
+DOMAIN-SUFFIX,egw.sp.plet.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,log.strm.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,amc.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,adfstat.yandex.ru,REJECT-TINYGIF,pre-matching
+DOMAIN-SUFFIX,strm.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,media-adv.market.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,mc.yandex.ru,REJECT-TINYGIF,pre-matching
+DOMAIN-SUFFIX,mc.yandex.com,REJECT-TINYGIF,pre-matching
+DOMAIN-SUFFIX,market-baobab.yandex.ru,REJECT-DICT,pre-matching
+DOMAIN-SUFFIX,baobab.market.yandex.ru,REJECT-DICT,pre-matching
+#DOMAIN,yandex.ru,REJECT-DICT,pre-matching
+DOMAIN-SUFFIX,ad.mail.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,top-fwz1.mail.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,rs.mail.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,widgets.vk.com,REJECT-200,pre-matching
+DOMAIN-SUFFIX,promotedby.vk.com,REJECT-200,pre-matching
+DOMAIN-SUFFIX,adriver.ru,REJECT-200,pre-matching
+DOMAIN-SUFFIX,criteo.com,REJECT-200,pre-matching
+DOMAIN-SUFFIX,criteo.net,REJECT-200,pre-matching
+DOMAIN-SUFFIX,moatads.com,REJECT-200,pre-matching
+DOMAIN-SUFFIX,scorecardresearch.com,REJECT-200,pre-matching
+DOMAIN-SUFFIX,serving-sys.com,REJECT-200,pre-matching
+#DOMAIN-SUFFIX,cdn.jsdelivr.net,REJECT-200,pre-matching
+DOMAIN-SUFFIX,content-sdk.cdn.yandex.net,REJECT,pre-matching
+DOMAIN-SUFFIX,directcdn.net,REJECT,pre-matching
+DOMAIN-SUFFIX,frontend.vh.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,kp.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,moikrug.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,offer.cdn.yandex.net,REJECT,pre-matching
+DOMAIN-SUFFIX,ok.video.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,promocodes.cdn.yandex.net,REJECT,pre-matching
+DOMAIN-SUFFIX,shri.yandex.net,REJECT,pre-matching
+DOMAIN-SUFFIX,spb.video.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,tm.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,video.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,web-antiadblock.nice.x.yandex-team.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,web-usocial.yandex.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,yandexadexchange.net,REJECT,pre-matching
+DOMAIN-SUFFIX,yandex-rtb.cdn.yandex.net,REJECT,pre-matching
+DOMAIN-SUFFIX,yandex-rtb-preview.cdn.yandex.net,REJECT,pre-matching
+DOMAIN-SUFFIX,yanet.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,yanetcom.ru,REJECT,pre-matching
+DOMAIN-SUFFIX,my.com,REJECT,pre-matching
+DOMAIN-SUFFIX,cnt.my.com,REJECT,pre-matching
+DOMAIN-SUFFIX,adj.st,REJECT,pre-matching
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/ad/.*$,REJECT-DICT
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/yabs/.*$,REJECT-DICT
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/bs/.*$,REJECT-DICT
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/direct/.*$,REJECT-DICT
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/rtb/.*$,REJECT-DICT
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/web-usocial/.*$,REJECT-DICT
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/yandex-ads/.*$,REJECT-DICT
+URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/zen/.*\?ad.*$,REJECT-DICT
+URL-REGEX,^https?://yandex\.(ru|com)/clck/click.*$,REJECT
+URL-REGEX,https://yandex\.com/clck/click.*,REJECT
+URL-REGEX,^https?://yandex\.(ru|com)/ads/v4/ad.*$,REJECT-DICT
+URL-REGEX,^https?://yandex\.(ru|com)/an/count/.*$,REJECT
+URL-REGEX,^https?://yandex\.(ru|com)/an/rtbcount/.*$,REJECT
+URL-REGEX,^https?://baobab\.market\.yandex\.(ru|com)/safeclick/json.*$,REJECT-DICT
+URL-REGEX,^https?://([a-z0-9-]+\.)?baobab\.yandex\.(ru|com)/safeclick/.*$,REJECT-DICT
+URL-REGEX,^https?://media-adv\..*\.yandex\.(ru|com)/.*$,REJECT
+URL-REGEX,^https?://adfstat\.yandex\.(ru|com)/.*$,REJECT-TINYGIF
+URL-REGEX,^https?://market\.yandex\.(ru|com)/ecom-assistant\?.*$,REJECT-DICT
+URL-REGEX,^https?://ipa\.market\.yandex\.(ru|com)/api/v1\?.*dictionary=1.*$,REJECT-DICT
+URL-REGEX,^https?://ipa\.market\.yandex\.(ru|com)/api/v1\?.*name=getToggles.*$,REJECT-DICT
+URL-REGEX,^https?://ipa\.market\.yandex\.(ru|com)/api/v1\?.*name=resolveGlobalDeliveryPoint.*$,REJECT-DICT
+URL-REGEX,^https?://api\.plus\.yandex\.net:443/.*$,REJECT-DICT
+URL-REGEX,^https?://infocenter\.rasp\.yandex-net\.ru:443/.*$,REJECT
+URL-REGEX,^https?://suburban-trains\.s3\.yandex\.net:443/.*$,REJECT
+URL-REGEX,^https?://export\.rasp\.yandex-net\.ru:443/.*$,REJECT
+URL-REGEX,^https?://stable\.carsharing\.yandex\.net:443/.*$,REJECT
+URL-REGEX,^https?://tc\.mobile\.yandex\.net:443/.*$,REJECT
+URL-REGEX,^https?://mc\.yandex\.(ru|com)/(metrika|watch|solid\.ws).*$,REJECT-TINYGIF
+URL-REGEX,^https?://sp\.yandex\.(ru|com)/.*$,REJECT
+
+DOMAIN-SUFFIX,max.ru,REJECT-DROP,pre-matching
+#НИКАКОГО МАКСА!⚠️
+
+#GitHub
+DOMAIN-SUFFIX,github.com,SPEEDPROXY
+DOMAIN-SUFFIX,github.io,SPEEDPROXY
+DOMAIN-SUFFIX,github.dev,SPEEDPROXY
+DOMAIN-SUFFIX,githubusercontent.com,SPEEDPROXY
+DOMAIN-SUFFIX,githubassets.com,SPEEDPROXY
+
+#VPN
+DOMAIN-SUFFIX,proxyliberty.ru,BESTPROXY
+
+#Discord
+DOMAIN-SUFFIX,comdiscord.com,DISCORDPROXY
+DOMAIN-SUFFIX,dis.gd,DISCORDPROXY
+DOMAIN-SUFFIX,discord.co,DISCORDPROXY
+DOMAIN-SUFFIX,discord.com,DISCORDPROXY
+DOMAIN-SUFFIX,discord.gg,DISCORDPROXY
+DOMAIN-SUFFIX,discord.gift,DISCORDPROXY
+DOMAIN-SUFFIX,discord.gifts,DISCORDPROXY
+DOMAIN-SUFFIX,discord.media,DISCORDPROXY
+DOMAIN-SUFFIX,discord.new,DISCORDPROXY
+DOMAIN-SUFFIX,discordapp.com,DISCORDPROXY
+DOMAIN-SUFFIX,discordapp.net,DISCORDPROXY
+DOMAIN-SUFFIX,discordcdn.com,DISCORDPROXY
+DOMAIN-SUFFIX,discordstatus.com,DISCORDPROXY
+DOMAIN-SUFFIX,discord.media,DISCORDPROXY
+DOMAIN-SUFFIX,discordapp.io,DISCORDPROXY
+DOMAIN-SUFFIX,discord-activities.com,DISCORDPROXY
+DOMAIN-SUFFIX,discordactivities.com,DISCORDPROXY
+DOMAIN-SUFFIX,discord-attachments-uploads-prd.storage.googleapis.com,DISCORDPROXY
+DOMAIN-SUFFIX,disboard.org,DISCORDPROXY
+DOMAIN-SUFFIX,discordbee.com,DISCORDPROXY
+DOMAIN-SUFFIX,discordbotlist.com,DISCORDPROXY
+DOMAIN-SUFFIX,discordmerch.com,DISCORDPROXY
+DOMAIN-SUFFIX,discords.com,DISCORDPROXY
+DOMAIN-SUFFIX,discordservers.com,DISCORDPROXY
+DOMAIN-SUFFIX,top.gg,DISCORDPROXY
+DOMAIN-SUFFIX,mee6.xyz,DISCORDPROXY
+DOMAIN-SUFFIX,dyno.gg,DISCORDPROXY
+DOMAIN-SUFFIX,disforge.com,DISCORDPROXY
+
+#Google, YouTube, Gemini
+DOMAIN-SUFFIX,youtube.com,SPEEDPROXY
+DOMAIN-SUFFIX,youtubekids.com,SPEEDPROXY
+DOMAIN-SUFFIX,youtu.be,SPEEDPROXY
+DOMAIN-SUFFIX,yt.be,SPEEDPROXY
+DOMAIN-KEYWORD,ytimg.com,SPEEDPROXY
+DOMAIN-SUFFIX,googlevideo.com,SPEEDPROXY
+DOMAIN-SUFFIX,video.google.com,SPEEDPROXY
+DOMAIN,youtubei.googleapis.com,SPEEDPROXY
+DOMAIN-SUFFIX,youtube.googleapis.com,SPEEDPROXY
+DOMAIN,oauthaccountmanager.googleapis.com,SPEEDPROXY
+DOMAIN-SUFFIX,ggpht.com,SPEEDPROXY
+DOMAIN-KEYWORD,gemini,GEMINIPROXY
+DOMAIN-SUFFIX,googleapis.com,GEMINIPROXY
+DOMAIN-SUFFIX,apis.google.com,GEMINIPROXY
+DOMAIN-SUFFIX,googleusercontent.com,GEMINIPROXY
+DOMAIN-SUFFIX,gstatic.com,GEMINIPROXY
+
+#ChatGPT
+DOMAIN-SUFFIX,chatgpt.com,GPTPROXY
+DOMAIN-SUFFIX,ingest.us.sentry.io,GPTPROXY
+DOMAIN-SUFFIX,openai.com,GPTPROXY
+DOMAIN-SUFFIX,openaiapi-site.azureedge.net,GPTPROXY
+DOMAIN-SUFFIX,stripe.com,GPTPROXY
+DOMAIN-SUFFIX,intercom.io,GPTPROXY
+DOMAIN-SUFFIX,intercomcdn.com,GPTPROXY
+DOMAIN-SUFFIX,oaistatic.com,GPTPROXY
+DOMAIN-SUFFIX,oaiusercontent.com,GPTPROXY
+
+#Copilot
+DOMAIN-SUFFIX,microsoft.com,COPILOTPROXY
+DOMAIN-SUFFIX,office.com,COPILOTPROXY
+DOMAIN-SUFFIX,azureedge.net,COPILOTPROXY
+DOMAIN-SUFFIX,msauth.net,COPILOTPROXY
+DOMAIN-SUFFIX,microsoftonline.com,COPILOTPROXY
+
+#Telegram
+RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/telegramcidr.txt,TGPROXY
+IP-ASN,62041,TGPROXY,no-resolve
+IP-ASN,59930,TGPROXY,no-resolve
+IP-ASN,200693,TGPROXY,no-resolve
+IP-ASN,211157,TGPROXY,no-resolve
+IP-CIDR,91.108.56.0/22,TGPROXY,no-resolve
+IP-CIDR,91.108.4.0/22,TGPROXY,no-resolve
+IP-CIDR,149.154.160.0/22,TGPROXY,no-resolve
+IP-CIDR,149.154.164.0/22,TGPROXY,no-resolve
+IP-CIDR,149.154.168.0/22,TGPROXY,no-resolve
+IP-CIDR,149.154.172.0/22,TGPROXY,no-resolve
+IP-CIDR,185.76.151.0/24,TGPROXY,no-resolve
+IP-CIDR,95.161.64.0/20,TGPROXY,no-resolve
+DOMAIN-SUFFIX,telegram.org,TGPROXY
+DOMAIN-SUFFIX,telegram.me,TGPROXY
+DOMAIN-SUFFIX,t.me,TGPROXY
+DOMAIN-SUFFIX,telegra.ph,TGPROXY
+DOMAIN-SUFFIX,tdesktop.com,TGPROXY
+DOMAIN-SUFFIX,tg.dev,TGPROXY
+DOMAIN-SUFFIX,telegram-cdn.org,TGPROXY
+
+DOMAIN-SUFFIX,deepseek.com,BESTPROXY
+
+#Tiktok
+DOMAIN-SUFFIX,volces.com,REJECT
+DOMAIN-SUFFIX,pstatp.com,REJECT
+DOMAIN-SUFFIX,log.byteoversea.com,REJECT
+DOMAIN-SUFFIX,log.tiktokv.com,REJECT
+DOMAIN-SUFFIX,sgsnssdk.com,REJECT
+DOMAIN-SUFFIX,applog-snssdk.com,REJECT
+DOMAIN-SUFFIX,mon.byteoversea.com,REJECT
+DOMAIN-SUFFIX,mon-va.byteoversea.com,REJECT
+DOMAIN-SUFFIX,ads.tiktok.com,REJECT
+DOMAIN-SUFFIX,adbytev.com,REJECT
+IP-ASN,396986,TIKTOKPROXY,no-resolve
+IP-ASN,136907,TIKTOKPROXY,no-resolve
+IP-ASN,152194,TIKTOKPROXY,no-resolve
+IP-CIDR,157.240.0.0/16,TIKTOKPROXY,no-resolve
+IP-CIDR,155.102.0.0/16,TIKTOKPROXY,no-resolve
+IP-CIDR,34.120.0.0/16,TIKTOKPROXY,no-resolve
+IP-CIDR,34.96.0.0/16,TIKTOKPROXY,no-resolve
+IP-CIDR,34.128.0.0/16,TIKTOKPROXY,no-resolve
+DOMAIN-SUFFIX,tiktok.com,TIKTOKPROXY
+DOMAIN-SUFFIX,tiktokv.com,TIKTOKPROXY
+DOMAIN-SUFFIX,byteoversea.com,TIKTOKPROXY
+DOMAIN-SUFFIX,musical.ly,TIKTOKPROXY
+DOMAIN-SUFFIX,tiktokcdn.com,TIKTOKPROXY
+DOMAIN-SUFFIX,bytedance.com,TIKTOKPROXY
+DOMAIN-SUFFIX,bytedance.org,TIKTOKPROXY
+DOMAIN-SUFFIX,bytetos.com,TIKTOKPROXY
+DOMAIN-SUFFIX,capcut.com,TIKTOKPROXY
+DOMAIN-SUFFIX,capcut.net,TIKTOKPROXY
+DOMAIN-SUFFIX,amemv.com,TIKTOKPROXY
+DOMAIN-SUFFIX,snssdk.com,TIKTOKPROXY
+DOMAIN-SUFFIX,ixigua.com,TIKTOKPROXY
+DOMAIN-SUFFIX,douyin.com,TIKTOKPROXY
+
+#Instagram
+DOMAIN,graph.instagram.com,REJECT
+DOMAIN,graph.facebook.com,REJECT
+DOMAIN,connect.facebook.net,REJECT
+DOMAIN,pixel.facebook.com,REJECT
+DOMAIN,analytics.facebook.com,REJECT
+DOMAIN-SUFFIX,atdmt.com,REJECT
+IP-CIDR,31.13.64.0/18,INSTPROXY,no-resolve
+IP-CIDR,31.13.72.0/24,INSTPROXY,no-resolve
+IP-CIDR,157.240.0.0/16,INSTPROXY,no-resolve
+IP-CIDR,163.70.128.0/17,INSTPROXY,no-resolve
+IP-CIDR,173.252.64.0/18,INSTPROXY,no-resolve
+IP-CIDR,69.171.224.0/19,INSTPROXY,no-resolve
+IP-CIDR,179.60.192.0/22,INSTPROXY,no-resolve
+IP-CIDR,185.60.216.0/22,INSTPROXY,no-resolve
+DOMAIN-SUFFIX,instagram.com,INSTPROXY
+DOMAIN-SUFFIX,cdninstagram.com,INSTPROXY
+DOMAIN-SUFFIX,fbcdn.net,INSTPROXY
+DOMAIN-SUFFIX,fbcdn.com,INSTPROXY
+DOMAIN-SUFFIX,facebook.com,INSTPROXY
+DOMAIN-SUFFIX,fb.com,INSTPROXY
+DOMAIN-SUFFIX,meta.com,INSTPROXY
+DOMAIN-SUFFIX,giphy.com,INSTPROXY
+DOMAIN-SUFFIX,giphy-media.com,INSTPROXY
+DOMAIN-SUFFIX,tenor.com,INSTPROXY
+DOMAIN-SUFFIX,spark-ar.com,INSTPROXY
+DOMAIN-SUFFIX,spark.meta.com,INSTPROXY
+DOMAIN-SUFFIX,audio-ig.com,INSTPROXY
+DOMAIN-SUFFIX,audio-sg.instagram.com,INSTPROXY
+
+#Xiaomi
+IP-ASN,63855,BESTPROXY,no-resolve
+IP-ASN,63915,BESTPROXY,no-resolve
+IP-ASN,58836,BESTPROXY,no-resolve
+IP-ASN,58839,BESTPROXY,no-resolve
+#DOMAIN-KEYWORD,xiaomi,BESTPROXY
+DOMAIN-SUFFIX,xiaomi.com,BESTPROXY
+DOMAIN-SUFFIX,xiaomiwear.com,BESTPROXY
+DOMAIN-SUFFIX,mi.com,BESTPROXY
+DOMAIN-SUFFIX,mi-img.com,BESTPROXY
+DOMAIN-SUFFIX,miui.com,BESTPROXY
+
+#FaceTime📞
+DOMAIN-SUFFIX,facetime.apple.com,SPEEDPROXY
+DOMAIN-SUFFIX,stun.apple.com,SPEEDPROXY
+
+#Apple🍎
+RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/apple.txt,DIRECT
+RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/icloud.txt,DIRECT
+DOMAIN-SUFFIX,apple.com,DIRECT
+DOMAIN-SUFFIX,apple-pki.com,DIRECT
+DOMAIN-SUFFIX,icloud.com,DIRECT
+DOMAIN-SUFFIX,icloud-content.com,DIRECT
+DOMAIN-KEYWORD,apple-intelligence,DIRECT
+DOMAIN-SUFFIX,mzstatic.com,DIRECT
+DOMAIN-KEYWORD,itunes,DIRECT
+DOMAIN-KEYWORD,apple-dns,DIRECT
+DOMAIN-SUFFIX,apple.com,DIRECT
+DOMAIN-SUFFIX,aaplimg.com,DIRECT
+DOMAIN-KEYWORD,apis.apple,DIRECT
+DOMAIN-KEYWORD,mail.me.com,DIRECT
+DOMAIN-SUFFIX,safebrowsing.apple,DIRECT
+DOMAIN,gs-loc.ls-apple.com.akadns.net,DIRECT
+
+#Rostics🍔🍗🍟
+DOMAIN-SUFFIX,api.prod.digital.uni.rest,DIRECT
+
+#Ozon🛍️
+DOMAIN-SUFFIX,ozonusercontent.com,DIRECT
+
+#Avito
+DOMAIN-SUFFIX,avito.st,DIRECT
+
+#Shadow fight 2👊
+DOMAIN-SUFFIX,nekkimobile.ru,SPEEDPROXY
+
+#Civ7
+DOMAIN-SUFFIX,firaxislive.net,DIRECT
+DOMAIN-SUFFIX,2kcoretech.online,DIRECT
+
+#RU🇷🇺
+DOMAIN-SUFFIX,ru,DIRECT
+DOMAIN-SUFFIX,su,DIRECT
+DOMAIN-SUFFIX,xn--p1ai,DIRECT
+DOMAIN-SUFFIX,рф,DIRECT
+GEOIP,ru,DIRECT
+
+#Глобальный прокси🌍
+FINAL,BESTPROXY
+
+[Host]
+localhost = 127.0.0.1
+
+[URL Rewrite]
+#YOUTUBE🔴
+^https?:\/\/[\w-]+\.googlevideo\.com\/(?!(dclk_video_ads|videoplayback\?)).+&oad _ reject-200
+^https?:\/\/(www|s)\.youtube\.com\/api\/stats\/ads _ reject-200
+^https?:\/\/(www|s)\.youtube\.com\/(pagead|ptracking) _ reject-200
+^https?:\/\/s\.youtube\.com\/api\/stats\/qoe\?adcontext _ reject-200
+(^https?:\/\/[\w-]+\.googlevideo\.com\/(?!dclk_video_ads).+?)&ctier=L(&.+?),ctier,(.+) $1$2$3 302
+
+#YANDEX каки✴️
+#UTM
+^(https?:\/\/[^?]+)\?(.+)&utm_[^&]+(.*)$ $1?$2$3 302
+^(https?:\/\/[^?]+)\?utm_[^&]+&(.+)$ $1?$2 302
+^(https?:\/\/[^?]+)\?utm_[^&]+$ $1 302
+#Yandex (yclid)
+^(https?:\/\/[^?]+)\?(.+)&yclid=[^&]+(.*)$ $1?$2$3 302
+^(https?:\/\/[^?]+)\?yclid=[^&]+&(.+)$ $1?$2 302
+^(https?:\/\/[^?]+)\?yclid=[^&]+$ $1 302
+#Facebook (fbclid)
+^(https?:\/\/[^?]+)\?(.+)&fbclid=[^&]+(.*)$ $1?$2$3 302
+^(https?:\/\/[^?]+)\?fbclid=[^&]+&(.+)$ $1?$2 302
+^(https?:\/\/[^?]+)\?fbclid=[^&]+$ $1 302
+#Google Ads (gclid)
+^(https?:\/\/[^?]+)\?(.+)&gclid=[^&]+(.*)$ $1?$2$3 302
+^(https?:\/\/[^?]+)\?gclid=[^&]+&(.+)$ $1?$2 302
+^(https?:\/\/[^?]+)\?gclid=[^&]+$ $1 302
+#Регионы
+^http://(www\.)?yandex\.ru https://yandex.com 302
+^https://(www\.)?yandex\.ru https://yandex.com 302
+^http://(www\.)?yandex\.kz(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.az(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.by(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.co\.il(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.com\.am(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.com\.ge(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.com\.tr(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.ee(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.fr(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.kz(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.lt(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.lv(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.md(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.ru(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.tj(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.tm(.*)$ http://yandex.com$2 302
+^http://(www\.)?yandex\.uz(.*)$ http://yandex.com$2 302
+^http://(www\.)?ya\.ru(.*)$ http://yandex.com$2 302
+^https://(www\.)?yandex\.kz(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.az(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.by(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.co\.il(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.com\.am(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.com\.ge(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.com\.tr(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.ee(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.fr(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.kz(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.lt(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.lv(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.md(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.ru(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.tj(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.tm(.*)$ https://yandex.com$2 302
+^https://(www\.)?yandex\.uz(.*)$ https://yandex.com$2 302
+^https://(www\.)?ya\.ru(.*)$ https://yandex.com$2 302
+
+[Map Local]
+#YOUTUBE🔴
+^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.+&oad data-type=text data="" status-code=200
+
+[Script]
+#YOUTUBE🔴
+YT_Premium = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/(youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch))(\?(.*))?$,requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/YT_Script.js,argument={"lyricLang":"off","captionLang":"off","blockUpload":true,"blockImmersive":false,"blockShorts":false,"debug":false}
+
+[MITM]
+hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com, *.yandex.*, *.ya.ru, *.yastatic.net
+enable = true
+
+# ╱|、           ∧＿∧
+#(˚ˎ 。7        (｡･ω･｡)つ━☆・*。
+# |、˜〵        ⊂　  /　　 ・゜+.
+# じしˍ,)ノ      しーＪ　　　°。+
