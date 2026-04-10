@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=With YT Premium and AdBlock
 
-#Последние изменения 07.04.2026 23:00
+#Последние изменения 10.04.2026 15:00
 #Фильтры обновлены 07.04.2026 23:00
 
 #==================================================
@@ -489,14 +489,8 @@ DOMAIN-KEYWORD,mail.me.com,DIRECT
 DOMAIN-SUFFIX,safebrowsing.apple,DIRECT
 DOMAIN,gs-loc.ls-apple.com.akadns.net,DIRECT
 
-#Rostics🍔🍗🍟
-DOMAIN-SUFFIX,api.prod.digital.uni.rest,DIRECT
-
 #Ozon🛍️
 DOMAIN-SUFFIX,ozonusercontent.com,DIRECT
-
-#Avito
-DOMAIN-SUFFIX,avito.st,DIRECT
 
 #Shadow fight 2👊
 DOMAIN-SUFFIX,nekkimobile.ru,SPEEDPROXY
