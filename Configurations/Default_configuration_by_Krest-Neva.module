@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=With YT Premium and AdBlock
 
-#Последние изменения 10.04.2026 15:00
+#Последние изменения 10.04.2026 21:00
 #Фильтры обновлены 07.04.2026 23:00
 
 #==================================================
@@ -161,6 +161,12 @@ GEOIP,private,DIRECT
 #Переключение YouTube с UDP/QUIC на TCP/HTTPS
 AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
 AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
+
+#Реклама в Spotify🎶
+DOMAIN-KEYWORD,-ad-logic,REJECT
+DOMAIN,crashdump.spotify.com,REJECT
+DOMAIN,log.spotify.com,REJECT
+URL-REGEX,^https?:\/\/spclient\.wg\.spotify\.com\/(ad-logic|ads)\/,REJECT
 
 #Реклама, трекеры, аналитика, фишинг и остальная кака💩
 #RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_STD.list,REJECT-DICT
@@ -512,6 +518,10 @@ FINAL,BESTPROXY
 [Host]
 localhost = 127.0.0.1
 
+[Header Rewrite]
+#Spotify🎶
+^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/user-customization-service\/v1\/customize header-del if-none-match
+
 [URL Rewrite]
 #YOUTUBE🔴
 ^https?:\/\/[\w-]+\.googlevideo\.com\/(?!(dclk_video_ads|videoplayback\?)).+&oad _ reject-200
@@ -583,13 +593,18 @@ localhost = 127.0.0.1
 
 [Script]
 #YOUTUBE🔴
-YT_Premium = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/(youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch))(\?(.*))?$,requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/YT_Script.js,argument={"lyricLang":"off","captionLang":"off","blockUpload":true,"blockImmersive":false,"blockShorts":false,"debug":false}
+YT-Premium = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/(youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch))(\?(.*))?$,requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/YT_Script.js,argument={"lyricLang":"off","captionLang":"off","blockUpload":true,"blockImmersive":false,"blockShorts":false,"debug":false}
 
-#SounCloud Go+🎵
-SoundCloudGo+ = type=http-response,pattern=https://api-mobile.soundcloud.com/configuration/ios,requires-body=1,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/SoundCloud_Go_Plus.js
+#SounCloud🎵
+SoundCloudGoPlus = type=http-response,pattern=https://api-mobile.soundcloud.com/configuration/ios,requires-body=1,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/SoundCloud_Go_Plus.js
+
+#Spotify🎶
+Spotify-request-patch = type=http-request, pattern=^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/user-customization-service\/v1\/customize$,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_request_patch.js,timeout=60
+Spotify-content-patch = type=http-request,pattern=^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/(artistview\/v1\/artist|album-entity-view\/v2\/album)\/,requires-body=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_content_patch.js,timeout=10
+Spotify-premium-patch = type=http-response,pattern=^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/(bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$,requires-body=1,binary-body-mode=1,max-size=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_premium_patch.js,timeout=10
 
 [MITM]
-hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com, *.yandex.*, *.ya.ru, *.yastatic.net, api-mobile.soundcloud.com
+hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com,*.yandex.*,*.ya.ru,*.yastatic.net,api-mobile.soundcloud.com,spclient.wg.spotify.com,*-spclient.spotify.com,*.spotify.com
 enable = true
 
 # ╱|、           ∧＿∧
