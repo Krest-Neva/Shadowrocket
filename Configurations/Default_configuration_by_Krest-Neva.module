@@ -117,42 +117,76 @@
 #   #-неакт❌
 
 [General]
-#Поддержка ipv6
+# Поддержка IPv6
 ipv6 = true
-#Приоритет ipv6
+# Предпочтение IPv6 перед IPv4
 prefer-ipv6 = false
-#Не проксировать
+# Адреса, исключённые из проксирования
 skip-proxy = apple.com,icloud.com,*.cdn-apple.com,*.mzstatic.com,itunes.apple.com,captive.apple.com,gsp1.apple.com,*.local,localhost,apple-pki.com,digicert.com,entrust.net
-#Всегда реальный ip
+# Домены, для которых всегда используется реальный IP
 always-real-ip = *.apple.com,*.icloud.com,*.itunes.com,*.mzstatic.com,*.apple-pki.com,*.push.apple.com
-#Исключённые маршруты
+# Исключённые из туннеля маршруты
 tun-excluded-routes = 10.0.0.0/8,17.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.0.0.0/24,192.0.2.0/24,192.88.99.0/24,192.168.0.0/16,198.51.100.0/24,203.0.113.0/24,224.0.0.0/4,255.255.255.255/32,fc00::/7,fe80::/10
-#Использование доменных DNS
+# DNS через HTTPS
 dns-over-https = true
-#Системный DNS
+# Использовать системный DNS для DIRECT-соединений
 dns-direct-system = false
-#Резервный системный DNS
+# Использовать системный DNS как резервный
 dns-fallback-system = false
-#Проксирование DNS если прямое соединение не работает
+# Проксировать DNS, если прямое соединение не работает
 dns-direct-fallback-proxy = true
-#DNS сервера
+# Основные DNS-серверы
 dns-server = https://dns.comss.one/dns-query#proxy,https://dns.comss.one/dns-query,https://94.140.14.14/dns-query#proxy,https://doh.dns.sb/dns-query#proxy,https://9.9.9.9/dns-query#direct
-#Резервные DNS сервера
+# Резервные DNS-серверы
 fallback-dns-server = https://1.1.1.1/dns-query#proxy,https://1.0.0.1/dns-query#proxy,https://8.8.8.8/dns-query#direct,https://8.8.4.4/dns-query#direct,https://dns.alidns.com/dns-query,https://doh.libredns.gr/dns-query
-#Перехват DNS
+# Перехват DNS-запросов на указанный порт
 hijack-dns = *:53
-#DNS-запросы для частных ip-адресов
+# Отвечать на DNS-запросы к частным IP
 private-ip-answer = true
-#Игнорирование системных настроек прокси
+# Игнорировать системные настройки прокси
 bypass-system = true
-#Принудительное отклонение перезаписи URL
+# Всегда отклонять перезапись URL
 always-reject-url-rewrite = false
-#Автоматический ответ на ICMP-запросы
+# Автоматический ответ на ICMP-запросы
 icmp-auto-reply = false
-#Действие при отсутствии поддержки UDP
+# Действие при отсутствии поддержки UDP
 udp-policy-not-supported-behaviour = REJECT
-#Не использовать localhost для прокси серверов
+# Не использовать localhost для прокси-серверов
 use-local-host-item-for-proxy = false
+# Уровень логирования
+loglevel = debug
+# Показывать страницу ошибки при блокировке
+show-error-page-for-reject = true
+# Переключение на сотовую сеть при плохом Wi-Fi
+allow-wifi-access = true
+# Гибридный режим для всех соединений
+all-hybrid = true
+# Таймаут тестирования соединения (сек)
+test-timeout = 5
+# URL для проверки доступа в интернет
+internet-test-url = http://www.google.com
+# URL для проверки работы прокси
+proxy-test-url = http://www.gstatic.com/generate_204
+# Ссылка на базу GeoIP (страны)
+geoip-maxmind-url = https://github.com/Loyalsoldier/geoip/raw/release/Country.mmdb
+# Исключать простые имена хостов из прокси
+exclude-simple-hostnames = true
+# Включить веб-панель управления
+http-api-web-dashboard = false
+# Использовать политику по умолчанию, если Wi-Fi не основной
+use-default-policy-if-wifi-not-primary = false
+# Скрыть значок VPN в статус-баре
+hide-vpn-icon = true
+# Ассистент Wi-Fi
+wifi-assist = false
+# Читать локальный файл hosts
+read-etc-hosts = false
+
+[Replica]
+# Скрывать запросы репортера сбоев
+hide-crash-reporter-request = false
+# Включить фильтр по ключевым словам
+keyword-filter-type = true
 
 [Rule]
 #Локальные сети
@@ -608,8 +642,8 @@ Spotify-content-patch = type=http-request,pattern=^https?:\/\/(spclient\.wg\.spo
 Spotify-premium-patch = type=http-response,pattern=^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/(bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$,requires-body=1,binary-body-mode=1,max-size=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_premium_patch.js,timeout=10
 
 [MITM]
-hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com,*.yandex.*,*.ya.ru,*.yastatic.net,api-mobile.soundcloud.com,spclient.wg.spotify.com,*-spclient.spotify.com,*.spotify.com
 enable = true
+hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com,*.yandex.*,*.ya.ru,*.yastatic.net,api-mobile.soundcloud.com,spclient.wg.spotify.com,*-spclient.spotify.com,*.spotify.com
 
 # ╱|、           ∧＿∧
 #(˚ˎ 。7        (｡･ω･｡)つ━☆・*。
