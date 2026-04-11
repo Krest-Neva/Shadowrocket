@@ -163,10 +163,8 @@ AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
 AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 
 #Реклама в Spotify🎶
-DOMAIN-KEYWORD,-ad-logic,REJECT
-DOMAIN,crashdump.spotify.com,REJECT
-DOMAIN,log.spotify.com,REJECT
-URL-REGEX,^https?:\/\/spclient\.wg\.spotify\.com\/(ad-logic|ads)\/,REJECT
+AND,((DOMAIN-SUFFIX,spotify.com), (PROTOCOL,UDP)),REJECT
+URL-REGEX,^https?:\/\/(.*-ad-logic.*|crashdump\.spotify\.com|log\.spotify\.com|spclient\.wg\.spotify\.com\/(ad-logic|ads))\/,REJECT
 
 #Реклама, трекеры, аналитика, фишинг и остальная кака💩
 #RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_STD.list,REJECT-DICT
