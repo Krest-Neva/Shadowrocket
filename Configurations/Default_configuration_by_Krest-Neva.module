@@ -461,11 +461,29 @@ IP-CIDR,64.23.132.171/32,GPTPROXY,no-resolve
 IP-ASN,20473,GPTPROXY,no-resolve
 
 #Copilot
-DOMAIN-SUFFIX,microsoft.com,COPILOTPROXY
-DOMAIN-SUFFIX,office.com,COPILOTPROXY
+DOMAIN-SUFFIX,api.microsoftapp.net,COPILOTPROXY
+DOMAIN,api.msn.com,COPILOTPROXY
+DOMAIN,assets.msn.com,COPILOTPROXY
 DOMAIN-SUFFIX,azureedge.net,COPILOTPROXY
-DOMAIN-SUFFIX,msauth.net,COPILOTPROXY
+DOMAIN-SUFFIX,bing-shopping.microsoft-falcon.io,COPILOTPROXY
+DOMAIN-SUFFIX,challenges.cloudflare.com,COPILOTPROXY
+DOMAIN,copilot.microsoft.com,COPILOTPROXY
+DOMAIN-SUFFIX,edgeservices.bing.com,COPILOTPROXY
+DOMAIN,gateway.bingviz.microsoft.net,COPILOTPROXY
+DOMAIN,gateway.bingviz.microsoftapp.net,COPILOTPROXY
+DOMAIN,in.appcenter.ms,COPILOTPROXY
+DOMAIN,location.microsoft.com,COPILOTPROXY
+DOMAIN-SUFFIX,microsoft.com,COPILOTPROXY
 DOMAIN-SUFFIX,microsoftonline.com,COPILOTPROXY
+DOMAIN-SUFFIX,msauth.net,COPILOTPROXY
+DOMAIN,odc.officeapps.live.com,COPILOTPROXY
+DOMAIN-SUFFIX,office.com,COPILOTPROXY
+DOMAIN,r.bing.com,COPILOTPROXY
+DOMAIN,self.events.data.microsoft.com,COPILOTPROXY
+DOMAIN,services.bingapis.com,COPILOTPROXY
+DOMAIN,sydney.bing.com,COPILOTPROXY
+DOMAIN,www.bing.com,COPILOTPROXY
+IP-ASN,14061,COPILOTPROXY,no-resolve
 
 DOMAIN-SUFFIX,deepseek.com,BESTPROXY
 
