@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=With YT Premium and AdBlock
 
-#Последние изменения 10.04.2026 21:00
+#Последние изменения 12.04.2026 03:00
 #Фильтры обновлены 07.04.2026 23:00
 
 #==================================================
@@ -330,44 +330,80 @@ DOMAIN-SUFFIX,max.ru,REJECT-DROP,pre-matching
 #НИКАКОГО МАКСА!⚠️
 
 #GitHub
+DOMAIN-SUFFIX,atom.io,SPEEDPROXY
+DOMAIN-SUFFIX,dependabot.com,SPEEDPROXY
+DOMAIN-SUFFIX,ghcr.io,SPEEDPROXY
+DOMAIN-SUFFIX,git.io,SPEEDPROXY
+DOMAIN-SUFFIX,github-atom-io-herokuapp-com.freetls.fastly.net,SPEEDPROXY
+DOMAIN-SUFFIX,github-avatars.oss-cn-hongkong.aliyuncs.com,SPEEDPROXY
+DOMAIN-SUFFIX,github-cloud.s3.amazonaws.com,SPEEDPROXY
+DOMAIN-SUFFIX,github.blog,SPEEDPROXY
 DOMAIN-SUFFIX,github.com,SPEEDPROXY
-DOMAIN-SUFFIX,github.io,SPEEDPROXY
+DOMAIN-SUFFIX,github.community,SPEEDPROXY
 DOMAIN-SUFFIX,github.dev,SPEEDPROXY
-DOMAIN-SUFFIX,githubusercontent.com,SPEEDPROXY
+DOMAIN-SUFFIX,github.io,SPEEDPROXY
+DOMAIN-SUFFIX,githubapp.com,SPEEDPROXY
 DOMAIN-SUFFIX,githubassets.com,SPEEDPROXY
+DOMAIN-SUFFIX,githubcopilot.com,SPEEDPROXY
+DOMAIN-SUFFIX,githubhackathon.com,SPEEDPROXY
+DOMAIN-SUFFIX,githubnext.com,SPEEDPROXY
+DOMAIN-SUFFIX,githubpreview.dev,SPEEDPROXY
+DOMAIN-SUFFIX,githubstatus.com,SPEEDPROXY
+DOMAIN-SUFFIX,githubuniverse.com,SPEEDPROXY
+DOMAIN-SUFFIX,githubusercontent.com,SPEEDPROXY
+DOMAIN-SUFFIX,myoctocat.com,SPEEDPROXY
+DOMAIN-SUFFIX,npm.community,SPEEDPROXY
+DOMAIN-SUFFIX,npmjs.com,SPEEDPROXY
+DOMAIN-SUFFIX,npmjs.org,SPEEDPROXY
+DOMAIN-SUFFIX,opensource.guide,SPEEDPROXY
+DOMAIN-SUFFIX,rawgit.com,SPEEDPROXY
+DOMAIN-SUFFIX,rawgithub.com,SPEEDPROXY
+DOMAIN-SUFFIX,repo.new,SPEEDPROXY
+DOMAIN-SUFFIX,thegithubshop.com,SPEEDPROXY
 
 #VPN
 DOMAIN-SUFFIX,proxyliberty.ru,BESTPROXY
 
 #Discord
+DOMAIN-SUFFIX,airhorn.solutions,DISCORDPROXY
+DOMAIN-SUFFIX,airhornbot.com,DISCORDPROXY
+DOMAIN-SUFFIX,bigbeans.solutions,DISCORDPROXY
 DOMAIN-SUFFIX,comdiscord.com,DISCORDPROXY
 DOMAIN-SUFFIX,dis.gd,DISCORDPROXY
+DOMAIN-SUFFIX,disboard.org,DISCORDPROXY
+DOMAIN-SUFFIX,discord-activities.com,DISCORDPROXY
+DOMAIN-SUFFIX,discord-attachments-uploads-prd.storage.googleapis.com,DISCORDPROXY
 DOMAIN-SUFFIX,discord.co,DISCORDPROXY
 DOMAIN-SUFFIX,discord.com,DISCORDPROXY
+DOMAIN-SUFFIX,discord.design,DISCORDPROXY
+DOMAIN-SUFFIX,discord.dev,DISCORDPROXY
 DOMAIN-SUFFIX,discord.gg,DISCORDPROXY
 DOMAIN-SUFFIX,discord.gift,DISCORDPROXY
 DOMAIN-SUFFIX,discord.gifts,DISCORDPROXY
 DOMAIN-SUFFIX,discord.media,DISCORDPROXY
 DOMAIN-SUFFIX,discord.new,DISCORDPROXY
-DOMAIN-SUFFIX,discordapp.com,DISCORDPROXY
-DOMAIN-SUFFIX,discordapp.net,DISCORDPROXY
-DOMAIN-SUFFIX,discordcdn.com,DISCORDPROXY
-DOMAIN-SUFFIX,discordstatus.com,DISCORDPROXY
-DOMAIN-SUFFIX,discord.media,DISCORDPROXY
-DOMAIN-SUFFIX,discordapp.io,DISCORDPROXY
-DOMAIN-SUFFIX,discord-activities.com,DISCORDPROXY
+DOMAIN-SUFFIX,discord.store,DISCORDPROXY
+DOMAIN-SUFFIX,discord.tools,DISCORDPROXY
 DOMAIN-SUFFIX,discordactivities.com,DISCORDPROXY
-DOMAIN-SUFFIX,discord-attachments-uploads-prd.storage.googleapis.com,DISCORDPROXY
-DOMAIN-SUFFIX,disboard.org,DISCORDPROXY
+DOMAIN-SUFFIX,discordapp.com,DISCORDPROXY
+DOMAIN-SUFFIX,discordapp.io,DISCORDPROXY
+DOMAIN-SUFFIX,discordapp.net,DISCORDPROXY
+DOMAIN-SUFFIX,discordapp.page.link,DISCORDPROXY
 DOMAIN-SUFFIX,discordbee.com,DISCORDPROXY
 DOMAIN-SUFFIX,discordbotlist.com,DISCORDPROXY
+DOMAIN-SUFFIX,discordcdn.com,DISCORDPROXY
 DOMAIN-SUFFIX,discordmerch.com,DISCORDPROXY
+DOMAIN-SUFFIX,discordpartygames.com,DISCORDPROXY
 DOMAIN-SUFFIX,discords.com,DISCORDPROXY
+DOMAIN-SUFFIX,discordsays.com,DISCORDPROXY
 DOMAIN-SUFFIX,discordservers.com,DISCORDPROXY
-DOMAIN-SUFFIX,top.gg,DISCORDPROXY
-DOMAIN-SUFFIX,mee6.xyz,DISCORDPROXY
-DOMAIN-SUFFIX,dyno.gg,DISCORDPROXY
+DOMAIN-SUFFIX,discordstatus.com,DISCORDPROXY
 DOMAIN-SUFFIX,disforge.com,DISCORDPROXY
+DOMAIN-SUFFIX,dyno.gg,DISCORDPROXY
+DOMAIN-SUFFIX,hammerandchisel.ssl.zendesk.com,DISCORDPROXY
+DOMAIN-SUFFIX,mee6.xyz,DISCORDPROXY
+DOMAIN-SUFFIX,top.gg,DISCORDPROXY
+DOMAIN-SUFFIX,watchanimeattheoffice.com,DISCORDPROXY
 
 #Google, YouTube, Gemini
 DOMAIN-SUFFIX,youtube.com,SPEEDPROXY
@@ -388,15 +424,41 @@ DOMAIN-SUFFIX,googleusercontent.com,GEMINIPROXY
 DOMAIN-SUFFIX,gstatic.com,GEMINIPROXY
 
 #ChatGPT
+DOMAIN-SUFFIX,ai.com,GPTPROXY
+DOMAIN-SUFFIX,algolia.net,GPTPROXY
+DOMAIN-SUFFIX,api.statsig.com,GPTPROXY
+DOMAIN-SUFFIX,auth0.com,GPTPROXY
+DOMAIN,browser-intake-datadoghq.com,GPTPROXY
+DOMAIN,chat.openai.com.cdn.cloudflare.net,GPTPROXY
 DOMAIN-SUFFIX,chatgpt.com,GPTPROXY
+DOMAIN-SUFFIX,chatgpt.livekit.cloud,GPTPROXY
+DOMAIN-SUFFIX,client-api.arkoselabs.com,GPTPROXY
+DOMAIN-SUFFIX,events.statsigapi.net,GPTPROXY
+DOMAIN-SUFFIX,featuregates.org,GPTPROXY
+DOMAIN-SUFFIX,host.livekit.cloud,GPTPROXY
+DOMAIN-SUFFIX,identrust.com,GPTPROXY
 DOMAIN-SUFFIX,ingest.us.sentry.io,GPTPROXY
-DOMAIN-SUFFIX,openai.com,GPTPROXY
-DOMAIN-SUFFIX,openaiapi-site.azureedge.net,GPTPROXY
-DOMAIN-SUFFIX,stripe.com,GPTPROXY
 DOMAIN-SUFFIX,intercom.io,GPTPROXY
 DOMAIN-SUFFIX,intercomcdn.com,GPTPROXY
+DOMAIN-SUFFIX,launchdarkly.com,GPTPROXY
 DOMAIN-SUFFIX,oaistatic.com,GPTPROXY
 DOMAIN-SUFFIX,oaiusercontent.com,GPTPROXY
+DOMAIN-SUFFIX,observeit.net,GPTPROXY
+DOMAIN,openai-api.arkoselabs.com,GPTPROXY
+DOMAIN-SUFFIX,openai.com,GPTPROXY
+DOMAIN,openaicom-api-bdcpf8c6d2e9atf6.z01.azurefd.net,GPTPROXY
+DOMAIN-SUFFIX,openaiapi-site.azureedge.net,GPTPROXY
+DOMAIN-SUFFIX,openaicom.imgix.net,GPTPROXY
+DOMAIN,openaicomproductionae4b.blob.core.windows.net,GPTPROXY
+DOMAIN,production-openaicom-storage.azureedge.net,GPTPROXY
+DOMAIN-SUFFIX,segment.io,GPTPROXY
+DOMAIN-SUFFIX,sentry.io,GPTPROXY
+DOMAIN,static.cloudflareinsights.com,GPTPROXY
+DOMAIN-SUFFIX,stripe.com,GPTPROXY
+DOMAIN-SUFFIX,turn.livekit.cloud,GPTPROXY
+IP-CIDR,24.199.123.28/32,GPTPROXY,no-resolve
+IP-CIDR,64.23.132.171/32,GPTPROXY,no-resolve
+IP-ASN,20473,GPTPROXY,no-resolve
 
 #Copilot
 DOMAIN-SUFFIX,microsoft.com,COPILOTPROXY
@@ -404,6 +466,8 @@ DOMAIN-SUFFIX,office.com,COPILOTPROXY
 DOMAIN-SUFFIX,azureedge.net,COPILOTPROXY
 DOMAIN-SUFFIX,msauth.net,COPILOTPROXY
 DOMAIN-SUFFIX,microsoftonline.com,COPILOTPROXY
+
+DOMAIN-SUFFIX,deepseek.com,BESTPROXY
 
 #Telegram
 RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/telegramcidr.txt,TGPROXY
@@ -426,8 +490,6 @@ DOMAIN-SUFFIX,telegra.ph,TGPROXY
 DOMAIN-SUFFIX,tdesktop.com,TGPROXY
 DOMAIN-SUFFIX,tg.dev,TGPROXY
 DOMAIN-SUFFIX,telegram-cdn.org,TGPROXY
-
-DOMAIN-SUFFIX,deepseek.com,BESTPROXY
 
 #Tiktok
 DOMAIN-SUFFIX,volces.com,REJECT
@@ -479,6 +541,7 @@ IP-CIDR,69.171.224.0/19,INSTPROXY,no-resolve
 IP-CIDR,179.60.192.0/22,INSTPROXY,no-resolve
 IP-CIDR,185.60.216.0/22,INSTPROXY,no-resolve
 DOMAIN-SUFFIX,instagram.com,INSTPROXY
+DOMAIN-SUFFIX,instagr.am,INSTPRIXY
 DOMAIN-SUFFIX,cdninstagram.com,INSTPROXY
 DOMAIN-SUFFIX,fbcdn.net,INSTPROXY
 DOMAIN-SUFFIX,fbcdn.com,INSTPROXY
