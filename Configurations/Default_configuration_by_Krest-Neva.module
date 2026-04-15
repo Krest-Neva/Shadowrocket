@@ -66,6 +66,7 @@
 # 7️⃣ «GEMINIPROXY» (load-balance) — Тест: https://www.google.com/generate_204
 # 8️⃣ «SPEEDPROXY» (url-test) — Тест: https://www.youtube.com/generate_204
 # 9️⃣ «BESTPROXY» (load-balance) — Тест: http://cp.cloudflare.com/generate_204
+# 🔟 «SPOTIFYPROXY» (url-test) – Тест: https://open.spotify.com
 
 # ОПИСАНИЕ СТРАТЕГИЙ:
 # — load-balance: Распределяет трафик между несколькими быстрыми серверами одновременно (наиболее быстро).
@@ -1168,7 +1169,7 @@ localhost = 127.0.0.1
 #YOUTUBE🔴
 YT-Premium = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/(youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch))(\?(.*))?$,requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/YT_Script.js,argument={"lyricLang":"off","captionLang":"off","blockUpload":true,"blockImmersive":false,"blockShorts":false,"debug":false}
 
-#SounCloud🎵
+#SoundCloud🎵
 SoundCloudGoPlus = type=http-response,pattern=https://api-mobile.soundcloud.com/configuration/ios,requires-body=1,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/SoundCloud_Go_Plus.js
 
 #Spotify🎶
