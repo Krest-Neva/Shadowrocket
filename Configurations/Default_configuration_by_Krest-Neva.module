@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=Pro-grade networking for iOS/macOS
 
-#Последние изменения 17.04.2026 03:00
+#Последние изменения 17.04.2026 08:00
 #Фильтры обновлены 07.04.2026 23:00
 
 #==================================================
@@ -123,11 +123,11 @@ ipv6 = true
 # Предпочтение IPv6 перед IPv4
 prefer-ipv6 = false
 # Адреса, исключённые из проксирования
-skip-proxy = apple.com,icloud.com,*.cdn-apple.com,*.mzstatic.com,itunes.apple.com,captive.apple.com,gsp1.apple.com,*.local,localhost,apple-pki.com,digicert.com,entrust.net
+skip-proxy = apple.com,icloud.com,*.cdn-apple.com,*.mzstatic.com,itunes.apple.com,captive.apple.com,gsp1.apple.com,*.local,localhost,apple-pki.com,digicert.com,entrust.net,*.gosuslugi.ru,*.nalog.gov.ru,*.nalog.ru,*.mos.ru,*.fssprus.ru,*.pfr.gov.ru,*.sberbank.ru,*.sber.ru,*.tbank.ru,*.tinkoff.ru,*.alfabank.ru,*.vtb.ru,*.gazprombank.ru,*.raiffeisen.ru,*.rshb.ru,*.pochtabank.ru,*.open.ru,*.magnit.ru,*.mgnt.ru,*.moy-magnit.ru,*.magnit.one,*.tander.ru,*.wildberries.ru,*.wb.ru,*.ozon.ru,*.lenta.com,*.samokat.ru,*.kuper.ru,*.sbermarket.ru,*.delivery-club.ru,*.market-delivery.ru,*.vkusvill.ru,*.perekrestok.ru,*.5ka.ru,*.lamoda.ru,*.avito.ru,*.mvideo.ru,*.eldorado.ru,*.dns-shop.ru,*.mts.ru,*.megafon.ru,*.beeline.ru,*.tele2.ru,*.rt.ru,*.2gis.ru,*.rzd.ru,*.aeroflot.ru,*.s7.ru
 # Домены, для которых всегда используется реальный IP
-always-real-ip = *.apple.com,*.icloud.com,*.itunes.com,*.mzstatic.com,*.apple-pki.com,*.push.apple.com
-# Исключённые из туннеля маршруты
-tun-excluded-routes = 10.0.0.0/8,17.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.0.0.0/24,192.0.2.0/24,192.88.99.0/24,192.168.0.0/16,198.51.100.0/24,203.0.113.0/24,224.0.0.0/4,255.255.255.255/32,fc00::/7,fe80::/10
+always-real-ip = *.apple.com,*.icloud.com,*.itunes.com,*.mzstatic.com,*.apple-pki.com,*.push.apple.com,*.gosuslugi.ru,*.nalog.gov.ru,*.nalog.ru,*.mos.ru,*.fssprus.ru,*.pfr.gov.ru,*.sberbank.ru,*.sber.ru,*.tbank.ru,*.tinkoff.ru,*.alfabank.ru,*.vtb.ru,*.gazprombank.ru,*.raiffeisen.ru,*.rshb.ru,*.pochtabank.ru,*.open.ru,*.magnit.ru,*.mgnt.ru,*.moy-magnit.ru,*.magnit.one,*.tander.ru,*.wildberries.ru,*.wb.ru,*.ozon.ru,*.lenta.com,*.samokat.ru,*.kuper.ru,*.sbermarket.ru,*.delivery-club.ru,*.market-delivery.ru,*.vkusvill.ru,*.perekrestok.ru,*.5ka.ru,*.lamoda.ru,*.avito.ru,*.mvideo.ru,*.eldorado.ru,*.dns-shop.ru,*.mts.ru,*.megafon.ru,*.beeline.ru,*.tele2.ru,*.rt.ru,*.2gis.ru,*.rzd.ru,*.aeroflot.ru,*.s7.ru,*.yandex.ru,*.ya.ru,*.yandex.net,*.vk.com,*.vk.me,*.ok.ru,*.mail.ru,*.dzen.ru,*.rutube.ru,*.kaspersky.ru
+# Исключённые из туннеля IP-маршруты
+tun-excluded-routes = 10.0.0.0/8,17.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.0.0.0/24,192.0.2.0/24,192.88.99.0/24,192.168.0.0/16,198.51.100.0/24,203.0.113.0/24,224.0.0.0/4,255.255.255.255/32,fc00::/7,fe80::/10,178.248.232.0/21,82.148.11.0/24,185.15.56.0/22,91.223.116.0/22
 # DNS через HTTPS
 dns-over-https = true
 # Использовать системный DNS для DIRECT-соединений
@@ -155,7 +155,7 @@ udp-policy-not-supported-behaviour = REJECT
 # Не использовать localhost для прокси-серверов
 use-local-host-item-for-proxy = false
 # Уровень логирования
-loglevel = debug
+loglevel = error
 # Показывать страницу ошибки при блокировке
 show-error-page-for-reject = true
 # Переключение на сотовую сеть при плохом Wi-Fi
@@ -253,7 +253,7 @@ DOMAIN-KEYWORD,crash-report,REJECT
 DOMAIN-SUFFIX,firebaselogging-pa.googleapis.com,REJECT
 DOMAIN-SUFFIX,firebasestatistics.googleapis.com,REJECT
 
-#Магнит (требуется отключение VPN)
+#Магнит (требуется отключение VPN, присутсвует в General)
 DOMAIN-SUFFIX,mgnt.ru,REJECT
 DOMAIN-SUFFIX,tander.ru,REJECT
 DOMAIN-KEYWORD,magnit,REJECT
