@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
-#!desc=With YT Premium and AdBlock
+#!desc=Pro-grade networking for iOS/macOS
 
-#Последние изменения 15.04.2026 23:00
+#Последние изменения 17.04.2026 03:00
 #Фильтры обновлены 07.04.2026 23:00
 
 #==================================================
@@ -131,7 +131,7 @@ tun-excluded-routes = 10.0.0.0/8,17.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.
 # DNS через HTTPS
 dns-over-https = true
 # Использовать системный DNS для DIRECT-соединений
-dns-direct-system = false
+dns-direct-system = true
 # Использовать системный DNS как резервный
 dns-fallback-system = false
 # Проксировать DNS, если прямое соединение не работает
@@ -246,8 +246,24 @@ DOMAIN-KEYWORD,doubleclick,REJECT-DICT,pre-matching
 DOMAIN-KEYWORD,adjust,REJECT-DICT,pre-matching
 DOMAIN-KEYWORD,appsflyer,REJECT-DICT,pre-matching
 DOMAIN-KEYWORD,pixel,REJECT-TINYGIF,pre-matching
+DOMAIN-KEYWORD,crashlytics,REJECT
+DOMAIN-KEYWORD,app-measurement,REJECT
+DOMAIN-KEYWORD,log-upload,REJECT
+DOMAIN-KEYWORD,crash-report,REJECT
+DOMAIN-SUFFIX,firebaselogging-pa.googleapis.com,REJECT
+DOMAIN-SUFFIX,firebasestatistics.googleapis.com,REJECT
+
+#Магнит (требуется отключение VPN)
+DOMAIN-SUFFIX,mgnt.ru,REJECT
+DOMAIN-SUFFIX,tander.ru,REJECT
+DOMAIN-KEYWORD,magnit,REJECT
+IP-CIDR,178.248.232.0/21,REJECT,no-resolve
+IP-CIDR,82.148.11.0/24,REJECT,no-resolve
+IP-CIDR,185.15.56.0/22,REJECT,no-resolve
+IP-CIDR,91.223.116.0/22,REJECT,no-resolve
 
 #ip-чекеры
+RULE-SET,https://raw.githubusercontent.com/misha-tgshv/shadowrocket-configuration-file/refs/heads/main/rules/domains_geo_detect.list,REJECT-DICT
 DOMAIN-SUFFIX,2ip.io,REJECT-DICT
 DOMAIN-SUFFIX,2ip.ua,REJECT-DICT
 DOMAIN-SUFFIX,51degrees.com,REJECT-DICT
@@ -1221,12 +1237,19 @@ DOMAIN-SUFFIX,nekkimobile.ru,SPEEDPROXY
 DOMAIN-SUFFIX,firaxislive.net,DIRECT
 DOMAIN-SUFFIX,2kcoretech.online,DIRECT
 
+#8ball🎱
+DOMAIN-SUFFIX,miniclippt.com,DISCORDPROXY
+
 #RU🇷🇺
 DOMAIN-SUFFIX,ru,DIRECT
 DOMAIN-SUFFIX,su,DIRECT
 DOMAIN-SUFFIX,xn--p1ai,DIRECT
 DOMAIN-SUFFIX,рф,DIRECT
 GEOIP,ru,DIRECT
+
+#BY🇧🇾
+DOMAIN-SUFFIX,by,DIRECT
+GEOIP,by,DIRECT
 
 #Глобальный прокси🌍
 FINAL,BESTPROXY
