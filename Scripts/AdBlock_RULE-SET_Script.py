@@ -149,7 +149,7 @@ white_urls = {
 }
 
 exclude_keywords = [
-    "ads", "analytics", "tracker", "tracking", "tracer", "metrics", "metrica", "metrika", "telemetry", "pixel", "beacon", "adserver", "doubleclick", "adjust", "appsflyer", "app-measurement", "log-upload", "crash-report", messenger.yandex", "vetmanager"
+    "ads", "analytics", "tracker", "tracking", "tracer", "metrics", "metrica", "metrika", "telemetry", "pixel", "beacon", "adserver", "doubleclick", "adjust", "appsflyer", "app-measurement", "log-upload", "crash-report", "messenger.yandex", "vetmanager"
 ]
 
 exclude_pattern = re.compile('|'.join(re.escape(kw) for kw in exclude_keywords))
