@@ -1304,10 +1304,6 @@ localhost = 127.0.0.1
 #Spotify🎶
 ^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/user-customization-service\/v1\/customize header-del if-none-match
 
-[Body Rewrite]
-http-response cookie-banner display:none
-http-response "Shorts" "Скрыто"
-
 [URL Rewrite]
 #YOUTUBE🔴
 ^https?:\/\/[\w-]+\.googlevideo\.com\/(?!(dclk_video_ads|videoplayback\?)).+&oad _ reject-200
