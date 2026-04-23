@@ -1305,7 +1305,8 @@ localhost = 127.0.0.1
 ^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/user-customization-service\/v1\/customize header-del if-none-match
 
 [Body Rewrite]
-^https?:\/\/(www\.)?google\.com\/ pattern-data="\"clientHeight\":1080" replacement-data="\"clientHeight\":768" max-size=50000
+http-response cookie-banner display:none
+http-response "Shorts" "Скрыто"
 
 [URL Rewrite]
 #YOUTUBE🔴
