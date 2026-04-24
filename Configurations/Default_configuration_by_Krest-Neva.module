@@ -57,7 +57,7 @@
 # система сама переключится на доступный узел на основе теста через специальный URL.
 
 # СПИСОК ГРУПП:
-# 1️⃣ «BESTPROXY» (load-balance) — Тест: http://cp.cloudflare.com/generate_204
+# 1️⃣ «BESTPROXY» (load-balance) — Тест: https://cp.cloudflare.com/generate_204
 # 2️⃣ «COPILOTPROXY» (load-balance) — Тест: https://login.microsoftonline.com/favicon.ico
 # 3️⃣ «DISCORDPROXY» (fallback) — Тест: https://discord.com/api/v9/gateway
 # 4️⃣ «GEMINIPROXY» (load-balance) — Тест: https://www.google.com/generate_204
