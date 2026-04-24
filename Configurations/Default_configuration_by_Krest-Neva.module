@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=Pro-grade networking for iOS/macOS
 
-#Последние изменения 24.04.2026 01:00
+#Последние изменения 24.04.2026 22:00
 #Фильтры обновлены 22.04.2026 05:00
 
 #==================================================
@@ -241,7 +241,7 @@ AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
 AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 
 #Реклама в Spotify🎶
-AND,((DOMAIN-SUFFIX,spotify.com), (PROTOCOL,UDP)),REJECT
+#AND,((DOMAIN-SUFFIX,spotify.com), (PROTOCOL,UDP)),REJECT
 URL-REGEX,^https?:\/\/(.*-ad-logic.*|crashdump\.spotify\.com|log\.spotify\.com|spclient\.wg\.spotify\.com\/(ad-logic|ads))\/,REJECT
 
 #Реклама, трекеры, аналитика, фишинг и остальная кака💩
