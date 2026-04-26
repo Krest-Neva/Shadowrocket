@@ -249,6 +249,10 @@ TIKTOKPROXY = url-test,interval=200,tolerance=100,timeout=2,url=https://www.tikt
 #Локальные сети
 GEOIP,private,DIRECT
 
+#Временно
+DOMAIN-SUFFIX,kinopoisk.ru,DIRECT,pre-matching
+IP-CIDR,5.28.195.2,DIRECT,no-resolve
+
 #Переключение YouTube с UDP/QUIC на TCP/HTTPS
 AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
 AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
@@ -259,7 +263,7 @@ AND,((USER-AGENT,Spotify*), (PROTOCOL,UDP)),REJECT
 URL-REGEX,^https?:\/\/(.*-ad-logic.*|crashdump\.spotify\.com|log\.spotify\.com|spclient\.wg\.spotify\.com\/(ad-logic|ads))\/,REJECT
 
 #Реклама, трекеры, аналитика, фишинг и остальная кака💩
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_STD.list,REJECT-DICT
+RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_STD.list,REJECT-DICT
 #RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_PLUS.list,REJECT-DICT
 #RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_STD_SMALL.list,REJECT-DICT
 #RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_PLUS_SMALL.list,REJECT-DICT
@@ -1296,6 +1300,32 @@ DOMAIN-SUFFIX,2kcoretech.online,DIRECT
 
 #8ball🎱
 DOMAIN-SUFFIX,miniclippt.com,DISCORDPROXY
+
+#Supercell⚔️
+DOMAIN-SUFFIX,brawlstars.com,SPEEDPROXY
+DOMAIN-SUFFIX,brawlstarsgame.com,SPEEDPROXY
+IP-CIDR,3.1.80.68/32,SPEEDPROXY,no-resolve
+IP-CIDR,3.25.190.152/32,SPEEDPROXY,no-resolve
+IP-CIDR,3.82.147.36/32,SPEEDPROXY,no-resolve
+IP-CIDR,13.210.25.233/32,SPEEDPROXY,no-resolve
+IP-CIDR,13.212.170.102/32,SPEEDPROXY,no-resolve
+IP-CIDR,13.212.171.212/32,SPEEDPROXY,no-resolve
+IP-CIDR,15.161.130.86/32,SPEEDPROXY,no-resolve
+IP-CIDR,15.254.1.17/32,SPEEDPROXY,no-resolve
+IP-CIDR,18.141.176.65/32,SPEEDPROXY,no-resolve
+IP-CIDR,18.156.137.147/32,SPEEDPROXY,no-resolve
+IP-CIDR,18.231.148.103/32,SPEEDPROXY,no-resolve
+IP-CIDR,34.220.160.16/32,SPEEDPROXY,no-resolve
+IP-CIDR,35.72.32.125/32,SPEEDPROXY,no-resolve
+IP-CIDR,35.154.64.7/32,SPEEDPROXY,no-resolve
+IP-CIDR,52.13.42.120/32,SPEEDPROXY,no-resolve
+IP-CIDR,52.13.150.128/32,SPEEDPROXY,no-resolve
+IP-CIDR,52.50.131.212/32,SPEEDPROXY,no-resolve
+IP-CIDR,54.207.168.84/32,SPEEDPROXY,no-resolve
+IP-CIDR,54.248.64.192/32,SPEEDPROXY,no-resolve
+IP-CIDR,162.62.33.45/32,SPEEDPROXY,no-resolve
+IP-CIDR,162.62.33.70/32,SPEEDPROXY,no-resolve
+IP-CIDR,162.62.34.10/32,SPEEDPROXY,no-resolve
 
 #RU🇷🇺
 DOMAIN-SUFFIX,ru,DIRECT
