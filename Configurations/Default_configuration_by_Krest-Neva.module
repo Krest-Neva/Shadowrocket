@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=Pro-grade networking for iOS/macOS
 
-#Последние изменения 26.04.2026 19:00
+#Последние изменения 26.04.2026 20:00
 #Фильтры обновлены 22.04.2026 05:00
 
 #==================================================
@@ -158,11 +158,11 @@ doh-skip-cert-verification = true
 private-ip-answer = true
 # Читать локальный файл hosts
 read-etc-hosts = false
-# Использовать современный тип DNS-записей SVCB для ускорения
+# Использовать современный тип DNS-записей SVCB
 allow-dns-svcb = false
-# DNS-сервер для резолвинга адресов прокси (основной DoH)
+# DNS-сервер для резолвинга адресов прокси
 proxy-dns-server = https://dns.comss.one/dns-query
-# Всегда использовать локальный DNS для всех доменов (отключено)
+# Всегда использовать локальный DNS для всех доменов
 always-ip-address = false
 # === Исключения из прокси / маршрутизация ===
 # Адреса, исключённые из проксирования
@@ -205,7 +205,7 @@ http-api-web-dashboard = false
 # === Дополнительно ===
 # Ссылка на базу GeoIP (страны)
 geoip-maxmind-url = https://github.com/Loyalsoldier/geoip/raw/release/Country.mmdb
-# Не использовать localhost для прокси-серверов
+# Использовать localhost для прокси-серверов
 use-local-host-item-for-proxy = false
 # Всегда отклонять перезапись URL
 always-reject-url-rewrite = false
@@ -237,13 +237,13 @@ BESTPROXY = load-balance,interval=100,timeout=2,url=https://cp.cloudflare.com/ge
 COPILOTPROXY = url-test,interval=200,tolerance=50,timeout=2,url=https://copilot.microsoft.com/,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇸🇩|судан|sudan|🇻🇪|венесуэла|venezuela|🇧🇾|беларусь|belarus|🇦🇫|афганистан|afghanistan|🇹🇲|туркменистан|turkmenistan|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
 DISCORDPROXY = fallback,interval=100,timeout=2,url=https://discord.com/api/v9/gateway,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇹🇷|турция|turkey|🇦🇪|оаэ|uae|🇪🇬|египет|egypt|🇴🇲|оман|oman|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇹🇲|туркменистан|turkmenistan|🇻🇪|венесуэла|venezuela|🇬🇧|англия|england|🇺🇸|сша|usa|🇨🇦|канада|canada|🇧🇷|бразилия|brazil|🇮🇳|индия|india|🇯🇵|япония|japan|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
 GEMINIPROXY = url-test,interval=200,tolerance=50,timeout=2,url=https://gemini.google.com/,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|россия|🇷🇺|russia|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇸🇩|судан|sudan|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)|^(?=..\s)(?!^🇺🇸\sСША)).*
-GPTPROXY = url-test,interval=200,tolerance=50,timeout=2,url=https://chat.openai.com/cdn-cgi/trace,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇧🇾|беларусь|belarus|🇻🇪|венесуэла|venezuela|🇦🇫|афганистан|afghanistan|🇸🇩|судан|sudan|🇬🇧|англия|england|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
+GPTPROXY = url-test,interval=200,tolerance=50,timeout=2,url=https://chatgpt.com/,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇧🇾|беларусь|belarus|🇻🇪|венесуэла|venezuela|🇦🇫|афганистан|afghanistan|🇸🇩|судан|sudan|🇬🇧|англия|england|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
 INSTPROXY = load-balance,interval=100,timeout=2,url=https://www.instagram.com/,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇹🇲|туркменистан|turkmenistan|🇨🇺|куба|cuba|🇹🇷|турция|turkey|🇧🇾|беларусь|belarus|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
 #SELECTPROXY = select,interval=800,timeout=2,url=https://www.gstatic.com/generate_204,policy-regex-filter=^.*
 SPEEDPROXY = url-test,interval=100,tolerance=10,timeout=2,url=https://www.youtube.com/,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇹🇲|туркменистан|turkmenistan|🇨🇺|куба|cuba|🇹🇷|турция|turkey|🇧🇾|беларусь|belarus|🇻🇪|венесуэла|venezuela|🇸🇩|судан|sudan|🇯🇵|япония|japan|🇨🇦|канада|canada|🇮🇳|индия|india|🇺🇸|сша|usa|🇧🇷|бразилия|brazil|(россия|russia)(?!\s*№\s*0\s*$|\s*№\s*2\s*\||\s\[LTE\]\sРОССИЯ\s№\s*[34](?![0-9]))|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
 SPOTIFYPROXY = fallback,interval=400,timeout=2,url=https://open.spotify.com/,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇸🇩|судан|sudan|🇹🇲|туркменистан|turkmenistan|🇻🇪|венесуэла|venezuela|🇧🇾|беларусь|belarus|🇦🇫|афганистан|afghanistan|🇵🇰|пакистан|pakistan|🇧🇩|бангладеш|bangladesh|🇱🇾|ливия|libya|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
 TGPROXY = load-balance,interval=100,timeout=2,url=https://web.telegram.org/,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
-TIKTOKPROXY = url-test,interval=200,tolerance=100,timeout=2,url=https://www.tiktok.com/,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇳|индия|india|🇮🇷|иран|iran|🇧🇩|бангладеш|bangladesh|🇵🇰|пакистан|pakistan|🇦🇫|афганистан|afghanistan|🇸🇾|сирия|syria|🇹🇲|туркменистан|turkmenistan|🇨🇺|куба|cuba|🇻🇪|венесуэла|venezuela|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
+TIKTOKPROXY = url-test,interval=200,tolerance=50,timeout=2,url=https://www.tiktok.com/,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇳|индия|india|🇮🇷|иран|iran|🇧🇩|бангладеш|bangladesh|🇵🇰|пакистан|pakistan|🇦🇫|афганистан|afghanistan|🇸🇾|сирия|syria|🇹🇲|туркменистан|turkmenistan|🇨🇺|куба|cuba|🇻🇪|венесуэла|venezuela|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
 
 [Rule]
 #Локальные сети
@@ -481,7 +481,6 @@ DOMAIN-SUFFIX,mc.yandex.ru,REJECT-TINYGIF,pre-matching
 DOMAIN-SUFFIX,mc.yandex.com,REJECT-TINYGIF,pre-matching
 DOMAIN-SUFFIX,market-baobab.yandex.ru,REJECT-DICT,pre-matching
 DOMAIN-SUFFIX,baobab.market.yandex.ru,REJECT-DICT,pre-matching
-#DOMAIN,yandex.ru,REJECT-DICT,pre-matching
 DOMAIN-SUFFIX,ad.mail.ru,REJECT,pre-matching
 DOMAIN-SUFFIX,top-fwz1.mail.ru,REJECT,pre-matching
 DOMAIN-SUFFIX,rs.mail.ru,REJECT,pre-matching
@@ -493,7 +492,6 @@ DOMAIN-SUFFIX,criteo.net,REJECT-200,pre-matching
 DOMAIN-SUFFIX,moatads.com,REJECT-200,pre-matching
 DOMAIN-SUFFIX,scorecardresearch.com,REJECT-200,pre-matching
 DOMAIN-SUFFIX,serving-sys.com,REJECT-200,pre-matching
-#DOMAIN-SUFFIX,cdn.jsdelivr.net,REJECT-200,pre-matching
 DOMAIN-SUFFIX,content-sdk.cdn.yandex.net,REJECT,pre-matching
 DOMAIN-SUFFIX,directcdn.net,REJECT,pre-matching
 DOMAIN-SUFFIX,frontend.vh.yandex.ru,REJECT,pre-matching
@@ -516,34 +514,19 @@ DOMAIN-SUFFIX,yanetcom.ru,REJECT,pre-matching
 DOMAIN-SUFFIX,my.com,REJECT,pre-matching
 DOMAIN-SUFFIX,cnt.my.com,REJECT,pre-matching
 DOMAIN-SUFFIX,adj.st,REJECT,pre-matching
-URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/ad/.*$,REJECT-DICT
-URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/yabs/.*$,REJECT-DICT
-URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/bs/.*$,REJECT-DICT
-URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/direct/.*$,REJECT-DICT
-URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/rtb/.*$,REJECT-DICT
-URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/web-usocial/.*$,REJECT-DICT
-URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/yandex-ads/.*$,REJECT-DICT
-URL-REGEX,^https?://(.*)\.yandex\.(ru|com)/zen/.*\?ad.*$,REJECT-DICT
+URL-REGEX,^https?://(?:[a-z0-9-]+\.)+yandex\.(ru|com)/(?:ad|yabs|bs|direct|rtb|web-usocial|yandex-ads)/.*$,REJECT-DICT
+URL-REGEX,^https?://(?:[a-z0-9-]+\.)*yandex\.(ru|com)/zen/.*\?ad.*$,REJECT-DICT
 URL-REGEX,^https?://yandex\.(ru|com)/clck/click.*$,REJECT
-URL-REGEX,https://yandex\.com/clck/click.*,REJECT
 URL-REGEX,^https?://yandex\.(ru|com)/ads/v4/ad.*$,REJECT-DICT
-URL-REGEX,^https?://yandex\.(ru|com)/an/count/.*$,REJECT
-URL-REGEX,^https?://yandex\.(ru|com)/an/rtbcount/.*$,REJECT
-URL-REGEX,^https?://baobab\.market\.yandex\.(ru|com)/safeclick/json.*$,REJECT-DICT
-URL-REGEX,^https?://([a-z0-9-]+\.)?baobab\.yandex\.(ru|com)/safeclick/.*$,REJECT-DICT
+URL-REGEX,^https?://yandex\.(ru|com)/an/(?:count|rtbcount)/.*$,REJECT
+URL-REGEX,^https?://(?:baobab\.market\.yandex\.(ru|com)|(?:[a-z0-9-]+\.)?baobab\.yandex\.(ru|com))/safeclick/(?:json.*|.*)$,REJECT-DICT
 URL-REGEX,^https?://media-adv\..*\.yandex\.(ru|com)/.*$,REJECT
 URL-REGEX,^https?://adfstat\.yandex\.(ru|com)/.*$,REJECT-TINYGIF
 URL-REGEX,^https?://market\.yandex\.(ru|com)/ecom-assistant\?.*$,REJECT-DICT
-URL-REGEX,^https?://ipa\.market\.yandex\.(ru|com)/api/v1\?.*dictionary=1.*$,REJECT-DICT
-URL-REGEX,^https?://ipa\.market\.yandex\.(ru|com)/api/v1\?.*name=getToggles.*$,REJECT-DICT
-URL-REGEX,^https?://ipa\.market\.yandex\.(ru|com)/api/v1\?.*name=resolveGlobalDeliveryPoint.*$,REJECT-DICT
+URL-REGEX,^https?://ipa\.market\.yandex\.(ru|com)/api/v1\?.*(?:dictionary=1|name=(?:getToggles|resolveGlobalDeliveryPoint)).*$,REJECT-DICT
 URL-REGEX,^https?://api\.plus\.yandex\.net:443/.*$,REJECT-DICT
-URL-REGEX,^https?://infocenter\.rasp\.yandex-net\.ru:443/.*$,REJECT
-URL-REGEX,^https?://suburban-trains\.s3\.yandex\.net:443/.*$,REJECT
-URL-REGEX,^https?://export\.rasp\.yandex-net\.ru:443/.*$,REJECT
-URL-REGEX,^https?://stable\.carsharing\.yandex\.net:443/.*$,REJECT
-URL-REGEX,^https?://tc\.mobile\.yandex\.net:443/.*$,REJECT
-URL-REGEX,^https?://mc\.yandex\.(ru|com)/(metrika|watch|solid\.ws).*$,REJECT-TINYGIF
+URL-REGEX,^https?://(?:infocenter\.rasp\.yandex-net\.ru|suburban-trains\.s3\.yandex\.net|export\.rasp\.yandex-net\.ru|stable\.carsharing\.yandex\.net|tc\.mobile\.yandex\.net):443/.*$,REJECT
+URL-REGEX,^https?://mc\.yandex\.(ru|com)/(?:metrika|watch|solid\.ws).*$,REJECT-TINYGIF
 URL-REGEX,^https?://sp\.yandex\.(ru|com)/.*$,REJECT
 
 DOMAIN-SUFFIX,max.ru,REJECT-DROP,pre-matching
@@ -580,9 +563,6 @@ DOMAIN-SUFFIX,rawgit.com,SPEEDPROXY
 DOMAIN-SUFFIX,rawgithub.com,SPEEDPROXY
 DOMAIN-SUFFIX,repo.new,SPEEDPROXY
 DOMAIN-SUFFIX,thegithubshop.com,SPEEDPROXY
-
-#VPN
-DOMAIN-SUFFIX,proxyliberty.ru,BESTPROXY
 
 #Discord
 DOMAIN-SUFFIX,airhorn.solutions,DISCORDPROXY
@@ -1357,10 +1337,8 @@ localhost = 127.0.0.1
 (^https?:\/\/[\w-]+\.googlevideo\.com\/(?!dclk_video_ads).+?)&ctier=L(&.+?),ctier,(.+) $1$2$3 302
 
 #YANDEX каки✴️
-#UTM
-^(https?:\/\/[^?]+)\?(.+)&utm_[^&]+(.*)$ $1?$2$3 302
-^(https?:\/\/[^?]+)\?utm_[^&]+&(.+)$ $1?$2 302
-^(https?:\/\/[^?]+)\?utm_[^&]+$ $1 302
+#Регионы
+^https?://(www\.)?(yandex\.(ru|kz|az|by|co\.il|com\.am|com\.ge|com\.tr|ee|fr|lt|lv|md|tj|tm|uz)|ya\.ru)(.*)$ https://yandex.com$4 302
 #Yandex (yclid)
 ^(https?:\/\/[^?]+)\?(.+)&yclid=[^&]+(.*)$ $1?$2$3 302
 ^(https?:\/\/[^?]+)\?yclid=[^&]+&(.+)$ $1?$2 302
@@ -1373,45 +1351,10 @@ localhost = 127.0.0.1
 ^(https?:\/\/[^?]+)\?(.+)&gclid=[^&]+(.*)$ $1?$2$3 302
 ^(https?:\/\/[^?]+)\?gclid=[^&]+&(.+)$ $1?$2 302
 ^(https?:\/\/[^?]+)\?gclid=[^&]+$ $1 302
-#Регионы
-^http://(www\.)?yandex\.ru https://yandex.com 302
-^https://(www\.)?yandex\.ru https://yandex.com 302
-^http://(www\.)?yandex\.kz(.*)$ http://yandex.com$2 302
-^http://(www\.)?yandex\.az(.*)$ http://yandex.com$2 302
-^http://(www\.)?yandex\.by(.*)$ http://yandex.com$2 302
-^http://(www\.)?yandex\.co\.il(.*)$ http://yandex.com$2 302
-^http://(www\.)?yandex\.com\.am(.*)$ http://yandex.com$2 302
-^http://(www\.)?yandex\.com\.ge(.*)$ http://yandex.com$2 302
-^http://(www\.)?yandex\.com\.tr(.*)$ http://yandex.com$2 302
-^http://(www\.)?yandex\.ee(.*)$ http://yandex.com$2 302
-^http://(www\.)?yandex\.fr(.*)$ http://yandex.com$2 302
-^http://(www\.)?yandex\.kz(.*)$ http://yandex.com$2 302
-^http://(www\.)?yandex\.lt(.*)$ http://yandex.com$2 302
-^http://(www\.)?yandex\.lv(.*)$ http://yandex.com$2 302
-^http://(www\.)?yandex\.md(.*)$ http://yandex.com$2 302
-^http://(www\.)?yandex\.ru(.*)$ http://yandex.com$2 302
-^http://(www\.)?yandex\.tj(.*)$ http://yandex.com$2 302
-^http://(www\.)?yandex\.tm(.*)$ http://yandex.com$2 302
-^http://(www\.)?yandex\.uz(.*)$ http://yandex.com$2 302
-^http://(www\.)?ya\.ru(.*)$ http://yandex.com$2 302
-^https://(www\.)?yandex\.kz(.*)$ https://yandex.com$2 302
-^https://(www\.)?yandex\.az(.*)$ https://yandex.com$2 302
-^https://(www\.)?yandex\.by(.*)$ https://yandex.com$2 302
-^https://(www\.)?yandex\.co\.il(.*)$ https://yandex.com$2 302
-^https://(www\.)?yandex\.com\.am(.*)$ https://yandex.com$2 302
-^https://(www\.)?yandex\.com\.ge(.*)$ https://yandex.com$2 302
-^https://(www\.)?yandex\.com\.tr(.*)$ https://yandex.com$2 302
-^https://(www\.)?yandex\.ee(.*)$ https://yandex.com$2 302
-^https://(www\.)?yandex\.fr(.*)$ https://yandex.com$2 302
-^https://(www\.)?yandex\.kz(.*)$ https://yandex.com$2 302
-^https://(www\.)?yandex\.lt(.*)$ https://yandex.com$2 302
-^https://(www\.)?yandex\.lv(.*)$ https://yandex.com$2 302
-^https://(www\.)?yandex\.md(.*)$ https://yandex.com$2 302
-^https://(www\.)?yandex\.ru(.*)$ https://yandex.com$2 302
-^https://(www\.)?yandex\.tj(.*)$ https://yandex.com$2 302
-^https://(www\.)?yandex\.tm(.*)$ https://yandex.com$2 302
-^https://(www\.)?yandex\.uz(.*)$ https://yandex.com$2 302
-^https://(www\.)?ya\.ru(.*)$ https://yandex.com$2 302
+#UTM
+^(https?:\/\/[^?]+)\?(.+)&utm_[^&]+(.*)$ $1?$2$3 302
+^(https?:\/\/[^?]+)\?utm_[^&]+&(.+)$ $1?$2 302
+^(https?:\/\/[^?]+)\?utm_[^&]+$ $1 302
 
 [Map Local]
 #YOUTUBE🔴
