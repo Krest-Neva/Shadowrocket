@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=Pro-grade networking for iOS/macOS
 
-#Последние изменения 25.04.2026 15:00
+#Последние изменения 26.04.2026 19:00
 #Фильтры обновлены 22.04.2026 05:00
 
 #==================================================
@@ -58,16 +58,16 @@
 
 # СПИСОК ГРУПП:
 # 1️⃣ «BESTPROXY» (load-balance) — Тест: https://cp.cloudflare.com/generate_204
-# 2️⃣ «COPILOTPROXY» (load-balance) — Тест: https://login.microsoftonline.com/favicon.ico
+# 2️⃣ «COPILOTPROXY» (url-test) — Тест: https://copilot.microsoft.com/
 # 3️⃣ «DISCORDPROXY» (fallback) — Тест: https://discord.com/api/v9/gateway
-# 4️⃣ «GEMINIPROXY» (load-balance) — Тест: https://www.google.com/generate_204
-# 5️⃣ «GPTPROXY» (load-balance) — Тест: https://chat.openai.com/favicon.ico
-# 6️⃣ «INSTPROXY» (load-balance) — Тест: https://fbcdn.net
+# 4️⃣ «GEMINIPROXY» (url-test) — Тест: https://gemini.google.com/
+# 5️⃣ «GPTPROXY» (url-test) — Тест: https://chat.openai.com/cdn-cgi/trace
+# 6️⃣ «INSTPROXY» (load-balance) — Тест: https://www.instagram.com/
 # 7️⃣ «SELECTPROXY» (select) — Тест: https://www.gstatic.com/generate_204
-# 8️⃣ «SPEEDPROXY» (url-test) — Тест: https://www.youtube.com/generate_204
-# 9️⃣ «SPOTIFYPROXY» (fallback) — Тест: https://open.spotify.com
-# 🔟 «TGPROXY» (load-balance) — Тест: https://www.telegram.org
-# 1️⃣1️⃣ «TIKTOKPROXY» (url-test) — Тест: https://www.tiktok.com/favicon.ico
+# 8️⃣ «SPEEDPROXY» (url-test) — Тест: https://www.youtube.com/
+# 9️⃣ «SPOTIFYPROXY» (fallback) — Тест: https://open.spotify.com/
+# 🔟 «TGPROXY» (load-balance) — Тест: https://web.telegram.org/
+# 1️⃣1️⃣ «TIKTOKPROXY» (url-test) — Тест: https://www.tiktok.com/
 
 # ОПИСАНИЕ СТРАТЕГИЙ:
 # — load-balance: Распределяет трафик между несколькими быстрыми серверами одновременно (наиболее быстро).
@@ -231,6 +231,19 @@ stun-response-ipv6 = ::1
 hide-crash-reporter-request = false
 # Включить фильтр по ключевым словам
 keyword-filter-type = true
+
+[Proxy Group]
+BESTPROXY = load-balance,interval=100,timeout=2,url=https://cp.cloudflare.com/generate_204,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
+COPILOTPROXY = url-test,interval=200,tolerance=50,timeout=2,url=https://copilot.microsoft.com/,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇸🇩|судан|sudan|🇻🇪|венесуэла|venezuela|🇧🇾|беларусь|belarus|🇦🇫|афганистан|afghanistan|🇹🇲|туркменистан|turkmenistan|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
+DISCORDPROXY = fallback,interval=100,timeout=2,url=https://discord.com/api/v9/gateway,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇹🇷|турция|turkey|🇦🇪|оаэ|uae|🇪🇬|египет|egypt|🇴🇲|оман|oman|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇹🇲|туркменистан|turkmenistan|🇻🇪|венесуэла|venezuela|🇬🇧|англия|england|🇺🇸|сша|usa|🇨🇦|канада|canada|🇧🇷|бразилия|brazil|🇮🇳|индия|india|🇯🇵|япония|japan|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
+GEMINIPROXY = url-test,interval=200,tolerance=50,timeout=2,url=https://gemini.google.com/,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|россия|🇷🇺|russia|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇸🇩|судан|sudan|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)|^(?=..\s)(?!^🇺🇸\sСША)).*
+GPTPROXY = url-test,interval=200,tolerance=50,timeout=2,url=https://chat.openai.com/cdn-cgi/trace,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇧🇾|беларусь|belarus|🇻🇪|венесуэла|venezuela|🇦🇫|афганистан|afghanistan|🇸🇩|судан|sudan|🇬🇧|англия|england|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
+INSTPROXY = load-balance,interval=100,timeout=2,url=https://www.instagram.com/,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇹🇲|туркменистан|turkmenistan|🇨🇺|куба|cuba|🇹🇷|турция|turkey|🇧🇾|беларусь|belarus|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
+#SELECTPROXY = select,interval=800,timeout=2,url=https://www.gstatic.com/generate_204,policy-regex-filter=^.*
+SPEEDPROXY = url-test,interval=100,tolerance=10,timeout=2,url=https://www.youtube.com/,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇹🇲|туркменистан|turkmenistan|🇨🇺|куба|cuba|🇹🇷|турция|turkey|🇧🇾|беларусь|belarus|🇻🇪|венесуэла|venezuela|🇸🇩|судан|sudan|🇯🇵|япония|japan|🇨🇦|канада|canada|🇮🇳|индия|india|🇺🇸|сша|usa|🇧🇷|бразилия|brazil|(россия|russia)(?!\s*№\s*0\s*$|\s*№\s*2\s*\||\s\[LTE\]\sРОССИЯ\s№\s*[34](?![0-9]))|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
+SPOTIFYPROXY = fallback,interval=400,timeout=2,url=https://open.spotify.com/,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇸🇩|судан|sudan|🇹🇲|туркменистан|turkmenistan|🇻🇪|венесуэла|venezuela|🇧🇾|беларусь|belarus|🇦🇫|афганистан|afghanistan|🇵🇰|пакистан|pakistan|🇧🇩|бангладеш|bangladesh|🇱🇾|ливия|libya|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
+TGPROXY = load-balance,interval=100,timeout=2,url=https://web.telegram.org/,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
+TIKTOKPROXY = url-test,interval=200,tolerance=100,timeout=2,url=https://www.tiktok.com/,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇳|индия|india|🇮🇷|иран|iran|🇧🇩|бангладеш|bangladesh|🇵🇰|пакистан|pakistan|🇦🇫|афганистан|afghanistan|🇸🇾|сирия|syria|🇹🇲|туркменистан|turkmenistan|🇨🇺|куба|cuba|🇻🇪|венесуэла|venezuela|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
 
 [Rule]
 #Локальные сети
