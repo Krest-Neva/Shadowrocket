@@ -1,49 +1,6 @@
 #!name=Add-on for Stephan🍄
 #!desc=Этот модуль должен находиться выше
 
-#Включает в себя полную настройку групп прокси и прочие индивидуальные правила.
+#Последние изменения 26.04.2026 19:00
 
-#Последние изменения 24.04.2026 22:00
-
-[Proxy Group]
-BESTPROXY = load-balance,interval=120,timeout=2,url=https://cp.cloudflare.com/generate_204,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|Чехия\s⚡️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+конг|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
-COPILOTPROXY = load-balance,interval=120,timeout=2,url=https://login.microsoftonline.com/favicon.ico,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|Чехия\s⚡️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+конг|🇮🇷|иран|iran|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇸🇩|судан|sudan|🇻🇪|венесуэла|venezuela|🇧🇾|беларусь|belarus|🇦🇫|афганистан|afghanistan|🇹🇲|туркменистан|turkmenistan|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
-DISCORDPROXY = fallback,interval=60,timeout=2,url=https://discord.com/api/v9/gateway,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|Чехия\s⚡️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+конг|🇮🇷|иран|iran|🇹🇷|турция|turkey|🇦🇪|оаэ|uae|🇪🇬|египет|egypt|🇴🇲|оман|oman|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇹🇲|туркменистан|turkmenistan|🇻🇪|венесуэла|venezuela|🇬🇧|англия|england|🇺🇸|сша|usa|🇨🇦|канада|canada|🇧🇷|бразилия|brazil|🇮🇳|индия|india|🇯🇵|япония|japan|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
-GEMINIPROXY = load-balance,interval=120,timeout=2,url=https://www.google.com/generate_204,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|Чехия\s⚡️|россия|🇷🇺|russia|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+конг|🇮🇷|иран|iran|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇸🇩|судан|sudan|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)|^(?=..\s)(?!^🇺🇸\sСША)).*
-GPTPROXY = load-balance,interval=120,timeout=2,url=https://chat.openai.com/favicon.ico,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|Чехия\s⚡️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+конг|🇮🇷|иран|iran|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇧🇾|беларусь|belarus|🇻🇪|венесуэла|venezuela|🇦🇫|афганистан|afghanistan|🇸🇩|судан|sudan|🇬🇧|англия|england|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
-INSTPROXY = load-balance,interval=60,timeout=2,url=https://fbcdn.net,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|Чехия\s⚡️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+конг|🇮🇷|иран|iran|🇹🇲|туркменистан|turkmenistan|🇨🇺|куба|cuba|🇹🇷|турция|turkey|🇧🇾|беларусь|belarus|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
-SELECTPROXY = select,interval=600,timeout=2,url=http://www.gstatic.com/generate_204,policy-regex-filter=^.*
-SPEEDPROXY = url-test,interval=120,tolerance=50,timeout=2,url=https://www.youtube.com/generate_204,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|Чехия\s⚡️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+конг|🇮🇷|иран|iran|🇹🇲|туркменистан|turkmenistan|🇨🇺|куба|cuba|🇹🇷|турция|turkey|🇧🇾|беларусь|belarus|🇻🇪|венесуэла|venezuela|🇸🇩|судан|sudan|🇯🇵|япония|japan|🇨🇦|канада|canada|🇮🇳|индия|india|🇺🇸|сша|usa|🇧🇷|бразилия|brazil|(россия|russia)(?!\s*№\s*0\s*$|\s*№\s*2\s*\||\s\[LTE\]\sРОССИЯ\s№\s*[34](?![0-9]))|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
-SPOTIFYPROXY = fallback,interval=300,timeout=2,url=https://open.spotify.com,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|Чехия\s⚡️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+конг|🇮🇷|иран|iran|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇸🇩|судан|sudan|🇹🇲|туркменистан|turkmenistan|🇻🇪|венесуэла|venezuela|🇧🇾|беларусь|belarus|🇦🇫|афганистан|afghanistan|🇵🇰|пакистан|pakistan|🇧🇩|бангладеш|bangladesh|🇱🇾|ливия|libya|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
-TGPROXY = load-balance,interval=60,timeout=2,url=https://www.telegram.org,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|Чехия\s⚡️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+конг|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
-TIKTOKPROXY = url-test,interval=120,tolerance=100,timeout=2,url=https://www.tiktok.com/favicon.ico,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|Чехия\s⚡️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+конг|🇮🇳|индия|india|🇮🇷|иран|iran|🇧🇩|бангладеш|bangladesh|🇵🇰|пакистан|pakistan|🇦🇫|афганистан|afghanistan|🇸🇾|сирия|syria|🇹🇲|туркменистан|turkmenistan|🇨🇺|куба|cuba|🇻🇪|венесуэла|venezuela|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
-
-[Rule]
-DOMAIN-SUFFIX,kinopoisk.ru,DIRECT,pre-matching
-IP-CIDR,5.28.195.2,DIRECT,no-resolve
-RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_STD.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_PLUS.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_STD_SMALL.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_PLUS_SMALL.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_1.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_2.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_3.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_4.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_5.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_6.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_1.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_2.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_3.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_4.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_5.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_6.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_7.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_8.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_9.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_10.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_SMALL_1.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_SMALL_2.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_SMALL_3.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_SMALL_1.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_SMALL_2.list,REJECT-DICT
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_SMALL_3.list,REJECT-DICT
+# Привет! Пока тут ничего нет. Как дела?
