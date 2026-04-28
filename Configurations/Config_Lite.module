@@ -1,0 +1,66 @@
+#!name=Config lite
+#!desc=By Krest_Neva
+
+[General]
+ipv6 = true
+ipv6-vif = auto
+prefer-ipv6 = false
+test-timeout = 2
+internet-test-url = https://www.google.com
+proxy-test-url = https://www.gstatic.com/generate_204
+show-error-page-for-reject = true
+loglevel = error
+hijack-dns = *:53
+dns-over-https = true
+dns-direct-system = true
+dns-fallback-system = false
+dns-direct-fallback-proxy = true
+dns-server = 94.140.14.14,94.140.15.15
+fallback-dns-server = https://dns.comss.one/dns-query,https://9.9.9.9/dns-query,8.8.8.8,1.1.1.1
+doh-skip-cert-verification = true
+private-ip-answer = true
+read-etc-hosts = false
+allow-dns-svcb = false
+always-ip-address = false
+skip-proxy = apple.com,icloud.com,*.cdn-apple.com,*.mzstatic.com,itunes.apple.com,captive.apple.com,gsp1.apple.com,*.local,localhost,apple-pki.com
+always-real-ip = *.apple.com,*.icloud.com,*.itunes.com,*.mzstatic.com,*.apple-pki.com,*.push.apple.com
+tun-excluded-routes = 10.0.0.0/8,17.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.0.0.0/24,192.0.2.0/24,192.88.99.0/24,192.168.0.0/16,198.51.100.0/24,203.0.113.0/24,224.0.0.0/4,255.255.255.255/32,fc00::/7,fe80::/10,178.248.232.0/21,82.148.11.0/24,185.15.56.0/22,91.223.116.0/22
+always-raw-tcp-hosts = www.google.com,91.108.56.*,91.108.4.*,91.108.8.*,91.108.16.*,91.108.12.*,149.154.16*,149.154.17*,91.108.20.*,185.76.151.*,91.105.192.*,5.28.19*
+udp-priority = true
+all-hybrid = true
+udp-policy-not-supported-behaviour = REJECT
+icmp-auto-reply = false
+bypass-system = true
+exclude-simple-hostnames = true
+use-default-policy-if-wifi-not-primary = false
+wifi-assist = false
+allow-wifi-access = true
+allow-hotspot-access = true
+wifi-access-http-port = 1082
+hide-vpn-icon = true
+http-api-web-dashboard = false
+geoip-maxmind-url = https://github.com/Loyalsoldier/geoip/raw/release/Country.mmdb
+use-local-host-item-for-proxy = false
+always-reject-url-rewrite = false
+block-quic = false
+stun-response-ip = 0.0.0.0
+stun-response-ipv6 = ::1
+
+[Replica]
+hide-crash-reporter-request = false
+keyword-filter-type = true
+
+[Rule]
+GEOIP,private,DIRECT
+DOMAIN-SUFFIX,ru,DIRECT
+DOMAIN-SUFFIX,su,DIRECT
+DOMAIN-SUFFIX,xn--p1ai,DIRECT
+GEOIP,ru,DIRECT
+DOMAIN-SUFFIX,by,DIRECT
+GEOIP,by,DIRECT
+DOMAIN-SUFFIX,kz,DIRECT
+GEOIP,kz,DIRECT
+FINAL,PROXY
+
+[Host]
+localhost = 127.0.0.1
