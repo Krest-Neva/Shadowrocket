@@ -161,7 +161,7 @@ read-etc-hosts = false
 # Использовать современный тип DNS-записей SVCB
 allow-dns-svcb = false
 # DNS-сервер для резолвинга адресов прокси
-proxy-dns-server = https://dns.comss.one/dns-query
+#proxy-dns-server = https://dns.comss.one/dns-query
 # Всегда использовать локальный DNS для всех доменов
 always-ip-address = false
 # === Исключения из прокси / маршрутизация ===
