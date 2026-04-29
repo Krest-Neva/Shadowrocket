@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=Pro-grade networking for iOS/macOS
 
-#Последние изменения 28.04.2026 20:00
+#Последние изменения 29.04.2026 15:00
 #Фильтры обновлены 22.04.2026 05:00
 
 #==================================================
@@ -128,11 +128,11 @@ ipv6-vif = auto
 # Предпочтение IPv6 перед IPv4
 prefer-ipv6 = false
 # Таймаут тестирования соединения (сек)
-test-timeout = 5
+#test-timeout = 5
 # URL для проверки доступа в интернет
-internet-test-url = https://www.google.com
+#internet-test-url = https://www.google.com
 # URL для проверки работы прокси
-proxy-test-url = https://www.gstatic.com/generate_204
+#proxy-test-url = https://www.gstatic.com/generate_204
 # Показывать страницу ошибки при блокировке
 show-error-page-for-reject = true
 # Уровень логирования
@@ -174,7 +174,7 @@ tun-excluded-routes = 10.0.0.0/8,17.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.
 # Всегда использовать RAW TCP для указанных хостов
 always-raw-tcp-hosts = www.google.com,91.108.56.*,91.108.4.*,91.108.8.*,91.108.16.*,91.108.12.*,149.154.16*,149.154.17*,91.108.20.*,185.76.151.*,91.105.192.*,5.28.19*
 # Приоритет UDP-трафика
-udp-priority = true
+udp-priority = false
 # Гибридный режим для всех соединений
 all-hybrid = true
 # Действие при отсутствии поддержки UDP
