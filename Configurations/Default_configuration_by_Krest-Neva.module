@@ -786,7 +786,6 @@ USER-AGENT,com.google.ios.youtube*,SPEEDPROXY
 USER-AGENT,com.google.ios.youtubemusic*,SPEEDPROXY
 IP-CIDR,172.110.32.0/21,SPEEDPROXY,no-resolve
 IP-CIDR,216.73.80.0/20,SPEEDPROXY,no-resolve
-IP-CIDR,2620:120:E000::/40,SPEEDPROXY,no-resolve
 DOMAIN,ai.google.dev,AIPROXY
 DOMAIN,alkalimakersuite-pa.clients6.google.com,AIPROXY
 DOMAIN,makersuite.google.com,AIPROXY
