@@ -240,6 +240,7 @@ GEOIP,PRIVATE,DIRECT
 #Временно
 DOMAIN-SUFFIX,kinopoisk.ru,DIRECT,pre-matching
 IP-CIDR,5.28.195.2,DIRECT,no-resolve
+DOMAIN-SUFFIX,content-storage-upload.googleapis.com,DIRECT
 
 #Переключение YouTube с UDP/QUIC на TCP/HTTPS
 AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
@@ -1178,20 +1179,21 @@ DOMAIN-SUFFIX,stun.apple.com,SPEEDPROXY
 #Apple🍎
 RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/apple.txt,DIRECT
 RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/icloud.txt,DIRECT
-DOMAIN-SUFFIX,apple.com,DIRECT
-DOMAIN-SUFFIX,apple-pki.com,DIRECT
-DOMAIN-SUFFIX,icloud.com,DIRECT
-DOMAIN-SUFFIX,icloud-content.com,DIRECT
-DOMAIN-KEYWORD,apple-intelligence,DIRECT
-DOMAIN-SUFFIX,mzstatic.com,DIRECT
-DOMAIN-KEYWORD,itunes,DIRECT
-DOMAIN-KEYWORD,apple-dns,DIRECT
-DOMAIN-SUFFIX,apple.com,DIRECT
 DOMAIN-SUFFIX,aaplimg.com,DIRECT
-DOMAIN-KEYWORD,apis.apple,DIRECT
-DOMAIN-KEYWORD,mail.me.com,DIRECT
+DOMAIN-SUFFIX,apple-pki.com,DIRECT
+DOMAIN-SUFFIX,apple.com,DIRECT
+DOMAIN-SUFFIX,apple.com,DIRECT
+DOMAIN-SUFFIX,ess-apple.com.akadns.net,DIRECT
+DOMAIN-SUFFIX,icloud-content.com,DIRECT
+DOMAIN-SUFFIX,icloud.com,DIRECT
+DOMAIN-SUFFIX,ls-apple.com.akadns.net,DIRECT
+DOMAIN-SUFFIX,mzstatic.com,DIRECT
 DOMAIN-SUFFIX,safebrowsing.apple,DIRECT
-DOMAIN,gs-loc.ls-apple.com.akadns.net,DIRECT
+DOMAIN-KEYWORD,apple-dns,DIRECT
+DOMAIN-KEYWORD,apple-intelligence,DIRECT
+DOMAIN-KEYWORD,apis.apple,DIRECT
+DOMAIN-KEYWORD,itunes,DIRECT
+DOMAIN-KEYWORD,mail.me.com,DIRECT
 
 #Steam
 DOMAIN-SUFFIX,cdn-ali.content.steamchina.com,DIRECT
