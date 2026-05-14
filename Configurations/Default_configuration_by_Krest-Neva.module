@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=Pro-grade networking for iOS/macOS
 
-#Последние изменения 14.05.2026 20:00
+#Последние изменения 14.05.2026 22:00
 #Фильтры обновлены 22.04.2026 05:00
 
 #==================================================
@@ -227,7 +227,7 @@ hide-crash-reporter-request = false
 keyword-filter-type = true
 
 [Proxy Group]
-AIPROXY = url-test,interval=230,timeout=2,tolerance=50,url=https://gemini.google.com,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|россия|🇷🇺|russia|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇸🇩|судан|sudan|🇻🇪|венесуэла|venezuela|🇧🇾|беларусь|belarus|🇦🇫|афганистан|afghanistan|🇹🇲|туркменистан|turkmenistan|🇬🇧|англия|england|🇫🇷|франция|france|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
+AIPROXY = url-test,interval=230,timeout=2,tolerance=50,url=https://gemini.google.com,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|россия|🇷🇺|russia|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇸🇩|судан|sudan|🇻🇪|венесуэла|venezuela|🇧🇾|беларусь|belarus|🇦🇫|афганистан|afghanistan|🇹🇲|туркменистан|turkmenistan|🇬🇧|англия|england|🇵🇱|польша|poland|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)|^(?=..\s)(?!^🇺🇸\sСША)).*
 BESTPROXY = load-balance,interval=230,timeout=2,url=https://cp.cloudflare.com/generate_204,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
 METAPROXY = load-balance,interval=150,timeout=2,url=https://www.instagram.com,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇹🇲|туркменистан|turkmenistan|🇨🇺|куба|cuba|🇹🇷|турция|turkey|🇧🇾|беларусь|belarus|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
 SPEEDPROXY = url-test,interval=100,timeout=2,tolerance=50,url=https://www.youtube.com,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇹🇲|туркменистан|turkmenistan|🇨🇺|куба|cuba|🇹🇷|турция|turkey|🇧🇾|беларусь|belarus|🇻🇪|венесуэла|venezuela|🇸🇩|судан|sudan|🇯🇵|япония|japan|🇨🇦|канада|canada|🇮🇳|индия|india|🇺🇸|сша|usa|🇧🇷|бразилия|brazil|🇦🇪|оаэ|uae|🇪🇬|египет|egypt|🇴🇲|оман|oman|🇸🇾|сирия|syria|🇬🇧|англия|england|🇦🇫|афганистан|afghanistan|🇵🇰|пакистан|pakistan|🇧🇩|бангладеш|bangladesh|🇱🇾|ливия|libya|(россия|russia)(?!\s*№\s*0\s*$|\s*№\s*2\s*\||\s\[LTE\]\sРОССИЯ\s№\s*[34](?![0-9]))|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
@@ -973,36 +973,45 @@ IP-CIDR,34.128.0.0/16,SPEEDPROXY,no-resolve
 IP-CIDR,155.102.0.0/16,SPEEDPROXY,no-resolve
 IP-CIDR,157.240.0.0/16,SPEEDPROXY,no-resolve
 
-#Instagram
-DOMAIN,graph.instagram.com,REJECT
-DOMAIN,graph.facebook.com,REJECT
-DOMAIN,connect.facebook.net,REJECT
-DOMAIN,pixel.facebook.com,REJECT
+#Meta
 DOMAIN,analytics.facebook.com,REJECT
+DOMAIN,connect.facebook.net,REJECT
+DOMAIN,graph.facebook.com,REJECT
+DOMAIN,graph.instagram.com,REJECT
+DOMAIN,pixel.facebook.com,REJECT
 DOMAIN-SUFFIX,atdmt.com,REJECT
+DOMAIN-SUFFIX,meta.com,METAPROXY
+DOMAIN-SUFFIX,spark-ar.com,METAPROXY
+DOMAIN-SUFFIX,spark.meta.com,METAPROXY
 IP-CIDR,31.13.64.0/18,METAPROXY,no-resolve
 IP-CIDR,31.13.72.0/24,METAPROXY,no-resolve
+IP-CIDR,69.171.224.0/19,METAPROXY,no-resolve
 IP-CIDR,157.240.0.0/16,METAPROXY,no-resolve
 IP-CIDR,163.70.128.0/17,METAPROXY,no-resolve
 IP-CIDR,173.252.64.0/18,METAPROXY,no-resolve
-IP-CIDR,69.171.224.0/19,METAPROXY,no-resolve
 IP-CIDR,179.60.192.0/22,METAPROXY,no-resolve
 IP-CIDR,185.60.216.0/22,METAPROXY,no-resolve
-DOMAIN-SUFFIX,instagram.com,METAPROXY
-DOMAIN-SUFFIX,instagr.am,METAPROXY
-DOMAIN-SUFFIX,cdninstagram.com,METAPROXY
-DOMAIN-SUFFIX,fbcdn.net,METAPROXY
-DOMAIN-SUFFIX,fbcdn.com,METAPROXY
+DOMAIN-SUFFIX,meta.ai,METAPROXY
 DOMAIN-SUFFIX,facebook.com,METAPROXY
 DOMAIN-SUFFIX,fb.com,METAPROXY
-DOMAIN-SUFFIX,meta.com,METAPROXY
-DOMAIN-SUFFIX,giphy.com,METAPROXY
-DOMAIN-SUFFIX,giphy-media.com,METAPROXY
-DOMAIN-SUFFIX,tenor.com,METAPROXY
-DOMAIN-SUFFIX,spark-ar.com,METAPROXY
-DOMAIN-SUFFIX,spark.meta.com,METAPROXY
+DOMAIN-SUFFIX,fbcdn.com,METAPROXY
+DOMAIN-SUFFIX,fbcdn.net,METAPROXY
+DOMAIN-SUFFIX,fb.me,METAPROXY
+DOMAIN-SUFFIX,fbsbx.com,METAPROXY
+DOMAIN-SUFFIX,m.me,METAPROXY
+DOMAIN-SUFFIX,messenger.com,METAPROXY
+DOMAIN-SUFFIX,wa.me,METAPROXY
+DOMAIN-SUFFIX,whatsapp.com,METAPROXY
+DOMAIN-SUFFIX,whatsapp.net,METAPROXY
 DOMAIN-SUFFIX,audio-ig.com,METAPROXY
 DOMAIN-SUFFIX,audio-sg.instagram.com,METAPROXY
+DOMAIN-SUFFIX,cdninstagram.com,METAPROXY
+DOMAIN-SUFFIX,instagr.am,METAPROXY
+DOMAIN-SUFFIX,instagram.com,METAPROXY
+DOMAIN-SUFFIX,threads.net,METAPROXY
+DOMAIN-SUFFIX,giphy-media.com,METAPROXY
+DOMAIN-SUFFIX,giphy.com,METAPROXY
+DOMAIN-SUFFIX,tenor.com,METAPROXY
 
 #Spotify🎶
 DOMAIN-SUFFIX,pscdn.co,SPEEDPROXY
