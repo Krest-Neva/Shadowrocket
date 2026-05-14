@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=Pro-grade networking for iOS/macOS
 
-#Последние изменения 29.04.2026 15:00
+#Последние изменения 14.05.2026 20:00
 #Фильтры обновлены 22.04.2026 05:00
 
 #==================================================
@@ -57,17 +57,11 @@
 # система сама переключится на доступный узел на основе теста через специальный URL.
 
 # СПИСОК ГРУПП:
-# 1️⃣ «BESTPROXY» (load-balance) — Тест: https://cp.cloudflare.com/generate_204
-# 2️⃣ «COPILOTPROXY» (load-balance) — Тест: https://copilot.microsoft.com/
-# 3️⃣ «DISCORDPROXY» (fallback) — Тест: https://discord.com/api/v9/gateway
-# 4️⃣ «GEMINIPROXY» (load-balance) — Тест: https://gemini.google.com/
-# 5️⃣ «GPTPROXY» (load-balance) — Тест: https://chatgpt.com/
-# 6️⃣ «INSTPROXY» (load-balance) — Тест: https://www.instagram.com/
-# 7️⃣ «SELECTPROXY» (select) — Тест: https://www.gstatic.com/generate_204
-# 8️⃣ «SPEEDPROXY» (fallback) — Тест: https://www.youtube.com/
-# 9️⃣ «SPOTIFYPROXY» (fallback) — Тест: https://open.spotify.com/
-# 🔟 «TGPROXY» (load-balance) — Тест: https://web.telegram.org/
-# 1️⃣1️⃣ «TIKTOKPROXY» (fallback) — Тест: https://www.tiktok.com/
+1️⃣ «AIPROXY» (url-test) — Тест: https://gemini.google.com
+2️⃣ «BESTPROXY» (load-balance) — Тест: https://cp.cloudflare.com/generate_204
+3️⃣ «METAPROXY» (load-balance) — Тест: https://www.instagram.com
+4️⃣ «SPEEDPROXY» (url-test) — Тест: https://www.youtube.com
+5️⃣ «TGPROXY» (load-balance) — Тест: https://web.telegram.org
 
 # ОПИСАНИЕ СТРАТЕГИЙ:
 # — load-balance: Распределяет трафик между несколькими быстрыми серверами одновременно (наиболее быстро).
@@ -233,21 +227,15 @@ hide-crash-reporter-request = false
 keyword-filter-type = true
 
 [Proxy Group]
-BESTPROXY = load-balance,interval=300,timeout=2,url=https://cp.cloudflare.com/generate_204,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
-COPILOTPROXY = load-balance,interval=600,timeout=2,url=https://copilot.microsoft.com,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇸🇩|судан|sudan|🇻🇪|венесуэла|venezuela|🇧🇾|беларусь|belarus|🇦🇫|афганистан|afghanistan|🇹🇲|туркменистан|turnkmenistan|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
-DISCORDPROXY = url-test,interval=180,timeout=2,tolerance=50,url=https://discord.com/api/v9/gateway,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇹🇷|турция|turkey|🇦🇪|оаэ|uae|🇪🇬|египет|egypt|🇴🇲|оман|oman|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇹🇲|туркменистан|turkmenistan|🇻🇪|венесуэла|venezuela|🇬🇧|англия|england|🇺🇸|сша|usa|🇨🇦|канада|canada|🇧🇷|бразилия|brazil|🇮🇳|индия|india|🇯🇵|япония|japan|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
-GEMINIPROXY = load-balance,interval=300,timeout=2,url=https://gemini.google.com,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|россия|🇷🇺|russia|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇸🇩|судан|sudan|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)|^(?=..\s)(?!^🇺🇸\sСША)).*
-GPTPROXY = url-test,interval=300,timeout=2,tolerance=50,url=https://chatgpt.com,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇧🇾|беларусь|belarus|🇻🇪|венесуэла|venezuela|🇦🇫|афганистан|afghanistan|🇸🇩|судан|sudan|🇬🇧|англия|england|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
-INSTPROXY = load-balance,interval=300,timeout=2,url=https://www.instagram.com,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇹🇲|туркменистан|turkmenistan|🇨🇺|куба|cuba|🇹🇷|турция|turkey|🇧🇾|беларусь|belarus|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
-#SELECTPROXY = select,interval=600,timeout=1,url=https://www.gstatic.com/generate_204,policy-regex-filter=^.*
-SPEEDPROXY = url-test,interval=120,timeout=2,tolerance=50,url=https://www.youtube.com,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇹🇲|туркменистан|turkmenistan|🇨🇺|куба|cuba|🇹🇷|турция|turkey|🇧🇾|беларусь|belarus|🇻🇪|венесуэла|venezuela|🇸🇩|судан|sudan|🇯🇵|япония|japan|🇨🇦|канада|canada|🇮🇳|индия|india|🇺🇸|сша|usa|🇧🇷|бразилия|brazil|(россия|russia)(?!\s*№\s*0\s*$|\s*№\s*2\s*\||\s\[LTE\]\sРОССИЯ\s№\s*[34](?![0-9]))|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
-SPOTIFYPROXY = url-test,interval=600,timeout=2,tolerance=50,url=https://open.spotify.com,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇸🇩|судан|sudan|🇹🇲|туркменистан|turkmenistan|🇻🇪|венесуэла|venezuela|🇧🇾|беларусь|belarus|🇦🇫|афганистан|afghanistan|🇵🇰|пакистан|pakistan|🇧🇩|бангладеш|bangladesh|🇱🇾|ливия|libya|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
-TGPROXY = load-balance,interval=300,timeout=2,url=https://web.telegram.org,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
-TIKTOKPROXY = url-test,interval=300,timeout=2,tolerance=50,url=https://www.tiktok.com,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇳|индия|india|🇮🇷|иран|iran|🇧🇩|бангладеш|bangladesh|🇵🇰|пакистан|pakistan|🇦🇫|афганистан|afghanistan|🇸🇾|сирия|syria|🇹🇲|туркменистан|turkmenistan|🇨🇺|куба|cuba|🇻🇪|венесуэла|venezuela|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
+AIPROXY = url-test,interval=230,timeout=2,tolerance=50,url=https://gemini.google.com,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|россия|🇷🇺|russia|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇨🇺|куба|cuba|🇸🇾|сирия|syria|🇸🇩|судан|sudan|🇻🇪|венесуэла|venezuela|🇧🇾|беларусь|belarus|🇦🇫|афганистан|afghanistan|🇹🇲|туркменистан|turkmenistan|🇬🇧|англия|england|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
+BESTPROXY = load-balance,interval=230,timeout=2,url=https://cp.cloudflare.com/generate_204,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
+METAPROXY = load-balance,interval=150,timeout=2,url=https://www.instagram.com,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇹🇲|туркменистан|turkmenistan|🇨🇺|куба|cuba|🇹🇷|турция|turkey|🇧🇾|беларусь|belarus|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
+SPEEDPROXY = url-test,interval=100,timeout=2,tolerance=50,url=https://www.youtube.com,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇹🇲|туркменистан|turkmenistan|🇨🇺|куба|cuba|🇹🇷|турция|turkey|🇧🇾|беларусь|belarus|🇻🇪|венесуэла|venezuela|🇸🇩|судан|sudan|🇯🇵|япония|japan|🇨🇦|канада|canada|🇮🇳|индия|india|🇺🇸|сша|usa|🇧🇷|бразилия|brazil|🇦🇪|оаэ|uae|🇪🇬|египет|egypt|🇴🇲|оман|oman|🇸🇾|сирия|syria|🇬🇧|англия|england|🇦🇫|афганистан|afghanistan|🇵🇰|пакистан|pakistan|🇧🇩|бангладеш|bangladesh|🇱🇾|ливия|libya|(россия|russia)(?!\s*№\s*0\s*$|\s*№\s*2\s*\||\s\[LTE\]\sРОССИЯ\s№\s*[34](?![0-9]))|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
+TGPROXY = load-balance,interval=150,timeout=2,url=https://web.telegram.org,policy-regex-filter=^(?i)(?!.*(⬇️\s*LTE\s*локации\s*Россия\s*7\s*-\s*15\s*⬇️|📶\s*лимит\s*35гб\s*⬇️|⬇️\s*Ниже\s*лимитов\s*нет\s*⬇️|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|(?<!\[LTE\]\s)(россия|russia)(?!\s*№\s*([0234])(?:\s*\||\s|$))|(россия|russia)\s*№\s*(1|7/4)(?![0-9])|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|WS)).*
 
 [Rule]
 #Локальные сети
-GEOIP,private,DIRECT
+GEOIP,PRIVATE,DIRECT
 
 #Временно
 DOMAIN-SUFFIX,kinopoisk.ru,DIRECT,pre-matching
@@ -289,7 +277,7 @@ RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/ma
 #RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_SMALL_1.list,REJECT-DROP
 #RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_SMALL_2.list,REJECT-DROP
 #RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_SMALL_3.list,REJECT-DROP
-DOMAIN-KEYWORD,upload,DISCORDPROXY
+DOMAIN-KEYWORD,upload,SPEEDPROXY
 DOMAIN-KEYWORD,download,BESTPROXY
 DOMAIN-SUFFIX,pixel.google.com,BESTPROXY
 DOMAIN-KEYWORD,ads,REJECT-200,pre-matching
@@ -529,8 +517,8 @@ URL-REGEX,^https?://(?:infocenter\.rasp\.yandex-net\.ru|suburban-trains\.s3\.yan
 URL-REGEX,^https?://mc\.yandex\.(ru|com)/(?:metrika|watch|solid\.ws).*$,REJECT-TINYGIF
 URL-REGEX,^https?://sp\.yandex\.(ru|com)/.*$,REJECT
 
-DOMAIN-SUFFIX,max.ru,REJECT-DROP,pre-matching
 #НИКАКОГО МАКСА!⚠️
+DOMAIN-SUFFIX,max.ru,REJECT-DROP,pre-matching
 
 #GitHub
 DOMAIN-SUFFIX,atom.io,SPEEDPROXY
@@ -565,45 +553,45 @@ DOMAIN-SUFFIX,repo.new,SPEEDPROXY
 DOMAIN-SUFFIX,thegithubshop.com,SPEEDPROXY
 
 #Discord
-DOMAIN-SUFFIX,airhorn.solutions,DISCORDPROXY
-DOMAIN-SUFFIX,airhornbot.com,DISCORDPROXY
-DOMAIN-SUFFIX,bigbeans.solutions,DISCORDPROXY
-DOMAIN-SUFFIX,comdiscord.com,DISCORDPROXY
-DOMAIN-SUFFIX,dis.gd,DISCORDPROXY
-DOMAIN-SUFFIX,disboard.org,DISCORDPROXY
-DOMAIN-SUFFIX,discord-activities.com,DISCORDPROXY
-DOMAIN-SUFFIX,discord-attachments-uploads-prd.storage.googleapis.com,DISCORDPROXY
-DOMAIN-SUFFIX,discord.co,DISCORDPROXY
-DOMAIN-SUFFIX,discord.com,DISCORDPROXY
-DOMAIN-SUFFIX,discord.design,DISCORDPROXY
-DOMAIN-SUFFIX,discord.dev,DISCORDPROXY
-DOMAIN-SUFFIX,discord.gg,DISCORDPROXY
-DOMAIN-SUFFIX,discord.gift,DISCORDPROXY
-DOMAIN-SUFFIX,discord.gifts,DISCORDPROXY
-DOMAIN-SUFFIX,discord.media,DISCORDPROXY
-DOMAIN-SUFFIX,discord.new,DISCORDPROXY
-DOMAIN-SUFFIX,discord.store,DISCORDPROXY
-DOMAIN-SUFFIX,discord.tools,DISCORDPROXY
-DOMAIN-SUFFIX,discordactivities.com,DISCORDPROXY
-DOMAIN-SUFFIX,discordapp.com,DISCORDPROXY
-DOMAIN-SUFFIX,discordapp.io,DISCORDPROXY
-DOMAIN-SUFFIX,discordapp.net,DISCORDPROXY
-DOMAIN-SUFFIX,discordapp.page.link,DISCORDPROXY
-DOMAIN-SUFFIX,discordbee.com,DISCORDPROXY
-DOMAIN-SUFFIX,discordbotlist.com,DISCORDPROXY
-DOMAIN-SUFFIX,discordcdn.com,DISCORDPROXY
-DOMAIN-SUFFIX,discordmerch.com,DISCORDPROXY
-DOMAIN-SUFFIX,discordpartygames.com,DISCORDPROXY
-DOMAIN-SUFFIX,discords.com,DISCORDPROXY
-DOMAIN-SUFFIX,discordsays.com,DISCORDPROXY
-DOMAIN-SUFFIX,discordservers.com,DISCORDPROXY
-DOMAIN-SUFFIX,discordstatus.com,DISCORDPROXY
-DOMAIN-SUFFIX,disforge.com,DISCORDPROXY
-DOMAIN-SUFFIX,dyno.gg,DISCORDPROXY
-DOMAIN-SUFFIX,hammerandchisel.ssl.zendesk.com,DISCORDPROXY
-DOMAIN-SUFFIX,mee6.xyz,DISCORDPROXY
-DOMAIN-SUFFIX,top.gg,DISCORDPROXY
-DOMAIN-SUFFIX,watchanimeattheoffice.com,DISCORDPROXY
+DOMAIN-SUFFIX,airhorn.solutions,SPEEDPROXY
+DOMAIN-SUFFIX,airhornbot.com,SPEEDPROXY
+DOMAIN-SUFFIX,bigbeans.solutions,SPEEDPROXY
+DOMAIN-SUFFIX,comdiscord.com,SPEEDPROXY
+DOMAIN-SUFFIX,dis.gd,SPEEDPROXY
+DOMAIN-SUFFIX,disboard.org,SPEEDPROXY
+DOMAIN-SUFFIX,discord-activities.com,SPEEDPROXY
+DOMAIN-SUFFIX,discord-attachments-uploads-prd.storage.googleapis.com,SPEEDPROXY
+DOMAIN-SUFFIX,discord.co,SPEEDPROXY
+DOMAIN-SUFFIX,discord.com,SPEEDPROXY
+DOMAIN-SUFFIX,discord.design,SPEEDPROXY
+DOMAIN-SUFFIX,discord.dev,SPEEDPROXY
+DOMAIN-SUFFIX,discord.gg,SPEEDPROXY
+DOMAIN-SUFFIX,discord.gift,SPEEDPROXY
+DOMAIN-SUFFIX,discord.gifts,SPEEDPROXY
+DOMAIN-SUFFIX,discord.media,SPEEDPROXY
+DOMAIN-SUFFIX,discord.new,SPEEDPROXY
+DOMAIN-SUFFIX,discord.store,SPEEDPROXY
+DOMAIN-SUFFIX,discord.tools,SPEEDPROXY
+DOMAIN-SUFFIX,discordactivities.com,SPEEDPROXY
+DOMAIN-SUFFIX,discordapp.com,SPEEDPROXY
+DOMAIN-SUFFIX,discordapp.io,SPEEDPROXY
+DOMAIN-SUFFIX,discordapp.net,SPEEDPROXY
+DOMAIN-SUFFIX,discordapp.page.link,SPEEDPROXY
+DOMAIN-SUFFIX,discordbee.com,SPEEDPROXY
+DOMAIN-SUFFIX,discordbotlist.com,SPEEDPROXY
+DOMAIN-SUFFIX,discordcdn.com,SPEEDPROXY
+DOMAIN-SUFFIX,discordmerch.com,SPEEDPROXY
+DOMAIN-SUFFIX,discordpartygames.com,SPEEDPROXY
+DOMAIN-SUFFIX,discords.com,SPEEDPROXY
+DOMAIN-SUFFIX,discordsays.com,SPEEDPROXY
+DOMAIN-SUFFIX,discordservers.com,SPEEDPROXY
+DOMAIN-SUFFIX,discordstatus.com,SPEEDPROXY
+DOMAIN-SUFFIX,disforge.com,SPEEDPROXY
+DOMAIN-SUFFIX,dyno.gg,SPEEDPROXY
+DOMAIN-SUFFIX,hammerandchisel.ssl.zendesk.com,SPEEDPROXY
+DOMAIN-SUFFIX,mee6.xyz,SPEEDPROXY
+DOMAIN-SUFFIX,top.gg,SPEEDPROXY
+DOMAIN-SUFFIX,watchanimeattheoffice.com,SPEEDPROXY
 
 #Google, YouTube, Gemini
 DOMAIN,oauthaccountmanager.googleapis.com,SPEEDPROXY
@@ -798,24 +786,24 @@ USER-AGENT,com.google.ios.youtube*,SPEEDPROXY
 USER-AGENT,com.google.ios.youtubemusic*,SPEEDPROXY
 IP-CIDR,172.110.32.0/21,SPEEDPROXY,no-resolve
 IP-CIDR,216.73.80.0/20,SPEEDPROXY,no-resolve
-IP-CIDR,2620:120:e000::/40,SPEEDPROXY,no-resolve
-DOMAIN,ai.google.dev,GEMINIPROXY
-DOMAIN,alkalimakersuite-pa.clients6.google.com,GEMINIPROXY
-DOMAIN,makersuite.google.com,GEMINIPROXY
-DOMAIN-SUFFIX,apis.google.com,GEMINIPROXY
-DOMAIN-SUFFIX,bard.google.com,GEMINIPROXY
-DOMAIN-SUFFIX,deepmind.com,GEMINIPROXY
-DOMAIN-SUFFIX,deepmind.google,GEMINIPROXY
-DOMAIN-SUFFIX,gemini.google.com,GEMINIPROXY
-DOMAIN-SUFFIX,generativeai.google,GEMINIPROXY
-DOMAIN-SUFFIX,googleapis.com,GEMINIPROXY
-DOMAIN-SUFFIX,googleusercontent.com,GEMINIPROXY
-DOMAIN-SUFFIX,gstatic.com,GEMINIPROXY
-DOMAIN-SUFFIX,proactivebackend-pa.googleapis.com,GEMINIPROXY
-DOMAIN-KEYWORD,colab,GEMINIPROXY
-DOMAIN-KEYWORD,developerprofiles,GEMINIPROXY
-DOMAIN-KEYWORD,gemini,GEMINIPROXY
-DOMAIN-KEYWORD,generativelanguage,GEMINIPROXY
+IP-CIDR,2620:120:E000::/40,SPEEDPROXY,no-resolve
+DOMAIN,ai.google.dev,AIPROXY
+DOMAIN,alkalimakersuite-pa.clients6.google.com,AIPROXY
+DOMAIN,makersuite.google.com,AIPROXY
+DOMAIN-SUFFIX,apis.google.com,AIPROXY
+DOMAIN-SUFFIX,bard.google.com,AIPROXY
+DOMAIN-SUFFIX,deepmind.com,AIPROXY
+DOMAIN-SUFFIX,deepmind.google,AIPROXY
+DOMAIN-SUFFIX,gemini.google.com,AIPROXY
+DOMAIN-SUFFIX,generativeai.google,AIPROXY
+DOMAIN-SUFFIX,googleapis.com,AIPROXY
+DOMAIN-SUFFIX,googleusercontent.com,AIPROXY
+DOMAIN-SUFFIX,gstatic.com,AIPROXY
+DOMAIN-SUFFIX,proactivebackend-pa.googleapis.com,AIPROXY
+DOMAIN-KEYWORD,colab,AIPROXY
+DOMAIN-KEYWORD,developerprofiles,AIPROXY
+DOMAIN-KEYWORD,gemini,AIPROXY
+DOMAIN-KEYWORD,generativelanguage,AIPROXY
 
 #Twitch
 DOMAIN-SUFFIX,ext-twitch.tv,SPEEDPROXY
@@ -840,68 +828,69 @@ IP-CIDR,192.108.239.0/24,SPEEDPROXY,no-resolve
 IP-CIDR,199.9.248.0/21,SPEEDPROXY,no-resolve
 
 #ChatGPT
-DOMAIN-SUFFIX,ai.com,GPTPROXY
-DOMAIN-SUFFIX,algolia.net,GPTPROXY
-DOMAIN-SUFFIX,api.statsig.com,GPTPROXY
-DOMAIN-SUFFIX,auth0.com,GPTPROXY
-DOMAIN,browser-intake-datadoghq.com,GPTPROXY
-DOMAIN,chat.openai.com.cdn.cloudflare.net,GPTPROXY
-DOMAIN-SUFFIX,chatgpt.com,GPTPROXY
-DOMAIN-SUFFIX,chatgpt.livekit.cloud,GPTPROXY
-DOMAIN-SUFFIX,client-api.arkoselabs.com,GPTPROXY
-DOMAIN-SUFFIX,events.statsigapi.net,GPTPROXY
-DOMAIN-SUFFIX,featuregates.org,GPTPROXY
-DOMAIN-SUFFIX,host.livekit.cloud,GPTPROXY
-DOMAIN-SUFFIX,identrust.com,GPTPROXY
-DOMAIN-SUFFIX,ingest.us.sentry.io,GPTPROXY
-DOMAIN-SUFFIX,intercom.io,GPTPROXY
-DOMAIN-SUFFIX,intercomcdn.com,GPTPROXY
-DOMAIN-SUFFIX,launchdarkly.com,GPTPROXY
-DOMAIN-SUFFIX,oaistatic.com,GPTPROXY
-DOMAIN-SUFFIX,oaiusercontent.com,GPTPROXY
-DOMAIN-SUFFIX,observeit.net,GPTPROXY
-DOMAIN,openai-api.arkoselabs.com,GPTPROXY
-DOMAIN-SUFFIX,openai.com,GPTPROXY
-DOMAIN,openaicom-api-bdcpf8c6d2e9atf6.z01.azurefd.net,GPTPROXY
-DOMAIN-SUFFIX,openaiapi-site.azureedge.net,GPTPROXY
-DOMAIN-SUFFIX,openaicom.imgix.net,GPTPROXY
-DOMAIN,openaicomproductionae4b.blob.core.windows.net,GPTPROXY
-DOMAIN,production-openaicom-storage.azureedge.net,GPTPROXY
-DOMAIN-SUFFIX,segment.io,GPTPROXY
-DOMAIN-SUFFIX,sentry.io,GPTPROXY
-DOMAIN,static.cloudflareinsights.com,GPTPROXY
-DOMAIN-SUFFIX,stripe.com,GPTPROXY
-DOMAIN-SUFFIX,turn.livekit.cloud,GPTPROXY
-IP-CIDR,24.199.123.28/32,GPTPROXY,no-resolve
-IP-CIDR,64.23.132.171/32,GPTPROXY,no-resolve
-IP-ASN,20473,GPTPROXY,no-resolve
+DOMAIN-SUFFIX,ai.com,AIPROXY
+DOMAIN-SUFFIX,algolia.net,AIPROXY
+DOMAIN-SUFFIX,api.statsig.com,AIPROXY
+DOMAIN-SUFFIX,auth0.com,AIPROXY
+DOMAIN,browser-intake-datadoghq.com,AIPROXY
+DOMAIN,chat.openai.com.cdn.cloudflare.net,AIPROXY
+DOMAIN-SUFFIX,chatgpt.com,AIPROXY
+DOMAIN-SUFFIX,chatgpt.livekit.cloud,AIPROXY
+DOMAIN-SUFFIX,client-api.arkoselabs.com,AIPROXY
+DOMAIN-SUFFIX,events.statsigapi.net,AIPROXY
+DOMAIN-SUFFIX,featuregates.org,AIPROXY
+DOMAIN-SUFFIX,host.livekit.cloud,AIPROXY
+DOMAIN-SUFFIX,identrust.com,AIPROXY
+DOMAIN-SUFFIX,ingest.us.sentry.io,AIPROXY
+DOMAIN-SUFFIX,intercom.io,AIPROXY
+DOMAIN-SUFFIX,intercomcdn.com,AIPROXY
+DOMAIN-SUFFIX,launchdarkly.com,AIPROXY
+DOMAIN-SUFFIX,oaistatic.com,AIPROXY
+DOMAIN-SUFFIX,oaiusercontent.com,AIPROXY
+DOMAIN-SUFFIX,observeit.net,AIPROXY
+DOMAIN,openai-api.arkoselabs.com,AIPROXY
+DOMAIN-SUFFIX,openai.com,AIPROXY
+DOMAIN,openaicom-api-bdcpf8c6d2e9atf6.z01.azurefd.net,AIPROXY
+DOMAIN-SUFFIX,openaiapi-site.azureedge.net,AIPROXY
+DOMAIN-SUFFIX,openaicom.imgix.net,AIPROXY
+DOMAIN,openaicomproductionae4b.blob.core.windows.net,AIPROXY
+DOMAIN,production-openaicom-storage.azureedge.net,AIPROXY
+DOMAIN-SUFFIX,segment.io,AIPROXY
+DOMAIN-SUFFIX,sentry.io,AIPROXY
+DOMAIN,static.cloudflareinsights.com,AIPROXY
+DOMAIN-SUFFIX,stripe.com,AIPROXY
+DOMAIN-SUFFIX,turn.livekit.cloud,AIPROXY
+IP-CIDR,24.199.123.28/32,AIPROXY,no-resolve
+IP-CIDR,64.23.132.171/32,AIPROXY,no-resolve
+IP-ASN,20473,AIPROXY,no-resolve
 
 #Copilot
-DOMAIN-SUFFIX,api.microsoftapp.net,COPILOTPROXY
-DOMAIN,api.msn.com,COPILOTPROXY
-DOMAIN,assets.msn.com,COPILOTPROXY
-DOMAIN-SUFFIX,azureedge.net,COPILOTPROXY
-DOMAIN-SUFFIX,bing-shopping.microsoft-falcon.io,COPILOTPROXY
-DOMAIN-SUFFIX,challenges.cloudflare.com,COPILOTPROXY
-DOMAIN,copilot.microsoft.com,COPILOTPROXY
-DOMAIN-SUFFIX,edgeservices.bing.com,COPILOTPROXY
-DOMAIN,gateway.bingviz.microsoft.net,COPILOTPROXY
-DOMAIN,gateway.bingviz.microsoftapp.net,COPILOTPROXY
-DOMAIN,in.appcenter.ms,COPILOTPROXY
-DOMAIN,location.microsoft.com,COPILOTPROXY
-DOMAIN-SUFFIX,microsoft.com,COPILOTPROXY
-DOMAIN-SUFFIX,microsoftonline.com,COPILOTPROXY
-DOMAIN-SUFFIX,msauth.net,COPILOTPROXY
-DOMAIN,odc.officeapps.live.com,COPILOTPROXY
-DOMAIN-SUFFIX,office.com,COPILOTPROXY
-DOMAIN,r.bing.com,COPILOTPROXY
-DOMAIN,self.events.data.microsoft.com,COPILOTPROXY
-DOMAIN,services.bingapis.com,COPILOTPROXY
-DOMAIN,sydney.bing.com,COPILOTPROXY
-DOMAIN,www.bing.com,COPILOTPROXY
-IP-ASN,14061,COPILOTPROXY,no-resolve
+DOMAIN-SUFFIX,api.microsoftapp.net,AIPROXY
+DOMAIN,api.msn.com,AIPROXY
+DOMAIN,assets.msn.com,AIPROXY
+DOMAIN-SUFFIX,azureedge.net,AIPROXY
+DOMAIN-SUFFIX,bing-shopping.microsoft-falcon.io,AIPROXY
+DOMAIN-SUFFIX,challenges.cloudflare.com,AIPROXY
+DOMAIN,copilot.microsoft.com,AIPROXY
+DOMAIN-SUFFIX,edgeservices.bing.com,AIPROXY
+DOMAIN,gateway.bingviz.microsoft.net,AIPROXY
+DOMAIN,gateway.bingviz.microsoftapp.net,AIPROXY
+DOMAIN,in.appcenter.ms,AIPROXY
+DOMAIN,location.microsoft.com,AIPROXY
+DOMAIN-SUFFIX,microsoft.com,AIPROXY
+DOMAIN-SUFFIX,microsoftonline.com,AIPROXY
+DOMAIN-SUFFIX,msauth.net,AIPROXY
+DOMAIN,odc.officeapps.live.com,AIPROXY
+DOMAIN-SUFFIX,office.com,AIPROXY
+DOMAIN,r.bing.com,AIPROXY
+DOMAIN,self.events.data.microsoft.com,AIPROXY
+DOMAIN,services.bingapis.com,AIPROXY
+DOMAIN,sydney.bing.com,AIPROXY
+DOMAIN,www.bing.com,AIPROXY
+IP-ASN,14061,AIPROXY,no-resolve
 
-DOMAIN-SUFFIX,deepseek.com,BESTPROXY
+#DeepSeek
+DOMAIN-SUFFIX,deepseek.com,AIPROXY
 
 #Telegram
 RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/telegramcidr.txt,TGPROXY
@@ -936,53 +925,53 @@ DOMAIN-SUFFIX,mon.byteoversea.com,REJECT
 DOMAIN-SUFFIX,pstatp.com,REJECT
 DOMAIN-SUFFIX,sgsnssdk.com,REJECT
 DOMAIN-SUFFIX,volces.com,REJECT
-DOMAIN,lf16-effectcdn.byteeffecttos-g.com,TIKTOKPROXY
-DOMAIN,lf16-pkgcdn.pitaya-clientai.com,TIKTOKPROXY
-DOMAIN,p16-tiktokcdn-com.akamaized.net,TIKTOKPROXY
-DOMAIN,trae-api-sg.mchost.guru,TIKTOKPROXY
-DOMAIN-SUFFIX,amemv.com,TIKTOKPROXY
-DOMAIN-SUFFIX,bytedance.com,TIKTOKPROXY
-DOMAIN-SUFFIX,bytedance.org,TIKTOKPROXY
-DOMAIN-SUFFIX,bytedapm.com,TIKTOKPROXY
-DOMAIN-SUFFIX,bytegecko-i18n.com,TIKTOKPROXY
-DOMAIN-SUFFIX,byteintlapi.com,TIKTOKPROXY
-DOMAIN-SUFFIX,byteoversea.com,TIKTOKPROXY
-DOMAIN-SUFFIX,bytetos.com,TIKTOKPROXY
-DOMAIN-SUFFIX,capcut.com,TIKTOKPROXY
-DOMAIN-SUFFIX,capcut.net,TIKTOKPROXY
-DOMAIN-SUFFIX,douyin.com,TIKTOKPROXY
-DOMAIN-SUFFIX,ibytedtos.com,TIKTOKPROXY
-DOMAIN-SUFFIX,ibyteimg.com,TIKTOKPROXY
-DOMAIN-SUFFIX,ipstatp.com,TIKTOKPROXY
-DOMAIN-SUFFIX,isnssdk.com,TIKTOKPROXY
-DOMAIN-SUFFIX,ixigua.com,TIKTOKPROXY
-DOMAIN-SUFFIX,marscode.com,TIKTOKPROXY
-DOMAIN-SUFFIX,muscdn.com,TIKTOKPROXY
-DOMAIN-SUFFIX,musical.ly,TIKTOKPROXY
-DOMAIN-SUFFIX,sgpstatp.com,TIKTOKPROXY
-DOMAIN-SUFFIX,snssdk.com,TIKTOKPROXY
-DOMAIN-SUFFIX,tik-tokapi.com,TIKTOKPROXY
-DOMAIN-SUFFIX,tiktok.com,TIKTOKPROXY
-DOMAIN-SUFFIX,tiktokcdn-us.com,TIKTOKPROXY
-DOMAIN-SUFFIX,tiktokcdn.com,TIKTOKPROXY
-DOMAIN-SUFFIX,tiktokd.net,TIKTOKPROXY
-DOMAIN-SUFFIX,tiktokd.org,TIKTOKPROXY
-DOMAIN-SUFFIX,tiktokmusic.app,TIKTOKPROXY
-DOMAIN-SUFFIX,tiktokv.com,TIKTOKPROXY
-DOMAIN-SUFFIX,tiktokv.us,TIKTOKPROXY
-DOMAIN-SUFFIX,trae.ai,TIKTOKPROXY
-DOMAIN-SUFFIX,ttwebview.com,TIKTOKPROXY
-DOMAIN-KEYWORD,musical.ly,TIKTOKPROXY
-DOMAIN-KEYWORD,tiktok,TIKTOKPROXY
-USER-AGENT,TikTok*,TIKTOKPROXY
-IP-ASN,136907,TIKTOKPROXY,no-resolve
-IP-ASN,152194,TIKTOKPROXY,no-resolve
-IP-ASN,396986,TIKTOKPROXY,no-resolve
-IP-CIDR,34.96.0.0/16,TIKTOKPROXY,no-resolve
-IP-CIDR,34.120.0.0/16,TIKTOKPROXY,no-resolve
-IP-CIDR,34.128.0.0/16,TIKTOKPROXY,no-resolve
-IP-CIDR,155.102.0.0/16,TIKTOKPROXY,no-resolve
-IP-CIDR,157.240.0.0/16,TIKTOKPROXY,no-resolve
+DOMAIN,lf16-effectcdn.byteeffecttos-g.com,SPEEDPROXY
+DOMAIN,lf16-pkgcdn.pitaya-clientai.com,SPEEDPROXY
+DOMAIN,p16-tiktokcdn-com.akamaized.net,SPEEDPROXY
+DOMAIN,trae-api-sg.mchost.guru,SPEEDPROXY
+DOMAIN-SUFFIX,amemv.com,SPEEDPROXY
+DOMAIN-SUFFIX,bytedance.com,SPEEDPROXY
+DOMAIN-SUFFIX,bytedance.org,SPEEDPROXY
+DOMAIN-SUFFIX,bytedapm.com,SPEEDPROXY
+DOMAIN-SUFFIX,bytegecko-i18n.com,SPEEDPROXY
+DOMAIN-SUFFIX,byteintlapi.com,SPEEDPROXY
+DOMAIN-SUFFIX,byteoversea.com,SPEEDPROXY
+DOMAIN-SUFFIX,bytetos.com,SPEEDPROXY
+DOMAIN-SUFFIX,capcut.com,SPEEDPROXY
+DOMAIN-SUFFIX,capcut.net,SPEEDPROXY
+DOMAIN-SUFFIX,douyin.com,SPEEDPROXY
+DOMAIN-SUFFIX,ibytedtos.com,SPEEDPROXY
+DOMAIN-SUFFIX,ibyteimg.com,SPEEDPROXY
+DOMAIN-SUFFIX,ipstatp.com,SPEEDPROXY
+DOMAIN-SUFFIX,isnssdk.com,SPEEDPROXY
+DOMAIN-SUFFIX,ixigua.com,SPEEDPROXY
+DOMAIN-SUFFIX,marscode.com,SPEEDPROXY
+DOMAIN-SUFFIX,muscdn.com,SPEEDPROXY
+DOMAIN-SUFFIX,musical.ly,SPEEDPROXY
+DOMAIN-SUFFIX,sgpstatp.com,SPEEDPROXY
+DOMAIN-SUFFIX,snssdk.com,SPEEDPROXY
+DOMAIN-SUFFIX,tik-tokapi.com,SPEEDPROXY
+DOMAIN-SUFFIX,tiktok.com,SPEEDPROXY
+DOMAIN-SUFFIX,tiktokcdn-us.com,SPEEDPROXY
+DOMAIN-SUFFIX,tiktokcdn.com,SPEEDPROXY
+DOMAIN-SUFFIX,tiktokd.net,SPEEDPROXY
+DOMAIN-SUFFIX,tiktokd.org,SPEEDPROXY
+DOMAIN-SUFFIX,tiktokmusic.app,SPEEDPROXY
+DOMAIN-SUFFIX,tiktokv.com,SPEEDPROXY
+DOMAIN-SUFFIX,tiktokv.us,SPEEDPROXY
+DOMAIN-SUFFIX,trae.ai,SPEEDPROXY
+DOMAIN-SUFFIX,ttwebview.com,SPEEDPROXY
+DOMAIN-KEYWORD,musical.ly,SPEEDPROXY
+DOMAIN-KEYWORD,tiktok,SPEEDPROXY
+USER-AGENT,TikTok*,SPEEDPROXY
+IP-ASN,136907,SPEEDPROXY,no-resolve
+IP-ASN,152194,SPEEDPROXY,no-resolve
+IP-ASN,396986,SPEEDPROXY,no-resolve
+IP-CIDR,34.96.0.0/16,SPEEDPROXY,no-resolve
+IP-CIDR,34.120.0.0/16,SPEEDPROXY,no-resolve
+IP-CIDR,34.128.0.0/16,SPEEDPROXY,no-resolve
+IP-CIDR,155.102.0.0/16,SPEEDPROXY,no-resolve
+IP-CIDR,157.240.0.0/16,SPEEDPROXY,no-resolve
 
 #Instagram
 DOMAIN,graph.instagram.com,REJECT
@@ -991,38 +980,38 @@ DOMAIN,connect.facebook.net,REJECT
 DOMAIN,pixel.facebook.com,REJECT
 DOMAIN,analytics.facebook.com,REJECT
 DOMAIN-SUFFIX,atdmt.com,REJECT
-IP-CIDR,31.13.64.0/18,INSTPROXY,no-resolve
-IP-CIDR,31.13.72.0/24,INSTPROXY,no-resolve
-IP-CIDR,157.240.0.0/16,INSTPROXY,no-resolve
-IP-CIDR,163.70.128.0/17,INSTPROXY,no-resolve
-IP-CIDR,173.252.64.0/18,INSTPROXY,no-resolve
-IP-CIDR,69.171.224.0/19,INSTPROXY,no-resolve
-IP-CIDR,179.60.192.0/22,INSTPROXY,no-resolve
-IP-CIDR,185.60.216.0/22,INSTPROXY,no-resolve
-DOMAIN-SUFFIX,instagram.com,INSTPROXY
-DOMAIN-SUFFIX,instagr.am,INSTPROXY
-DOMAIN-SUFFIX,cdninstagram.com,INSTPROXY
-DOMAIN-SUFFIX,fbcdn.net,INSTPROXY
-DOMAIN-SUFFIX,fbcdn.com,INSTPROXY
-DOMAIN-SUFFIX,facebook.com,INSTPROXY
-DOMAIN-SUFFIX,fb.com,INSTPROXY
-DOMAIN-SUFFIX,meta.com,INSTPROXY
-DOMAIN-SUFFIX,giphy.com,INSTPROXY
-DOMAIN-SUFFIX,giphy-media.com,INSTPROXY
-DOMAIN-SUFFIX,tenor.com,INSTPROXY
-DOMAIN-SUFFIX,spark-ar.com,INSTPROXY
-DOMAIN-SUFFIX,spark.meta.com,INSTPROXY
-DOMAIN-SUFFIX,audio-ig.com,INSTPROXY
-DOMAIN-SUFFIX,audio-sg.instagram.com,INSTPROXY
+IP-CIDR,31.13.64.0/18,METAPROXY,no-resolve
+IP-CIDR,31.13.72.0/24,METAPROXY,no-resolve
+IP-CIDR,157.240.0.0/16,METAPROXY,no-resolve
+IP-CIDR,163.70.128.0/17,METAPROXY,no-resolve
+IP-CIDR,173.252.64.0/18,METAPROXY,no-resolve
+IP-CIDR,69.171.224.0/19,METAPROXY,no-resolve
+IP-CIDR,179.60.192.0/22,METAPROXY,no-resolve
+IP-CIDR,185.60.216.0/22,METAPROXY,no-resolve
+DOMAIN-SUFFIX,instagram.com,METAPROXY
+DOMAIN-SUFFIX,instagr.am,METAPROXY
+DOMAIN-SUFFIX,cdninstagram.com,METAPROXY
+DOMAIN-SUFFIX,fbcdn.net,METAPROXY
+DOMAIN-SUFFIX,fbcdn.com,METAPROXY
+DOMAIN-SUFFIX,facebook.com,METAPROXY
+DOMAIN-SUFFIX,fb.com,METAPROXY
+DOMAIN-SUFFIX,meta.com,METAPROXY
+DOMAIN-SUFFIX,giphy.com,METAPROXY
+DOMAIN-SUFFIX,giphy-media.com,METAPROXY
+DOMAIN-SUFFIX,tenor.com,METAPROXY
+DOMAIN-SUFFIX,spark-ar.com,METAPROXY
+DOMAIN-SUFFIX,spark.meta.com,METAPROXY
+DOMAIN-SUFFIX,audio-ig.com,METAPROXY
+DOMAIN-SUFFIX,audio-sg.instagram.com,METAPROXY
 
 #Spotify🎶
-DOMAIN-SUFFIX,pscdn.co,SPOTIFYPROXY
-DOMAIN-SUFFIX,scdn.co,SPOTIFYPROXY
-DOMAIN-SUFFIX,spoti.fi,SPOTIFYPROXY
-DOMAIN-KEYWORD,spotify,SPOTIFYPROXY
-USER-AGENT,Spotify*,SPOTIFYPROXY
-IP-CIDR,35.186.224.47/32,SPOTIFYPROXY,no-resolve
-IP-CIDR,104.154.127.126/32,SPOTIFYPROXY,no-resolve
+DOMAIN-SUFFIX,pscdn.co,SPEEDPROXY
+DOMAIN-SUFFIX,scdn.co,SPEEDPROXY
+DOMAIN-SUFFIX,spoti.fi,SPEEDPROXY
+DOMAIN-KEYWORD,spotify,SPEEDPROXY
+USER-AGENT,Spotify*,SPEEDPROXY
+IP-CIDR,35.186.224.47/32,SPEEDPROXY,no-resolve
+IP-CIDR,104.154.127.126/32,SPEEDPROXY,no-resolve
 
 #Xiaomi
 DOMAIN-SUFFIX,408399.com,BESTPROXY
@@ -1279,7 +1268,7 @@ DOMAIN-SUFFIX,firaxislive.net,DIRECT
 DOMAIN-SUFFIX,2kcoretech.online,DIRECT
 
 #8ball🎱
-DOMAIN-SUFFIX,miniclippt.com,DISCORDPROXY
+DOMAIN-SUFFIX,miniclippt.com,SPEEDPROXY
 
 #Supercell⚔️
 DOMAIN-SUFFIX,brawlstars.com,SPEEDPROXY
@@ -1311,15 +1300,15 @@ IP-CIDR,162.62.34.10/32,SPEEDPROXY,no-resolve
 DOMAIN-SUFFIX,ru,DIRECT
 DOMAIN-SUFFIX,su,DIRECT
 DOMAIN-SUFFIX,xn--p1ai,DIRECT
-GEOIP,ru,DIRECT
+GEOIP,RU,DIRECT
 
 #BY🇧🇾
 DOMAIN-SUFFIX,by,DIRECT
-GEOIP,by,DIRECT
+GEOIP,BY,DIRECT
 
 #KZ🇰🇿
 DOMAIN-SUFFIX,kz,DIRECT
-GEOIP,kz,DIRECT
+GEOIP,KZ,DIRECT
 
 #Глобальный прокси🌍
 FINAL,BESTPROXY
