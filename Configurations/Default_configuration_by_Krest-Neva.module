@@ -977,14 +977,13 @@ DOMAIN-SUFFIX,tenor.com,METAPROXY
 AND,((DOMAIN-SUFFIX,spotify.com), (PROTOCOL,UDP)),REJECT
 AND,((USER-AGENT,Spotify*), (PROTOCOL,UDP)),REJECT
 URL-REGEX,^https?:\/\/(.*-ad-logic.*|crashdump\.spotify\.com|log\.spotify\.com|spclient\.wg\.spotify\.com\/(ad-logic|ads))\/,REJECT
-#URL-REGEX,^https?:\/\/.*spotify\.com\/.*timezone,REJECT-DICT
-DOMAIN-SUFFIX,pscdn.co,SPEEDPROXY
-DOMAIN-SUFFIX,scdn.co,SPEEDPROXY
-DOMAIN-SUFFIX,spoti.fi,SPEEDPROXY
-DOMAIN-KEYWORD,spotify,SPEEDPROXY
-USER-AGENT,Spotify*,SPEEDPROXY
-IP-CIDR,35.186.224.47/32,SPEEDPROXY,no-resolve
-IP-CIDR,104.154.127.126/32,SPEEDPROXY,no-resolve
+DOMAIN-SUFFIX,pscdn.co,PROXY
+DOMAIN-SUFFIX,scdn.co,PROXY
+DOMAIN-SUFFIX,spoti.fi,PROXY
+DOMAIN-KEYWORD,spotify,PROXY
+USER-AGENT,Spotify*,PROXY
+IP-CIDR,35.186.224.47/32,PROXY,no-resolve
+IP-CIDR,104.154.127.126/32,PROXY,no-resolve
 
 #Xiaomi
 DOMAIN-SUFFIX,408399.com,BESTPROXY
