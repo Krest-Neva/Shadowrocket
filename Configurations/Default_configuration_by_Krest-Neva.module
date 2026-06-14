@@ -1,8 +1,8 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=Pro-grade networking for iOS/macOS
 
-#Последние изменения 02.06.2026 19:00
-#Фильтры обновлены 22.04.2026 05:00
+#Последние изменения 14.06.2026 18:00
+#Фильтры обновлены 14.06.2026 18:00
 
 #==================================================
 # ℹ️ ИНФОРМАЦИЯ О КОНФИГУРАЦИИ
@@ -242,42 +242,9 @@ DOMAIN-SUFFIX,kinopoisk.ru,DIRECT,pre-matching
 IP-CIDR,5.28.195.2,DIRECT,no-resolve
 DOMAIN-SUFFIX,content-storage-upload.googleapis.com,DIRECT
 
-#Переключение YouTube с UDP/QUIC на TCP/HTTPS
-AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
-AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
-
-#Реклама в Spotify🎶
-AND,((DOMAIN-SUFFIX,spotify.com), (PROTOCOL,UDP)),REJECT
-AND,((USER-AGENT,Spotify*), (PROTOCOL,UDP)),REJECT
-URL-REGEX,^https?:\/\/(.*-ad-logic.*|crashdump\.spotify\.com|log\.spotify\.com|spclient\.wg\.spotify\.com\/(ad-logic|ads))\/,REJECT
-
 #Реклама, трекеры, аналитика, фишинг и остальная кака💩
 RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_STD.list,REJECT-DROP
 #RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_PLUS.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_STD_SMALL.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_PLUS_SMALL.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_1.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_2.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_3.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_4.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_5.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_6.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_1.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_2.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_3.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_4.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_5.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_6.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_7.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_8.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_9.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_10.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_SMALL_1.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_SMALL_2.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_STD_SMALL_3.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_SMALL_1.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_SMALL_2.list,REJECT-DROP
-#RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/SPLIT/REJECT_RULES_PLUS_SMALL_3.list,REJECT-DROP
 DOMAIN-KEYWORD,upload,SPEEDPROXY
 DOMAIN-KEYWORD,download,BESTPROXY
 DOMAIN-SUFFIX,pixel.google.com,BESTPROXY
@@ -302,15 +269,6 @@ DOMAIN-KEYWORD,log-upload,REJECT
 DOMAIN-KEYWORD,crash-report,REJECT
 DOMAIN-SUFFIX,firebaselogging-pa.googleapis.com,REJECT
 DOMAIN-SUFFIX,firebasestatistics.googleapis.com,REJECT
-
-#Магнит (требуется отключение VPN, присутсвует в General)
-DOMAIN-SUFFIX,mgnt.ru,REJECT-DROP
-DOMAIN-SUFFIX,tander.ru,REJECT-DROP
-DOMAIN-KEYWORD,magnit,REJECT-DROP
-IP-CIDR,178.248.232.0/21,REJECT-DROP,no-resolve
-IP-CIDR,82.148.11.0/24,REJECT-DROP,no-resolve
-IP-CIDR,185.15.56.0/22,REJECT-DROP,no-resolve
-IP-CIDR,91.223.116.0/22,REJECT-DROP,no-resolve
 
 #ip-чекеры
 RULE-SET,https://raw.githubusercontent.com/misha-tgshv/shadowrocket-configuration-file/refs/heads/main/rules/domains_geo_detect.list,REJECT-DROP
@@ -595,6 +553,8 @@ DOMAIN-SUFFIX,top.gg,SPEEDPROXY
 DOMAIN-SUFFIX,watchanimeattheoffice.com,SPEEDPROXY
 
 #Google, YouTube, Gemini
+AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
+AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 DOMAIN,oauthaccountmanager.googleapis.com,SPEEDPROXY
 DOMAIN,youtubei.googleapis.com,SPEEDPROXY
 DOMAIN-SUFFIX,ggpht.cn,SPEEDPROXY
@@ -1014,13 +974,17 @@ DOMAIN-SUFFIX,giphy.com,METAPROXY
 DOMAIN-SUFFIX,tenor.com,METAPROXY
 
 #Spotify🎶
-DOMAIN-SUFFIX,pscdn.co,PROXY
-DOMAIN-SUFFIX,scdn.co,PROXY
-DOMAIN-SUFFIX,spoti.fi,PROXY
-DOMAIN-KEYWORD,spotify,PROXY
-USER-AGENT,Spotify*,PROXY
-IP-CIDR,35.186.224.47/32,PROXY,no-resolve
-IP-CIDR,104.154.127.126/32,PROXY,no-resolve
+AND,((DOMAIN-SUFFIX,spotify.com), (PROTOCOL,UDP)),REJECT
+AND,((USER-AGENT,Spotify*), (PROTOCOL,UDP)),REJECT
+URL-REGEX,^https?:\/\/(.*-ad-logic.*|crashdump\.spotify\.com|log\.spotify\.com|spclient\.wg\.spotify\.com\/(ad-logic|ads))\/,REJECT
+URL-REGEX,^https?:\/\/.*spotify\.com\/.*timezone,REJECT-DICT
+DOMAIN-SUFFIX,pscdn.co,SPEEDPROXY
+DOMAIN-SUFFIX,scdn.co,SPEEDPROXY
+DOMAIN-SUFFIX,spoti.fi,SPEEDPROXY
+DOMAIN-KEYWORD,spotify,SPEEDPROXY
+USER-AGENT,Spotify*,SPEEDPROXY
+IP-CIDR,35.186.224.47/32,SPEEDPROXY,no-resolve
+IP-CIDR,104.154.127.126/32,SPEEDPROXY,no-resolve
 
 #Xiaomi
 DOMAIN-SUFFIX,408399.com,BESTPROXY
@@ -1305,6 +1269,9 @@ IP-CIDR,54.248.64.192/32,SPEEDPROXY,no-resolve
 IP-CIDR,162.62.33.45/32,SPEEDPROXY,no-resolve
 IP-CIDR,162.62.33.70/32,SPEEDPROXY,no-resolve
 IP-CIDR,162.62.34.10/32,SPEEDPROXY,no-resolve
+
+#Фильтры
+DOMAIN-SUFFIX,filters.adtidy.org,BESTPROXY
 
 #RU🇷🇺
 DOMAIN-SUFFIX,ru,DIRECT
