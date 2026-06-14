@@ -977,7 +977,7 @@ DOMAIN-SUFFIX,tenor.com,METAPROXY
 AND,((DOMAIN-SUFFIX,spotify.com), (PROTOCOL,UDP)),REJECT
 AND,((USER-AGENT,Spotify*), (PROTOCOL,UDP)),REJECT
 URL-REGEX,^https?:\/\/(.*-ad-logic.*|crashdump\.spotify\.com|log\.spotify\.com|spclient\.wg\.spotify\.com\/(ad-logic|ads))\/,REJECT
-URL-REGEX,^https?:\/\/.*spotify\.com\/.*timezone,REJECT-DICT
+#URL-REGEX,^https?:\/\/.*spotify\.com\/.*timezone,REJECT-DICT
 DOMAIN-SUFFIX,pscdn.co,SPEEDPROXY
 DOMAIN-SUFFIX,scdn.co,SPEEDPROXY
 DOMAIN-SUFFIX,spoti.fi,SPEEDPROXY
