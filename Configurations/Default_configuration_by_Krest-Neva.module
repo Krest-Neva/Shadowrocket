@@ -241,6 +241,8 @@ GEOIP,PRIVATE,DIRECT
 DOMAIN-SUFFIX,kinopoisk.ru,DIRECT,pre-matching
 IP-CIDR,5.28.195.2,DIRECT,no-resolve
 DOMAIN-SUFFIX,content-storage-upload.googleapis.com,DIRECT
+DOMAIN-SUFFIX,afafb.com,BESTPROXY
+DOMAIN-SUFFIX,lb-apple.com.akadns.net,DIRECT
 
 #Реклама, трекеры, аналитика, фишинг и остальная кака💩
 RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_STD.list,REJECT-DROP
