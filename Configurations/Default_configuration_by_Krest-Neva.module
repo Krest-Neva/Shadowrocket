@@ -478,7 +478,7 @@ URL-REGEX,^https?://sp\.yandex\.(ru|com)/.*$,REJECT
 
 #НИКАКОГО МАКСА!⚠️
 DOMAIN-SUFFIX,max.ru,REJECT-DROP,pre-matching
-DOMAIN-SUFFIX,oneme.ru,REJECT-DRIP,pre-matching
+DOMAIN-SUFFIX,oneme.ru,REJECT-DROP,pre-matching
 
 #GitHub
 DOMAIN-SUFFIX,atom.io,SPEEDPROXY
