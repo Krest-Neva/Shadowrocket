@@ -1,33 +1,37 @@
 if (typeof $response !== 'undefined' && $response.body) {
     let body = $response.body;
-    let url = $request.url;
-
     try {
         let obj = JSON.parse(body);
 
-        // 1. Обработка основного запроса деталей аккаунта
-        if (url.indexOf('user-account-details') !== -1) {
-            if (obj.marketingUserType) {
-                obj.marketingUserType = "registered premium"; // Пробуем также вариант "premium" ниже, если не сработает
-            }
-            // Добавляем скрытые свойства на случай, если приложение их ищет
-            obj.isPremium = true;
-            obj.premium = true;
-            obj.premiumUser = true;
-        }
-
-        // 2. Обработка запроса настроек пользователя (вторая строка с вашего скриншота)
-        if (url.indexOf('user-settings/v1/select') !== -1) {
-            // Если сервер возвращает массив или объект настроек, внедряем премиум-флаги
-            if (typeof obj === 'object') {
-                obj.isPremium = true;
-                obj.marketingUserType = "registered premium";
-                if (obj.data) {
-                    obj.data.isPremium = true;
-                    obj.data.marketingUserType = "registered premium";
+        // Функция для рекурсивного поиска и подмены премиум-флагов в любых объектах
+        function upgradeToPremium(target) {
+            for (let key in target) {
+                if (target.hasOwnProperty(key)) {
+                    // 1. Изменяем текстовый статус маркетологов
+                    if (key === 'marketingUserType') {
+                        target[key] = "premium"; // Пробуем чистый "premium" вместо "registered premium"
+                    }
+                    // 2. Ищем любые булевы флаги премиума и включаем их
+                    if (key.toLowerCase().indexOf('premium') !== -1 || key.toLowerCase().indexOf('subscriber') !== -1) {
+                        if (typeof target[key] === 'boolean') target[key] = true;
+                        if (typeof target[key] === 'string') target[key] = "true";
+                        if (typeof target[key] === 'number') target[key] = 1;
+                    }
+                    // Если внутри есть вложенный объект или массив, идем вглубь
+                    if (typeof target[key] === 'object' && target[key] !== null) {
+                        upgradeToPremium(target[key]);
+                    }
                 }
             }
         }
+
+        // Запускаем полную модификацию объекта
+        upgradeToPremium(obj);
+
+        // Для надежности жестко пропишем свойства в корень ответа
+        obj.marketingUserType = "premium";
+        obj.isPremium = true;
+        obj.premium = true;
 
         $done({ body: JSON.stringify(obj) });
     } catch (e) {
