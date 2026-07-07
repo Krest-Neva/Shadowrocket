@@ -1361,7 +1361,8 @@ Spotify-premium-patch = type=http-response,pattern=^https?:\/\/(spclient\.wg\.sp
 FatSecret-Premium = type=http-response,pattern=^https:\/\/app\.ftscrt\.com\/api\/(user\/v3\/user-account-details|user-settings\/v1\/select),requires-body=true,timeout=10,max-size=131072,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/FatSecret_Premium.js
 
 #Радио📻
-Radio-Plus = type=http-response,pattern=^https:\/\/cloudpayments\.radiotoolkit\.com\/api\/v1\/check\/isAvailable\?projectId=ru\.bukharskiy\.radio.*,requires-body=true,timeout=10,max-size=131072,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Radio_Plus.js
+Radio-Plus = type=http-response,pattern=^https:\/\/cloudpayments\.radiotoolkit\.com\/api\/.*,requires-body=true,timeout=10,max-size=131072,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Radio_Plus.js
+
 [MITM]
 enable = true
 hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com,*.yandex.*,*.ya.ru,*.yastatic.net,api-mobile.soundcloud.com,spclient.wg.spotify.com,*-spclient.spotify.com,*.spotify.com,app.ftscrt.com,cloudpayments.radiotoolkit.com
