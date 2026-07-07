@@ -9,7 +9,7 @@
             if (url.includes('/api/v1/user/active_products')) {
                 fake = [{ productId: "premium", expires: "2099-01-01" }];
             } else if (url.includes('/api/v1/products/all')) {
-                fake = [{ id: "premium", name: "Premium", price: 0 }];
+                fake = [{ data: { productId: "premium", projectId: "ru.bukharskiy.radio" }, description: "Premium", currency: "RUB", publicId: "pk_premium", amount: 0 }];
             } else if (url.includes('/api/v1/check/isAvailable')) {
                 fake = { isAvailable: true };
             } else {
@@ -52,25 +52,48 @@
             }
         }
 
-        function addPremiumToProducts(data) {
+        function ensurePremiumInProducts(data) {
             if (data === null || typeof data !== 'object') return;
             if (Array.isArray(data)) {
-                let isProductList = data.some(item =>
-                    item && typeof item === 'object' &&
-                    (item.id || item.productId) &&
-                    (item.name || item.title || item.description)
-                );
-                if (isProductList) {
-                    let hasPremium = data.some(item =>
-                        (item.id && item.id.toLowerCase().includes('premium')) ||
-                        (item.productId && item.productId.toLowerCase().includes('premium'))
-                    );
+                let hasProductFields = data.some(item => {
+                    if (item && typeof item === 'object') {
+                        if (item.productId !== undefined) return true;
+                        if (item.data && item.data.productId !== undefined) return true;
+                        if (item.id !== undefined) return true;
+                        if (item.data && item.data.id !== undefined) return true;
+                    }
+                    return false;
+                });
+                if (hasProductFields) {
+                    let hasPremium = data.some(item => {
+                        let pid = item.productId || (item.data && item.data.productId) || item.id || (item.data && item.data.id);
+                        return pid && pid.toLowerCase().includes('premium');
+                    });
                     if (!hasPremium) {
-                        data.unshift({ id: "premium", name: "Premium", price: 0 });
-                        console.log("Radio_Plus: Added premium product to array");
+                        let first = data[0] || {};
+                        let premiumItem = JSON.parse(JSON.stringify(first));
+                        if (premiumItem.productId !== undefined) {
+                            premiumItem.productId = "premium";
+                        } else if (premiumItem.data && premiumItem.data.productId !== undefined) {
+                            premiumItem.data.productId = "premium";
+                        } else if (premiumItem.id !== undefined) {
+                            premiumItem.id = "premium";
+                        } else if (premiumItem.data && premiumItem.data.id !== undefined) {
+                            premiumItem.data.id = "premium";
+                        } else {
+                            premiumItem = {
+                                data: { productId: "premium", projectId: "ru.bukharskiy.radio" },
+                                description: "Premium",
+                                currency: "RUB",
+                                publicId: "pk_premium",
+                                amount: 0
+                            };
+                        }
+                        data.unshift(premiumItem);
+                        console.log("Radio_Plus: Added premium product to products array");
                     }
                 } else {
-                    data.forEach(item => addPremiumToProducts(item));
+                    data.forEach(item => ensurePremiumInProducts(item));
                 }
             } else {
                 for (let key in data) {
@@ -79,16 +102,48 @@
                         let lowerKey = key.toLowerCase();
                         let productKeys = ['products', 'items', 'offers', 'plans', 'subscriptions', 'productlist'];
                         if (Array.isArray(val) && productKeys.includes(lowerKey)) {
-                            let hasPremium = val.some(item =>
-                                (item.id && item.id.toLowerCase().includes('premium')) ||
-                                (item.productId && item.productId.toLowerCase().includes('premium'))
-                            );
-                            if (!hasPremium) {
-                                val.unshift({ id: "premium", name: "Premium", price: 0 });
-                                console.log("Radio_Plus: Added premium product to " + key);
+                            let hasProductFields = val.some(item => {
+                                if (item && typeof item === 'object') {
+                                    if (item.productId !== undefined) return true;
+                                    if (item.data && item.data.productId !== undefined) return true;
+                                    if (item.id !== undefined) return true;
+                                    if (item.data && item.data.id !== undefined) return true;
+                                }
+                                return false;
+                            });
+                            if (hasProductFields) {
+                                let hasPremium = val.some(item => {
+                                    let pid = item.productId || (item.data && item.data.productId) || item.id || (item.data && item.data.id);
+                                    return pid && pid.toLowerCase().includes('premium');
+                                });
+                                if (!hasPremium) {
+                                    let first = val[0] || {};
+                                    let premiumItem = JSON.parse(JSON.stringify(first));
+                                    if (premiumItem.productId !== undefined) {
+                                        premiumItem.productId = "premium";
+                                    } else if (premiumItem.data && premiumItem.data.productId !== undefined) {
+                                        premiumItem.data.productId = "premium";
+                                    } else if (premiumItem.id !== undefined) {
+                                        premiumItem.id = "premium";
+                                    } else if (premiumItem.data && premiumItem.data.id !== undefined) {
+                                        premiumItem.data.id = "premium";
+                                    } else {
+                                        premiumItem = {
+                                            data: { productId: "premium", projectId: "ru.bukharskiy.radio" },
+                                            description: "Premium",
+                                            currency: "RUB",
+                                            publicId: "pk_premium",
+                                            amount: 0
+                                        };
+                                    }
+                                    val.unshift(premiumItem);
+                                    console.log("Radio_Plus: Added premium product to " + key);
+                                }
+                            } else {
+                                val.forEach(item => ensurePremiumInProducts(item));
                             }
                         } else if (typeof val === 'object') {
-                            addPremiumToProducts(val);
+                            ensurePremiumInProducts(val);
                         }
                     }
                 }
@@ -98,13 +153,27 @@
         function ensureActiveProducts(data) {
             if (data === null || typeof data !== 'object') return false;
             if (Array.isArray(data)) {
-                let isActiveList = data.some(item => item && typeof item === 'object' && item.productId);
+                let isActiveList = data.some(item => item && typeof item === 'object' && (item.productId !== undefined || (item.data && item.data.productId !== undefined) || item.id !== undefined || (item.data && item.data.id !== undefined)));
                 if (isActiveList) {
-                    let hasPremium = data.some(item =>
-                        item.productId && item.productId.toLowerCase().includes('premium')
-                    );
+                    let hasPremium = data.some(item => {
+                        let pid = item.productId || (item.data && item.data.productId) || item.id || (item.data && item.data.id);
+                        return pid && pid.toLowerCase().includes('premium');
+                    });
                     if (!hasPremium) {
-                        data.push({ productId: "premium", expires: "2099-01-01" });
+                        let first = data[0] || {};
+                        let premiumItem = JSON.parse(JSON.stringify(first));
+                        if (premiumItem.productId !== undefined) {
+                            premiumItem.productId = "premium";
+                        } else if (premiumItem.data && premiumItem.data.productId !== undefined) {
+                            premiumItem.data.productId = "premium";
+                        } else if (premiumItem.id !== undefined) {
+                            premiumItem.id = "premium";
+                        } else if (premiumItem.data && premiumItem.data.id !== undefined) {
+                            premiumItem.data.id = "premium";
+                        } else {
+                            premiumItem = { productId: "premium", expires: "2099-01-01" };
+                        }
+                        data.push(premiumItem);
                         console.log("Radio_Plus: Added premium to active_products array");
                     }
                     return true;
@@ -114,15 +183,31 @@
                 for (let key of activeKeys) {
                     if (data[key] && Array.isArray(data[key])) {
                         let arr = data[key];
-                        let hasPremium = arr.some(item =>
-                            (item.productId && item.productId.toLowerCase().includes('premium')) ||
-                            (item.id && item.id.toLowerCase().includes('premium'))
-                        );
-                        if (!hasPremium) {
-                            arr.push({ productId: "premium", expires: "2099-01-01" });
-                            console.log("Radio_Plus: Added premium to " + key);
+                        let isActiveList = arr.some(item => item && typeof item === 'object' && (item.productId !== undefined || (item.data && item.data.productId !== undefined) || item.id !== undefined || (item.data && item.data.id !== undefined)));
+                        if (isActiveList) {
+                            let hasPremium = arr.some(item => {
+                                let pid = item.productId || (item.data && item.data.productId) || item.id || (item.data && item.data.id);
+                                return pid && pid.toLowerCase().includes('premium');
+                            });
+                            if (!hasPremium) {
+                                let first = arr[0] || {};
+                                let premiumItem = JSON.parse(JSON.stringify(first));
+                                if (premiumItem.productId !== undefined) {
+                                    premiumItem.productId = "premium";
+                                } else if (premiumItem.data && premiumItem.data.productId !== undefined) {
+                                    premiumItem.data.productId = "premium";
+                                } else if (premiumItem.id !== undefined) {
+                                    premiumItem.id = "premium";
+                                } else if (premiumItem.data && premiumItem.data.id !== undefined) {
+                                    premiumItem.data.id = "premium";
+                                } else {
+                                    premiumItem = { productId: "premium", expires: "2099-01-01" };
+                                }
+                                arr.push(premiumItem);
+                                console.log("Radio_Plus: Added premium to " + key);
+                            }
+                            return true;
                         }
-                        return true;
                     }
                 }
             }
@@ -130,12 +215,15 @@
         }
 
         forceTrue(obj);
-        addPremiumToProducts(obj);
+        ensurePremiumInProducts(obj);
         let activeHandled = ensureActiveProducts(obj);
 
         if (url.includes('/api/v1/user/active_products') && !activeHandled) {
             if (Array.isArray(obj)) {
-                let hasPremium = obj.some(item => item.productId && item.productId.includes('premium'));
+                let hasPremium = obj.some(item => {
+                    let pid = item.productId || (item.data && item.data.productId);
+                    return pid && pid.includes('premium');
+                });
                 if (!hasPremium) {
                     obj.push({ productId: "premium", expires: "2099-01-01" });
                 }
@@ -143,7 +231,10 @@
                 if (!obj.active_products) {
                     obj.active_products = [{ productId: "premium", expires: "2099-01-01" }];
                 } else if (Array.isArray(obj.active_products)) {
-                    let hasPremium = obj.active_products.some(item => item.productId && item.productId.includes('premium'));
+                    let hasPremium = obj.active_products.some(item => {
+                        let pid = item.productId || (item.data && item.data.productId);
+                        return pid && pid.includes('premium');
+                    });
                     if (!hasPremium) {
                         obj.active_products.push({ productId: "premium", expires: "2099-01-01" });
                     }
