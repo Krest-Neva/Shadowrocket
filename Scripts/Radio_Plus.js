@@ -1,10 +1,10 @@
-// Перехватываем тело ответа
 let body = $response.body;
-
-// Выводим его в консоль Shadowrocket
-console.log("=== BUKHARSKIY RADIO SUBSCRIPTION JSON ===");
-console.log(body);
-console.log("===========================================");
-
-// Пропускаем ответ дальше в приложение без изменений
-$done({});
+try {
+    let obj = JSON.parse(body);
+    if (obj.hasOwnProperty('isAvailable')) {
+        obj.isAvailable = true;
+    }
+    $done({ body: JSON.stringify(obj) });
+} catch (e) {
+    $done({});
+}
