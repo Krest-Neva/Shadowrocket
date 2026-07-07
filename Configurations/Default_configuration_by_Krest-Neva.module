@@ -1365,7 +1365,7 @@ Radio-Plus = type=http-response,pattern=^https:\/\/cloudpayments\.radiotoolkit\.
 
 [MITM]
 enable = true
-hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com,*.yandex.*,*.ya.ru,*.yastatic.net,api-mobile.soundcloud.com,spclient.wg.spotify.com,*-spclient.spotify.com,*.spotify.com,app.ftscrt.com,cloudpayments.radiotoolkit.com
+hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com,*.yandex.*,*.ya.ru,*.yastatic.net,api-mobile.soundcloud.com,spclient.wg.spotify.com,*-spclient.spotify.com,*.spotify.com,app.ftscrt.com,*.radiotoolkit.com
 
 # ╱|、           ∧＿∧
 #(˚ˎ 。7        (｡･ω･｡)つ━☆・*。
