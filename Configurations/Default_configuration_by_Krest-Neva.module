@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=Pro-grade networking for iOS/macOS
 
-#Последние изменения 29.06.2026 00:00
+#Последние изменения 07.07.2026 16:00
 #Фильтры обновлены 14.06.2026 18:00
 
 #==================================================
@@ -1278,6 +1278,12 @@ IP-CIDR,162.62.33.45/32,SPEEDPROXY,no-resolve
 IP-CIDR,162.62.33.70/32,SPEEDPROXY,no-resolve
 IP-CIDR,162.62.34.10/32,SPEEDPROXY,no-resolve
 
+#FatSecret🍏
+AND,((DOMAIN-SUFFIX,fatsecret.com), (PROTOCOL,UDP)),REJECT
+AND,((DOMAIN-SUFFIX,ftscrt.com), (PROTOCOL,UDP)),REJECT
+DOMAIN-SUFFIX,fatsecret.com,SPEEDPROXY
+DOMAIN-SUFFIX,ftscrt.com,SPEEDPROXY
+
 #Фильтры
 DOMAIN-SUFFIX,filters.adtidy.org,BESTPROXY
 
@@ -1348,6 +1354,9 @@ SoundCloudGoPlus = type=http-response,pattern=https://api-mobile.soundcloud.com/
 Spotify-request-patch = type=http-request, pattern=^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/user-customization-service\/v1\/customize$,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_request_patch.js,timeout=60
 Spotify-content-patch = type=http-request,pattern=^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/(artistview\/v1\/artist|album-entity-view\/v2\/album)\/,requires-body=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_content_patch.js,timeout=10
 Spotify-premium-patch = type=http-response,pattern=^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/(bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$,requires-body=1,binary-body-mode=1,max-size=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_premium_patch.js,timeout=10
+
+#FatSecret🍏
+FatSecret-Premium = type=http-response,pattern=^https:\/\/app\.ftscrt\.com\/api\/(user\/v3\/user-account-details|user-settings\/v1\/select),requires-body=true,update-interval=172800,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/FatSecret_Premium.js
 
 [MITM]
 enable = true
