@@ -1283,13 +1283,6 @@ AND,((DOMAIN,app.ftscrt.com), (PROTOCOL,UDP)),REJECT
 DOMAIN-SUFFIX,fatsecret.com,SPEEDPROXY
 DOMAIN-SUFFIX,ftscrt.com,SPEEDPROXY
 
-#PicsArt📸🌅
-DOMAIN-SUFFIX,picsart.com,DIRECT
-DOMAIN-SUFFIX,picsart.io,DIRECT
-DOMAIN-SUFFIX,picsart.ai,DIRECT
-DOMAIN-SUFFIX,picsartstage2.com,DIRECT
-DOMAIN-SUFFIX,en-picsart.com,DIRECT
-
 #Фильтры
 DOMAIN-SUFFIX,filters.adtidy.org,BESTPROXY
 
