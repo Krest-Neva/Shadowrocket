@@ -11,7 +11,7 @@
             } else if (url.indexOf('/api/v1/products/all') !== -1) {
                 fake = [{
                     data: { productId: "product.onetime.lifetime", projectId: "ru.bukharskiy.radio" },
-                    description: "Premium (активировано)",
+                    description: "Premium",
                     currency: "RUB",
                     publicId: "pk_3198c0f676a9975ad6208eaad76f4",
                     amount: 0,
