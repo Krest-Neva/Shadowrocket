@@ -1,13 +1,14 @@
-// Проверяем, что ответ вообще пришел и в нем есть тело
 if (typeof $response !== 'undefined' && $response.body) {
     let body = $response.body;
-    
-    console.log("=== FATSECRET PROFILE JSON ===");
-    console.log(body);
-    console.log("==============================");
+    try {
+        let obj = JSON.parse(body);
+        if (obj.marketingUserType) {
+            obj.marketingUserType = "registered premium";
+        }
+        $done({ body: JSON.stringify(obj) });
+    } catch (e) {
+        $done({});
+    }
 } else {
-    console.log("=== FATSECRET ERROR: NO BODY ===");
+    $done({});
 }
-
-// Обязательно возвращаем управление приложению
-$done({});
