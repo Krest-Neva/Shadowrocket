@@ -7,7 +7,7 @@
         if (!body || body.length === 0) {
             let fake = {};
             if (url.includes('/api/v1/user/active_products')) {
-                fake = [{ productId: "premium", expires: "2099-01-01" }];
+                fake = [{ data: { productId: "premium", expires: "2099-01-01" } }];
             } else if (url.includes('/api/v1/products/all')) {
                 fake = [{ data: { productId: "premium", projectId: "ru.bukharskiy.radio" }, description: "Premium", currency: "RUB", publicId: "pk_premium", amount: 0 }];
             } else if (url.includes('/api/v1/check/isAvailable')) {
@@ -171,7 +171,7 @@
                         } else if (premiumItem.data && premiumItem.data.id !== undefined) {
                             premiumItem.data.id = "premium";
                         } else {
-                            premiumItem = { productId: "premium", expires: "2099-01-01" };
+                            premiumItem = { data: { productId: "premium", expires: "2099-01-01" } };
                         }
                         data.push(premiumItem);
                         console.log("Radio_Plus: Added premium to active_products array");
@@ -201,7 +201,7 @@
                                 } else if (premiumItem.data && premiumItem.data.id !== undefined) {
                                     premiumItem.data.id = "premium";
                                 } else {
-                                    premiumItem = { productId: "premium", expires: "2099-01-01" };
+                                    premiumItem = { data: { productId: "premium", expires: "2099-01-01" } };
                                 }
                                 arr.push(premiumItem);
                                 console.log("Radio_Plus: Added premium to " + key);
@@ -225,22 +225,22 @@
                     return pid && pid.includes('premium');
                 });
                 if (!hasPremium) {
-                    obj.push({ productId: "premium", expires: "2099-01-01" });
+                    obj.push({ data: { productId: "premium", expires: "2099-01-01" } });
                 }
             } else if (typeof obj === 'object') {
                 if (!obj.active_products) {
-                    obj.active_products = [{ productId: "premium", expires: "2099-01-01" }];
+                    obj.active_products = [{ data: { productId: "premium", expires: "2099-01-01" } }];
                 } else if (Array.isArray(obj.active_products)) {
                     let hasPremium = obj.active_products.some(item => {
                         let pid = item.productId || (item.data && item.data.productId);
                         return pid && pid.includes('premium');
                     });
                     if (!hasPremium) {
-                        obj.active_products.push({ productId: "premium", expires: "2099-01-01" });
+                        obj.active_products.push({ data: { productId: "premium", expires: "2099-01-01" } });
                     }
                 }
             } else {
-                obj = [{ productId: "premium", expires: "2099-01-01" }];
+                obj = [{ data: { productId: "premium", expires: "2099-01-01" } }];
             }
             console.log("Radio_Plus: Forced active_products structure");
         }
