@@ -30,7 +30,6 @@
         var obj = JSON.parse(body);
         console.log("Radio_Plus: Original JSON = " + body);
 
-        // Функция для установки всех булевых флагов в true
         function forceTrue(data) {
             if (data === null || typeof data !== 'object') return;
             if (Array.isArray(data)) {
@@ -59,7 +58,6 @@
             }
         }
 
-        // Заменяем строковые статусы на активные
         function forceActiveStrings(data) {
             if (data === null || typeof data !== 'object') return;
             if (Array.isArray(data)) {
@@ -83,7 +81,6 @@
             }
         }
 
-        // Помечаем продукты как премиумные, обнуляем цену
         function markProductsPremium(data) {
             if (data === null || typeof data !== 'object') return;
             if (Array.isArray(data)) {
@@ -124,26 +121,21 @@
             }
         }
 
-        // Обработка /api/v1/user/active_products
         function handleActiveProducts(data) {
             if (data === null || typeof data !== 'object') return false;
-            // Если массив
             if (Array.isArray(data)) {
                 var hasValidProduct = data.some(function(item) {
                     var pid = item.productId || (item.data && item.data.productId);
                     return pid && (pid.indexOf('product.onetime.lifetime') !== -1 || pid.indexOf('product.subscription') !== -1);
                 });
                 if (!hasValidProduct) {
-                    // Используем реальный productId из первого элемента, если есть, иначе по умолчанию
                     var first = data[0] || {};
                     var realId = first.productId || (first.data && first.data.productId) || "product.onetime.lifetime";
-                    // Добавляем новый объект с правильной структурой
                     data.push({ productId: realId, expires: "2099-01-01", status: "active" });
                     console.log("Radio_Plus: Added real product to active_products: " + realId);
                 }
                 return true;
             } else {
-                // Объект с ключами active_products и т.п.
                 var keys = ['active_products', 'subscriptions', 'active_subscriptions', 'purchases'];
                 for (var i = 0; i < keys.length; i++) {
                     var k = keys[i];
@@ -162,7 +154,6 @@
                         return true;
                     }
                 }
-                // Если не нашли массив, но сам объект может быть массивом (уже обработано выше)
                 return false;
             }
         }
@@ -171,10 +162,8 @@
         forceActiveStrings(obj);
 
         if (url.indexOf('/api/v1/user/active_products') !== -1) {
-            // Обрабатываем active_products
             var handled = handleActiveProducts(obj);
             if (!handled) {
-                // Если не удалось обработать, создаём новый массив
                 if (Array.isArray(obj)) {
                     if (obj.length === 0 || !obj.some(function(item) { return item.productId || (item.data && item.data.productId); })) {
                         obj = [{ productId: "product.onetime.lifetime", expires: "2099-01-01", status: "active" }];
@@ -197,11 +186,9 @@
             }
             console.log("Radio_Plus: Forced active_products with real productId");
         } else if (url.indexOf('/api/v1/products/all') !== -1) {
-            // Помечаем все продукты как премиумные
             markProductsPremium(obj);
-            console.log("Radio_Plus: Marked products as premium");
+            console.log("Radio_Plus: Marked products as premium (preserving original productId)");
         } else if (url.indexOf('/api/v1/check/isAvailable') !== -1) {
-            // Принудительно ставим isAvailable и флаги
             if (typeof obj === 'object' && obj !== null) {
                 obj.isAvailable = true;
                 if (obj.hasOwnProperty('available')) obj.available = true;
