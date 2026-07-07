@@ -1283,6 +1283,13 @@ AND,((DOMAIN,app.ftscrt.com), (PROTOCOL,UDP)),REJECT
 DOMAIN-SUFFIX,fatsecret.com,SPEEDPROXY
 DOMAIN-SUFFIX,ftscrt.com,SPEEDPROXY
 
+#PicsArt📸🌅
+DOMAIN-SUFFIX,picsart.com,SPEEDPROXY
+DOMAIN-SUFFIX,picsart.io,SPEEDPROXY
+DOMAIN-SUFFIX,picsart.ai,SPEEDPROXY
+DOMAIN-SUFFIX,picsartstage2.com,SPEEDPROXY
+DOMAIN-SUFFIX,en-picsart.com,SPEEDPROXY
+
 #Фильтры
 DOMAIN-SUFFIX,filters.adtidy.org,BESTPROXY
 
@@ -1357,9 +1364,12 @@ Spotify-premium-patch = type=http-response,pattern=^https?:\/\/(spclient\.wg\.sp
 #FatSecret🍏
 FatSecret-Premium = type=http-response,pattern=^https:\/\/app\.ftscrt\.com\/api\/(user\/v3\/user-account-details|user-settings\/v1\/select),requires-body=true,timeout=10,max-size=131072,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/FatSecret_Premium.js
 
+#PicsArt📸🌅
+PicsArt = type=http-request,pattern=^https:\/\/api\.picsart\.com\/gw-v2\/shop\/subscription\/apple\/purchases,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Picsart_Premium.js,requires-body=true,timeout=60
+
 [MITM]
 enable = true
-hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com,*.yandex.*,*.ya.ru,*.yastatic.net,api-mobile.soundcloud.com,spclient.wg.spotify.com,*-spclient.spotify.com,*.spotify.com,app.ftscrt.com
+hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com,*.yandex.*,*.ya.ru,*.yastatic.net,api-mobile.soundcloud.com,spclient.wg.spotify.com,*-spclient.spotify.com,*.spotify.com,app.ftscrt.com,api.picsart.com
 
 # ╱|、           ∧＿∧
 #(˚ˎ 。7        (｡･ω･｡)つ━☆・*。
