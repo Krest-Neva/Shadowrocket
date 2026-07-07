@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=Pro-grade networking for iOS/macOS
 
-#Последние изменения 07.07.2026 22:00
+#Последние изменения 07.07.2026 23:00
 #Фильтры обновлены 14.06.2026 18:00
 
 #==================================================
@@ -1284,11 +1284,11 @@ DOMAIN-SUFFIX,fatsecret.com,SPEEDPROXY
 DOMAIN-SUFFIX,ftscrt.com,SPEEDPROXY
 
 #PicsArt📸🌅
-DOMAIN-SUFFIX,picsart.com,SPEEDPROXY
-DOMAIN-SUFFIX,picsart.io,SPEEDPROXY
-DOMAIN-SUFFIX,picsart.ai,SPEEDPROXY
-DOMAIN-SUFFIX,picsartstage2.com,SPEEDPROXY
-DOMAIN-SUFFIX,en-picsart.com,SPEEDPROXY
+DOMAIN-SUFFIX,picsart.com,DIRECT
+DOMAIN-SUFFIX,picsart.io,DIRECT
+DOMAIN-SUFFIX,picsart.ai,DIRECT
+DOMAIN-SUFFIX,picsartstage2.com,DIRECT
+DOMAIN-SUFFIX,en-picsart.com,DIRECT
 
 #Фильтры
 DOMAIN-SUFFIX,filters.adtidy.org,BESTPROXY
