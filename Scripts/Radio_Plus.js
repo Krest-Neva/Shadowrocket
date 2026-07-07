@@ -1,17 +1,23 @@
 (function() {
-    let body = $response.body;
-    let url = $request.url;
-    let newBody = body;
-
+    var body = $response.body;
+    var url = $request.url;
+    var newBody = body;
     try {
+        console.log("Radio_Plus: Original body = " + (body || "(empty)"));
         if (!body || body.length === 0) {
-            let fake = {};
-            if (url.includes('/api/v1/user/active_products')) {
-                fake = [{ data: { productId: "premium", expires: "2099-01-01" } }];
-            } else if (url.includes('/api/v1/products/all')) {
-                fake = [{ data: { productId: "premium", projectId: "ru.bukharskiy.radio" }, description: "Premium", currency: "RUB", publicId: "pk_premium", amount: 0 }];
-            } else if (url.includes('/api/v1/check/isAvailable')) {
-                fake = { isAvailable: true };
+            var fake = {};
+            if (url.indexOf('/api/v1/user/active_products') !== -1) {
+                fake = [{ productId: "product.onetime.lifetime", expires: "2099-01-01" }];
+            } else if (url.indexOf('/api/v1/products/all') !== -1) {
+                fake = [{
+                    data: { productId: "product.onetime.lifetime", projectId: "ru.bukharskiy.radio" },
+                    description: "Premium (активировано)",
+                    currency: "RUB",
+                    publicId: "pk_3198c0f676a9975ad6208eaad76f4",
+                    amount: 0
+                }];
+            } else if (url.indexOf('/api/v1/check/isAvailable') !== -1) {
+                fake = { isAvailable: true, premium: true, isPremium: true };
             } else {
                 fake = {};
             }
@@ -19,27 +25,24 @@
             $done({ body: JSON.stringify(fake) });
             return;
         }
-
-        let obj = JSON.parse(body);
-        console.log("Radio_Plus: URL = " + url);
-        console.log("Radio_Plus: Original = " + body);
-
+        var obj = JSON.parse(body);
+        console.log("Radio_Plus: Original JSON = " + body);
         function forceTrue(data) {
             if (data === null || typeof data !== 'object') return;
             if (Array.isArray(data)) {
-                data.forEach(item => forceTrue(item));
+                data.forEach(function(item) { forceTrue(item); });
             } else {
-                for (let key in data) {
+                for (var key in data) {
                     if (data.hasOwnProperty(key)) {
-                        let val = data[key];
-                        let lowerKey = key.toLowerCase();
-                        let truthyKeys = [
+                        var val = data[key];
+                        var lowerKey = key.toLowerCase();
+                        var truthyKeys = [
                             'isavailable', 'premium', 'ispremium', 'subscribed',
                             'issubscribed', 'active', 'enabled', 'haspremium',
                             'ispro', 'ispayed', 'trial', 'trialactive', 'valid',
                             'access', 'hasaccess', 'isactive', 'subscriptionactive'
                         ];
-                        if (truthyKeys.includes(lowerKey)) {
+                        if (truthyKeys.indexOf(lowerKey) !== -1) {
                             if (typeof val === 'boolean') data[key] = true;
                             else if (typeof val === 'string') data[key] = "true";
                             else if (typeof val === 'number') data[key] = 1;
@@ -51,160 +54,68 @@
                 }
             }
         }
-
-        function ensurePremiumInProducts(data) {
+        function forceActiveStrings(data) {
             if (data === null || typeof data !== 'object') return;
             if (Array.isArray(data)) {
-                let hasProductFields = data.some(item => {
-                    if (item && typeof item === 'object') {
-                        if (item.productId !== undefined) return true;
-                        if (item.data && item.data.productId !== undefined) return true;
-                        if (item.id !== undefined) return true;
-                        if (item.data && item.data.id !== undefined) return true;
-                    }
-                    return false;
-                });
-                if (hasProductFields) {
-                    let hasPremium = data.some(item => {
-                        let pid = item.productId || (item.data && item.data.productId) || item.id || (item.data && item.data.id);
-                        return pid && pid.toLowerCase().includes('premium');
-                    });
-                    if (!hasPremium) {
-                        let first = data[0] || {};
-                        let premiumItem = JSON.parse(JSON.stringify(first));
-                        if (premiumItem.productId !== undefined) {
-                            premiumItem.productId = "premium";
-                        } else if (premiumItem.data && premiumItem.data.productId !== undefined) {
-                            premiumItem.data.productId = "premium";
-                        } else if (premiumItem.id !== undefined) {
-                            premiumItem.id = "premium";
-                        } else if (premiumItem.data && premiumItem.data.id !== undefined) {
-                            premiumItem.data.id = "premium";
-                        } else {
-                            premiumItem = {
-                                data: { productId: "premium", projectId: "ru.bukharskiy.radio" },
-                                description: "Premium",
-                                currency: "RUB",
-                                publicId: "pk_premium",
-                                amount: 0
-                            };
-                        }
-                        data.unshift(premiumItem);
-                        console.log("Radio_Plus: Added premium product to products array");
-                    }
-                } else {
-                    data.forEach(item => ensurePremiumInProducts(item));
-                }
+                data.forEach(function(item) { forceActiveStrings(item); });
             } else {
-                for (let key in data) {
+                for (var key in data) {
                     if (data.hasOwnProperty(key)) {
-                        let val = data[key];
-                        let lowerKey = key.toLowerCase();
-                        let productKeys = ['products', 'items', 'offers', 'plans', 'subscriptions', 'productlist'];
-                        if (Array.isArray(val) && productKeys.includes(lowerKey)) {
-                            let hasProductFields = val.some(item => {
-                                if (item && typeof item === 'object') {
-                                    if (item.productId !== undefined) return true;
-                                    if (item.data && item.data.productId !== undefined) return true;
-                                    if (item.id !== undefined) return true;
-                                    if (item.data && item.data.id !== undefined) return true;
-                                }
-                                return false;
-                            });
-                            if (hasProductFields) {
-                                let hasPremium = val.some(item => {
-                                    let pid = item.productId || (item.data && item.data.productId) || item.id || (item.data && item.data.id);
-                                    return pid && pid.toLowerCase().includes('premium');
-                                });
-                                if (!hasPremium) {
-                                    let first = val[0] || {};
-                                    let premiumItem = JSON.parse(JSON.stringify(first));
-                                    if (premiumItem.productId !== undefined) {
-                                        premiumItem.productId = "premium";
-                                    } else if (premiumItem.data && premiumItem.data.productId !== undefined) {
-                                        premiumItem.data.productId = "premium";
-                                    } else if (premiumItem.id !== undefined) {
-                                        premiumItem.id = "premium";
-                                    } else if (premiumItem.data && premiumItem.data.id !== undefined) {
-                                        premiumItem.data.id = "premium";
-                                    } else {
-                                        premiumItem = {
-                                            data: { productId: "premium", projectId: "ru.bukharskiy.radio" },
-                                            description: "Premium",
-                                            currency: "RUB",
-                                            publicId: "pk_premium",
-                                            amount: 0
-                                        };
-                                    }
-                                    val.unshift(premiumItem);
-                                    console.log("Radio_Plus: Added premium product to " + key);
-                                }
-                            } else {
-                                val.forEach(item => ensurePremiumInProducts(item));
+                        var val = data[key];
+                        if (typeof val === 'string') {
+                            var lower = val.toLowerCase();
+                            if (lower.indexOf('inactive') !== -1 || lower.indexOf('expired') !== -1 || lower.indexOf('cancelled') !== -1 || lower.indexOf('none') !== -1) {
+                                data[key] = 'active';
+                            } else if (lower.indexOf('premium') !== -1 || lower.indexOf('pro') !== -1) {
+                                data[key] = 'premium';
                             }
                         } else if (typeof val === 'object') {
-                            ensurePremiumInProducts(val);
+                            forceActiveStrings(val);
                         }
                     }
                 }
             }
         }
-
-        function ensureActiveProducts(data) {
+        function ensureRealActiveProducts(data) {
             if (data === null || typeof data !== 'object') return false;
             if (Array.isArray(data)) {
-                let isActiveList = data.some(item => item && typeof item === 'object' && (item.productId !== undefined || (item.data && item.data.productId !== undefined) || item.id !== undefined || (item.data && item.data.id !== undefined)));
-                if (isActiveList) {
-                    let hasPremium = data.some(item => {
-                        let pid = item.productId || (item.data && item.data.productId) || item.id || (item.data && item.data.id);
-                        return pid && pid.toLowerCase().includes('premium');
+                var isProductList = data.some(function(item) {
+                    return item && typeof item === 'object' && (item.productId !== undefined || (item.data && item.data.productId !== undefined));
+                });
+                if (isProductList) {
+                    var hasValidProduct = data.some(function(item) {
+                        var pid = item.productId || (item.data && item.data.productId);
+                        return pid && (pid.indexOf('product.onetime.lifetime') !== -1 || pid.indexOf('product.subscription') !== -1);
                     });
-                    if (!hasPremium) {
-                        let first = data[0] || {};
-                        let premiumItem = JSON.parse(JSON.stringify(first));
-                        if (premiumItem.productId !== undefined) {
-                            premiumItem.productId = "premium";
-                        } else if (premiumItem.data && premiumItem.data.productId !== undefined) {
-                            premiumItem.data.productId = "premium";
-                        } else if (premiumItem.id !== undefined) {
-                            premiumItem.id = "premium";
-                        } else if (premiumItem.data && premiumItem.data.id !== undefined) {
-                            premiumItem.data.id = "premium";
-                        } else {
-                            premiumItem = { data: { productId: "premium", expires: "2099-01-01" } };
-                        }
-                        data.push(premiumItem);
-                        console.log("Radio_Plus: Added premium to active_products array");
+                    if (!hasValidProduct) {
+                        var first = data[0] || {};
+                        var realId = first.productId || (first.data && first.data.productId) || "product.onetime.lifetime";
+                        var newItem = { productId: realId, expires: "2099-01-01" };
+                        data.push(newItem);
+                        console.log("Radio_Plus: Added real product to active_products: " + realId);
                     }
                     return true;
                 }
             } else {
-                let activeKeys = ['active_products', 'subscriptions', 'active_subscriptions', 'purchases'];
-                for (let key of activeKeys) {
-                    if (data[key] && Array.isArray(data[key])) {
-                        let arr = data[key];
-                        let isActiveList = arr.some(item => item && typeof item === 'object' && (item.productId !== undefined || (item.data && item.data.productId !== undefined) || item.id !== undefined || (item.data && item.data.id !== undefined)));
-                        if (isActiveList) {
-                            let hasPremium = arr.some(item => {
-                                let pid = item.productId || (item.data && item.data.productId) || item.id || (item.data && item.data.id);
-                                return pid && pid.toLowerCase().includes('premium');
+                var keys = ['active_products', 'subscriptions', 'active_subscriptions', 'purchases'];
+                for (var i = 0; i < keys.length; i++) {
+                    var k = keys[i];
+                    if (data[k] && Array.isArray(data[k])) {
+                        var arr = data[k];
+                        var isProductList = arr.some(function(item) {
+                            return item && typeof item === 'object' && (item.productId !== undefined || (item.data && item.data.productId !== undefined));
+                        });
+                        if (isProductList) {
+                            var hasValidProduct = arr.some(function(item) {
+                                var pid = item.productId || (item.data && item.data.productId);
+                                return pid && (pid.indexOf('product.onetime.lifetime') !== -1 || pid.indexOf('product.subscription') !== -1);
                             });
-                            if (!hasPremium) {
-                                let first = arr[0] || {};
-                                let premiumItem = JSON.parse(JSON.stringify(first));
-                                if (premiumItem.productId !== undefined) {
-                                    premiumItem.productId = "premium";
-                                } else if (premiumItem.data && premiumItem.data.productId !== undefined) {
-                                    premiumItem.data.productId = "premium";
-                                } else if (premiumItem.id !== undefined) {
-                                    premiumItem.id = "premium";
-                                } else if (premiumItem.data && premiumItem.data.id !== undefined) {
-                                    premiumItem.data.id = "premium";
-                                } else {
-                                    premiumItem = { data: { productId: "premium", expires: "2099-01-01" } };
-                                }
-                                arr.push(premiumItem);
-                                console.log("Radio_Plus: Added premium to " + key);
+                            if (!hasValidProduct) {
+                                var first = arr[0] || {};
+                                var realId = first.productId || (first.data && first.data.productId) || "product.onetime.lifetime";
+                                var newItem = { productId: realId, expires: "2099-01-01" };
+                                arr.push(newItem);
+                                console.log("Radio_Plus: Added real product to " + k + ": " + realId);
                             }
                             return true;
                         }
@@ -213,53 +124,90 @@
             }
             return false;
         }
-
-        forceTrue(obj);
-        ensurePremiumInProducts(obj);
-        let activeHandled = ensureActiveProducts(obj);
-
-        if (url.includes('/api/v1/user/active_products') && !activeHandled) {
-            if (Array.isArray(obj)) {
-                let hasPremium = obj.some(item => {
-                    let pid = item.productId || (item.data && item.data.productId);
-                    return pid && pid.includes('premium');
+        function modifyProducts(data) {
+            if (data === null || typeof data !== 'object') return;
+            if (Array.isArray(data)) {
+                data.forEach(function(item) {
+                    if (item && typeof item === 'object') {
+                        if (item.data && item.data.productId) {
+                            item.data.isPremium = true;
+                            item.data.premium = true;
+                        } else if (item.productId) {
+                            item.isPremium = true;
+                            item.premium = true;
+                        }
+                        if (item.amount !== undefined) item.amount = 0;
+                    }
                 });
-                if (!hasPremium) {
-                    obj.push({ data: { productId: "premium", expires: "2099-01-01" } });
+            } else {
+                for (var key in data) {
+                    if (data.hasOwnProperty(key)) {
+                        var val = data[key];
+                        if (Array.isArray(val)) {
+                            val.forEach(function(item) {
+                                if (item && typeof item === 'object') {
+                                    if (item.data && item.data.productId) {
+                                        item.data.isPremium = true;
+                                        item.data.premium = true;
+                                    } else if (item.productId) {
+                                        item.isPremium = true;
+                                        item.premium = true;
+                                    }
+                                    if (item.amount !== undefined) item.amount = 0;
+                                }
+                            });
+                        } else if (typeof val === 'object') {
+                            modifyProducts(val);
+                        }
+                    }
+                }
+            }
+        }
+        forceTrue(obj);
+        forceActiveStrings(obj);
+        modifyProducts(obj);
+        var activeHandled = ensureRealActiveProducts(obj);
+        if (url.indexOf('/api/v1/user/active_products') !== -1 && !activeHandled) {
+            if (Array.isArray(obj)) {
+                var hasValid = obj.some(function(item) {
+                    var pid = item.productId || (item.data && item.data.productId);
+                    return pid && (pid.indexOf('product.onetime.lifetime') !== -1 || pid.indexOf('product.subscription') !== -1);
+                });
+                if (!hasValid) {
+                    obj.push({ productId: "product.onetime.lifetime", expires: "2099-01-01" });
                 }
             } else if (typeof obj === 'object') {
                 if (!obj.active_products) {
-                    obj.active_products = [{ data: { productId: "premium", expires: "2099-01-01" } }];
+                    obj.active_products = [{ productId: "product.onetime.lifetime", expires: "2099-01-01" }];
                 } else if (Array.isArray(obj.active_products)) {
-                    let hasPremium = obj.active_products.some(item => {
-                        let pid = item.productId || (item.data && item.data.productId);
-                        return pid && pid.includes('premium');
+                    var hasValid = obj.active_products.some(function(item) {
+                        var pid = item.productId || (item.data && item.data.productId);
+                        return pid && (pid.indexOf('product.onetime.lifetime') !== -1 || pid.indexOf('product.subscription') !== -1);
                     });
-                    if (!hasPremium) {
-                        obj.active_products.push({ data: { productId: "premium", expires: "2099-01-01" } });
+                    if (!hasValid) {
+                        obj.active_products.push({ productId: "product.onetime.lifetime", expires: "2099-01-01" });
                     }
                 }
             } else {
-                obj = [{ data: { productId: "premium", expires: "2099-01-01" } }];
+                obj = [{ productId: "product.onetime.lifetime", expires: "2099-01-01" }];
             }
-            console.log("Radio_Plus: Forced active_products structure");
+            console.log("Radio_Plus: Forced active_products with real productId");
         }
-
-        if (url.includes('/api/v1/check/isAvailable')) {
+        if (url.indexOf('/api/v1/check/isAvailable') !== -1) {
             if (typeof obj === 'object' && obj !== null) {
                 obj.isAvailable = true;
                 if (obj.hasOwnProperty('available')) obj.available = true;
                 if (obj.hasOwnProperty('success')) obj.success = true;
+                obj.premium = true;
+                obj.isPremium = true;
             } else {
-                obj = { isAvailable: true };
+                obj = { isAvailable: true, premium: true, isPremium: true };
             }
-            console.log("Radio_Plus: Forced isAvailable = true");
+            console.log("Radio_Plus: Forced isAvailable = true and premium flags");
         }
-
         newBody = JSON.stringify(obj);
         console.log("Radio_Plus: Modified = " + newBody);
         $done({ body: newBody });
-
     } catch (e) {
         console.log("Radio_Plus: Error = " + e);
         $done({ body: body });
