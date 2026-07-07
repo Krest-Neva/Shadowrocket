@@ -1360,7 +1360,7 @@ FatSecret-Premium = type=http-response,pattern=^https:\/\/app\.ftscrt\.com\/api\
 
 [MITM]
 enable = true
-hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com,*.yandex.*,*.ya.ru,*.yastatic.net,api-mobile.soundcloud.com,spclient.wg.spotify.com,*-spclient.spotify.com,*.spotify.com
+hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com,*.yandex.*,*.ya.ru,*.yastatic.net,api-mobile.soundcloud.com,spclient.wg.spotify.com,*-spclient.spotify.com,*.spotify.com,*.fatsecret.com,*.ftscrt.com
 
 # ╱|、           ∧＿∧
 #(˚ˎ 。7        (｡･ω･｡)つ━☆・*。
