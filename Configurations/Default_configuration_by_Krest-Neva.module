@@ -1356,7 +1356,7 @@ Spotify-content-patch = type=http-request,pattern=^https?:\/\/(spclient\.wg\.spo
 Spotify-premium-patch = type=http-response,pattern=^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/(bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$,requires-body=1,binary-body-mode=1,max-size=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_premium_patch.js,timeout=10
 
 #FatSecret🍏
-FatSecret-Premium = type=http-response,pattern=^https:\/\/app\.ftscrt\.com\/api\/(user\/v3\/user-account-details|user-settings\/v1\/select),requires-body=true,update-interval=172800,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/FatSecret_Premium.js
+FatSecret-Premium = type=http-response,pattern=^https:\/\/app\.ftscrt\.com\/api\/(user\/v3\/user-account-details|user-settings\/v1\/select),requires-body=true,timeout=10,max-size=131072,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/FatSecret_Premium.js
 
 [MITM]
 enable = true
