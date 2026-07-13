@@ -1,21 +1,37 @@
 const url = $request.url;
-const responseBody = $response.body;
+const reqBody = $request.body;
+const resBody = typeof $response !== 'undefined' ? $response.body : null;
 
-console.log(`\n[Nymechat-Spy] -------------------------------`);
-console.log(`[Nymechat-Spy] URL запроса: ${url}`);
-console.log(`[Nymechat-Spy] Статус ответа: ${$response.status}`);
+console.log(`\n[Nymechat-Spy] ==========================================`);
+console.log(`[Nymechat-Spy] URL: ${url}`);
+console.log(`[Nymechat-Spy] Метод: ${$request.method}`);
 
-if (responseBody) {
+if (reqBody) {
     try {
-        const jsonObj = JSON.parse(responseBody);
-        console.log(`[Nymechat-Spy] Тип данных: JSON`);
-        console.log(`[Nymechat-Spy] Тело ответа:\n${JSON.stringify(jsonObj, null, 2)}`);
+        const reqJson = JSON.parse(reqBody);
+        console.log(`[Nymechat-Spy] ---> ТЕЛО ЗАПРОСА (JSON):\n${JSON.stringify(reqJson, null, 2)}`);
     } catch (e) {
-        console.log(`[Nymechat-Spy] Тип данных: Текст/Сырые данные`);
-        console.log(`[Nymechat-Spy] Тело ответа:\n${responseBody}`);
+        console.log(`[Nymechat-Spy] ---> ТЕЛО ЗАПРОСА (Raw):\n${reqBody}`);
     }
 } else {
-    console.log(`[Nymechat-Spy] Тело ответа пустое.`);
+    console.log(`[Nymechat-Spy] ---> ТЕЛО ЗАПРОСА: Пусто`);
 }
-console.log(`[Nymechat-Spy] -------------------------------\n`);
-$done({ body: responseBody });
+
+if (resBody) {
+    try {
+        const resJson = JSON.parse(resBody);
+        console.log(`[Nymechat-Spy] <--- ТЕЛО ОТВЕТА (JSON):\n${JSON.stringify(resJson, null, 2)}`);
+    } catch (e) {
+        console.log(`[Nymechat-Spy] <--- ТЕЛО ОТВЕТА (Raw):\n${resBody}`);
+    }
+} else if (typeof $response !== 'undefined') {
+    console.log(`[Nymechat-Spy] <--- ТЕЛО ОТВЕТА: Пусто (Статус: ${$response.status})`);
+}
+
+console.log(`[Nymechat-Spy] ==========================================\n`);
+
+if (typeof $response !== 'undefined') {
+    $done({ body: resBody });
+} else {
+    $done({ body: reqBody });
+}
