@@ -1,37 +1,41 @@
 const url = $request.url;
+const method = $request.method;
 const reqBody = $request.body;
-const resBody = typeof $response !== 'undefined' ? $response.body : null;
+const reqHeaders = $request.headers;
+const res = typeof $response !== 'undefined' ? $response : null;
+const resBody = res ? res.body : null;
+const resHeaders = res ? res.headers : null;
 
-console.log(`\n[Nymechat-Spy] ==========================================`);
-console.log(`[Nymechat-Spy] URL: ${url}`);
-console.log(`[Nymechat-Spy] Метод: ${$request.method}`);
-
-if (reqBody) {
+function formatData(data) {
+    if (!data) return "Пусто";
     try {
-        const reqJson = JSON.parse(reqBody);
-        console.log(`[Nymechat-Spy] ---> ТЕЛО ЗАПРОСА (JSON):\n${JSON.stringify(reqJson, null, 2)}`);
+        return JSON.stringify(JSON.parse(data), null, 2);
     } catch (e) {
-        console.log(`[Nymechat-Spy] ---> ТЕЛО ЗАПРОСА (Raw):\n${reqBody}`);
+        const cleaned = data.replace(/^[0-9]+/, "");
+        if (cleaned.length > 0) {
+            try {
+                return `[Socket.IO JSON]\n${JSON.stringify(JSON.parse(cleaned), null, 2)}`;
+            } catch (err) {
+                return `[Raw]\n${data}`;
+            }
+        }
+        return `[Raw]\n${data}`;
     }
-} else {
-    console.log(`[Nymechat-Spy] ---> ТЕЛО ЗАПРОСА: Пусто`);
 }
 
-if (resBody) {
-    try {
-        const resJson = JSON.parse(resBody);
-        console.log(`[Nymechat-Spy] <--- ТЕЛО ОТВЕТА (JSON):\n${JSON.stringify(resJson, null, 2)}`);
-    } catch (e) {
-        console.log(`[Nymechat-Spy] <--- ТЕЛО ОТВЕТА (Raw):\n${resBody}`);
-    }
-} else if (typeof $response !== 'undefined') {
-    console.log(`[Nymechat-Spy] <--- ТЕЛО ОТВЕТА: Пусто (Статус: ${$response.status})`);
-}
+console.log(`\n[Nymechat-Spy-ALL] ==========================================`);
+console.log(`[URL] ${url}`);
+console.log(`[METHOD] ${method}`);
+console.log(`[REQ HEADERS]\n${JSON.stringify(reqHeaders, null, 2)}`);
+console.log(`[REQ BODY]\n${formatData(reqBody)}`);
 
-console.log(`[Nymechat-Spy] ==========================================\n`);
-
-if (typeof $response !== 'undefined') {
+if (res) {
+    console.log(`[RES STATUS] ${res.status}`);
+    console.log(`[RES HEADERS]\n${JSON.stringify(resHeaders, null, 2)}`);
+    console.log(`[RES BODY]\n${formatData(resBody)}`);
+    console.log(`[Nymechat-Spy-ALL] ==========================================\n`);
     $done({ body: resBody });
 } else {
+    console.log(`[Nymechat-Spy-ALL] ==========================================\n`);
     $done({ body: reqBody });
 }
