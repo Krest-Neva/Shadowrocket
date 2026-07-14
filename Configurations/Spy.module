@@ -1,0 +1,34 @@
+#!name=Spy
+#!desc=Отладка запросов/ответов
+
+# ============================================
+# Spy — универсальный отладчик запросов/ответов
+# ============================================
+# Аргумент (JSON) управляет выводом:
+#
+# color (true/false)             — цветные эмодзи метода и статуса
+# time (true/false)              — метка времени в ISO-формате
+# size (true/false)              — размер тела (B/KB/MB)
+# contentType (true/false)       — показывать Content-Type
+# headers (true/false)           — показывать все заголовки
+# compact (true/false)           — только ключи верхнего уровня вместо полного тела
+# maxLength (число)              — макс. длина выводимого тела (0 = без ограничения)
+# highlight (массив строк)       — слова для подсветки в тексте ▶слово◀ и для поиска ключей
+# counter (true/false)           — глобальный счётчик запросов (#1, #2…)
+# ignoreTypes (массив строк)     — игнорировать ответы с такими префиксами Content-Type
+# ignoreRequestTypes (true/false)— применять ignoreTypes и к исходящим запросам
+#
+# Пример ниже включает всё, кроме compact, и подсвечивает "premium" и "token".
+# ============================================
+
+[RULE]
+AND,((PROTOCOL,UDP), (DST-PORT,443)),REJECT
+
+[Script]
+Spy-All-Request = type=http-request,pattern=^https?://.*,requires-body=1,max-size=131072,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spy.js,argument={"color":true,"time":true,"size":true,"contentType":true,"headers":true,"compact":false,"maxLength":0,"highlight":["premium","token"],"counter":true,"ignoreTypes":["image/","font/","text/css","text/javascript"],"ignoreRequestTypes":false}
+Spy-All-Response = type=http-response,pattern=^https?://.*,requires-body=1,max-size=131072,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spy.js,argument={"color":true,"time":true,"size":true,"contentType":true,"headers":true,"compact":false,"maxLength":0,"highlight":["premium","token"],"counter":true,"ignoreTypes":["image/","font/","text/css","text/javascript"],"ignoreRequestTypes":false}
+
+[MITM]
+enable = true
+#Необходимы хосты
+hostname =
