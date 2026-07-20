@@ -1,8 +1,8 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=Pro-grade networking for iOS/macOS
 
-#Последние изменения 07.07.2026 23:00
-#Фильтры обновлены 14.06.2026 18:00
+#Последние изменения 20.07.2026 15:00
+#Фильтры обновлены 20.07.2026 15:00
 
 #==================================================
 # ℹ️ ИНФОРМАЦИЯ О КОНФИГУРАЦИИ
@@ -160,11 +160,11 @@ allow-dns-svcb = false
 always-ip-address = false
 # === Исключения из прокси / маршрутизация ===
 # Адреса, исключённые из проксирования
-skip-proxy = apple.com,icloud.com,*.cdn-apple.com,*.mzstatic.com,itunes.apple.com,captive.apple.com,gsp1.apple.com,*.local,localhost,apple-pki.com,digicert.com,entrust.net,*.gosuslugi.ru,*.nalog.gov.ru,*.nalog.ru,*.mos.ru,*.fssprus.ru,*.pfr.gov.ru,*.sberbank.ru,*.sber.ru,*.tbank.ru,*.tinkoff.ru,*.alfabank.ru,*.vtb.ru,*.gazprombank.ru,*.raiffeisen.ru,*.rshb.ru,*.pochtabank.ru,*.open.ru,*.magnit.ru,*.mgnt.ru,*.moy-magnit.ru,*.magnit.one,*.tander.ru,*.wildberries.ru,*.wb.ru,*.ozon.ru,*.lenta.com,*.samokat.ru,*.kuper.ru,*.sbermarket.ru,*.delivery-club.ru,*.market-delivery.ru,*.vkusvill.ru,*.perekrestok.ru,*.5ka.ru,*.lamoda.ru,*.avito.ru,*.mvideo.ru,*.eldorado.ru,*.dns-shop.ru,*.mts.ru,*.megafon.ru,*.beeline.ru,*.tele2.ru,*.rt.ru,*.2gis.ru,*.rzd.ru,*.aeroflot.ru,*.s7.ru
+skip-proxy = captive.apple.com,*.local,localhost,*.gosuslugi.ru,*.nalog.gov.ru,*.nalog.ru,*.mos.ru,*.mosreg.ru,*.fssprus.ru,*.sfr.gov.ru,*.pfr.gov.ru,*.cbr.ru,*.sberbank.ru,*.sber.ru,*.tbank.ru,*.tinkoff.ru,*.alfabank.ru,*.vtb.ru,*.gazprombank.ru,*.raiffeisen.ru,*.rshb.ru,*.pochtabank.ru,*.open.ru,*.mts.ru,*.megafon.ru,*.beeline.ru,*.vimpelcom.ru,*.tele2.ru,*.t2.ru,*.rt.ru,*.rostelecom.ru,*.dom.ru,*.yota.ru,*.yandex.ru,*.ya.ru,*.yandex.net,*.vk.com,*.vk.me,*.ok.ru,*.mail.ru,*.dzen.ru,*.rutube.ru,*.2gis.ru,*.kaspersky.ru,*.wildberries.ru,*.wb.ru,*.ozon.ru,*.avito.ru,*.mvideo.ru,*.eldorado.ru,*.dns-shop.ru,*.magnit.ru,*.x5.ru,*.5ka.ru,*.perekrestok.ru,*.vkusvill.ru,*.samokat.ru,*.kuper.ru,*.lenta.com,*.sbermarket.ru,*.rzd.ru,*.aeroflot.ru,*.s7.ru,*.pobeda.aero,*.utair.ru,*.smartavia.ru,*.aviasales.ru,*.tutu.ru,*.hh.ru,*.superjob.ru,*.rabota.ru,*.consultant.ru,*.garant.ru,*.kontur.ru,*.sbis.ru,*.diadoc.ru,*.1c.ru,*.bitrix24.ru,*.reg.ru,*.nic.ru,*.ru-center.ru,*.beget.ru,*.selectel.ru
 # Домены, для которых всегда используется реальный IP
-always-real-ip = *.apple.com,*.icloud.com,*.itunes.com,*.mzstatic.com,*.apple-pki.com,*.push.apple.com,*.gosuslugi.ru,*.nalog.gov.ru,*.nalog.ru,*.mos.ru,*.fssprus.ru,*.pfr.gov.ru,*.sberbank.ru,*.sber.ru,*.tbank.ru,*.tinkoff.ru,*.alfabank.ru,*.vtb.ru,*.gazprombank.ru,*.raiffeisen.ru,*.rshb.ru,*.pochtabank.ru,*.open.ru,*.magnit.ru,*.mgnt.ru,*.moy-magnit.ru,*.magnit.one,*.tander.ru,*.wildberries.ru,*.wb.ru,*.ozon.ru,*.lenta.com,*.samokat.ru,*.kuper.ru,*.sbermarket.ru,*.delivery-club.ru,*.market-delivery.ru,*.vkusvill.ru,*.perekrestok.ru,*.5ka.ru,*.lamoda.ru,*.avito.ru,*.mvideo.ru,*.eldorado.ru,*.dns-shop.ru,*.mts.ru,*.megafon.ru,*.beeline.ru,*.tele2.ru,*.rt.ru,*.2gis.ru,*.rzd.ru,*.aeroflot.ru,*.s7.ru,*.yandex.ru,*.ya.ru,*.yandex.net,*.vk.com,*.vk.me,*.ok.ru,*.mail.ru,*.dzen.ru,*.rutube.ru,*.kaspersky.ru
+always-real-ip = *.gosuslugi.ru,*.nalog.gov.ru,*.nalog.ru,*.mos.ru,*.mosreg.ru,*.fssprus.ru,*.sfr.gov.ru,*.pfr.gov.ru,*.cbr.ru,*.sberbank.ru,*.sber.ru,*.tbank.ru,*.tinkoff.ru,*.alfabank.ru,*.vtb.ru,*.gazprombank.ru,*.raiffeisen.ru,*.rshb.ru,*.pochtabank.ru,*.open.ru,*.mts.ru,*.megafon.ru,*.beeline.ru,*.vimpelcom.ru,*.tele2.ru,*.t2.ru,*.rt.ru,*.rostelecom.ru,*.dom.ru,*.yota.ru,*.yandex.ru,*.ya.ru,*.yandex.net,*.vk.com,*.vk.me,*.ok.ru,*.mail.ru,*.dzen.ru,*.rutube.ru,*.2gis.ru,*.kaspersky.ru,*.wildberries.ru,*.wb.ru,*.ozon.ru,*.avito.ru,*.mvideo.ru,*.eldorado.ru,*.dns-shop.ru,*.magnit.ru,*.x5.ru,*.5ka.ru,*.perekrestok.ru,*.vkusvill.ru,*.samokat.ru,*.kuper.ru,*.lenta.com,*.sbermarket.ru,*.rzd.ru,*.aeroflot.ru,*.s7.ru,*.pobeda.aero,*.utair.ru,*.smartavia.ru,*.aviasales.ru,*.tutu.ru,*.hh.ru,*.superjob.ru,*.rabota.ru,*.consultant.ru,*.garant.ru,*.kontur.ru,*.sbis.ru,*.diadoc.ru,*.1c.ru,*.bitrix24.ru,*.reg.ru,*.nic.ru,*.ru-center.ru,*.beget.ru,*.selectel.ru
 # Исключённые из туннеля IP-маршруты
-tun-excluded-routes = 10.0.0.0/8,17.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.0.0.0/24,192.0.2.0/24,192.88.99.0/24,192.168.0.0/16,198.51.100.0/24,203.0.113.0/24,224.0.0.0/4,255.255.255.255/32,fc00::/7,fe80::/10,178.248.232.0/21,82.148.11.0/24,185.15.56.0/22,91.223.116.0/22
+tun-excluded-routes = 10.0.0.0/8,100.64.0.0/10,127.0.0.0/8,169.254.0.0/16,172.16.0.0/12,192.0.0.0/24,192.0.2.0/24,192.88.99.0/24,192.168.0.0/16,198.51.100.0/24,203.0.113.0/24,224.0.0.0/4,255.255.255.255/32,fc00::/7,fe80::/10,178.248.232.0/21,82.148.11.0/24,185.15.56.0/22,91.223.116.0/22
 # Всегда использовать RAW TCP для указанных хостов
 always-raw-tcp-hosts = www.google.com,91.108.56.*,91.108.4.*,91.108.8.*,91.108.16.*,91.108.12.*,149.154.16*,149.154.17*,91.108.20.*,185.76.151.*,91.105.192.*,5.28.19*
 # Приоритет UDP-трафика
@@ -1153,28 +1153,24 @@ IP-CIDR,58.220.59.2/32,BESTPROXY,no-resolve
 IP-CIDR,110.43.63.242/32,BESTPROXY,no-resolve
 IP-CIDR,120.133.33.222/32,BESTPROXY,no-resolve
 
-#FaceTime📞
-DOMAIN-SUFFIX,facetime.apple.com,SPEEDPROXY
-DOMAIN-SUFFIX,stun.apple.com,SPEEDPROXY
-
 #Apple🍎
-RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/apple.txt,DIRECT
-RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/icloud.txt,DIRECT
-DOMAIN-SUFFIX,aaplimg.com,DIRECT
-DOMAIN-SUFFIX,apple-pki.com,DIRECT
-DOMAIN-SUFFIX,apple.com,DIRECT
-DOMAIN-SUFFIX,apple.com,DIRECT
-DOMAIN-SUFFIX,ess-apple.com.akadns.net,DIRECT
-DOMAIN-SUFFIX,icloud-content.com,DIRECT
-DOMAIN-SUFFIX,icloud.com,DIRECT
-DOMAIN-SUFFIX,ls-apple.com.akadns.net,DIRECT
-DOMAIN-SUFFIX,mzstatic.com,DIRECT
-DOMAIN-SUFFIX,safebrowsing.apple,DIRECT
-DOMAIN-KEYWORD,apple-dns,DIRECT
-DOMAIN-KEYWORD,apple-intelligence,DIRECT
-DOMAIN-KEYWORD,apis.apple,DIRECT
-DOMAIN-KEYWORD,itunes,DIRECT
-DOMAIN-KEYWORD,mail.me.com,DIRECT
+RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/apple.txt,SPEEDPROXY
+RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/icloud.txt,SPEEDPROXY
+DOMAIN-SUFFIX,aaplimg.com,SPEEDPROXY
+DOMAIN-SUFFIX,apple-pki.com,SPEEDPROXY
+DOMAIN-SUFFIX,apple.com,SPEEDPROXY
+DOMAIN-SUFFIX,ess-apple.com.akadns.net,SPEEDPROXY
+DOMAIN-SUFFIX,icloud-content.com,SPEEDPROXY
+DOMAIN-SUFFIX,icloud.com,SPEEDPROXY
+DOMAIN-SUFFIX,ls-apple.com.akadns.net,SPEEDPROXY
+DOMAIN-SUFFIX,mzstatic.com,SPEEDPROXY
+DOMAIN-SUFFIX,safebrowsing.apple,SPEEDPROXY
+DOMAIN-KEYWORD,apple-dns,SPEEDPROXY
+DOMAIN-KEYWORD,apple-intelligence,SPEEDPROXY
+DOMAIN-KEYWORD,apis.apple,SPEEDPROXY
+DOMAIN-KEYWORD,itunes,SPEEDPROXY
+DOMAIN-KEYWORD,mail.me.com,SPEEDPROXY
+DOMAIN-SUFFIX,lb-apple.com.akadns.net,SPEEDPROXY
 
 #Steam
 DOMAIN-SUFFIX,cdn-ali.content.steamchina.com,DIRECT
