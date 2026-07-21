@@ -198,6 +198,9 @@ failed_lists = []
 white_download_report = {}
 failed_white_lists = []
 
+white_raw_data = {}
+black_raw_data = {}
+
 all_domains = set()
 all_ips = set()
 oisd_domains = set()
@@ -670,21 +673,89 @@ def build_and_write():
 
     return total_rules
 
-print("\n=== ЗАГРУЗКА БЕЛЫХ СПИСКОВ ===")
+print("\n=== ЭТАП 1: ЗАГРУЗКА БЕЛЫХ СПИСКОВ ===")
 for name, url in white_urls.items():
     lines, method = download_data(name, url)
-    local_white_count = 0
     if lines and method:
+        white_raw_data[name] = {"lines": lines, "method": method, "url": url}
         white_download_report[name] = {"status": "ok", "method": method, "lines": len(lines)}
     else:
         white_download_report[name] = {"status": "failed", "method": None, "lines": 0}
         failed_white_lists.append(name)
         sys.stdout.write(f"\r[!] Не удалось скачать белый список: {name}\033[K\n")
         sys.stdout.flush()
-        continue
 
+print("\n=== ЭТАП 1: ЗАГРУЗКА ЧЁРНЫХ СПИСКОВ ===")
+for name, url in urls.items():
+    lines, method = download_data(name, url)
+    if lines and method:
+        black_raw_data[name] = {"lines": lines, "method": method, "url": url}
+        download_report[name] = {"status": "ok", "method": method, "lines": len(lines)}
+    else:
+        download_report[name] = {"status": "failed", "method": None, "lines": 0}
+        failed_lists.append(name)
+        sys.stdout.write(f"\r[!] Не удалось скачать список: {name}\033[K\n")
+        sys.stdout.flush()
+
+print("\n=== ЭТАП 2: ПОВТОРНАЯ ЗАГРУЗКА ОШИБОК ===")
+while failed_lists or failed_white_lists:
+    print("\n" + "="*45)
+    print("ВНИМАНИЕ: Некоторые списки не удалось скачать:")
+    for w in failed_white_lists:
+        print(f"  [Белый]  - {w}")
+    for b in failed_lists:
+        print(f"  [Черный] - {b}")
+    print("="*45)
+
+    target = failed_white_lists[0] if failed_white_lists else failed_lists[0]
+    is_white = target in failed_white_lists
+
+    print(f"\n[?] Хотите попытаться скачать '{target}' ещё раз?")
+    print("  1 - Да (попробовать стандартные ссылки)")
+    print("  2 - Нет (пропустить этот список)")
+    print("  3 - Вручную (я введу новую рабочую ссылку)")
+    ans = input("Ваш выбор (1/2/3): ").strip()
+
+    if ans == '2':
+        if is_white:
+            failed_white_lists.remove(target)
+        else:
+            failed_lists.remove(target)
+        continue
+    elif ans in ('1', '3'):
+        setup_dns_and_test()
+        url_to_try = ""
+        if ans == '3':
+            url_to_try = input("Введите полную ссылку (https://...): ").strip()
+        else:
+            url_to_try = white_urls[target] if is_white else urls[target]
+
+        lines, method = download_data(target, url_to_try)
+
+        if not lines:
+            print("  [!] Загрузка снова не удалась или получена страница с ошибкой (HTML).")
+            continue
+
+        print(f"  [+] Успешно скачано ({method}). Файл добавлен в очередь.")
+        if is_white:
+            white_raw_data[target] = {"lines": lines, "method": method, "url": url_to_try}
+            failed_white_lists.remove(target)
+            white_download_report[target] = {"status": "ok (retry)", "method": method, "lines": len(lines)}
+        else:
+            black_raw_data[target] = {"lines": lines, "method": method, "url": url_to_try}
+            failed_lists.remove(target)
+            download_report[target] = {"status": "ok (retry)", "method": method, "lines": len(lines)}
+    else:
+        print("  [!] Неверный ввод.")
+
+print("\n=== ЭТАП 3: ОБРАБОТКА БЕЛЫХ СПИСКОВ ===")
+for name, data_dict in white_raw_data.items():
+    lines = data_dict["lines"]
     total_lines = len(lines)
+    local_white_count = 0
     start_parse = time.time()
+    print(f"\n  [*] Парсинг: {name}...")
+
     for idx, raw_line in enumerate(lines, start=1):
         if idx % 100 == 0 or idx == total_lines:
             print_progress("  [w-parse]", idx, total_lines, start_time=start_parse)
@@ -731,31 +802,22 @@ for a in apple_keys:
     protected_domains.discard(a)
     protected_suffixes.add(a)
 
-print("\n=== ЗАГРУЗКА И ОБРАБОТКА ЧЁРНЫХ СПИСКОВ ===")
-
-for name, url in urls.items():
-    lines, method = download_data(name, url)
-    if lines and method:
-        download_report[name] = {"status": "ok", "method": method, "lines": len(lines)}
-    else:
-        download_report[name] = {"status": "failed", "method": None, "lines": 0}
-        failed_lists.append(name)
-        sys.stdout.write(f"\r[!] Не удалось скачать список: {name}\033[K\n")
-        sys.stdout.flush()
-        
-    data = lines if lines else []
+print("\n=== ЭТАП 4: ОБРАБОТКА ЧЁРНЫХ СПИСКОВ ===")
+for name, data_dict in black_raw_data.items():
+    lines = data_dict["lines"]
+    total_lines = len(lines)
     local_domain_count = 0
     local_ip_count = 0
-    total_lines = len(data)
     start_parse = time.time()
-    
+    print(f"\n  [*] Парсинг: {name}...")
+
     is_oisd_nsfw = "10.2) OISD NSFW" in name
     is_oisd_main = "10.1) OISD" in name
     is_oisd_nsfw_sm = "10.4) OISD NSFW Small" in name
     is_oisd_sm = "10.3) OISD Small" in name
     is_any_oisd = "OISD" in name
 
-    for idx, raw_line in enumerate(data, start=1):
+    for idx, raw_line in enumerate(lines, start=1):
         if idx % 100 == 0 or idx == total_lines:
             print_progress("  [b-parse]", idx, total_lines, start_time=start_parse)
 
@@ -888,10 +950,8 @@ for name, url in urls.items():
             stats["junk"] += 1
             errors.append(("junk_invalid_line", name, raw_line))
     
-    if name in download_report:
-        download_report[name]["extracted_domains"] = local_domain_count
-        download_report[name]["extracted_ips"] = local_ip_count
-
+    download_report[name]["extracted_domains"] = local_domain_count
+    download_report[name]["extracted_ips"] = local_ip_count
     print(f"  -> Извлечено доменов: {local_domain_count} | IP: {local_ip_count}")
 
 for suffix in forced_block_suffixes:
@@ -906,214 +966,8 @@ for ip in forced_block_ips:
     if validated:
         all_ips.add(validated)
 
-print("\n=== ОЧИСТКА ПОДДОМЕНОВ И ДУБЛИКАТОВ И ФОРМИРОВАНИЕ RULE-SET ===")
+print("\n=== ЭТАП 5: ОЧИСТКА ПОДДОМЕНОВ И ФОРМИРОВАНИЕ RULE-SET ===")
 build_and_write()
-
-while failed_lists or failed_white_lists:
-    print("\n" + "="*45)
-    print("ВНИМАНИЕ: Некоторые списки не удалось скачать:")
-    for w in failed_white_lists:
-        print(f"  [Белый]  - {w}")
-    for b in failed_lists:
-        print(f"  [Черный] - {b}")
-    print("="*45)
-
-    target = failed_white_lists[0] if failed_white_lists else failed_lists[0]
-    is_white = target in failed_white_lists
-
-    print(f"\n[?] Хотите попытаться скачать '{target}' ещё раз?")
-    print("  1 - Да (попробовать стандартные ссылки)")
-    print("  2 - Нет (пропустить этот список)")
-    print("  3 - Вручную (я введу новую рабочую ссылку)")
-    ans = input("Ваш выбор (1/2/3): ").strip()
-
-    if ans == '2':
-        if is_white:
-            failed_white_lists.remove(target)
-        else:
-            failed_lists.remove(target)
-        continue
-    elif ans in ('1', '3'):
-        setup_dns_and_test()
-        url_to_try = ""
-        if ans == '3':
-            url_to_try = input("Введите полную ссылку (https://...): ").strip()
-        else:
-            url_to_try = white_urls[target] if is_white else urls[target]
-
-        lines, method = download_data(target, url_to_try)
-
-        if not lines:
-            print("  [!] Загрузка снова не удалась или получена страница с ошибкой (HTML).")
-            continue
-
-        print(f"  [+] Успешно скачано ({method}). Интеграция в правила...")
-
-        total_lines = len(lines)
-        start_parse = time.time()
-        local_extracted_count = 0
-
-        if is_white:
-            for idx, raw_line in enumerate(lines, start=1):
-                if idx % 100 == 0 or idx == total_lines:
-                    print_progress("  [rw-parse]", idx, total_lines, start_time=start_parse)
-                line = raw_line.strip()
-                if not line or line.startswith(('#', '!')):
-                    continue
-                if line.startswith('.'):
-                    domain = line.lstrip('.').lower()
-                    if is_valid_domain(domain): 
-                        protected_suffixes.add(domain)
-                        local_extracted_count += 1
-                    continue
-                if ',' in line:
-                    parts = line.split(',', 1)
-                    if len(parts) == 2:
-                        key = parts[0].lower()
-                        val = parts[1].strip().lower().split('#')[0].strip()
-                        if key.startswith('domain-suffix'):
-                            if is_valid_domain(val): 
-                                protected_suffixes.add(val)
-                                local_extracted_count += 1
-                        elif key.startswith('domain'):
-                            if is_valid_domain(val): 
-                                protected_domains.add(val)
-                                local_extracted_count += 1
-                        else:
-                            if is_valid_domain(val): 
-                                protected_domains.add(val)
-                                local_extracted_count += 1
-                    continue
-                if is_valid_domain(line.lower()): 
-                    protected_domains.add(line.lower())
-                    local_extracted_count += 1
-
-            apple_keys = [d for d in list(protected_domains) if (d.endswith(".apple.com") or d.startswith("apple-") or d.startswith("icloud")) and d != "apple.com"]
-            for a in apple_keys:
-                protected_domains.discard(a)
-                protected_suffixes.add(a)
-
-            print("  [*] Очистка черного списка от новых белых доменов...")
-            to_remove = set()
-            for d in all_domains:
-                prot, reason = is_protected_full(d)
-                if prot:
-                    to_remove.add(d)
-            for d in to_remove:
-                all_domains.remove(d)
-
-            failed_white_lists.remove(target)
-            white_download_report[target] = {"status": "ok (retry)", "method": method, "lines": len(lines), "extracted": local_extracted_count}
-            print(f"  -> Извлечено доменов: {local_extracted_count}")
-        else:
-            is_oisd_nsfw = "10.2) OISD NSFW" in target
-            is_oisd_main = "10.1) OISD" in target
-            is_oisd_nsfw_sm = "10.4) OISD NSFW Small" in target
-            is_oisd_sm = "10.3) OISD Small" in target
-            is_any_oisd = "OISD" in target
-            local_domain_retry = 0
-            local_ip_retry = 0
-
-            for idx, raw_line in enumerate(lines, start=1):
-                if idx % 100 == 0 or idx == total_lines:
-                    print_progress("  [r-parse]", idx, total_lines, start_time=start_parse)
-                line = raw_line.strip().lower()
-                if not line or line.startswith(('!', '[', '@@')) or '##' in line or '#@#' in line or line.startswith('#'):
-                    continue
-                if exclude_pattern.search(line):
-                    continue
-                if "," in line and not line.startswith("||"):
-                    parts = [p.strip() for p in line.split(',', 2)]
-                    if len(parts) >= 2:
-                        rule_type = parts[0]
-                        val = parts[1].split('#')[0].strip()
-                        if "ip-cidr" in rule_type:
-                            validated = validate_ip(val)
-                            if validated:
-                                pure_ip = validated.split('/')[0]
-                                is_protected_ip = False if is_any_oisd else (pure_ip in protected_ips)
-                                if not is_protected_ip:
-                                    if is_oisd_nsfw:
-                                        nsfw_ips.add(validated)
-                                    elif is_oisd_main:
-                                        oisd_ips.add(validated)
-                                    elif is_oisd_nsfw_sm:
-                                        nsfw_small_ips.add(validated)
-                                    elif is_oisd_sm:
-                                        oisd_small_ips.add(validated)
-                                    else:
-                                        all_ips.add(validated)
-                                    local_ip_retry += 1
-                        elif "domain" in rule_type:
-                            if is_valid_domain(val):
-                                protected, reason = (False, None) if is_any_oisd else is_protected_full(val)
-                                if not protected:
-                                    if is_oisd_nsfw:
-                                        nsfw_domains.add(val)
-                                    elif is_oisd_main:
-                                        oisd_domains.add(val)
-                                    elif is_oisd_nsfw_sm:
-                                        nsfw_small_domains.add(val)
-                                    elif is_oisd_sm:
-                                        oisd_small_domains.add(val)
-                                    else:
-                                        all_domains.add(val)
-                                    local_domain_retry += 1
-                    continue
-
-                clean = line.split('#')[0].strip()
-                if clean.startswith(('0.0.0.0 ', '127.0.0.1 ')):
-                    clean = clean.split(' ', 1)[1].strip()
-                clean = re.sub(r'^[|\s]*\|\|', '', clean)
-                clean = re.sub(r'^\|', '', clean)
-                clean = re.sub(r'^https?://', '', clean)
-                clean = re.sub(r'^www\.', '', clean)
-                if '/' in clean.split('^')[0].split('$')[0]:
-                    continue
-                clean = clean.split('^')[0].split('$')[0].split(':')[0].split('*')[0].strip()
-                clean = clean.strip('.').strip()
-
-                if not clean:
-                    continue
-                validated_ip = validate_ip(clean)
-                if validated_ip:
-                    pure_ip = validated_ip.split('/')[0]
-                    is_protected_ip = False if is_any_oisd else (pure_ip in protected_ips)
-                    if not is_protected_ip:
-                        if is_oisd_nsfw:
-                            nsfw_ips.add(validated_ip)
-                        elif is_oisd_main:
-                            oisd_ips.add(validated_ip)
-                        elif is_oisd_nsfw_sm:
-                            nsfw_small_ips.add(validated_ip)
-                        elif is_oisd_sm:
-                            oisd_small_ips.add(validated_ip)
-                        else:
-                            all_ips.add(validated_ip)
-                        local_ip_retry += 1
-                elif is_valid_domain(clean):
-                    protected, reason = (False, None) if is_any_oisd else is_protected_full(clean)
-                    if not protected:
-                        if is_oisd_nsfw:
-                            nsfw_domains.add(clean)
-                        elif is_oisd_main:
-                            oisd_domains.add(clean)
-                        elif is_oisd_nsfw_sm:
-                            nsfw_small_domains.add(clean)
-                        elif is_oisd_sm:
-                            oisd_small_domains.add(clean)
-                        else:
-                            all_domains.add(clean)
-                        local_domain_retry += 1
-
-            failed_lists.remove(target)
-            download_report[target] = {"status": "ok (retry)", "method": method, "lines": len(lines), "extracted_domains": local_domain_retry, "extracted_ips": local_ip_retry}
-
-        print("  [*] Пересборка финальных списков...")
-        build_and_write()
-        print("  [+] Файлы успешно обновлены (rule-set и log)!")
-    else:
-        print("  [!] Неверный ввод.")
 
 TOTAL_TIME = round(time.time() - SCRIPT_START_TIME, 2)
 
