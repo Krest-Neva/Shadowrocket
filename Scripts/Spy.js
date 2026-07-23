@@ -19,7 +19,6 @@
             var raw = typeof $argument !== 'undefined' ? $argument : '{}';
             var arg = JSON.parse(raw);
             var opt = Object.assign({}, def, arg);
-            // support old "compact" key
             if (opt.compact !== undefined && opt.compactBody === undefined) {
                 opt.compactBody = opt.compact;
             }
@@ -113,107 +112,110 @@
 
     var methodPrefix = OPT.color ? getMethodPrefix(method) + ' ' : '';
     var statusPrefix = hasResponse && OPT.color ? ' ' + getStatusPrefix(resStatus) : '';
-    var timeStr = OPT.time ? '\n| TIME: ' + new Date().toISOString() : '';
+    var timeStr = OPT.time ? ' [' + new Date().toISOString() + ']' : '';
 
-    console.log('+---' + counter + ' [Spy] ' + methodPrefix + method + ' ' + url + statusPrefix + timeStr);
+    var logLines = [];
+    var headerStr = '+---' + counter + ' [Spylog] ' + methodPrefix + method + ' ' + url + statusPrefix + timeStr;
+    logLines.push(headerStr);
 
     if (!hasResponse) {
-        console.log('| [REQ] ИСХОДЯЩИЙ ЗАПРОС');
+        logLines.push('| [REQ] ИСХОДЯЩИЙ ЗАПРОС');
     } else {
-        console.log('| [REQ/RES] ЗАПРОС И ОТВЕТ (статус: ' + resStatus + ')');
+        logLines.push('| [REQ/RES] ЗАПРОС И ОТВЕТ (статус: ' + resStatus + ')');
     }
 
     var printHeaders = function (label, headers) {
         if (!OPT.headers || !headers) return;
-        console.log('| ' + label);
+        var headerParts = [];
         for (var k in headers) {
-            console.log('|   ' + k + ': ' + headers[k]);
+            headerParts.push(k + ': ' + headers[k]);
+        }
+        if (headerParts.length) {
+            logLines.push('| ' + label + ' {' + headerParts.join('; ') + '}');
         }
     };
 
     var printContentType = function (headers) {
         if (!OPT.contentType || !headers) return;
         var ct = headers['Content-Type'] || headers['content-type'];
-        if (ct) console.log('| TYPE: ' + ct);
+        if (ct) logLines.push('| TYPE: ' + ct);
     };
 
     var printSize = function (label, body) {
         if (!OPT.size) return;
         var len = body ? body.length : 0;
-        console.log('| SIZE ' + label + ': ' + formatSize(len));
+        logLines.push('| SIZE ' + label + ': ' + formatSize(len));
     };
 
-    var printBodyCompact = function (label, body, highlightWords) {
-        if (!body) {
-            console.log('| ' + label + ': пусто');
-            return;
-        }
+    var getBodySummary = function (body, highlightWords) {
+        if (!body) return 'пусто';
         var parsed = tryParse(body);
         if (typeof parsed === 'object' && parsed !== null) {
             var keys = Object.keys(parsed);
             var isArray = Array.isArray(parsed);
             var length = isArray ? parsed.length : keys.length;
-            console.log('| ' + label + ' (' + (isArray ? 'array' : 'object') + ') size: ' + length + ' elements, keys: [' + keys.join(', ') + ']');
+            var summary = (isArray ? 'array[' + length + ']' : 'object{' + keys.join(',') + '}');
             if (isArray && length > 0) {
-                var sample = JSON.stringify(parsed[0], null, 2);
-                var sampleLines = sample.split('\n');
-                var firstLines = sampleLines.slice(0, 5);
-                console.log('|   пример первого элемента (первые 5 строк):');
-                firstLines.forEach(function (line) {
-                    console.log('|     ' + line);
-                });
-                if (sampleLines.length > 5) console.log('|     ...');
+                var sample = JSON.stringify(parsed[0]);
+                if (sample.length > 50) sample = sample.substring(0, 50) + '...';
+                summary += ' sample: ' + sample;
             }
             if (highlightWords.length) {
                 var found = findHighlightKeys(parsed, highlightWords);
-                if (found.length) console.log('| KEYS FOUND: ' + found.join(', '));
+                if (found.length) summary += ' highlights: [' + found.join(',') + ']';
             }
-            return;
+            return summary;
+        } else {
+            var text = String(parsed);
+            if (OPT.maxPrintLength > 0 && text.length > OPT.maxPrintLength) {
+                text = text.substring(0, OPT.maxPrintLength) + '... (' + (text.length - OPT.maxPrintLength) + ' more)';
+            }
+            if (highlightWords.length) {
+                text = highlightText(text, highlightWords);
+            }
+            return 'text: ' + text;
         }
-        var text = String(parsed);
-        if (OPT.maxPrintLength > 0 && text.length > OPT.maxPrintLength) {
-            text = text.substring(0, OPT.maxPrintLength) + '... (' + (text.length - OPT.maxPrintLength) + ' more)';
-        }
-        text = highlightText(text, highlightWords);
-        console.log('| ' + label + ' (Raw): ' + text);
     };
 
-    printHeaders('> Заголовки запроса:', reqHeaders);
-    printContentType(reqHeaders);
-    printSize('(Req)', reqBody);
     if (OPT.showBody) {
         if (OPT.compactBody) {
-            printBodyCompact('> Тело запроса', reqBody, OPT.highlight);
+            logLines.push('| > Body: ' + getBodySummary(reqBody, OPT.highlight));
         } else {
             var text = String(reqBody || '');
             if (OPT.maxLength > 0 && text.length > OPT.maxLength) {
                 text = text.substring(0, OPT.maxLength) + '... (усечено)';
             }
             text = highlightText(text, OPT.highlight);
-            console.log('| > Тело запроса: ' + text);
+            logLines.push('| > Body: ' + text);
         }
+    } else {
+        logLines.push('| > Body: скрыто (showBody=false)');
     }
 
     if (hasResponse) {
-        console.log('|');
+        logLines.push('|');
         printHeaders('< Заголовки ответа:', resHeaders);
         printContentType(resHeaders);
         printSize('(Res)', resBody);
         if (OPT.showBody) {
             if (OPT.compactBody) {
-                printBodyCompact('< Тело ответа', resBody, OPT.highlight);
+                logLines.push('| < Body: ' + getBodySummary(resBody, OPT.highlight));
             } else {
                 var text = String(resBody || '');
                 if (OPT.maxLength > 0 && text.length > OPT.maxLength) {
                     text = text.substring(0, OPT.maxLength) + '... (усечено)';
                 }
                 text = highlightText(text, OPT.highlight);
-                console.log('| < Тело ответа: ' + text);
+                logLines.push('| < Body: ' + text);
             }
+        } else {
+            logLines.push('| < Body: скрыто (showBody=false)');
         }
     }
 
-    console.log('+---');
+    logLines.push('+---');
+
+    console.log(logLines.join('\n'));
 
     if (hasResponse) {
         $done({ body: resBody });
