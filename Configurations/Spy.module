@@ -1,35 +1,38 @@
 #!name=Spy
-#!desc=Отладка запросов/ответов
+#!desc=Универсальный отладчик HTTP-запросов и ответов для Shadowrocket
 
-# ============================================
-# Spy — универсальный отладчик запросов/ответов
-# ============================================
-# Аргумент (JSON) управляет выводом:
+#===================================================
+# ОПИСАНИЕ АРГУМЕНТОВ (передаются в JSON в параметре argument)
+#===================================================
 #
-# color (true/false)             — цветные эмодзи метода и статуса
-# time (true/false)              — метка времени в ISO-формате
-# size (true/false)              — размер тела (B/KB/MB)
-# contentType (true/false)       — показывать Content-Type
-# headers (true/false)           — показывать все заголовки
-# compact (true/false)           — только ключи верхнего уровня вместо полного тела
-# maxLength (число)              — макс. длина выводимого тела (0 = без ограничения)
-# highlight (массив строк)       — слова для подсветки в тексте ▶слово◀ и для поиска ключей
-# counter (true/false)           — глобальный счётчик запросов (#1, #2…)
-# ignoreTypes (массив строк)     — игнорировать ответы с такими префиксами Content-Type
-# ignoreRequestTypes (true/false)— применять ignoreTypes и к исходящим запросам
+# color (true/false)          – эмодзи для метода и статуса (по умолчанию true)
+# time (true/false)           – метка времени ISO (true)
+# size (true/false)           – размер тела (B/KB/MB) (true)
+# contentType (true/false)    – показывать Content-Type (true)
+# headers (true/false)        – показывать заголовки (true)
+# compactBody (true/false)    – компактный вывод тела: ключи + пример (true)
+# maxLength (число)           – макс. длина тела при полном выводе (если compactBody=false), 0 = без огр.
+# highlight (массив строк)    – подсветка слов ➤слово◀ и поиск в ключах ([] – пусто)
+# counter (true/false)        – глобальный счётчик запросов (#1, #2…) (false)
+# ignoreTypes (массив строк)  – игнорировать ответы с Content-Type, начинающимся с префиксов ([] – пусто)
+# ignoreRequestTypes (bool)   – применять ignoreTypes и к исходящим запросам (false)
+# showBody (true/false)       – показывать тело (true)
+# maxPrintLength (число)      – макс. длина текстового тела при compactBody=true (2000)
 #
-# Пример ниже включает всё, кроме compact, и подсвечивает "premium" и "token".
-# ============================================
+#===================================================
+# Пример: {"compactBody":true,"highlight":["token","secret"],"counter":true}
+#===================================================
 
 [RULE]
 AND,((PROTOCOL,UDP), (DST-PORT,443)),REJECT-NO-DROP
-DOMAIN-SUFFIX,gdebenz.ru,PROXY
 
 [Script]
-Spy-Request = type=http-request,pattern=^https?:\/\/(?:[a-zA-Z0-9-]+\.)*gdebenz\.ru\/.*,requires-body=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spy.js,argument={"color":true,"time":true,"size":true,"contentType":true,"headers":true,"compactBody":true,"maxPrintLength":2000,"showBody":true,"highlight":["premium","token"],"counter":true,"ignoreTypes":["image/","font/","text/css","text/javascript"],"ignoreRequestTypes":false}
-Spy-Response = type=http-response,pattern=^https?:\/\/(?:[a-zA-Z0-9-]+\.)*gdebenz\.ru\/.*,requires-body=1,max-size=131072,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spy.js,argument={"color":true,"time":true,"size":true,"contentType":true,"headers":true,"compactBody":true,"maxPrintLength":2000,"showBody":true,"highlight":["premium","token"],"counter":true,"ignoreTypes":["image/","font/","text/css","text/javascript"],"ignoreRequestTypes":false}
+# Заменить example.com
+Spy-Request = type=http-request,pattern=^https?:\/\/(?:[a-zA-Z0-9-]+\.)*example\.com\/.*,requires-body=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spy.js,argument={"color":true,"time":true,"size":true,"contentType":true,"headers":true,"compactBody":true,"maxPrintLength":2000,"showBody":true,"highlight":["premium","token"],"counter":true,"ignoreTypes":["image/","font/","text/css","text/javascript"],"ignoreRequestTypes":false}
+Spy-Response = type=http-response,pattern=^https?:\/\/(?:[a-zA-Z0-9-]+\.)*example\.com\/.*,requires-body=1,max-size=131072,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spy.js,argument={"color":true,"time":true,"size":true,"contentType":true,"headers":true,"compactBody":true,"maxPrintLength":2000,"showBody":true,"highlight":["premium","token"],"counter":true,"ignoreTypes":["image/","font/","text/css","text/javascript"],"ignoreRequestTypes":false}
 
 [MITM]
 enable = true
-#Необходимы хосты
-hostname = %APPEND% gdebenz.ru,*.gdebenz.ru
+# Добавить сюда домены, указанные в pattern выше.
+# Использовать %APPEND% для добавления к существующему списку.
+hostname = %APPEND% 
