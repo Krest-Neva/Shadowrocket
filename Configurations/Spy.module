@@ -26,8 +26,8 @@ AND,((PROTOCOL,UDP), (DST-PORT,443)),REJECT-NO-DROP
 DOMAIN-SUFFIX,gdebenz.ru,PROXY
 
 [Script]
-Spy-Request = type=http-request,pattern=^https?:\/\/(?:[a-zA-Z0-9-]+\.)*gdebenz\.ru\/.*,requires-body=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spy.js,argument={"color":true,"time":true,"size":true,"contentType":true,"headers":true,"compact":false,"maxLength":0,"highlight":["premium","token"],"counter":true,"ignoreTypes":["image/","font/","text/css","text/javascript"],"ignoreRequestTypes":false}
-Spy-Response = type=http-response,pattern=^https?:\/\/(?:[a-zA-Z0-9-]+\.)*gdebenz\.ru\/.*,requires-body=1,max-size=131072,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spy.js,argument={"color":true,"time":true,"size":true,"contentType":true,"headers":true,"compact":false,"maxLength":0,"highlight":["premium","token"],"counter":true,"ignoreTypes":["image/","font/","text/css","text/javascript"],"ignoreRequestTypes":false}
+Spy-Request = type=http-request,pattern=^https?:\/\/(?:[a-zA-Z0-9-]+\.)*gdebenz\.ru\/.*,requires-body=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spy.js,argument={"color":true,"time":true,"size":true,"contentType":true,"headers":true,"compactBody":true,"maxPrintLength":2000,"showBody":true,"highlight":["premium","token"],"counter":true,"ignoreTypes":["image/","font/","text/css","text/javascript"],"ignoreRequestTypes":false}
+Spy-Response = type=http-response,pattern=^https?:\/\/(?:[a-zA-Z0-9-]+\.)*gdebenz\.ru\/.*,requires-body=1,max-size=131072,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spy.js,argument={"color":true,"time":true,"size":true,"contentType":true,"headers":true,"compactBody":true,"maxPrintLength":2000,"showBody":true,"highlight":["premium","token"],"counter":true,"ignoreTypes":["image/","font/","text/css","text/javascript"],"ignoreRequestTypes":false}
 
 [MITM]
 enable = true
