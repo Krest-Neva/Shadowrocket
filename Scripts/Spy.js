@@ -30,15 +30,15 @@ const resStatus = hasResponse ? $response.status : null;
 const resHeaders = hasResponse ? $response.headers : null;
 const resBody = hasResponse ? $response.body : null;
 
-const getMethodEmoji = (m) => {
-    const map = { GET: '🔵', POST: '🟢', PUT: '🟠', DELETE: '🔴', PATCH: '🟡', HEAD: '⚪️', OPTIONS: '🔘' };
-    return map[m] || '🔷';
+const getMethodPrefix = (m) => {
+    const map = { GET: '[GET]', POST: '[POST]', PUT: '[PUT]', DELETE: '[DEL]', PATCH: '[PATCH]', HEAD: '[HEAD]', OPTIONS: '[OPT]' };
+    return map[m] || '[ANY]';
 };
 
-const getStatusEmoji = (s) => {
+const getStatusPrefix = (s) => {
     if (!s) return '';
     const code = Math.floor(s / 100);
-    return code === 2 ? '✅' : code === 3 ? '⚠️' : code === 4 ? '❌' : code === 5 ? '💀' : '❓';
+    return code === 2 ? '[OK]' : code === 3 ? '[REDIR]' : code === 4 ? '[ERR]' : code === 5 ? '[FAIL]' : '[?]';
 };
 
 const formatSize = (bytes) => {
@@ -60,7 +60,7 @@ const highlightText = (text, words) => {
     words.forEach(w => {
         const escaped = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const regex = new RegExp(escaped, 'gi');
-        result = result.replace(regex, '▶$&◀');
+        result = result.replace(regex, '>>>$&<<<');
     });
     return result;
 };
@@ -103,50 +103,50 @@ if (OPT.counter) {
     } catch (e) {}
 }
 
-const methodEmoji = OPT.color ? getMethodEmoji(method) + ' ' : '';
-const statusEmoji = hasResponse && OPT.color ? ' ' + getStatusEmoji(resStatus) : '';
-const timeStr = OPT.time ? `\n│ ⏱  ${new Date().toISOString()}` : '';
+const methodPrefix = OPT.color ? getMethodPrefix(method) + ' ' : '';
+const statusPrefix = hasResponse && OPT.color ? ' ' + getStatusPrefix(resStatus) : '';
+const timeStr = OPT.time ? `\n| TIME: ${new Date().toISOString()}` : '';
 
-console.log(`┌───${counter} [Spy] ${methodEmoji}${method} ${url}${statusEmoji}${timeStr}`);
+console.log(`+---${counter} [Spy] ${methodPrefix}${method} ${url}${statusPrefix}${timeStr}`);
 
 if (!hasResponse) {
-    console.log(`│ ⬆️  ИСХОДЯЩИЙ ЗАПРОС`);
+    console.log(`| [REQ] ИСХОДЯЩИЙ ЗАПРОС`);
 } else {
-    console.log(`│ ⬆️⬇️  ЗАПРОС И ОТВЕТ (статус: ${resStatus})`);
+    console.log(`| [REQ/RES] ЗАПРОС И ОТВЕТ (статус: ${resStatus})`);
 }
 
 const printHeaders = (label, headers) => {
     if (!OPT.headers || !headers) return;
-    console.log(`│ ${label}`);
+    console.log(`| ${label}`);
     for (const [k, v] of Object.entries(headers)) {
-        console.log(`│   ${k}: ${v}`);
+        console.log(`|   ${k}: ${v}`);
     }
 };
 
 const printContentType = (headers) => {
     if (!OPT.contentType || !headers) return;
     const ct = headers['Content-Type'] || headers['content-type'];
-    if (ct) console.log(`│ 📋 Content-Type: ${ct}`);
+    if (ct) console.log(`| TYPE: ${ct}`);
 };
 
 const printSize = (label, body) => {
     if (!OPT.size) return;
     const len = body ? body.length : 0;
-    console.log(`│ 📦 ${label}: ${formatSize(len)}`);
+    console.log(`| SIZE ${label}: ${formatSize(len)}`);
 };
 
 const printBody = (label, body, highlightWords) => {
     if (!body) {
-        console.log(`│ ${label}: пусто`);
+        console.log(`| ${label}: пусто`);
         return;
     }
     const parsed = tryParse(body);
     if (OPT.compact && typeof parsed === 'object') {
         const keys = Object.keys(parsed);
-        console.log(`│ ${label} (ключи): [${keys.join(', ')}]`);
+        console.log(`| ${label} (ключи): [${keys.join(', ')}]`);
         if (highlightWords.length) {
             const found = findHighlightKeys(parsed, highlightWords);
-            if (found.length) console.log(`│ 🔑 Найдены ключи: ${found.join(', ')}`);
+            if (found.length) console.log(`| KEYS FOUND: ${found.join(', ')}`);
         }
         return;
     }
@@ -156,11 +156,11 @@ const printBody = (label, body, highlightWords) => {
             text = text.substring(0, OPT.maxLength) + '... (усечено)';
         }
         text = highlightText(text, highlightWords);
-        console.log(`│ ${label} (JSON):`);
-        text.split('\n').forEach(line => console.log(`│   ${line}`));
+        console.log(`| ${label} (JSON):`);
+        text.split('\n').forEach(line => console.log(`|   ${line}`));
         if (highlightWords.length) {
             const found = findHighlightKeys(parsed, highlightWords);
-            if (found.length) console.log(`│ 🔑 Найдены ключи: ${found.join(', ')}`);
+            if (found.length) console.log(`| KEYS FOUND: ${found.join(', ')}`);
         }
     } else {
         let text = String(parsed);
@@ -168,22 +168,27 @@ const printBody = (label, body, highlightWords) => {
             text = text.substring(0, OPT.maxLength) + '... (усечено)';
         }
         text = highlightText(text, highlightWords);
-        console.log(`│ ${label} (Raw): ${text}`);
+        console.log(`| ${label} (Raw): ${text}`);
     }
 };
 
-printHeaders('▶️  Заголовки запроса:', reqHeaders);
+printHeaders('> Заголовки запроса:', reqHeaders);
 printContentType(reqHeaders);
-printSize('Размер запроса', reqBody);
-printBody('▶️  Тело запроса', reqBody, OPT.highlight);
+printSize('(Req)', reqBody);
+printBody('> Тело запроса', reqBody, OPT.highlight);
 
 if (hasResponse) {
-    console.log(`│`);
-    printHeaders('◀️  Заголовки ответа:', resHeaders);
+    console.log(`|`);
+    printHeaders('< Заголовки ответа:', resHeaders);
     printContentType(resHeaders);
-    printSize('Размер ответа', resBody);
-    printBody('◀️  Тело ответа', resBody, OPT.highlight);
+    printSize('(Res)', resBody);
+    printBody('< Тело ответа', resBody, OPT.highlight);
 }
 
-console.log(`└───`);
-$done({ body: resBody });
+console.log(`+---`);
+
+if (hasResponse) {
+    $done({ body: resBody });
+} else {
+    $done({});
+}
