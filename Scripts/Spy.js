@@ -1,193 +1,219 @@
 (function () {
-    const OPT = (() => {
-        const def = {
+    var OPT = (function () {
+        var def = {
             color: true,
             time: true,
             size: true,
             contentType: true,
             headers: true,
-            compact: false,
+            compactBody: true,
             maxLength: 0,
             highlight: [],
             counter: false,
             ignoreTypes: [],
-            ignoreRequestTypes: false
+            ignoreRequestTypes: false,
+            maxPrintLength: 2000,
+            showBody: true
         };
         try {
-            const raw = typeof $argument !== 'undefined' ? $argument : '{}';
-            const arg = JSON.parse(raw);
-            return Object.assign({}, def, arg);
+            var raw = typeof $argument !== 'undefined' ? $argument : '{}';
+            var arg = JSON.parse(raw);
+            var opt = Object.assign({}, def, arg);
+            // support old "compact" key
+            if (opt.compact !== undefined && opt.compactBody === undefined) {
+                opt.compactBody = opt.compact;
+            }
+            return opt;
         } catch (e) {
             return def;
         }
     })();
 
-    const url = $request.url;
-    const method = $request.method;
-    const reqHeaders = $request.headers;
-    const reqBody = $request.body;
-    const hasResponse = typeof $response !== 'undefined';
-    const resStatus = hasResponse ? $response.status : null;
-    const resHeaders = hasResponse ? $response.headers : null;
-    const resBody = hasResponse ? $response.body : null;
+    var url = $request.url;
+    var method = $request.method;
+    var reqHeaders = $request.headers;
+    var reqBody = $request.body;
+    var hasResponse = typeof $response !== 'undefined';
+    var resStatus = hasResponse ? $response.status : null;
+    var resHeaders = hasResponse ? $response.headers : null;
+    var resBody = hasResponse ? $response.body : null;
 
-    const getMethodPrefix = (m) => {
-        const map = { GET: '[GET]', POST: '[POST]', PUT: '[PUT]', DELETE: '[DEL]', PATCH: '[PATCH]', HEAD: '[HEAD]', OPTIONS: '[OPT]' };
+    var getMethodPrefix = function (m) {
+        var map = { GET: '[GET]', POST: '[POST]', PUT: '[PUT]', DELETE: '[DEL]', PATCH: '[PATCH]', HEAD: '[HEAD]', OPTIONS: '[OPT]' };
         return map[m] || '[ANY]';
     };
 
-    const getStatusPrefix = (s) => {
+    var getStatusPrefix = function (s) {
         if (!s) return '';
-        const code = Math.floor(s / 100);
+        var code = Math.floor(s / 100);
         return code === 2 ? '[OK]' : code === 3 ? '[REDIR]' : code === 4 ? '[ERR]' : code === 5 ? '[FAIL]' : '[?]';
     };
 
-    const formatSize = (bytes) => {
-        if (bytes < 1024) return `${bytes} B`;
-        if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
-        return `${(bytes / 1048576).toFixed(2)} MB`;
+    var formatSize = function (bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1048576).toFixed(2) + ' MB';
     };
 
-    const tryParse = (data) => {
+    var tryParse = function (data) {
         if (!data) return null;
         try { return JSON.parse(data); } catch (e) {
             try { return JSON.parse(data.replace(/^[0-9]+/, '')); } catch (e2) { return data; }
         }
     };
 
-    const highlightText = (text, words) => {
+    var highlightText = function (text, words) {
         if (!words.length) return text;
-        let result = text;
-        words.forEach(w => {
-            const escaped = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const regex = new RegExp(escaped, 'gi');
+        var result = text;
+        words.forEach(function (w) {
+            var escaped = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            var regex = new RegExp(escaped, 'gi');
             result = result.replace(regex, '>>>$&<<<');
         });
         return result;
     };
 
-    const findHighlightKeys = (obj, words) => {
-        const found = new Set();
-        const walk = (o) => {
+    var findHighlightKeys = function (obj, words) {
+        var found = new Set();
+        var walk = function (o) {
             if (typeof o !== 'object' || o === null) return;
-            for (const key of Object.keys(o)) {
-                if (words.some(w => key.toLowerCase().includes(w.toLowerCase()))) found.add(key);
+            for (var key in o) {
+                if (words.some(function (w) { return key.toLowerCase().includes(w.toLowerCase()); })) found.add(key);
                 walk(o[key]);
             }
         };
         walk(obj);
-        return [...found];
+        return Array.from(found);
     };
 
-    const checkIgnored = (headers, ignoreList) => {
+    var checkIgnored = function (headers, ignoreList) {
         if (!ignoreList.length || !headers) return false;
-        const ct = (headers['Content-Type'] || headers['content-type'] || '').toLowerCase();
-        return ignoreList.some(prefix => ct.startsWith(prefix.toLowerCase()));
+        var ct = (headers['Content-Type'] || headers['content-type'] || '').toLowerCase();
+        return ignoreList.some(function (prefix) { return ct.startsWith(prefix.toLowerCase()); });
     };
 
-    // Проверка игнорируемых типов – если совпало, завершаем скрипт
     if (hasResponse && checkIgnored(resHeaders, OPT.ignoreTypes)) {
         $done({ body: resBody });
-        return; // теперь return внутри функции IIFE
+        return;
     }
     if (!hasResponse && OPT.ignoreRequestTypes && checkIgnored(reqHeaders, OPT.ignoreTypes)) {
         $done({});
         return;
     }
 
-    let counter = '';
+    var counter = '';
     if (OPT.counter) {
         try {
-            let c = $persistentStore.read('spy_counter');
+            var c = $persistentStore.read('spy_counter');
             c = (c && parseInt(c)) ? parseInt(c) + 1 : 1;
             $persistentStore.write('spy_counter', c.toString());
-            counter = ` #${c}`;
+            counter = ' #' + c;
         } catch (e) {}
     }
 
-    const methodPrefix = OPT.color ? getMethodPrefix(method) + ' ' : '';
-    const statusPrefix = hasResponse && OPT.color ? ' ' + getStatusPrefix(resStatus) : '';
-    const timeStr = OPT.time ? `\n| TIME: ${new Date().toISOString()}` : '';
+    var methodPrefix = OPT.color ? getMethodPrefix(method) + ' ' : '';
+    var statusPrefix = hasResponse && OPT.color ? ' ' + getStatusPrefix(resStatus) : '';
+    var timeStr = OPT.time ? '\n| TIME: ' + new Date().toISOString() : '';
 
-    console.log(`+---${counter} [Spy] ${methodPrefix}${method} ${url}${statusPrefix}${timeStr}`);
+    console.log('+---' + counter + ' [Spy] ' + methodPrefix + method + ' ' + url + statusPrefix + timeStr);
 
     if (!hasResponse) {
-        console.log(`| [REQ] ИСХОДЯЩИЙ ЗАПРОС`);
+        console.log('| [REQ] ИСХОДЯЩИЙ ЗАПРОС');
     } else {
-        console.log(`| [REQ/RES] ЗАПРОС И ОТВЕТ (статус: ${resStatus})`);
+        console.log('| [REQ/RES] ЗАПРОС И ОТВЕТ (статус: ' + resStatus + ')');
     }
 
-    const printHeaders = (label, headers) => {
+    var printHeaders = function (label, headers) {
         if (!OPT.headers || !headers) return;
-        console.log(`| ${label}`);
-        for (const [k, v] of Object.entries(headers)) {
-            console.log(`|   ${k}: ${v}`);
+        console.log('| ' + label);
+        for (var k in headers) {
+            console.log('|   ' + k + ': ' + headers[k]);
         }
     };
 
-    const printContentType = (headers) => {
+    var printContentType = function (headers) {
         if (!OPT.contentType || !headers) return;
-        const ct = headers['Content-Type'] || headers['content-type'];
-        if (ct) console.log(`| TYPE: ${ct}`);
+        var ct = headers['Content-Type'] || headers['content-type'];
+        if (ct) console.log('| TYPE: ' + ct);
     };
 
-    const printSize = (label, body) => {
+    var printSize = function (label, body) {
         if (!OPT.size) return;
-        const len = body ? body.length : 0;
-        console.log(`| SIZE ${label}: ${formatSize(len)}`);
+        var len = body ? body.length : 0;
+        console.log('| SIZE ' + label + ': ' + formatSize(len));
     };
 
-    const printBody = (label, body, highlightWords) => {
+    var printBodyCompact = function (label, body, highlightWords) {
         if (!body) {
-            console.log(`| ${label}: пусто`);
+            console.log('| ' + label + ': пусто');
             return;
         }
-        const parsed = tryParse(body);
-        if (OPT.compact && typeof parsed === 'object') {
-            const keys = Object.keys(parsed);
-            console.log(`| ${label} (ключи): [${keys.join(', ')}]`);
+        var parsed = tryParse(body);
+        if (typeof parsed === 'object' && parsed !== null) {
+            var keys = Object.keys(parsed);
+            var isArray = Array.isArray(parsed);
+            var length = isArray ? parsed.length : keys.length;
+            console.log('| ' + label + ' (' + (isArray ? 'array' : 'object') + ') size: ' + length + ' elements, keys: [' + keys.join(', ') + ']');
+            if (isArray && length > 0) {
+                var sample = JSON.stringify(parsed[0], null, 2);
+                var sampleLines = sample.split('\n');
+                var firstLines = sampleLines.slice(0, 5);
+                console.log('|   пример первого элемента (первые 5 строк):');
+                firstLines.forEach(function (line) {
+                    console.log('|     ' + line);
+                });
+                if (sampleLines.length > 5) console.log('|     ...');
+            }
             if (highlightWords.length) {
-                const found = findHighlightKeys(parsed, highlightWords);
-                if (found.length) console.log(`| KEYS FOUND: ${found.join(', ')}`);
+                var found = findHighlightKeys(parsed, highlightWords);
+                if (found.length) console.log('| KEYS FOUND: ' + found.join(', '));
             }
             return;
         }
-        if (typeof parsed === 'object') {
-            let text = JSON.stringify(parsed, null, 2);
-            if (OPT.maxLength > 0 && text.length > OPT.maxLength) {
-                text = text.substring(0, OPT.maxLength) + '... (усечено)';
-            }
-            text = highlightText(text, highlightWords);
-            console.log(`| ${label} (JSON):`);
-            text.split('\n').forEach(line => console.log(`|   ${line}`));
-            if (highlightWords.length) {
-                const found = findHighlightKeys(parsed, highlightWords);
-                if (found.length) console.log(`| KEYS FOUND: ${found.join(', ')}`);
-            }
-        } else {
-            let text = String(parsed);
-            if (OPT.maxLength > 0 && text.length > OPT.maxLength) {
-                text = text.substring(0, OPT.maxLength) + '... (усечено)';
-            }
-            text = highlightText(text, highlightWords);
-            console.log(`| ${label} (Raw): ${text}`);
+        var text = String(parsed);
+        if (OPT.maxPrintLength > 0 && text.length > OPT.maxPrintLength) {
+            text = text.substring(0, OPT.maxPrintLength) + '... (' + (text.length - OPT.maxPrintLength) + ' more)';
         }
+        text = highlightText(text, highlightWords);
+        console.log('| ' + label + ' (Raw): ' + text);
     };
 
     printHeaders('> Заголовки запроса:', reqHeaders);
     printContentType(reqHeaders);
     printSize('(Req)', reqBody);
-    printBody('> Тело запроса', reqBody, OPT.highlight);
+    if (OPT.showBody) {
+        if (OPT.compactBody) {
+            printBodyCompact('> Тело запроса', reqBody, OPT.highlight);
+        } else {
+            var text = String(reqBody || '');
+            if (OPT.maxLength > 0 && text.length > OPT.maxLength) {
+                text = text.substring(0, OPT.maxLength) + '... (усечено)';
+            }
+            text = highlightText(text, OPT.highlight);
+            console.log('| > Тело запроса: ' + text);
+        }
+    }
 
     if (hasResponse) {
-        console.log(`|`);
+        console.log('|');
         printHeaders('< Заголовки ответа:', resHeaders);
         printContentType(resHeaders);
         printSize('(Res)', resBody);
-        printBody('< Тело ответа', resBody, OPT.highlight);
+        if (OPT.showBody) {
+            if (OPT.compactBody) {
+                printBodyCompact('< Тело ответа', resBody, OPT.highlight);
+            } else {
+                var text = String(resBody || '');
+                if (OPT.maxLength > 0 && text.length > OPT.maxLength) {
+                    text = text.substring(0, OPT.maxLength) + '... (усечено)';
+                }
+                text = highlightText(text, OPT.highlight);
+                console.log('| < Тело ответа: ' + text);
+            }
+        }
     }
 
-    console.log(`+---`);
+    console.log('+---');
 
     if (hasResponse) {
         $done({ body: resBody });
