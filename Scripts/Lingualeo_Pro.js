@@ -1,216 +1,131 @@
 if (typeof $response !== 'undefined' && $response.body) {
     try {
+        let body = JSON.parse($response.body);
+        let url = $request ? $request.url : '';
         let arg = {};
         try { arg = JSON.parse($argument || '{}'); } catch (e) {}
         let debug = arg.debug === true;
-        let log = debug ? console.log : function() {};
-        let url = $request ? $request.url : '';
-        let status = $response.status;
-        let body = null;
-        let modified = false;
-        let newStatus = status;
-
+        function log(msg) { if (debug) console.log('[LingualeoPro] ' + msg); }
         function getFutureDate() {
             let d = new Date();
             d.setFullYear(d.getFullYear() + 10);
             return d.toISOString().split('T')[0];
         }
-
-        function createPremiumUser() {
-            return {
-                is_gold: true,
-                meatballs: 99999,
-                address: 'Minsk',
-                birth: '2004-01-15',
-                nickname: 'Pupochek',
-                fname: 'Kristina',
-                sname: 'Nevskaya',
-                xp_title: 'Молодчинка!',
-                fullname: 'Krest-Neva',
-                avatar: 'https://i.pinimg.com/736x/97/6e/3d/976e3ddff4cf700b1449f262cf15865f.jpg',
-                avatar_mini: 'https://i.pinimg.com/736x/97/6e/3d/976e3ddff4cf700b1449f262cf15865f.jpg',
-                premium_level: 'pro+',
-                premium_unlimited: 1,
-                premium_until: getFutureDate(),
-                premium_details: {
-                    level: 'pro+',
-                    is_unlimited: 1,
-                    until: getFutureDate()
-                },
-                have_trial: 0
-            };
-        }
-
-        if (debug) {
-            let lines = [];
-            lines.push('+--- [LingualeoPro] ' + ($request ? $request.method : 'UNKNOWN') + ' ' + url + ' [' + new Date().toISOString() + ']');
-            lines.push('| Статус ответа: ' + status);
-            if ($response.body && $response.body.length < 2000) {
-                lines.push('| Тело ответа: ' + $response.body);
-            } else if ($response.body) {
-                lines.push('| Тело ответа: (слишком длинное, усечено) ' + $response.body.substring(0, 500) + '...');
-            }
-            log(lines.join('\n'));
-        }
-
-        // Обработка 404 для /v2/user/profile – создаём фейкового пользователя и меняем статус на 200
-        if (status === 404 && url.includes('/v2/user/profile')) {
-            log('[LingualeoPro] 404 для /v2/user/profile, создаём фейковый ответ со статусом 200');
-            body = { user: createPremiumUser() };
-            newStatus = 200;
-            modified = true;
-            $done({ status: newStatus, body: JSON.stringify(body) });
-            return;
-        }
-
-        // Для остальных не-200 пропускаем
-        if (status !== 200) {
-            log('[LingualeoPro] Не 200, пропускаем');
-            $done({ body: $response.body });
-            return;
-        }
-
-        // Парсим тело для 200
-        try {
-            body = JSON.parse($response.body);
-        } catch (e) {
-            log('[LingualeoPro] Тело не JSON, пропускаем');
-            $done({ body: $response.body });
-            return;
-        }
-
-        // --- Обработка конкретных эндпоинтов (только для 200) ---
-        if (url.includes('/mergeData') || url.includes('/mobile/auth')) {
-            log('[LingualeoPro] Обработка /mergeData или /mobile/auth');
+        let modified = false;
+        log('URL: ' + url);
+        if (url.includes('/mobile/auth') || url.includes('/mergeData')) {
+            log('Обработка /mobile/auth или /mergeData');
             if (body.user) {
                 body.user.is_gold = true;
                 body.user.meatballs = 99999;
-                body.user.premium_level = 'pro+';
-                body.user.premium_unlimited = 1;
-                body.user.premium_until = getFutureDate();
-                body.user.have_trial = 0;
+                body.user.address = 'Minsk';
+                body.user.birth = '2004-01-15';
+                body.user.nickname = 'Pupochek';
+                body.user.fname = 'Kristina';
+                body.user.sname = 'Nevskaya';
+                body.user.xp_title = 'Молодчинка!';
+                body.user.fullname = 'Krest-Neva';
+                body.user.avatar = 'https://i.pinimg.com/736x/97/6e/3d/976e3ddff4cf700b1449f262cf15865f.jpg';
+                body.user.avatar_mini = 'https://i.pinimg.com/736x/97/6e/3d/976e3ddff4cf700b1449f262cf15865f.jpg';
                 if (body.user.premium_details) {
                     body.user.premium_details.level = 'pro+';
                     body.user.premium_details.is_unlimited = 1;
                     body.user.premium_details.until = getFutureDate();
-                } else {
-                    body.user.premium_details = {
-                        level: 'pro+',
-                        is_unlimited: 1,
-                        until: getFutureDate()
-                    };
+                    modified = true;
                 }
-                modified = true;
-                log('[LingualeoPro] /mergeData или /mobile/auth изменён');
-            }
-        } else if (url.includes('/ProcessTraining')) {
-            log('[LingualeoPro] Обработка /ProcessTraining');
-            if (body.data) {
-                body.data.isPremium = 1;
-                body.data.premiumDiscount = 50;
-                body.data.premiumExpire = getFutureDate();
-                modified = true;
-                log('[LingualeoPro] /ProcessTraining изменён');
+                if (body.user.premium_level !== undefined) {
+                    body.user.premium_level = 'pro+';
+                    modified = true;
+                }
+                if (body.user.premium_unlimited !== undefined) {
+                    body.user.premium_unlimited = 1;
+                    modified = true;
+                }
+                if (body.user.premium_until !== undefined) {
+                    body.user.premium_until = getFutureDate();
+                    modified = true;
+                }
+                if (body.user.have_trial !== undefined) {
+                    body.user.have_trial = 0;
+                    modified = true;
+                }
+                log('Модифицирован user');
             }
         } else if (url.includes('/getDashboardData')) {
-            log('[LingualeoPro] Обработка /getDashboardData');
+            log('Обработка /getDashboardData');
             if (body.stories !== undefined) {
                 body.stories = [];
                 modified = true;
+                log('stories удалены');
             }
-            if (body.premiumAvailable !== undefined) {
-                body.premiumAvailable = 'active';
-                modified = true;
-            }
-            if (body.paywall_type !== undefined) {
-                body.paywall_type = 'none';
-                modified = true;
-            }
-            if (modified) log('[LingualeoPro] /getDashboardData изменён');
-        } else if (url.includes('/v2/billing/products/')) {
-            log('[LingualeoPro] Обработка /v2/billing/products/');
-            if (body.products !== undefined) {
-                body.products = [{
-                    "id": "premium_subscription",
-                    "name": "Premium",
-                    "productType": "subs_active",
-                    "status": "active",
-                    "expires": getFutureDate()
-                }];
-                modified = true;
-                log('[LingualeoPro] /v2/billing/products/ изменён');
+            log('Модифицирован /getDashboardData (только удалены stories)');
+        } else if (url.includes('/ProcessTraining')) {
+            log('Обработка /ProcessTraining');
+            if (body.data) {
+                if (body.data.isPremium !== undefined) {
+                    body.data.isPremium = 1;
+                    modified = true;
+                }
+                if (body.data.premiumDiscount !== undefined) {
+                    body.data.premiumDiscount = 50;
+                    modified = true;
+                }
+                if (body.data.premiumExpire !== undefined) {
+                    body.data.premiumExpire = getFutureDate();
+                    modified = true;
+                }
+                log('Модифицирован /ProcessTraining');
             }
         } else if (url.includes('/v2/user/profile')) {
-            log('[LingualeoPro] Обработка /v2/user/profile (200)');
+            log('Обработка /v2/user/profile');
             if (body.user) {
                 body.user.is_gold = true;
                 body.user.meatballs = 99999;
-                body.user.premium_level = 'pro+';
-                body.user.premium_unlimited = 1;
-                body.user.premium_until = getFutureDate();
-                body.user.have_trial = 0;
+                body.user.address = 'Minsk';
+                body.user.birth = '2004-01-15';
+                body.user.nickname = 'Pupochek';
+                body.user.fname = 'Kristina';
+                body.user.sname = 'Nevskaya';
+                body.user.xp_title = 'Молодчинка!';
+                body.user.fullname = 'Krest-Neva';
+                body.user.avatar = 'https://i.pinimg.com/736x/97/6e/3d/976e3ddff4cf700b1449f262cf15865f.jpg';
+                body.user.avatar_mini = 'https://i.pinimg.com/736x/97/6e/3d/976e3ddff4cf700b1449f262cf15865f.jpg';
                 if (body.user.premium_details) {
                     body.user.premium_details.level = 'pro+';
                     body.user.premium_details.is_unlimited = 1;
                     body.user.premium_details.until = getFutureDate();
-                } else {
-                    body.user.premium_details = {
-                        level: 'pro+',
-                        is_unlimited: 1,
-                        until: getFutureDate()
-                    };
+                    modified = true;
                 }
-                modified = true;
-                log('[LingualeoPro] /v2/user/profile изменён');
-            }
-        } else if (url.includes('/GetUserProfile')) {
-            log('[LingualeoPro] Обработка /GetUserProfile');
-            if (body.data) {
-                body.data.isPremium = 1;
-                body.data.premiumExpire = getFutureDate();
-                modified = true;
-                log('[LingualeoPro] /GetUserProfile изменён');
-            }
-        } else if (url.includes('/getProducts')) {
-            log('[LingualeoPro] Обработка /getProducts');
-            if (body.purchased === undefined) {
-                body.purchased = true;
-                modified = true;
-            }
-            if (body.campaign && Array.isArray(body.campaign)) {
-                body.campaign.forEach(c => { c.purchased = true; });
-                modified = true;
-            }
-            if (modified) log('[LingualeoPro] /getProducts изменён');
-        } else if (url.includes('/getLearningMain')) {
-            log('[LingualeoPro] Обработка /getLearningMain');
-            let sections = ['word', 'audio', 'reading', 'grammar'];
-            sections.forEach(function(section) {
-                if (body[section] && Array.isArray(body[section])) {
-                    body[section].forEach(function(item) {
-                        if (item.isPremium !== undefined) {
-                            item.isPremium = false;
-                            modified = true;
-                        }
-                    });
+                if (body.user.premium_level !== undefined) {
+                    body.user.premium_level = 'pro+';
+                    modified = true;
                 }
-            });
-            if (modified) log('[LingualeoPro] /getLearningMain изменён (снята блокировка)');
+                if (body.user.premium_unlimited !== undefined) {
+                    body.user.premium_unlimited = 1;
+                    modified = true;
+                }
+                if (body.user.premium_until !== undefined) {
+                    body.user.premium_until = getFutureDate();
+                    modified = true;
+                }
+                log('Модифицирован /v2/user/profile');
+            }
+        } else if (url.includes('/v2/external-config/public-config/IOS_PREMIUM_CANCEL-BENEFITS')) {
+            log('Пропускаем IOS_PREMIUM_CANCEL-BENEFITS');
         } else {
-            log('[LingualeoPro] URL не обрабатывается: ' + url);
+            log('URL не соответствует известным эндпоинтам, пропускаем');
         }
-
         if (modified) {
-            log('[LingualeoPro] Ответ изменён');
+            log('Скрипт выполнен, ответ изменён');
         } else {
-            log('[LingualeoPro] Ничего не изменено');
+            log('Ни одно поле не было изменено');
         }
-
         $done({ body: JSON.stringify(body) });
     } catch (e) {
-        console.log('[LingualeoPro] Ошибка: ' + e);
-        $done({ body: $response.body });
+        if (debug) console.log('[LingualeoPro] Ошибка: ' + e);
+        $done({});
     }
 } else {
+    if (debug) console.log('[LingualeoPro] Нет тела ответа');
     $done({});
 }
