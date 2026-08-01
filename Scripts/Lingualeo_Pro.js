@@ -52,23 +52,18 @@ if (typeof $response !== 'undefined' && $response.body) {
                 log('Модифицирован user');
             }
         } else if (url.includes('/getDashboardData')) {
-            log('Обработка /getDashboardData (без изменений, кроме premiumAvailable)');
+            log('Обработка /getDashboardData');
             if (body.premiumAvailable !== undefined) {
                 body.premiumAvailable = 'premium';
                 modified = true;
+                log('premiumAvailable установлен в premium');
             }
-            log('Модифицирован /getDashboardData (только premiumAvailable)');
-        } else if (url.includes('/getproducts') || url.includes('/getProducts')) {
-            log('Обработка /getproducts');
-            if (body.products !== undefined) {
-                body.products = [];
+            if (body.paywall_type !== undefined) {
+                body.paywall_type = 'none';
                 modified = true;
+                log('paywall_type установлен в none');
             }
-            if (body.campaign !== undefined) {
-                body.campaign = [];
-                modified = true;
-            }
-            log('Модифицирован /getproducts (продукты удалены)');
+            log('Модифицирован /getDashboardData (только premiumAvailable и paywall_type)');
         } else if (url.includes('/ProcessTraining')) {
             log('Обработка /ProcessTraining');
             if (body.data) {
