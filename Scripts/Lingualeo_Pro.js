@@ -55,17 +55,31 @@ if (typeof $response !== 'undefined' && $response.body) {
             log('Обработка /getDashboardData');
             if (body.stories && Array.isArray(body.stories)) {
                 body.stories.forEach(function(story) {
-                    if (story.autoShow !== undefined) story.autoShow = 0;
+                    if (story.autoShow !== undefined) {
+                        story.autoShow = 0;
+                        modified = true;
+                    }
                     if (story.stories && Array.isArray(story.stories)) {
                         story.stories.forEach(function(item) {
-                            if (item.button !== undefined) item.button = 0;
-                            if (item.buttonText !== undefined) item.buttonText = '';
-                            if (item.buttonContent !== undefined) item.buttonContent = '';
-                            if (item.webUrl !== undefined) item.webUrl = '';
+                            if (item.button !== undefined) {
+                                item.button = 0;
+                                modified = true;
+                            }
+                            if (item.buttonText !== undefined) {
+                                item.buttonText = '';
+                                modified = true;
+                            }
+                            if (item.buttonContent !== undefined) {
+                                item.buttonContent = '';
+                                modified = true;
+                            }
+                            if (item.webUrl !== undefined) {
+                                item.webUrl = '';
+                                modified = true;
+                            }
                         });
                     }
                 });
-                modified = true;
                 log('stories скрыты (autoShow=0, кнопки отключены)');
             }
             log('Модифицирован /getDashboardData (только скрыты stories)');
