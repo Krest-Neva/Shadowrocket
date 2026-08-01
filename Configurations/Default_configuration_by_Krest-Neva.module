@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=Pro-grade networking for iOS/macOS
 
-#Последние изменения 28.07.2026 18:00
+#Последние изменения 01.08.2026 14:00
 #Фильтры обновлены 20.07.2026 15:00
 
 #==================================================
@@ -1279,7 +1279,13 @@ AND,((DOMAIN,app.ftscrt.com), (PROTOCOL,UDP)),REJECT
 DOMAIN-SUFFIX,fatsecret.com,SPEEDPROXY
 DOMAIN-SUFFIX,ftscrt.com,SPEEDPROXY
 
+#Lingualeo👅
+AND,((DOMAIN,api.lingualeo.com), (PROTOCOL,UDP)),REJECT
+DOMAIN-SUFFIX,lingualeo.com,DIRECT
+DOMAIN-SUFFIX,lingualeo-funk.com,DIRECT
+
 #PicsArt📸🌅
+AND,((DOMAIN-KEYWORD,picsart), (PROTOCOL,UDP)),REJECT
 DOMAIN-SUFFIX,picsart.com,SPEEDPROXY
 DOMAIN-SUFFIX,picsart.io,SPEEDPROXY
 DOMAIN-SUFFIX,picsart.ai,SPEEDPROXY
@@ -1360,13 +1366,16 @@ Spotify-premium-patch = type=http-response,pattern=^https?:\/\/(spclient\.wg\.sp
 #FatSecret🍏
 FatSecret-Premium = type=http-response,pattern=^https:\/\/app\.ftscrt\.com\/api\/(user\/v3\/user-account-details|user-settings\/v1\/select),requires-body=true,timeout=10,max-size=131072,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/FatSecret_Premium.js
 
+#Lingualeo👅
+LingualeoPro+ = type=http-response,pattern=^https:\/\/api\.lingualeo\.com\/(mobile\/auth|mergeData|getDashboardData|ProcessTraining|v2\/user\/profile|v2\/external-config\/public-config\/IOS_PREMIUM_CANCEL-BENEFITS)(\?.*)?$,requires-body=1,max-size=-1,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Lingualeo_Pro.js,argument={"debug":false},timeout=10
+
 #PicsArt📸🌅
 PicsArt = type=http-request,pattern=^https:\/\/api\.picsart\.com\/gw-v2\/shop\/subscription\/apple\/purchases,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Picsart_Premium.js,requires-body=true,timeout=60
 
 [MITM]
 enable = true
 h2 = false
-hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com,*.yandex.*,*.ya.ru,*.yastatic.net,api-mobile.soundcloud.com,spclient.wg.spotify.com,*-spclient.spotify.com,*.spotify.com,app.ftscrt.com,api.picsart.com
+hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com,*.yandex.*,*.ya.ru,*.yastatic.net,api-mobile.soundcloud.com,spclient.wg.spotify.com,*-spclient.spotify.com,*.spotify.com,app.ftscrt.com,api.picsart.com,api.lingualeo.com
 
 # ╱|、           ∧＿∧
 #(˚ˎ 。7        (｡･ω･｡)つ━☆・*。
