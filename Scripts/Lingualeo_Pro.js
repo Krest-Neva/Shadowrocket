@@ -58,7 +58,17 @@ if (typeof $response !== 'undefined' && $response.body) {
                 modified = true;
                 log('stories удалены');
             }
-            log('Модифицирован /getDashboardData (только удалены stories)');
+            if (body.offer_webview !== undefined) {
+                body.offer_webview = '';
+                modified = true;
+                log('offer_webview очищен');
+            }
+            if (body.webview_link !== undefined) {
+                body.webview_link = '';
+                modified = true;
+                log('webview_link очищен');
+            }
+            log('Модифицирован /getDashboardData (удалены stories, offer_webview, webview_link)');
         } else if (url.includes('/ProcessTraining')) {
             log('Обработка /ProcessTraining');
             if (body.data) {
