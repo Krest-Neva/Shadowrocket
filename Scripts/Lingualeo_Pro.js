@@ -2,15 +2,19 @@ if (typeof $response !== 'undefined' && $response.body) {
     try {
         let body = JSON.parse($response.body);
         let url = $request ? $request.url : '';
-        console.log('[LingualeoPro] URL: ' + url);
+        let arg = {};
+        try { arg = JSON.parse($argument || '{}'); } catch (e) {}
+        let debug = arg.debug === true;
+        function log(msg) { if (debug) console.log('[LingualeoPro] ' + msg); }
         function getFutureDate() {
             let d = new Date();
             d.setFullYear(d.getFullYear() + 10);
             return d.toISOString().split('T')[0];
         }
         let modified = false;
+        log('URL: ' + url);
         if (url.includes('/mobile/auth') || url.includes('/mergeData')) {
-            console.log('[LingualeoPro] Обработка /mobile/auth или /mergeData');
+            log('Обработка /mobile/auth или /mergeData');
             if (body.user) {
                 body.user.is_gold = true;
                 if (body.user.premium_details) {
@@ -35,10 +39,10 @@ if (typeof $response !== 'undefined' && $response.body) {
                     body.user.have_trial = 0;
                     modified = true;
                 }
-                console.log('[LingualeoPro] Модифицирован user');
+                log('Модифицирован user');
             }
         } else if (url.includes('/getDashboardData')) {
-            console.log('[LingualeoPro] Обработка /getDashboardData');
+            log('Обработка /getDashboardData');
             if (body.premiumAvailable !== undefined) {
                 body.premiumAvailable = 'trial';
                 modified = true;
@@ -51,9 +55,9 @@ if (typeof $response !== 'undefined' && $response.body) {
                     }
                 });
             }
-            console.log('[LingualeoPro] Модифицирован /getDashboardData');
+            log('Модифицирован /getDashboardData');
         } else if (url.includes('/ProcessTraining')) {
-            console.log('[LingualeoPro] Обработка /ProcessTraining');
+            log('Обработка /ProcessTraining');
             if (body.data) {
                 if (body.data.isPremium !== undefined) {
                     body.data.isPremium = 1;
@@ -67,10 +71,10 @@ if (typeof $response !== 'undefined' && $response.body) {
                     body.data.premiumExpire = getFutureDate();
                     modified = true;
                 }
-                console.log('[LingualeoPro] Модифицирован /ProcessTraining');
+                log('Модифицирован /ProcessTraining');
             }
         } else if (url.includes('/v2/user/profile')) {
-            console.log('[LingualeoPro] Обработка /v2/user/profile');
+            log('Обработка /v2/user/profile');
             if (body.user) {
                 body.user.is_gold = true;
                 if (body.user.premium_details) {
@@ -91,24 +95,24 @@ if (typeof $response !== 'undefined' && $response.body) {
                     body.user.premium_until = getFutureDate();
                     modified = true;
                 }
-                console.log('[LingualeoPro] Модифицирован /v2/user/profile');
+                log('Модифицирован /v2/user/profile');
             }
         } else if (url.includes('/v2/external-config/public-config/IOS_PREMIUM_CANCEL-BENEFITS')) {
-            console.log('[LingualeoPro] Пропускаем IOS_PREMIUM_CANCEL-BENEFITS');
+            log('Пропускаем IOS_PREMIUM_CANCEL-BENEFITS');
         } else {
-            console.log('[LingualeoPro] URL не соответствует известным эндпоинтам, пропускаем');
+            log('URL не соответствует известным эндпоинтам, пропускаем');
         }
         if (modified) {
-            console.log('[LingualeoPro] Скрипт выполнен, ответ изменён');
+            log('Скрипт выполнен, ответ изменён');
         } else {
-            console.log('[LingualeoPro] Ни одно поле не было изменено');
+            log('Ни одно поле не было изменено');
         }
         $done({ body: JSON.stringify(body) });
     } catch (e) {
-        console.log('[LingualeoPro] Ошибка: ' + e);
+        if (debug) console.log('[LingualeoPro] Ошибка: ' + e);
         $done({});
     }
 } else {
-    console.log('[LingualeoPro] Нет тела ответа');
+    if (debug) console.log('[LingualeoPro] Нет тела ответа');
     $done({});
 }
