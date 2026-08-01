@@ -5,17 +5,46 @@ if (typeof $response !== 'undefined' && $response.body) {
         let debug = arg.debug === true;
         let log = debug ? console.log : function() {};
         let url = $request ? $request.url : '';
+        let status = $response.status;
         let body = null;
         let modified = false;
+        let newStatus = status;
+
         function getFutureDate() {
             let d = new Date();
             d.setFullYear(d.getFullYear() + 10);
             return d.toISOString().split('T')[0];
         }
+
+        function createPremiumUser() {
+            return {
+                is_gold: true,
+                meatballs: 99999,
+                address: 'Minsk',
+                birth: '2004-01-15',
+                nickname: 'Pupochek',
+                fname: 'Kristina',
+                sname: 'Nevskaya',
+                xp_title: 'Молодчинка!',
+                fullname: 'Krest-Neva',
+                avatar: 'https://i.pinimg.com/736x/97/6e/3d/976e3ddff4cf700b1449f262cf15865f.jpg',
+                avatar_mini: 'https://i.pinimg.com/736x/97/6e/3d/976e3ddff4cf700b1449f262cf15865f.jpg',
+                premium_level: 'pro+',
+                premium_unlimited: 1,
+                premium_until: getFutureDate(),
+                premium_details: {
+                    level: 'pro+',
+                    is_unlimited: 1,
+                    until: getFutureDate()
+                },
+                have_trial: 0
+            };
+        }
+
         if (debug) {
             let lines = [];
             lines.push('+--- [LingualeoPro] ' + ($request ? $request.method : 'UNKNOWN') + ' ' + url + ' [' + new Date().toISOString() + ']');
-            lines.push('| Статус ответа: ' + $response.status);
+            lines.push('| Статус ответа: ' + status);
             if ($response.body && $response.body.length < 2000) {
                 lines.push('| Тело ответа: ' + $response.body);
             } else if ($response.body) {
@@ -23,22 +52,34 @@ if (typeof $response !== 'undefined' && $response.body) {
             }
             log(lines.join('\n'));
         }
-        if ($response.status === 200) {
-            try {
-                body = JSON.parse($response.body);
-            } catch (e) {
-                log('[LingualeoPro] Тело не JSON, пропускаем');
-                $done({ body: $response.body });
-                return;
-            }
-        } else if ($response.status === 404 && url.includes('/v2/user/profile')) {
-            log('[LingualeoPro] Пропускаем 404 для /v2/user/profile');
-            $done({ body: $response.body });
+
+        // Обработка 404 для /v2/user/profile – создаём фейкового пользователя и меняем статус на 200
+        if (status === 404 && url.includes('/v2/user/profile')) {
+            log('[LingualeoPro] 404 для /v2/user/profile, создаём фейковый ответ со статусом 200');
+            body = { user: createPremiumUser() };
+            newStatus = 200;
+            modified = true;
+            $done({ status: newStatus, body: JSON.stringify(body) });
             return;
-        } else {
+        }
+
+        // Для остальных не-200 пропускаем
+        if (status !== 200) {
+            log('[LingualeoPro] Не 200, пропускаем');
             $done({ body: $response.body });
             return;
         }
+
+        // Парсим тело для 200
+        try {
+            body = JSON.parse($response.body);
+        } catch (e) {
+            log('[LingualeoPro] Тело не JSON, пропускаем');
+            $done({ body: $response.body });
+            return;
+        }
+
+        // --- Обработка конкретных эндпоинтов (только для 200) ---
         if (url.includes('/mergeData') || url.includes('/mobile/auth')) {
             log('[LingualeoPro] Обработка /mergeData или /mobile/auth');
             if (body.user) {
@@ -100,7 +141,7 @@ if (typeof $response !== 'undefined' && $response.body) {
                 log('[LingualeoPro] /v2/billing/products/ изменён');
             }
         } else if (url.includes('/v2/user/profile')) {
-            log('[LingualeoPro] Обработка /v2/user/profile');
+            log('[LingualeoPro] Обработка /v2/user/profile (200)');
             if (body.user) {
                 body.user.is_gold = true;
                 body.user.meatballs = 99999;
@@ -158,11 +199,13 @@ if (typeof $response !== 'undefined' && $response.body) {
         } else {
             log('[LingualeoPro] URL не обрабатывается: ' + url);
         }
+
         if (modified) {
             log('[LingualeoPro] Ответ изменён');
         } else {
             log('[LingualeoPro] Ничего не изменено');
         }
+
         $done({ body: JSON.stringify(body) });
     } catch (e) {
         console.log('[LingualeoPro] Ошибка: ' + e);
