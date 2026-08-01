@@ -25,6 +25,8 @@ if (typeof $response !== 'undefined' && $response.body) {
                 body.user.sname = 'Nevskaya';
                 body.user.xp_title = 'Молодчинка!';
                 body.user.fullname = 'Krest-Neva';
+                body.user.avatar = 'https://i.pinimg.com/736x/97/6e/3d/976e3ddff4cf700b1449f262cf15865f.jpg';
+                body.user.avatar_mini = 'https://i.pinimg.com/736x/97/6e/3d/976e3ddff4cf700b1449f262cf15865f.jpg';
                 if (body.user.premium_details) {
                     body.user.premium_details.level = 'pro+';
                     body.user.premium_details.is_unlimited = 1;
@@ -93,6 +95,8 @@ if (typeof $response !== 'undefined' && $response.body) {
                 body.user.sname = 'Nevskaya';
                 body.user.xp_title = 'Молодчинка!';
                 body.user.fullname = 'Krest-Neva';
+                body.user.avatar = 'https://i.pinimg.com/736x/97/6e/3d/976e3ddff4cf700b1449f262cf15865f.jpg';
+                body.user.avatar_mini = 'https://i.pinimg.com/736x/97/6e/3d/976e3ddff4cf700b1449f262cf15865f.jpg';
                 if (body.user.premium_details) {
                     body.user.premium_details.level = 'pro+';
                     body.user.premium_details.is_unlimited = 1;
