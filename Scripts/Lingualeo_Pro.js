@@ -11,35 +11,42 @@ if (typeof $response !== 'undefined' && $response.body) {
             d.setFullYear(d.getFullYear() + 10);
             return d.toISOString().split('T')[0];
         }
-        function applyUserChanges(user) {
-            if (!user) return false;
-            let changed = false;
-            if (user.is_gold !== undefined) { user.is_gold = true; changed = true; }
-            if (user.meatballs !== undefined) { user.meatballs = 99999; changed = true; }
-            if (user.address !== undefined) { user.address = 'Minsk'; changed = true; }
-            if (user.birth !== undefined) { user.birth = '2004-01-15'; changed = true; }
-            if (user.nickname !== undefined) { user.nickname = 'Pupochek'; changed = true; }
-            if (user.fname !== undefined) { user.fname = 'Kristina'; changed = true; }
-            if (user.sname !== undefined) { user.sname = 'Nevskaya'; changed = true; }
-            if (user.xp_title !== undefined) { user.xp_title = 'Молодчинка!'; changed = true; }
-            if (user.premium_details) {
-                user.premium_details.level = 'pro+';
-                user.premium_details.is_unlimited = 1;
-                user.premium_details.until = getFutureDate();
-                changed = true;
-            }
-            if (user.premium_level !== undefined) { user.premium_level = 'pro+'; changed = true; }
-            if (user.premium_unlimited !== undefined) { user.premium_unlimited = 1; changed = true; }
-            if (user.premium_until !== undefined) { user.premium_until = getFutureDate(); changed = true; }
-            if (user.have_trial !== undefined) { user.have_trial = 0; changed = true; }
-            return changed;
-        }
         let modified = false;
         log('URL: ' + url);
         if (url.includes('/mobile/auth') || url.includes('/mergeData')) {
             log('Обработка /mobile/auth или /mergeData');
             if (body.user) {
-                if (applyUserChanges(body.user)) modified = true;
+                body.user.is_gold = true;
+                body.user.meatballs = 99999;
+                body.user.address = 'Minsk';
+                body.user.birth = '2004-01-15';
+                body.user.nickname = 'Pupochek';
+                body.user.fname = 'Kristina';
+                body.user.sname = 'Nevskaya';
+                body.user.xp_title = 'Молодчинка!';
+                body.user.fullname = 'Krest-Neva';
+                if (body.user.premium_details) {
+                    body.user.premium_details.level = 'pro+';
+                    body.user.premium_details.is_unlimited = 1;
+                    body.user.premium_details.until = getFutureDate();
+                    modified = true;
+                }
+                if (body.user.premium_level !== undefined) {
+                    body.user.premium_level = 'pro+';
+                    modified = true;
+                }
+                if (body.user.premium_unlimited !== undefined) {
+                    body.user.premium_unlimited = 1;
+                    modified = true;
+                }
+                if (body.user.premium_until !== undefined) {
+                    body.user.premium_until = getFutureDate();
+                    modified = true;
+                }
+                if (body.user.have_trial !== undefined) {
+                    body.user.have_trial = 0;
+                    modified = true;
+                }
                 log('Модифицирован user');
             }
         } else if (url.includes('/getDashboardData')) {
@@ -77,7 +84,33 @@ if (typeof $response !== 'undefined' && $response.body) {
         } else if (url.includes('/v2/user/profile')) {
             log('Обработка /v2/user/profile');
             if (body.user) {
-                if (applyUserChanges(body.user)) modified = true;
+                body.user.is_gold = true;
+                body.user.meatballs = 99999;
+                body.user.address = 'Minsk';
+                body.user.birth = '2004-01-15';
+                body.user.nickname = 'Pupochek';
+                body.user.fname = 'Kristina';
+                body.user.sname = 'Nevskaya';
+                body.user.xp_title = 'Молодчинка!';
+                body.user.fullname = 'Krest-Neva';
+                if (body.user.premium_details) {
+                    body.user.premium_details.level = 'pro+';
+                    body.user.premium_details.is_unlimited = 1;
+                    body.user.premium_details.until = getFutureDate();
+                    modified = true;
+                }
+                if (body.user.premium_level !== undefined) {
+                    body.user.premium_level = 'pro+';
+                    modified = true;
+                }
+                if (body.user.premium_unlimited !== undefined) {
+                    body.user.premium_unlimited = 1;
+                    modified = true;
+                }
+                if (body.user.premium_until !== undefined) {
+                    body.user.premium_until = getFutureDate();
+                    modified = true;
+                }
                 log('Модифицирован /v2/user/profile');
             }
         } else if (url.includes('/v2/external-config/public-config/IOS_PREMIUM_CANCEL-BENEFITS')) {
