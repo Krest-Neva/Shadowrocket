@@ -53,13 +53,19 @@ if (typeof $response !== 'undefined' && $response.body) {
             }
         } else if (url.includes('/getDashboardData')) {
             log('Обработка /getDashboardData');
-            if (body.stories !== undefined) {
-                body.stories = [];
+            if (body.stories && Array.isArray(body.stories) && body.stories.length > 0) {
+                body.stories.forEach(function(story) {
+                    if (story.autoShow !== undefined) story.autoShow = 0;
+                    if (story.stories && Array.isArray(story.stories)) {
+                        story.stories.forEach(function(item) {
+                            if (item.button !== undefined) item.button = 0;
+                            if (item.buttonText !== undefined) item.buttonText = '';
+                            if (item.buttonContent !== undefined) item.buttonContent = '';
+                        });
+                    }
+                });
                 modified = true;
-            }
-            if (body.paywall_type !== undefined) {
-                body.paywall_type = 'none';
-                modified = true;
+                log('stories скрыты (autoShow=0, кнопки отключены)');
             }
             log('Модифицирован /getDashboardData (paywall скрыт)');
         } else if (url.includes('/ProcessTraining')) {
