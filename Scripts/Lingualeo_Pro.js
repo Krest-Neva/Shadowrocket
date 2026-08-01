@@ -52,37 +52,23 @@ if (typeof $response !== 'undefined' && $response.body) {
                 log('Модифицирован user');
             }
         } else if (url.includes('/getDashboardData')) {
-            log('Обработка /getDashboardData');
-            if (body.stories && Array.isArray(body.stories)) {
-                body.stories.forEach(function(story) {
-                    if (story.autoShow !== undefined) {
-                        story.autoShow = 0;
-                        modified = true;
-                    }
-                    if (story.stories && Array.isArray(story.stories)) {
-                        story.stories.forEach(function(item) {
-                            if (item.button !== undefined) {
-                                item.button = 0;
-                                modified = true;
-                            }
-                            if (item.buttonText !== undefined) {
-                                item.buttonText = '';
-                                modified = true;
-                            }
-                            if (item.buttonContent !== undefined) {
-                                item.buttonContent = '';
-                                modified = true;
-                            }
-                            if (item.webUrl !== undefined) {
-                                item.webUrl = '';
-                                modified = true;
-                            }
-                        });
-                    }
-                });
-                log('stories скрыты (autoShow=0, кнопки отключены)');
+            log('Обработка /getDashboardData (без изменений, кроме premiumAvailable)');
+            if (body.premiumAvailable !== undefined) {
+                body.premiumAvailable = 'premium';
+                modified = true;
             }
-            log('Модифицирован /getDashboardData (только скрыты stories)');
+            log('Модифицирован /getDashboardData (только premiumAvailable)');
+        } else if (url.includes('/getproducts') || url.includes('/getProducts')) {
+            log('Обработка /getproducts');
+            if (body.products !== undefined) {
+                body.products = [];
+                modified = true;
+            }
+            if (body.campaign !== undefined) {
+                body.campaign = [];
+                modified = true;
+            }
+            log('Модифицирован /getproducts (продукты удалены)');
         } else if (url.includes('/ProcessTraining')) {
             log('Обработка /ProcessTraining');
             if (body.data) {
