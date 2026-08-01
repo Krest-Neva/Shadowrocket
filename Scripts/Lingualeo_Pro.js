@@ -48,8 +48,11 @@ if (typeof $response !== 'undefined' && $response.body) {
             d.setFullYear(d.getFullYear() + 10);
             return d.toISOString().split('T')[0];
         }
-        if (url.includes('/mobile/auth') || url.includes('/mergeData')) {
+        log('[LingualeoPro] Обработка URL: ' + url);
+        if (url.indexOf('/mobile/auth') !== -1 || url.indexOf('/mergeData') !== -1) {
+            log('[LingualeoPro] Попали в блок /mobile/auth или /mergeData');
             if (body.user) {
+                log('[LingualeoPro] body.user существует, начинаем модификацию');
                 body.user.is_gold = true;
                 body.user.meatballs = 99999;
                 body.user.address = 'Minsk';
@@ -66,56 +69,72 @@ if (typeof $response !== 'undefined' && $response.body) {
                     body.user.premium_details.is_unlimited = 1;
                     body.user.premium_details.until = getFutureDate();
                     modified = true;
+                    log('[LingualeoPro] Изменены premium_details');
                 }
                 if (body.user.premium_level !== undefined) {
                     body.user.premium_level = 'pro+';
                     modified = true;
+                    log('[LingualeoPro] Изменен premium_level');
                 }
                 if (body.user.premium_unlimited !== undefined) {
                     body.user.premium_unlimited = 1;
                     modified = true;
+                    log('[LingualeoPro] Изменен premium_unlimited');
                 }
                 if (body.user.premium_until !== undefined) {
                     body.user.premium_until = getFutureDate();
                     modified = true;
+                    log('[LingualeoPro] Изменен premium_until');
                 }
                 if (body.user.have_trial !== undefined) {
                     body.user.have_trial = 0;
                     modified = true;
+                    log('[LingualeoPro] Изменен have_trial');
                 }
-                log('[LingualeoPro] Модифицирован /mergeData или /mobile/auth');
+                if (!modified) {
+                    log('[LingualeoPro] Ни одно из полей не было изменено (возможно, поля отсутствуют)');
+                }
+            } else {
+                log('[LingualeoPro] body.user отсутствует!');
             }
-        } else if (url.includes('/getDashboardData')) {
+        } else if (url.indexOf('/getDashboardData') !== -1) {
+            log('[LingualeoPro] Попали в блок /getDashboardData');
             if (body.stories !== undefined) {
                 body.stories = [];
                 modified = true;
-                log('[LingualeoPro] Удалены stories в /getDashboardData');
+                log('[LingualeoPro] Удалены stories');
             }
-        } else if (url.includes('/ProcessTraining')) {
+        } else if (url.indexOf('/ProcessTraining') !== -1) {
+            log('[LingualeoPro] Попали в блок /ProcessTraining');
             if (body.data) {
                 if (body.data.isPremium !== undefined) {
                     body.data.isPremium = 1;
                     modified = true;
+                    log('[LingualeoPro] Изменен isPremium');
                 }
                 if (body.data.premiumDiscount !== undefined) {
                     body.data.premiumDiscount = 50;
                     modified = true;
+                    log('[LingualeoPro] Изменен premiumDiscount');
                 }
                 if (body.data.premiumExpire !== undefined) {
                     body.data.premiumExpire = getFutureDate();
                     modified = true;
+                    log('[LingualeoPro] Изменен premiumExpire');
                 }
                 if (body.data.premium_level !== undefined) {
                     body.data.premium_level = 'pro+';
                     modified = true;
+                    log('[LingualeoPro] Изменен premium_level в data');
                 }
                 if (body.data.premium_unlimited !== undefined) {
                     body.data.premium_unlimited = 1;
                     modified = true;
+                    log('[LingualeoPro] Изменен premium_unlimited в data');
                 }
-                log('[LingualeoPro] Модифицирован /ProcessTraining');
             }
-        } else if (url.includes('/v2/user/profile')) {
+        } else if (url.indexOf('/v2/user/profile') !== -1) {
+            log('[LingualeoPro] Попали в блок /v2/user/profile');
             if (body.user) {
                 body.user.is_gold = true;
                 body.user.meatballs = 99999;
@@ -146,9 +165,9 @@ if (typeof $response !== 'undefined' && $response.body) {
                     body.user.premium_until = getFutureDate();
                     modified = true;
                 }
-                log('[LingualeoPro] Модифицирован /v2/user/profile');
             }
-        } else if (url.includes('/v2/billing/products/')) {
+        } else if (url.indexOf('/v2/billing/products/') !== -1) {
+            log('[LingualeoPro] Попали в блок /v2/billing/products/');
             if (body.products !== undefined) {
                 body.products = [{
                     "id": "premium_subscription",
@@ -158,18 +177,20 @@ if (typeof $response !== 'undefined' && $response.body) {
                     "expires": getFutureDate()
                 }];
                 modified = true;
-                log('[LingualeoPro] Подменён /v2/billing/products/');
+                log('[LingualeoPro] Подменены products');
             }
-        } else if (url.includes('/GetUserProfile')) {
+        } else if (url.indexOf('/GetUserProfile') !== -1) {
+            log('[LingualeoPro] Попали в блок /GetUserProfile');
             if (body.data) {
                 body.data.isPremium = 1;
                 body.data.premiumExpire = getFutureDate();
                 body.data.premium_level = 'pro+';
                 body.data.premium_unlimited = 1;
                 modified = true;
-                log('[LingualeoPro] Добавлены премиум-поля в /GetUserProfile');
+                log('[LingualeoPro] Добавлены премиум-поля в data');
             }
-        } else if (url.includes('/getLearningMain')) {
+        } else if (url.indexOf('/getLearningMain') !== -1) {
+            log('[LingualeoPro] Попали в блок /getLearningMain');
             let sections = ['word', 'audio', 'reading', 'grammar'];
             sections.forEach(function(section) {
                 if (body[section] && Array.isArray(body[section])) {
@@ -181,35 +202,35 @@ if (typeof $response !== 'undefined' && $response.body) {
                     });
                 }
             });
-            if (modified) log('[LingualeoPro] Все тренировки в /getLearningMain сделаны бесплатными');
-        } else if (url.includes('/getProducts')) {
+        } else if (url.indexOf('/getProducts') !== -1) {
+            log('[LingualeoPro] Попали в блок /getProducts');
             if (body.campaign && Array.isArray(body.campaign)) {
                 body.campaign.forEach(function(c) {
                     c.purchased = true;
                 });
                 modified = true;
-                log('[LingualeoPro] Добавлен флаг purchased в /getProducts');
             }
             if (body.purchased === undefined) {
                 body.purchased = true;
                 modified = true;
             }
-        } else if (url.includes('/get/chat/messages')) {
+        } else if (url.indexOf('/get/chat/messages') !== -1) {
+            log('[LingualeoPro] Попали в блок /get/chat/messages');
             if (body.error || body.status === 'error') {
                 body = { messages: [] };
                 modified = true;
-                log('[LingualeoPro] Подменён ответ /get/chat/messages на пустой массив');
             } else if (body.messages === undefined) {
                 body.messages = [];
                 modified = true;
-                log('[LingualeoPro] Добавлен пустой массив messages в /get/chat/messages');
             }
-        } else if (url.includes('/v2/external-config/public-config/')) {
+        } else if (url.indexOf('/v2/external-config/public-config/') !== -1) {
+            log('[LingualeoPro] Попали в блок /v2/external-config/public-config/');
             if (body.content && body.content.is_enabled !== undefined) {
                 body.content.is_enabled = true;
                 modified = true;
-                log('[LingualeoPro] Включён флаг is_enabled в конфиге');
             }
+        } else {
+            log('[LingualeoPro] URL не соответствует известным эндпоинтам');
         }
         if (modified) {
             log('[LingualeoPro] Ответ изменён');
