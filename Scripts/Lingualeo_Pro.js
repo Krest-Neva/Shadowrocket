@@ -53,17 +53,12 @@ if (typeof $response !== 'undefined' && $response.body) {
             }
         } else if (url.includes('/getDashboardData')) {
             log('Обработка /getDashboardData');
-            if (body.premiumAvailable !== undefined) {
-                body.premiumAvailable = 'premium';
+            if (body.stories !== undefined) {
+                body.stories = [];
                 modified = true;
-                log('premiumAvailable установлен в premium');
+                log('stories удалены');
             }
-            if (body.paywall_type !== undefined) {
-                body.paywall_type = 'none';
-                modified = true;
-                log('paywall_type установлен в none');
-            }
-            log('Модифицирован /getDashboardData (только premiumAvailable и paywall_type)');
+            log('Модифицирован /getDashboardData (только удалены stories)');
         } else if (url.includes('/ProcessTraining')) {
             log('Обработка /ProcessTraining');
             if (body.data) {
