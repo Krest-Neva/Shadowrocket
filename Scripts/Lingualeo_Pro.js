@@ -53,22 +53,12 @@ if (typeof $response !== 'undefined' && $response.body) {
             }
         } else if (url.includes('/getDashboardData')) {
             log('Обработка /getDashboardData');
-            if (body.stories && Array.isArray(body.stories)) {
-                body.stories.forEach(function(story) {
-                    if (story.autoShow !== undefined) story.autoShow = 0;
-                    if (story.stories && Array.isArray(story.stories)) {
-                        story.stories.forEach(function(item) {
-                            if (item.button !== undefined) item.button = 0;
-                            if (item.buttonText !== undefined) item.buttonText = '';
-                            if (item.buttonContent !== undefined) item.buttonContent = '';
-                            if (item.webUrl !== undefined) item.webUrl = '';
-                        });
-                    }
-                });
+            if (body.stories !== undefined) {
+                body.stories = [];
                 modified = true;
-                log('stories скрыты (autoShow=0, кнопки отключены)');
+                log('stories удалены');
             }
-            log('Модифицирован /getDashboardData (только скрыты stories)');
+            log('Модифицирован /getDashboardData (только удалены stories)');
         } else if (url.includes('/ProcessTraining')) {
             log('Обработка /ProcessTraining');
             if (body.data) {
