@@ -74,6 +74,14 @@ if (typeof $response !== 'undefined' && $response.body) {
                     body.data.premiumExpire = getFutureDate();
                     modified = true;
                 }
+                if (body.data.premium_level !== undefined) {
+                    body.data.premium_level = 'pro+';
+                    modified = true;
+                }
+                if (body.data.premium_unlimited !== undefined) {
+                    body.data.premium_unlimited = 1;
+                    modified = true;
+                }
                 log('Модифицирован /ProcessTraining');
             }
         } else if (url.includes('/v2/user/profile')) {
@@ -109,6 +117,29 @@ if (typeof $response !== 'undefined' && $response.body) {
                     modified = true;
                 }
                 log('Модифицирован /v2/user/profile');
+            }
+        } else if (url.includes('/v2/billing/products/')) {
+            log('Обработка /v2/billing/products/');
+            if (body.products !== undefined) {
+                body.products = [{
+                    "id": "premium_subscription",
+                    "name": "Premium",
+                    "productType": "subs",
+                    "status": "active",
+                    "expires": getFutureDate()
+                }];
+                modified = true;
+                log('products заменены на активную подписку');
+            }
+        } else if (url.includes('/GetUserProfile')) {
+            log('Обработка /GetUserProfile');
+            if (body.data) {
+                body.data.isPremium = 1;
+                body.data.premiumExpire = getFutureDate();
+                body.data.premium_level = 'pro+';
+                body.data.premium_unlimited = 1;
+                modified = true;
+                log('Добавлены поля премиума в data');
             }
         } else if (url.includes('/v2/external-config/public-config/IOS_PREMIUM_CANCEL-BENEFITS')) {
             log('Пропускаем IOS_PREMIUM_CANCEL-BENEFITS');
