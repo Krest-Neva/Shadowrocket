@@ -1281,8 +1281,8 @@ DOMAIN-SUFFIX,ftscrt.com,SPEEDPROXY
 
 #Lingualeo👅
 AND,((DOMAIN,api.lingualeo.com), (PROTOCOL,UDP)),REJECT
-DOMAIN-SUFFIX,lingualeo.com,BESTPROXY
-DOMAIN-SUFFIX,lingualeo-funk.com,BESTPROXY
+DOMAIN-SUFFIX,lingualeo.com,DIRECT
+DOMAIN-SUFFIX,lingualeo-funk.com,DIRECT
 
 #PicsArt📸🌅
 AND,((DOMAIN-KEYWORD,picsart), (PROTOCOL,UDP)),REJECT
