@@ -53,22 +53,22 @@ if (typeof $response !== 'undefined' && $response.body) {
             }
         } else if (url.includes('/getDashboardData')) {
             log('Обработка /getDashboardData');
-            if (body.stories !== undefined) {
-                body.stories = [];
+            if (body.stories && Array.isArray(body.stories)) {
+                body.stories.forEach(function(story) {
+                    if (story.autoShow !== undefined) story.autoShow = 0;
+                    if (story.stories && Array.isArray(story.stories)) {
+                        story.stories.forEach(function(item) {
+                            if (item.button !== undefined) item.button = 0;
+                            if (item.buttonText !== undefined) item.buttonText = '';
+                            if (item.buttonContent !== undefined) item.buttonContent = '';
+                            if (item.webUrl !== undefined) item.webUrl = '';
+                        });
+                    }
+                });
                 modified = true;
-                log('stories удалены');
+                log('stories скрыты (autoShow=0, кнопки отключены)');
             }
-            if (body.offer_webview !== undefined) {
-                body.offer_webview = '';
-                modified = true;
-                log('offer_webview очищен');
-            }
-            if (body.webview_link !== undefined) {
-                body.webview_link = '';
-                modified = true;
-                log('webview_link очищен');
-            }
-            log('Модифицирован /getDashboardData (удалены stories, offer_webview, webview_link)');
+            log('Модифицирован /getDashboardData (только скрыты stories)');
         } else if (url.includes('/ProcessTraining')) {
             log('Обработка /ProcessTraining');
             if (body.data) {
