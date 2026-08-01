@@ -53,19 +53,35 @@ if (typeof $response !== 'undefined' && $response.body) {
             }
         } else if (url.includes('/getDashboardData')) {
             log('Обработка /getDashboardData');
-            if (body.premiumAvailable !== undefined) {
-                body.premiumAvailable = 'trial';
+            if (body.stories !== undefined) {
+                body.stories = [];
+                modified = true;
+            }
+            if (body.paywall_type !== undefined) {
+                body.paywall_type = 'none';
                 modified = true;
             }
             if (body.tasks && Array.isArray(body.tasks)) {
                 body.tasks.forEach(task => {
                     if (task.isPremium !== undefined) {
-                        task.isPremium = true;
+                        task.isPremium = false;
+                        task.isVisible = 0;
                         modified = true;
                     }
                 });
             }
-            log('Модифицирован /getDashboardData');
+            log('Модифицирован /getDashboardData (paywall скрыт)');
+        } else if (url.includes('/getproducts') || url.includes('/getProducts')) {
+            log('Обработка /getproducts');
+            if (body.products !== undefined) {
+                body.products = [];
+                modified = true;
+            }
+            if (body.campaign !== undefined) {
+                body.campaign = [];
+                modified = true;
+            }
+            log('Модифицирован /getproducts (продукты удалены)');
         } else if (url.includes('/ProcessTraining')) {
             log('Обработка /ProcessTraining');
             if (body.data) {
