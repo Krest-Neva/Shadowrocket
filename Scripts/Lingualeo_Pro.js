@@ -4,17 +4,17 @@ if (typeof $response !== 'undefined' && $response.body) {
         let url = $request ? $request.url : '';
         let status = $response.status || 200;
 
-        function getFutureISO() {
+        function getFutureDate() {
             let d = new Date();
             d.setFullYear(d.getFullYear() + 10);
-            let iso = d.toISOString();
-            return iso.replace('Z', '+0000');
+            let iso = d.toISOString().split('T')[0];
+            return iso + 'T00:00:00+0000';
         }
 
         const premiumDetails = {
             is_unlimited: 0,
             level: 'premium',
-            until: getFutureISO(),
+            until: getFutureDate(),
             payment_id: 16802865,
             product: [{ id: 258, price: 1 }],
             provider: 'cloudpayments'
@@ -29,18 +29,15 @@ if (typeof $response !== 'undefined' && $response.body) {
                 body.user.have_trial = 0;
                 body.user['>>>premium<<<_level'] = 'premium';
                 body.user['>>>premium<<<_unlimited'] = 0;
-                body.user['>>>premium<<<_until'] = getFutureISO();
+                body.user['>>>premium<<<_until'] = getFutureDate();
                 body.user['>>>premium<<<_details'] = premiumDetails;
                 modified = true;
             }
         } else if (url.includes('/GetUserProfile')) {
             if (body.data) {
-                body.data.is_gold = true;
-                body.data.meatballs = 111;
-                body.data.have_trial = 0;
                 body.data['>>>premium<<<_level'] = 'premium';
                 body.data['>>>premium<<<_unlimited'] = 0;
-                body.data['>>>premium<<<_until'] = getFutureISO();
+                body.data['>>>premium<<<_until'] = getFutureDate();
                 body.data['>>>premium<<<_details'] = premiumDetails;
                 modified = true;
             }
@@ -49,30 +46,8 @@ if (typeof $response !== 'undefined' && $response.body) {
                 body.data['is>>>Premium<<<'] = 1;
                 body.data['>>>premium<<<Days'] = 7;
                 body.data.trialAvailable = 0;
-                modified = true;
-            }
-        } else if (url.includes('/v2/user/profile')) {
-            if (status === 401 || status === 404) {
-                body = {
-                    user: {
-                        is_gold: true,
-                        meatballs: 111,
-                        have_trial: 0,
-                        '>>>premium<<<_level': 'premium',
-                        '>>>premium<<<_unlimited': 0,
-                        '>>>premium<<<_until': getFutureISO(),
-                        '>>>premium<<<_details': premiumDetails
-                    }
-                };
-                modified = true;
-            } else if (body.user) {
-                body.user.is_gold = true;
-                body.user.meatballs = 111;
-                body.user.have_trial = 0;
-                body.user['>>>premium<<<_level'] = 'premium';
-                body.user['>>>premium<<<_unlimited'] = 0;
-                body.user['>>>premium<<<_until'] = getFutureISO();
-                body.user['>>>premium<<<_details'] = premiumDetails;
+                delete body.data.premiumExpire;
+                delete body.data.premiumDiscount;
                 modified = true;
             }
         } else if (url.includes('/grammar/getRules')) {
@@ -166,6 +141,14 @@ if (typeof $response !== 'undefined' && $response.body) {
                 body.stories = [];
                 modified = true;
             }
+            if (body.tasks && Array.isArray(body.tasks)) {
+                for (let task of body.tasks) {
+                    if (task.hasOwnProperty('is>>>Premium<<<')) {
+                        task['is>>>Premium<<<'] = false;
+                    }
+                }
+                modified = true;
+            }
         } else if (url.includes('/getLearningMain')) {
             if (body.data && Array.isArray(body.data)) {
                 for (let section of body.data) {
@@ -194,13 +177,29 @@ if (typeof $response !== 'undefined' && $response.body) {
                 modified = true;
             }
         } else if (url.includes('/getProducts') || url.includes('/getproducts')) {
-            if (status === 200 && body.products) {
-                for (let product of body.products) {
-                    if (product.recurrent !== undefined) {
-                        product.recurrent = true;
+            if (status === 200) {
+                if (body.products && Array.isArray(body.products)) {
+                    for (let product of body.products) {
+                        if (product.recurrent !== undefined) {
+                            product.recurrent = true;
+                        }
                     }
+                    modified = true;
+                } else if (body.campaign && Array.isArray(body.campaign)) {
+                    for (let camp of body.campaign) {
+                        if (camp.recurrent !== undefined) {
+                            camp.recurrent = true;
+                        }
+                        if (camp.baseProduct && camp.baseProduct.length) {
+                            for (let prod of camp.baseProduct) {
+                                if (prod.recurrent !== undefined) {
+                                    prod.recurrent = true;
+                                }
+                            }
+                        }
+                    }
+                    modified = true;
                 }
-                modified = true;
             }
         } else if (url.includes('/GetCourses')) {
             if (body.thematic) {
@@ -209,6 +208,9 @@ if (typeof $response !== 'undefined' && $response.body) {
                         for (let course of category.courses) {
                             if (course.hasOwnProperty('is>>>Premium<<<')) {
                                 course['is>>>Premium<<<'] = 0;
+                            }
+                            if (course.hasOwnProperty('paymentStatus')) {
+                                course.paymentStatus = 1;
                             }
                         }
                     }
