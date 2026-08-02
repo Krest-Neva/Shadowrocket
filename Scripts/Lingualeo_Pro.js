@@ -22,6 +22,7 @@ if (typeof $response !== 'undefined' && $response.body) {
 
         let modified = false;
 
+        // ==================== ПРОФИЛЬ И АВТОРИЗАЦИЯ ====================
         if (url.includes('/mobile/auth') || url.includes('/mergeData')) {
             if (body.user) {
                 body.user.is_gold = true;
@@ -74,11 +75,14 @@ if (typeof $response !== 'undefined' && $response.body) {
                 body.user.premium_details = premiumDetails;
                 modified = true;
             }
-        } else if (url.includes('/grammar/getRules')) {
+        }
+
+        // ==================== GRAMMAR ====================
+        else if (url.includes('/grammar/getRules')) {
             if (Array.isArray(body)) {
                 for (let rule of body) {
                     if (rule.hasOwnProperty('isGoldRequired')) {
-                        delete rule.isGoldRequired;
+                        rule.isGoldRequired = false;
                     }
                 }
                 modified = true;
@@ -87,29 +91,44 @@ if (typeof $response !== 'undefined' && $response.body) {
             if (Array.isArray(body)) {
                 for (let item of body) {
                     if (item.hasOwnProperty('isPremiumRequired')) {
-                        delete item.isPremiumRequired;
+                        item.isPremiumRequired = false;
                     }
                 }
                 modified = true;
             }
-        } else if (url.includes('/listening/getStorySets')) {
+        } else if (url.includes('/course/grammar')) {
+            if (body.courses && Array.isArray(body.courses)) {
+                for (let course of body.courses) {
+                    if (course.hasOwnProperty('isGoldRequired')) {
+                        course.isGoldRequired = false;
+                    }
+                }
+                modified = true;
+            }
+        }
+
+        // ==================== LISTENING ====================
+        else if (url.includes('/listening/getStorySets')) {
             if (Array.isArray(body)) {
                 for (let set of body) {
                     if (set.set && set.set.hasOwnProperty('isPremiumRequired')) {
-                        delete set.set.isPremiumRequired;
+                        set.set.isPremiumRequired = false;
                     }
                     if (set.progress && set.progress.hasOwnProperty('isPremiumRequired')) {
-                        delete set.progress.isPremiumRequired;
+                        set.progress.isPremiumRequired = false;
                     }
                 }
                 modified = true;
             }
         } else if (url.includes('/listening/getStory')) {
             if (body.config && body.config.hasOwnProperty('isPremiumRequired')) {
-                delete body.config.isPremiumRequired;
+                body.config.isPremiumRequired = false;
                 modified = true;
             }
-        } else if (url.includes('/reading/getSetList')) {
+        }
+
+        // ==================== READING ====================
+        else if (url.includes('/reading/getSetList')) {
             if (status === 200 && Array.isArray(body)) {
                 for (let item of body) {
                     if (item.hasOwnProperty('isPremiumRequired')) {
@@ -161,7 +180,10 @@ if (typeof $response !== 'undefined' && $response.body) {
                 };
                 modified = true;
             }
-        } else if (url.includes('/getDashboardData')) {
+        }
+
+        // ==================== DASHBOARD & LEARNING ====================
+        else if (url.includes('/getDashboardData')) {
             if (body.premiumAvailable !== undefined) {
                 body.premiumAvailable = null;
                 modified = true;
@@ -197,7 +219,10 @@ if (typeof $response !== 'undefined' && $response.body) {
                 }
                 modified = true;
             }
-        } else if (url.includes('/getProducts') || url.includes('/getproducts')) {
+        }
+
+        // ==================== PRODUCTS & COURSES ====================
+        else if (url.includes('/getProducts') || url.includes('/getproducts')) {
             if (status === 200 && body.products) {
                 for (let product of body.products) {
                     if (product.recurrent !== undefined) {
@@ -206,7 +231,21 @@ if (typeof $response !== 'undefined' && $response.body) {
                 }
                 modified = true;
             }
-        } else if (url.includes('/GetSurveyUserLevel')) {
+        } else if (url.includes('/GetCourses')) {
+            if (body.thematic) {
+                for (let category of body.thematic) {
+                    if (category.courses) {
+                        for (let course of category.courses) {
+                            if (course.hasOwnProperty('isPremium')) {
+                                course.isPremium = 0;
+                            }
+                        }
+                    }
+                }
+                modified = true;
+            }
+        }
+        else if (url.includes('/GetSurveyUserLevel')) {
             if (body.data && body.data.level !== undefined) {
                 body.data.level = 2;
                 modified = true;
