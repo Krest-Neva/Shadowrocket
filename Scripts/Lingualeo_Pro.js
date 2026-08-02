@@ -14,7 +14,6 @@ if (typeof $response !== 'undefined' && $response.body) {
         let modified = false;
         log('URL: ' + url);
         if (url.includes('/ProcessTraining')) {
-            log('Обработка /ProcessTraining');
             if (body.data) {
                 if (body.data.isPremium !== undefined) {
                     body.data.isPremium = 1;
@@ -22,10 +21,6 @@ if (typeof $response !== 'undefined' && $response.body) {
                 }
                 if (body.data.premiumExpire !== undefined) {
                     body.data.premiumExpire = getFutureDate();
-                    modified = true;
-                }
-                if (body.data.premiumDiscount !== undefined) {
-                    body.data.premiumDiscount = 50;
                     modified = true;
                 }
                 if (body.data.trialAvailable !== undefined) {
@@ -51,10 +46,11 @@ if (typeof $response !== 'undefined' && $response.body) {
                 log('Модифицирован /ProcessTraining');
             }
         } else if (url.includes('/mergeData') || url.includes('/v2/user/profile') || url.includes('/mobile/auth')) {
-            log('Обработка /mergeData, /v2/user/profile или /mobile/auth');
             if (body.user) {
-                body.user.is_gold = true;
-                body.user.meatballs = 99999;
+                if (body.user.is_gold !== undefined) {
+                    body.user.is_gold = true;
+                    modified = true;
+                }
                 if (body.user.premium_details) {
                     body.user.premium_details.level = 'pro+';
                     body.user.premium_details.is_unlimited = 1;
@@ -80,16 +76,15 @@ if (typeof $response !== 'undefined' && $response.body) {
                 log('Модифицирован user');
             }
         } else if (url.includes('/getDashboardData')) {
-            log('Обработка /getDashboardData');
-            if (body.stories !== undefined) {
-                body.stories = [];
-                modified = true;
-                log('stories удалены');
-            }
             if (body.premiumAvailable !== undefined) {
                 body.premiumAvailable = 'active';
                 modified = true;
             }
+            if (body.stories !== undefined) {
+                body.stories = [];
+                modified = true;
+            }
+            log('Модифицирован /getDashboardData');
         } else {
             log('URL не соответствует известным эндпоинтам, пропускаем');
         }
