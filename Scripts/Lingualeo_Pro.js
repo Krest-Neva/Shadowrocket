@@ -13,52 +13,71 @@ if (typeof $response !== 'undefined' && $response.body) {
         }
         let modified = false;
         log('URL: ' + url);
+        function modifyUser(user) {
+            if (!user) return;
+            user.is_gold = true;
+            user.meatballs = 99999;
+            user.address = 'Minsk';
+            user.birth = '2004-01-15';
+            user.nickname = 'Pupochek';
+            user.fname = 'Kristina';
+            user.sname = 'Nevskaya';
+            user.xp_title = 'Молодчинка!';
+            user.fullname = 'Krest-Neva';
+            user.avatar = 'https://i.pinimg.com/736x/97/6e/3d/976e3ddff4cf700b1449f262cf15865f.jpg';
+            user.avatar_mini = 'https://i.pinimg.com/736x/97/6e/3d/976e3ddff4cf700b1449f262cf15865f.jpg';
+            if (user['>>>premium<<<_details']) {
+                user['>>>premium<<<_details'].level = 'pro+';
+                user['>>>premium<<<_details'].is_unlimited = 1;
+                user['>>>premium<<<_details'].until = getFutureDate();
+                modified = true;
+            }
+            if (user['>>>premium<<<_level'] !== undefined) {
+                user['>>>premium<<<_level'] = 'pro+';
+                modified = true;
+            }
+            if (user['>>>premium<<<_unlimited'] !== undefined) {
+                user['>>>premium<<<_unlimited'] = 1;
+                modified = true;
+            }
+            if (user['>>>premium<<<_until'] !== undefined) {
+                user['>>>premium<<<_until'] = getFutureDate();
+                modified = true;
+            }
+            if (user.premium_details) {
+                user.premium_details.level = 'pro+';
+                user.premium_details.is_unlimited = 1;
+                user.premium_details.until = getFutureDate();
+                modified = true;
+            }
+            if (user.premium_level !== undefined) {
+                user.premium_level = 'pro+';
+                modified = true;
+            }
+            if (user.premium_unlimited !== undefined) {
+                user.premium_unlimited = 1;
+                modified = true;
+            }
+            if (user.premium_until !== undefined) {
+                user.premium_until = getFutureDate();
+                modified = true;
+            }
+            if (user.have_trial !== undefined) {
+                user.have_trial = 0;
+                modified = true;
+            }
+            log('Модифицирован user');
+        }
         if (url.includes('/mobile/auth') || url.includes('/mergeData')) {
             log('Обработка /mobile/auth или /mergeData');
             if (body.user) {
-                body.user.is_gold = true;
-                body.user.meatballs = 99999;
-                body.user.address = 'Minsk';
-                body.user.birth = '2004-01-15';
-                body.user.nickname = 'Pupochek';
-                body.user.fname = 'Kristina';
-                body.user.sname = 'Nevskaya';
-                body.user.xp_title = 'Молодчинка!';
-                body.user.fullname = 'Krest-Neva';
-                body.user.avatar = 'https://i.pinimg.com/736x/97/6e/3d/976e3ddff4cf700b1449f262cf15865f.jpg';
-                body.user.avatar_mini = 'https://i.pinimg.com/736x/97/6e/3d/976e3ddff4cf700b1449f262cf15865f.jpg';
-                if (body.user.premium_details) {
-                    body.user.premium_details.level = 'pro+';
-                    body.user.premium_details.is_unlimited = 1;
-                    body.user.premium_details.until = getFutureDate();
-                    modified = true;
-                }
-                if (body.user.premium_level !== undefined) {
-                    body.user.premium_level = 'pro+';
-                    modified = true;
-                }
-                if (body.user.premium_unlimited !== undefined) {
-                    body.user.premium_unlimited = 1;
-                    modified = true;
-                }
-                if (body.user.premium_until !== undefined) {
-                    body.user.premium_until = getFutureDate();
-                    modified = true;
-                }
-                if (body.user.have_trial !== undefined) {
-                    body.user.have_trial = 0;
-                    modified = true;
-                }
-                log('Модифицирован user');
+                modifyUser(body.user);
             }
-        } else if (url.includes('/getDashboardData')) {
-            log('Обработка /getDashboardData');
-            if (body.stories !== undefined) {
-                body.stories = [];
-                modified = true;
-                log('stories удалены');
+        } else if (url.includes('/v2/user/profile')) {
+            log('Обработка /v2/user/profile');
+            if (body.user) {
+                modifyUser(body.user);
             }
-            log('Модифицирован /getDashboardData (только удалены stories)');
         } else if (url.includes('/ProcessTraining')) {
             log('Обработка /ProcessTraining');
             if (body.data) {
@@ -74,42 +93,40 @@ if (typeof $response !== 'undefined' && $response.body) {
                     body.data.premiumExpire = getFutureDate();
                     modified = true;
                 }
+                if (body.data['is>>>Premium<<<'] !== undefined) {
+                    body.data['is>>>Premium<<<'] = 1;
+                    modified = true;
+                }
+                if (body.data['>>>premium<<<Discount'] !== undefined) {
+                    body.data['>>>premium<<<Discount'] = 50;
+                    modified = true;
+                }
+                if (body.data['>>>premium<<<Expire'] !== undefined) {
+                    body.data['>>>premium<<<Expire'] = getFutureDate();
+                    modified = true;
+                }
                 log('Модифицирован /ProcessTraining');
             }
-        } else if (url.includes('/v2/user/profile')) {
-            log('Обработка /v2/user/profile');
-            if (body.user) {
-                body.user.is_gold = true;
-                body.user.meatballs = 99999;
-                body.user.address = 'Minsk';
-                body.user.birth = '2004-01-15';
-                body.user.nickname = 'Pupochek';
-                body.user.fname = 'Kristina';
-                body.user.sname = 'Nevskaya';
-                body.user.xp_title = 'Молодчинка!';
-                body.user.fullname = 'Krest-Neva';
-                body.user.avatar = 'https://i.pinimg.com/736x/97/6e/3d/976e3ddff4cf700b1449f262cf15865f.jpg';
-                body.user.avatar_mini = 'https://i.pinimg.com/736x/97/6e/3d/976e3ddff4cf700b1449f262cf15865f.jpg';
-                if (body.user.premium_details) {
-                    body.user.premium_details.level = 'pro+';
-                    body.user.premium_details.is_unlimited = 1;
-                    body.user.premium_details.until = getFutureDate();
-                    modified = true;
-                }
-                if (body.user.premium_level !== undefined) {
-                    body.user.premium_level = 'pro+';
-                    modified = true;
-                }
-                if (body.user.premium_unlimited !== undefined) {
-                    body.user.premium_unlimited = 1;
-                    modified = true;
-                }
-                if (body.user.premium_until !== undefined) {
-                    body.user.premium_until = getFutureDate();
-                    modified = true;
-                }
-                log('Модифицирован /v2/user/profile');
+        } else if (url.includes('/getDashboardData')) {
+            log('Обработка /getDashboardData');
+            if (body['>>>premium<<<Available'] !== undefined) {
+                body['>>>premium<<<Available'] = 'premium';
+                modified = true;
             }
+            if (body.premiumAvailable !== undefined) {
+                body.premiumAvailable = 'premium';
+                modified = true;
+            }
+            if (body.paywall_type !== undefined) {
+                body.paywall_type = 'none';
+                modified = true;
+            }
+            if (body.stories !== undefined) {
+                body.stories = [];
+                modified = true;
+                log('stories удалены');
+            }
+            log('Модифицирован /getDashboardData');
         } else if (url.includes('/v2/external-config/public-config/IOS_PREMIUM_CANCEL-BENEFITS')) {
             log('Пропускаем IOS_PREMIUM_CANCEL-BENEFITS');
         } else {
