@@ -1367,7 +1367,7 @@ Spotify-premium-patch = type=http-response,pattern=^https?:\/\/(spclient\.wg\.sp
 FatSecret-Premium = type=http-response,pattern=^https:\/\/app\.ftscrt\.com\/api\/(user\/v3\/user-account-details|user-settings\/v1\/select),requires-body=true,timeout=10,max-size=131072,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/FatSecret_Premium.js
 
 #Lingualeo👅
-LingualeoPro = type=http-response,pattern=^https:\/\/api\.lingualeo\.com\/(mobile\/auth|mergeData|getDashboardData|ProcessTraining|v2\/user\/profile|v2\/external-config\/public-config\/IOS_PREMIUM_CANCEL-BENEFITS|GetUserProfile|v2\/billing\/products)(\?.*)?$,requires-body=1,max-size=-1,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Lingualeo_Pro.js,argument={"debug":false},timeout=10
+LingualeoPro = type=http-response,pattern=^https:\/\/api\.lingualeo\.com\/.*$,requires-body=1,max-size=-1,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Lingualeo_Pro.js,timeout=10
 
 #PicsArt📸🌅
 PicsArt = type=http-request,pattern=^https:\/\/api\.picsart\.com\/gw-v2\/shop\/subscription\/apple\/purchases,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Picsart_Premium.js,requires-body=true,timeout=60
