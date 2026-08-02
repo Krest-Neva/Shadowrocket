@@ -2,111 +2,119 @@ if (typeof $response !== 'undefined' && $response.body) {
     try {
         let body = JSON.parse($response.body);
         let url = $request ? $request.url : '';
-        let arg = {};
-        try { arg = JSON.parse($argument || '{}'); } catch (e) {}
-        let debug = arg.debug === true;
-        function log(msg) { if (debug) console.log('[LingualeoPro] ' + msg); }
         function getFutureDate() {
             let d = new Date();
-            d.setFullYear(d.getFullYear() + 1);
+            d.setFullYear(d.getFullYear() + 10);
             return d.toISOString().split('T')[0];
         }
-        let modified = false;
-        log('URL: ' + url);
-
-        // Основной эндпоинт, возвращающий профиль
-        if (url.includes('/ProcessTraining')) {
-            if (body.data) {
-                if (body.data.isPremium !== undefined) {
-                    body.data.isPremium = 1;
-                    modified = true;
-                }
-                if (body.data.premiumExpire !== undefined) {
-                    body.data.premiumExpire = getFutureDate();
-                    modified = true;
-                }
-                if (body.data.trialAvailable !== undefined) {
-                    body.data.trialAvailable = 0;
-                    modified = true;
-                }
-                if (body.data.premium_level !== undefined) {
-                    body.data.premium_level = 'pro+';
-                    modified = true;
-                }
-                if (body.data.premium_unlimited !== undefined) {
-                    body.data.premium_unlimited = 1;
-                    modified = true;
-                }
-                if (body.data.premium_until !== undefined) {
-                    body.data.premium_until = getFutureDate();
-                    modified = true;
-                }
-                if (body.data.is_gold !== undefined) {
-                    body.data.is_gold = true;
-                    modified = true;
-                }
-                log('Модифицирован /ProcessTraining');
-            }
+        function getFutureISO() {
+            let d = new Date();
+            d.setFullYear(d.getFullYear() + 10);
+            return d.toISOString();
         }
-        // Эндпоинты, возвращающие объект user
-        else if (url.includes('/mergeData') || url.includes('/v2/user/profile') || url.includes('/mobile/auth')) {
+        let modified = false;
+        if (url.includes('/mobile/auth') || url.includes('/mergeData') || url.includes('/v2/user/profile')) {
             if (body.user) {
-                if (body.user.is_gold !== undefined) {
-                    body.user.is_gold = true;
-                    modified = true;
-                }
+                body.user.is_gold = true;
                 if (body.user.premium_details) {
-                    body.user.premium_details.level = 'pro+';
-                    body.user.premium_details.is_unlimited = 1;
+                    body.user.premium_details.level = 'premium';
+                    body.user.premium_details.is_unlimited = 0;
                     body.user.premium_details.until = getFutureDate();
-                    modified = true;
+                } else {
+                    body.user.premium_details = {
+                        level: 'premium',
+                        is_unlimited: 0,
+                        until: getFutureDate()
+                    };
                 }
                 if (body.user.premium_level !== undefined) {
-                    body.user.premium_level = 'pro+';
-                    modified = true;
+                    body.user.premium_level = 'premium';
+                } else {
+                    body.user.premium_level = 'premium';
                 }
                 if (body.user.premium_unlimited !== undefined) {
-                    body.user.premium_unlimited = 1;
-                    modified = true;
+                    body.user.premium_unlimited = 0;
+                } else {
+                    body.user.premium_unlimited = 0;
                 }
                 if (body.user.premium_until !== undefined) {
                     body.user.premium_until = getFutureDate();
-                    modified = true;
+                } else {
+                    body.user.premium_until = getFutureDate();
                 }
                 if (body.user.have_trial !== undefined) {
                     body.user.have_trial = 0;
-                    modified = true;
+                } else {
+                    body.user.have_trial = 0;
                 }
-                log('Модифицирован user');
+                modified = true;
             }
-        }
-        // Удаляем рекламные сторис и меняем статус доступности премиума
-        else if (url.includes('/getDashboardData')) {
+        } else if (url.includes('/ProcessTraining')) {
+            if (body.data) {
+                if (body.data.isPremium !== undefined) {
+                    body.data.isPremium = 1;
+                } else {
+                    body.data.isPremium = 1;
+                }
+                if (body.data.premiumDays !== undefined) {
+                    body.data.premiumDays = 365;
+                } else {
+                    body.data.premiumDays = 365;
+                }
+                if (body.data.premiumExpire !== undefined) {
+                    delete body.data.premiumExpire;
+                }
+                if (body.data.premiumDiscount !== undefined) {
+                    delete body.data.premiumDiscount;
+                }
+                if (body.data.trialAvailable !== undefined) {
+                    body.data.trialAvailable = 0;
+                } else {
+                    body.data.trialAvailable = 0;
+                }
+                modified = true;
+            }
+        } else if (url.includes('/getDashboardData')) {
+            if (body.tasks && Array.isArray(body.tasks)) {
+                for (let task of body.tasks) {
+                    task.isPremium = false;
+                }
+                modified = true;
+            }
             if (body.premiumAvailable !== undefined) {
-                body.premiumAvailable = 'active';
+                body.premiumAvailable = null;
                 modified = true;
             }
-            if (body.stories !== undefined) {
-                body.stories = [];
+        } else if (url.includes('/getLearningMain')) {
+            if (body.data && Array.isArray(body.data)) {
+                for (let section of body.data) {
+                    if (section.audio && Array.isArray(section.audio)) {
+                        for (let item of section.audio) {
+                            item.isPremium = false;
+                        }
+                    }
+                    if (section.word && Array.isArray(section.word)) {
+                        for (let item of section.word) {
+                            item.isPremium = false;
+                        }
+                    }
+                    if (section.reading && Array.isArray(section.reading)) {
+                        for (let item of section.reading) {
+                            item.isPremium = false;
+                        }
+                    }
+                }
                 modified = true;
             }
-            log('Модифицирован /getDashboardData');
         }
-        else {
-            log('URL не соответствует известным эндпоинтам, пропускаем');
-        }
-
         if (modified) {
-            log('Скрипт выполнен, ответ изменён');
+            $done({ body: JSON.stringify(body) });
         } else {
-            log('Ни одно поле не было изменено');
+            $done({});
         }
-        $done({ body: JSON.stringify(body) });
     } catch (e) {
-        if (debug) console.log('[LingualeoPro] Ошибка: ' + e);
         $done({});
     }
 } else {
-    if (debug) console.log('[LingualeoPro] Нет тела ответа');
     $done({});
 }
