@@ -35,6 +35,9 @@ if (typeof $response !== 'undefined' && $response.body) {
             }
         } else if (url.includes('/GetUserProfile')) {
             if (body.data) {
+                body.data.is_gold = true;
+                body.data.meatballs = 111;
+                body.data.have_trial = 0;
                 body.data['>>>premium<<<_level'] = 'premium';
                 body.data['>>>premium<<<_unlimited'] = 0;
                 body.data['>>>premium<<<_until'] = getFutureISO();
