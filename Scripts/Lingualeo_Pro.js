@@ -50,13 +50,63 @@ if (typeof $response !== 'undefined' && $response.body) {
                 delete body.data.premiumDiscount;
                 modified = true;
             }
-        } else if (url.includes('/getDashboardData')) {
-            if (body.premiumAvailable !== undefined) {
-                body.premiumAvailable = null;
+        } else if (url.includes('/v2/user/profile')) {
+            if (status === 401 || status === 404) {
+                body = {
+                    user: {
+                        is_gold: true,
+                        meatballs: 111,
+                        have_trial: 0,
+                        premium_level: 'premium',
+                        premium_unlimited: 0,
+                        premium_until: getFutureISO(),
+                        premium_details: premiumDetails
+                    }
+                };
+                modified = true;
+            } else if (body.user) {
+                body.user.is_gold = true;
+                body.user.meatballs = 111;
+                body.user.have_trial = 0;
+                body.user.premium_level = 'premium';
+                body.user.premium_unlimited = 0;
+                body.user.premium_until = getFutureISO();
+                body.user.premium_details = premiumDetails;
                 modified = true;
             }
-            if (body.stories !== undefined) {
-                body.stories = [];
+        } else if (url.includes('/grammar/getRules')) {
+            if (Array.isArray(body)) {
+                for (let rule of body) {
+                    if (rule.hasOwnProperty('isGoldRequired')) {
+                        delete rule.isGoldRequired;
+                    }
+                }
+                modified = true;
+            }
+        } else if (url.includes('/grammar/getRuleExpressions')) {
+            if (Array.isArray(body)) {
+                for (let item of body) {
+                    if (item.hasOwnProperty('isPremiumRequired')) {
+                        delete item.isPremiumRequired;
+                    }
+                }
+                modified = true;
+            }
+        } else if (url.includes('/listening/getStorySets')) {
+            if (Array.isArray(body)) {
+                for (let set of body) {
+                    if (set.set && set.set.hasOwnProperty('isPremiumRequired')) {
+                        delete set.set.isPremiumRequired;
+                    }
+                    if (set.progress && set.progress.hasOwnProperty('isPremiumRequired')) {
+                        delete set.progress.isPremiumRequired;
+                    }
+                }
+                modified = true;
+            }
+        } else if (url.includes('/listening/getStory')) {
+            if (body.config && body.config.hasOwnProperty('isPremiumRequired')) {
+                delete body.config.isPremiumRequired;
                 modified = true;
             }
         } else if (url.includes('/reading/getSetList')) {
@@ -83,7 +133,6 @@ if (typeof $response !== 'undefined' && $response.body) {
                 modified = true;
             }
         } else if (url.includes('/reading/loadTraining')) {
-            // Подменяем только если статус не 200 или нет текста
             if (status !== 200 || !body.text) {
                 body = {
                     "apiVersion": "1.0.0",
@@ -112,37 +161,13 @@ if (typeof $response !== 'undefined' && $response.body) {
                 };
                 modified = true;
             }
-        } else if (url.includes('/getProducts') || url.includes('/getproducts')) {
-            if (status === 200 && body.products) {
-                for (let product of body.products) {
-                    if (product.recurrent !== undefined) {
-                        product.recurrent = true;
-                    }
-                }
+        } else if (url.includes('/getDashboardData')) {
+            if (body.premiumAvailable !== undefined) {
+                body.premiumAvailable = null;
                 modified = true;
             }
-        } else if (url.includes('/v2/user/profile')) {
-            if (status === 401 || status === 404) {
-                body = {
-                    user: {
-                        is_gold: true,
-                        meatballs: 111,
-                        have_trial: 0,
-                        premium_level: 'premium',
-                        premium_unlimited: 0,
-                        premium_until: getFutureISO(),
-                        premium_details: premiumDetails
-                    }
-                };
-                modified = true;
-            } else if (body.user) {
-                body.user.is_gold = true;
-                body.user.meatballs = 111;
-                body.user.have_trial = 0;
-                body.user.premium_level = 'premium';
-                body.user.premium_unlimited = 0;
-                body.user.premium_until = getFutureISO();
-                body.user.premium_details = premiumDetails;
+            if (body.stories !== undefined) {
+                body.stories = [];
                 modified = true;
             }
         } else if (url.includes('/getLearningMain')) {
@@ -168,6 +193,15 @@ if (typeof $response !== 'undefined' && $response.body) {
                                 item.isPremium = false;
                             }
                         }
+                    }
+                }
+                modified = true;
+            }
+        } else if (url.includes('/getProducts') || url.includes('/getproducts')) {
+            if (status === 200 && body.products) {
+                for (let product of body.products) {
+                    if (product.recurrent !== undefined) {
+                        product.recurrent = true;
                     }
                 }
                 modified = true;
