@@ -8,11 +8,13 @@ if (typeof $response !== 'undefined' && $response.body) {
         function log(msg) { if (debug) console.log('[LingualeoPro] ' + msg); }
         function getFutureDate() {
             let d = new Date();
-            d.setFullYear(d.getFullYear() + 10);
+            d.setFullYear(d.getFullYear() + 1);
             return d.toISOString().split('T')[0];
         }
         let modified = false;
         log('URL: ' + url);
+
+        // Основной эндпоинт, возвращающий профиль
         if (url.includes('/ProcessTraining')) {
             if (body.data) {
                 if (body.data.isPremium !== undefined) {
@@ -45,7 +47,9 @@ if (typeof $response !== 'undefined' && $response.body) {
                 }
                 log('Модифицирован /ProcessTraining');
             }
-        } else if (url.includes('/mergeData') || url.includes('/v2/user/profile') || url.includes('/mobile/auth')) {
+        }
+        // Эндпоинты, возвращающие объект user
+        else if (url.includes('/mergeData') || url.includes('/v2/user/profile') || url.includes('/mobile/auth')) {
             if (body.user) {
                 if (body.user.is_gold !== undefined) {
                     body.user.is_gold = true;
@@ -75,7 +79,9 @@ if (typeof $response !== 'undefined' && $response.body) {
                 }
                 log('Модифицирован user');
             }
-        } else if (url.includes('/getDashboardData')) {
+        }
+        // Удаляем рекламные сторис и меняем статус доступности премиума
+        else if (url.includes('/getDashboardData')) {
             if (body.premiumAvailable !== undefined) {
                 body.premiumAvailable = 'active';
                 modified = true;
@@ -85,9 +91,11 @@ if (typeof $response !== 'undefined' && $response.body) {
                 modified = true;
             }
             log('Модифицирован /getDashboardData');
-        } else {
+        }
+        else {
             log('URL не соответствует известным эндпоинтам, пропускаем');
         }
+
         if (modified) {
             log('Скрипт выполнен, ответ изменён');
         } else {
