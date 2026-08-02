@@ -22,84 +22,123 @@ if (typeof $response !== 'undefined' && $response.body) {
 
         let modified = false;
 
+        function setPremiumFlags(obj) {
+            if (obj && typeof obj === 'object') {
+                for (let key in obj) {
+                    if (key === 'is>>>Premium<<<' || key === 'isPremium' || key === 'isGoldRequired' || key === 'isPremiumRequired' || key === 'is>>>Premium<<<Required') {
+                        obj[key] = false;
+                    } else if (key === '>>>premium<<<Available') {
+                        obj[key] = null;
+                    } else if (typeof obj[key] === 'object') {
+                        setPremiumFlags(obj[key]);
+                    }
+                }
+            }
+        }
+
         if (url.includes('/mobile/auth') || url.includes('/mergeData')) {
             if (body.user) {
                 body.user.is_gold = true;
                 body.user.meatballs = 111;
                 body.user.have_trial = 0;
                 body.user['>>>premium<<<_level'] = 'premium';
+                body.user.premium_level = 'premium';
                 body.user['>>>premium<<<_unlimited'] = 0;
+                body.user.premium_unlimited = 0;
                 body.user['>>>premium<<<_until'] = getFutureDate();
+                body.user.premium_until = getFutureDate();
                 body.user['>>>premium<<<_details'] = premiumDetails;
+                body.user.premium_details = premiumDetails;
                 modified = true;
             }
         } else if (url.includes('/GetUserProfile')) {
             if (body.data) {
+                body.data.is_gold = true;
+                body.data.meatballs = 111;
+                body.data.have_trial = 0;
                 body.data['>>>premium<<<_level'] = 'premium';
+                body.data.premium_level = 'premium';
                 body.data['>>>premium<<<_unlimited'] = 0;
+                body.data.premium_unlimited = 0;
                 body.data['>>>premium<<<_until'] = getFutureDate();
+                body.data.premium_until = getFutureDate();
                 body.data['>>>premium<<<_details'] = premiumDetails;
+                body.data.premium_details = premiumDetails;
                 modified = true;
             }
         } else if (url.includes('/ProcessTraining')) {
             if (body.data) {
                 body.data['is>>>Premium<<<'] = 1;
+                body.data.isPremium = 1;
                 body.data['>>>premium<<<Days'] = 7;
+                body.data.premiumDays = 7;
                 body.data.trialAvailable = 0;
                 delete body.data.premiumExpire;
                 delete body.data.premiumDiscount;
                 modified = true;
             }
-        } else if (url.includes('/grammar/getRules')) {
-            if (Array.isArray(body)) {
-                for (let rule of body) {
-                    if (rule.hasOwnProperty('isGoldRequired')) {
-                        rule.isGoldRequired = false;
+        } else if (url.includes('/v2/user/profile')) {
+            if (status === 401 || status === 404) {
+                body = {
+                    user: {
+                        is_gold: true,
+                        meatballs: 111,
+                        have_trial: 0,
+                        '>>>premium<<<_level': 'premium',
+                        premium_level: 'premium',
+                        '>>>premium<<<_unlimited': 0,
+                        premium_unlimited: 0,
+                        '>>>premium<<<_until': getFutureDate(),
+                        premium_until: getFutureDate(),
+                        '>>>premium<<<_details': premiumDetails,
+                        premium_details: premiumDetails
                     }
-                }
+                };
+                modified = true;
+            } else if (body.user) {
+                body.user.is_gold = true;
+                body.user.meatballs = 111;
+                body.user.have_trial = 0;
+                body.user['>>>premium<<<_level'] = 'premium';
+                body.user.premium_level = 'premium';
+                body.user['>>>premium<<<_unlimited'] = 0;
+                body.user.premium_unlimited = 0;
+                body.user['>>>premium<<<_until'] = getFutureDate();
+                body.user.premium_until = getFutureDate();
+                body.user['>>>premium<<<_details'] = premiumDetails;
+                body.user.premium_details = premiumDetails;
                 modified = true;
             }
-        } else if (url.includes('/grammar/getRuleExpressions')) {
+        } else if (url.includes('/grammar/getRules') || url.includes('/grammar/getRuleExpressions') || url.includes('/course/grammar')) {
             if (Array.isArray(body)) {
                 for (let item of body) {
-                    if (item.hasOwnProperty('isPremiumRequired')) {
-                        item.isPremiumRequired = false;
-                    }
+                    if (item.hasOwnProperty('isGoldRequired')) item.isGoldRequired = false;
+                    if (item.hasOwnProperty('isPremiumRequired')) item.isPremiumRequired = false;
                 }
                 modified = true;
-            }
-        } else if (url.includes('/course/grammar')) {
-            if (body.courses && Array.isArray(body.courses)) {
+            } else if (body.courses && Array.isArray(body.courses)) {
                 for (let course of body.courses) {
-                    if (course.hasOwnProperty('isGoldRequired')) {
-                        course.isGoldRequired = false;
-                    }
+                    if (course.hasOwnProperty('isGoldRequired')) course.isGoldRequired = false;
                 }
                 modified = true;
             }
-        } else if (url.includes('/listening/getStorySets')) {
+        } else if (url.includes('/listening/getStorySets') || url.includes('/listening/getStory')) {
             if (Array.isArray(body)) {
                 for (let set of body) {
-                    if (set.set && set.set.hasOwnProperty('is>>>Premium<<<Required')) {
-                        set.set['is>>>Premium<<<Required'] = false;
-                    }
-                    if (set.progress && set.progress.hasOwnProperty('is>>>Premium<<<Required')) {
-                        set.progress['is>>>Premium<<<Required'] = false;
-                    }
+                    if (set.set) set.set['is>>>Premium<<<Required'] = false;
+                    if (set.progress) set.progress['is>>>Premium<<<Required'] = false;
+                    if (set.hasOwnProperty('is>>>Premium<<<Required')) set['is>>>Premium<<<Required'] = false;
                 }
                 modified = true;
-            }
-        } else if (url.includes('/listening/getStory')) {
-            if (body.config && body.config.hasOwnProperty('is>>>Premium<<<Required')) {
+            } else if (body.config && body.config.hasOwnProperty('is>>>Premium<<<Required')) {
                 body.config['is>>>Premium<<<Required'] = false;
                 modified = true;
             }
         } else if (url.includes('/reading/getSetList')) {
             if (Array.isArray(body)) {
                 for (let item of body) {
-                    if (item.hasOwnProperty('is>>>Premium<<<Required')) {
-                        item['is>>>Premium<<<Required'] = false;
-                    }
+                    if (item.hasOwnProperty('is>>>Premium<<<Required')) item['is>>>Premium<<<Required'] = false;
+                    if (item.hasOwnProperty('isPremiumRequired')) item.isPremiumRequired = false;
                 }
                 modified = true;
             }
@@ -143,9 +182,8 @@ if (typeof $response !== 'undefined' && $response.body) {
             }
             if (body.tasks && Array.isArray(body.tasks)) {
                 for (let task of body.tasks) {
-                    if (task.hasOwnProperty('is>>>Premium<<<')) {
-                        task['is>>>Premium<<<'] = false;
-                    }
+                    if (task.hasOwnProperty('is>>>Premium<<<')) task['is>>>Premium<<<'] = false;
+                    if (task.hasOwnProperty('isPremium')) task.isPremium = false;
                 }
                 modified = true;
             }
@@ -154,23 +192,20 @@ if (typeof $response !== 'undefined' && $response.body) {
                 for (let section of body.data) {
                     if (section.audio) {
                         for (let item of section.audio) {
-                            if (item.hasOwnProperty('is>>>Premium<<<')) {
-                                item['is>>>Premium<<<'] = false;
-                            }
+                            if (item.hasOwnProperty('is>>>Premium<<<')) item['is>>>Premium<<<'] = false;
+                            if (item.hasOwnProperty('isPremium')) item.isPremium = false;
                         }
                     }
                     if (section.word) {
                         for (let item of section.word) {
-                            if (item.hasOwnProperty('is>>>Premium<<<')) {
-                                item['is>>>Premium<<<'] = false;
-                            }
+                            if (item.hasOwnProperty('is>>>Premium<<<')) item['is>>>Premium<<<'] = false;
+                            if (item.hasOwnProperty('isPremium')) item.isPremium = false;
                         }
                     }
                     if (section.reading) {
                         for (let item of section.reading) {
-                            if (item.hasOwnProperty('is>>>Premium<<<')) {
-                                item['is>>>Premium<<<'] = false;
-                            }
+                            if (item.hasOwnProperty('is>>>Premium<<<')) item['is>>>Premium<<<'] = false;
+                            if (item.hasOwnProperty('isPremium')) item.isPremium = false;
                         }
                     }
                 }
@@ -180,21 +215,15 @@ if (typeof $response !== 'undefined' && $response.body) {
             if (status === 200) {
                 if (body.products && Array.isArray(body.products)) {
                     for (let product of body.products) {
-                        if (product.recurrent !== undefined) {
-                            product.recurrent = true;
-                        }
+                        if (product.recurrent !== undefined) product.recurrent = true;
                     }
                     modified = true;
                 } else if (body.campaign && Array.isArray(body.campaign)) {
                     for (let camp of body.campaign) {
-                        if (camp.recurrent !== undefined) {
-                            camp.recurrent = true;
-                        }
+                        if (camp.recurrent !== undefined) camp.recurrent = true;
                         if (camp.baseProduct && camp.baseProduct.length) {
                             for (let prod of camp.baseProduct) {
-                                if (prod.recurrent !== undefined) {
-                                    prod.recurrent = true;
-                                }
+                                if (prod.recurrent !== undefined) prod.recurrent = true;
                             }
                         }
                     }
@@ -206,12 +235,9 @@ if (typeof $response !== 'undefined' && $response.body) {
                 for (let category of body.thematic) {
                     if (category.courses) {
                         for (let course of category.courses) {
-                            if (course.hasOwnProperty('is>>>Premium<<<')) {
-                                course['is>>>Premium<<<'] = 0;
-                            }
-                            if (course.hasOwnProperty('paymentStatus')) {
-                                course.paymentStatus = 1;
-                            }
+                            if (course.hasOwnProperty('is>>>Premium<<<')) course['is>>>Premium<<<'] = 0;
+                            if (course.hasOwnProperty('isPremium')) course.isPremium = 0;
+                            if (course.hasOwnProperty('paymentStatus')) course.paymentStatus = 1;
                         }
                     }
                 }
