@@ -12,8 +12,8 @@ if (typeof $response !== 'undefined' && $response.body) {
         }
 
         const premiumDetails = {
-            level: 'premium',
             is_unlimited: 0,
+            level: 'premium',
             until: getFutureISO(),
             payment_id: 16802865,
             product: [{ id: 258, price: 1 }],
@@ -22,33 +22,30 @@ if (typeof $response !== 'undefined' && $response.body) {
 
         let modified = false;
 
-        // ==================== ПРОФИЛЬ И АВТОРИЗАЦИЯ ====================
         if (url.includes('/mobile/auth') || url.includes('/mergeData')) {
             if (body.user) {
                 body.user.is_gold = true;
                 body.user.meatballs = 111;
                 body.user.have_trial = 0;
-                body.user.premium_level = 'premium';
-                body.user.premium_unlimited = 0;
-                body.user.premium_until = getFutureISO();
-                body.user.premium_details = premiumDetails;
+                body.user['>>>premium<<<_level'] = 'premium';
+                body.user['>>>premium<<<_unlimited'] = 0;
+                body.user['>>>premium<<<_until'] = getFutureISO();
+                body.user['>>>premium<<<_details'] = premiumDetails;
                 modified = true;
             }
         } else if (url.includes('/GetUserProfile')) {
             if (body.data) {
-                body.data.premium_level = 'premium';
-                body.data.premium_unlimited = 0;
-                body.data.premium_until = getFutureISO();
-                body.data.premium_details = premiumDetails;
+                body.data['>>>premium<<<_level'] = 'premium';
+                body.data['>>>premium<<<_unlimited'] = 0;
+                body.data['>>>premium<<<_until'] = getFutureISO();
+                body.data['>>>premium<<<_details'] = premiumDetails;
                 modified = true;
             }
         } else if (url.includes('/ProcessTraining')) {
             if (body.data) {
-                body.data.isPremium = 1;
-                body.data.premiumDays = 7;
+                body.data['is>>>Premium<<<'] = 1;
+                body.data['>>>premium<<<Days'] = 7;
                 body.data.trialAvailable = 0;
-                delete body.data.premiumExpire;
-                delete body.data.premiumDiscount;
                 modified = true;
             }
         } else if (url.includes('/v2/user/profile')) {
@@ -58,10 +55,10 @@ if (typeof $response !== 'undefined' && $response.body) {
                         is_gold: true,
                         meatballs: 111,
                         have_trial: 0,
-                        premium_level: 'premium',
-                        premium_unlimited: 0,
-                        premium_until: getFutureISO(),
-                        premium_details: premiumDetails
+                        '>>>premium<<<_level': 'premium',
+                        '>>>premium<<<_unlimited': 0,
+                        '>>>premium<<<_until': getFutureISO(),
+                        '>>>premium<<<_details': premiumDetails
                     }
                 };
                 modified = true;
@@ -69,16 +66,13 @@ if (typeof $response !== 'undefined' && $response.body) {
                 body.user.is_gold = true;
                 body.user.meatballs = 111;
                 body.user.have_trial = 0;
-                body.user.premium_level = 'premium';
-                body.user.premium_unlimited = 0;
-                body.user.premium_until = getFutureISO();
-                body.user.premium_details = premiumDetails;
+                body.user['>>>premium<<<_level'] = 'premium';
+                body.user['>>>premium<<<_unlimited'] = 0;
+                body.user['>>>premium<<<_until'] = getFutureISO();
+                body.user['>>>premium<<<_details'] = premiumDetails;
                 modified = true;
             }
-        }
-
-        // ==================== GRAMMAR ====================
-        else if (url.includes('/grammar/getRules')) {
+        } else if (url.includes('/grammar/getRules')) {
             if (Array.isArray(body)) {
                 for (let rule of body) {
                     if (rule.hasOwnProperty('isGoldRequired')) {
@@ -105,54 +99,34 @@ if (typeof $response !== 'undefined' && $response.body) {
                 }
                 modified = true;
             }
-        }
-
-        // ==================== LISTENING ====================
-        else if (url.includes('/listening/getStorySets')) {
+        } else if (url.includes('/listening/getStorySets')) {
             if (Array.isArray(body)) {
                 for (let set of body) {
-                    if (set.set && set.set.hasOwnProperty('isPremiumRequired')) {
-                        set.set.isPremiumRequired = false;
+                    if (set.set && set.set.hasOwnProperty('is>>>Premium<<<Required')) {
+                        set.set['is>>>Premium<<<Required'] = false;
                     }
-                    if (set.progress && set.progress.hasOwnProperty('isPremiumRequired')) {
-                        set.progress.isPremiumRequired = false;
+                    if (set.progress && set.progress.hasOwnProperty('is>>>Premium<<<Required')) {
+                        set.progress['is>>>Premium<<<Required'] = false;
                     }
                 }
                 modified = true;
             }
         } else if (url.includes('/listening/getStory')) {
-            if (body.config && body.config.hasOwnProperty('isPremiumRequired')) {
-                body.config.isPremiumRequired = false;
+            if (body.config && body.config.hasOwnProperty('is>>>Premium<<<Required')) {
+                body.config['is>>>Premium<<<Required'] = false;
                 modified = true;
             }
-        }
-
-        // ==================== READING ====================
-        else if (url.includes('/reading/getSetList')) {
-            if (status === 200 && Array.isArray(body)) {
+        } else if (url.includes('/reading/getSetList')) {
+            if (Array.isArray(body)) {
                 for (let item of body) {
-                    if (item.hasOwnProperty('isPremiumRequired')) {
-                        item.isPremiumRequired = false;
+                    if (item.hasOwnProperty('is>>>Premium<<<Required')) {
+                        item['is>>>Premium<<<Required'] = false;
                     }
                 }
                 modified = true;
-            } else {
-                body = [
-                    {
-                        id: 1,
-                        name: "Sample Reading",
-                        level: 1,
-                        images: { orig: "" },
-                        isPremiumRequired: false,
-                        textsTrained: {},
-                        totalCount: 1,
-                        trainedCount: 0
-                    }
-                ];
-                modified = true;
             }
         } else if (url.includes('/reading/loadTraining')) {
-            if (status !== 200 || !body.text) {
+            if (!body.text) {
                 body = {
                     "apiVersion": "1.0.0",
                     "config": {
@@ -180,12 +154,9 @@ if (typeof $response !== 'undefined' && $response.body) {
                 };
                 modified = true;
             }
-        }
-
-        // ==================== DASHBOARD & LEARNING ====================
-        else if (url.includes('/getDashboardData')) {
-            if (body.premiumAvailable !== undefined) {
-                body.premiumAvailable = null;
+        } else if (url.includes('/getDashboardData')) {
+            if (body.hasOwnProperty('>>>premium<<<Available')) {
+                body['>>>premium<<<Available'] = null;
                 modified = true;
             }
             if (body.stories !== undefined) {
@@ -197,32 +168,29 @@ if (typeof $response !== 'undefined' && $response.body) {
                 for (let section of body.data) {
                     if (section.audio) {
                         for (let item of section.audio) {
-                            if (item.hasOwnProperty('isPremium')) {
-                                item.isPremium = false;
+                            if (item.hasOwnProperty('is>>>Premium<<<')) {
+                                item['is>>>Premium<<<'] = false;
                             }
                         }
                     }
                     if (section.word) {
                         for (let item of section.word) {
-                            if (item.hasOwnProperty('isPremium')) {
-                                item.isPremium = false;
+                            if (item.hasOwnProperty('is>>>Premium<<<')) {
+                                item['is>>>Premium<<<'] = false;
                             }
                         }
                     }
                     if (section.reading) {
                         for (let item of section.reading) {
-                            if (item.hasOwnProperty('isPremium')) {
-                                item.isPremium = false;
+                            if (item.hasOwnProperty('is>>>Premium<<<')) {
+                                item['is>>>Premium<<<'] = false;
                             }
                         }
                     }
                 }
                 modified = true;
             }
-        }
-
-        // ==================== PRODUCTS & COURSES ====================
-        else if (url.includes('/getProducts') || url.includes('/getproducts')) {
+        } else if (url.includes('/getProducts') || url.includes('/getproducts')) {
             if (status === 200 && body.products) {
                 for (let product of body.products) {
                     if (product.recurrent !== undefined) {
@@ -236,16 +204,15 @@ if (typeof $response !== 'undefined' && $response.body) {
                 for (let category of body.thematic) {
                     if (category.courses) {
                         for (let course of category.courses) {
-                            if (course.hasOwnProperty('isPremium')) {
-                                course.isPremium = 0;
+                            if (course.hasOwnProperty('is>>>Premium<<<')) {
+                                course['is>>>Premium<<<'] = 0;
                             }
                         }
                     }
                 }
                 modified = true;
             }
-        }
-        else if (url.includes('/GetSurveyUserLevel')) {
+        } else if (url.includes('/GetSurveyUserLevel')) {
             if (body.data && body.data.level !== undefined) {
                 body.data.level = 2;
                 modified = true;
