@@ -1,118 +1,146 @@
-if (typeof $response !== 'undefined' && $response.body) {
+(function () {
+    if (typeof $response === 'undefined' || !$response.body) {
+        $done({});
+        return;
+    }
+
+    var url = $request ? $request.url : 'UNKNOWN URL';
+    var method = $request ? $request.method : 'GET';
+    var status = $response.status || 200;
+    var rawReqBody = $request && $request.body ? $request.body : null;
+    var rawResBody = $response.body;
+
+    var logLines = [];
+    logLines.push('+--- [Lingualeo MITM Debug & Unlock] [' + method + '] ' + url + ' (Status: ' + status + ')');
+
+    if (rawReqBody) {
+        logLines.push('| > REQ Body: ' + rawReqBody);
+    } else {
+        logLines.push('| > REQ Body: (empty)');
+    }
+
+    var modifiedBodyStr = rawResBody;
+    var changes = [];
+
     try {
-        let url = $request ? $request.url : '';
-        let body = JSON.parse($response.body);
-        let now = new Date();
-        let futureDate = new Date(now.getFullYear() + 10, now.getMonth(), now.getDate());
-        let dateStr = futureDate.toISOString().split('T')[0];
-        let isoStr = futureDate.toISOString();
-        let timestamp = Math.floor(futureDate.getTime() / 1000);
+        var bodyObj = JSON.parse(rawResBody);
 
-        let logEntries = [];
+        var futureTimestamp = 2000000000; // 2033 год
+        var futureISO = '2033-01-01T00:00:00.000Z';
+        var futureDateStr = '2033-01-01';
 
-        function logChange(path, oldVal, newVal) {
-            logEntries.push(path + ": " + JSON.stringify(oldVal) + " => " + JSON.stringify(newVal));
+        function trackChange(path, oldVal, newVal) {
+            changes.push(path + ': ' + JSON.stringify(oldVal) + ' => ' + JSON.stringify(newVal));
         }
 
-        function deepUnlock(obj, path = '') {
+        function unlockNode(obj, path) {
             if (!obj || typeof obj !== 'object') return;
 
             if (Array.isArray(obj)) {
-                for (let i = 0; i < obj.length; i++) {
-                    deepUnlock(obj[i], path + '[' + i + ']');
+                for (var i = 0; i < obj.length; i++) {
+                    unlockNode(obj[i], path + '[' + i + ']');
                 }
                 return;
             }
 
-            for (let key in obj) {
+            for (var key in obj) {
                 if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
-                let currentPath = path ? path + '.' + key : key;
-                let val = obj[key];
+                var currentPath = path ? path + '.' + key : key;
+                var val = obj[key];
 
-                if (key === 'is_gold' || key === 'isGold' || key === 'is_premium' || key === 'isPremium' || key === 'has_premium' || key === 'hasPremium') {
+                // 1. Флаги доступа и премиума
+                if (/^(is_gold|isGold|is_premium|isPremium|has_premium|hasPremium|has_access|hasAccess|is_available|isAvailable)$/i.test(key)) {
                     if (val !== true && val !== 1) {
-                        logChange(currentPath, val, true);
+                        trackChange(currentPath, val, true);
                         obj[key] = true;
                     }
-                } else if (key === 'is_locked' || key === 'isLocked' || key === 'locked') {
+                }
+                // 2. Снятие замков и блокировок
+                else if (/^(is_locked|isLocked|locked)$/i.test(key)) {
                     if (val !== false && val !== 0) {
-                        logChange(currentPath, val, false);
+                        trackChange(currentPath, val, false);
                         obj[key] = false;
                     }
-                } else if (key === 'has_access' || key === 'hasAccess' || key === 'is_available' || key === 'isAvailable') {
-                    if (val !== true && val !== 1) {
-                        logChange(currentPath, val, true);
-                        obj[key] = true;
-                    }
-                } else if (key === 'lock_type' || key === 'lock_reason' || key === 'lockType' || key === 'lockReason') {
-                    if (val !== null) {
-                        logChange(currentPath, val, null);
+                }
+                else if (/^(lock_type|lockType|lock_reason|lockReason)$/i.test(key)) {
+                    if (val !== null && val !== '') {
+                        trackChange(currentPath, val, null);
                         obj[key] = null;
                     }
-                } else if (key === 'premium_level' || key === 'premiumLevel' || key === 'level') {
-                    if (typeof val === 'string' && val !== 'premium') {
-                        logChange(currentPath, val, 'premium');
+                }
+                // 3. Уровни подписки и типы
+                else if (/^(premium_level|premiumLevel)$/i.test(key) || (key === 'level' && typeof val === 'string')) {
+                    if (val !== 'premium' && val !== 'gold') {
+                        trackChange(currentPath, val, 'premium');
                         obj[key] = 'premium';
                     }
-                } else if (key === 'premium_until' || key === 'premiumUntil' || key === 'until' || key === 'expire' || key === 'expireDate') {
-                    if (typeof val === 'number') {
-                        if (val !== timestamp) {
-                            logChange(currentPath, val, timestamp);
-                            obj[key] = timestamp;
-                        }
-                    } else if (typeof val === 'string') {
-                        let newDate = val.includes('T') ? isoStr : dateStr;
-                        if (val !== newDate) {
-                            logChange(currentPath, val, newDate);
-                            obj[key] = newDate;
-                        }
+                }
+                // 4. Даты истечения
+                else if (/^(premium_until|until|expire|expireDate|expires_at)$/i.test(key)) {
+                    if (typeof val === 'number' && val !== futureTimestamp) {
+                        trackChange(currentPath, val, futureTimestamp);
+                        obj[key] = futureTimestamp;
+                    } else if (typeof val === 'string' && val !== futureISO && val !== futureDateStr) {
+                        var newVal = val.includes('T') ? futureISO : futureDateStr;
+                        trackChange(currentPath, val, newVal);
+                        obj[key] = newVal;
                     }
-                } else if (key === 'is_unlimited' || key === 'isUnlimited' || key === 'unlimited') {
-                    if (val !== 1 && val !== true) {
-                        logChange(currentPath, val, 1);
-                        obj[key] = 1;
+                }
+                // 5. Лимиты слов и тренировок
+                else if (/^(words_limit|limit|max_limit|daily_limit|available_count)$/i.test(key)) {
+                    if (typeof val === 'number' && val < 999999) {
+                        trackChange(currentPath, val, 999999);
+                        obj[key] = 999999;
                     }
-                } else if (typeof val === 'object' && val !== null) {
-                    deepUnlock(val, currentPath);
+                }
+                // Рекурсивный проход
+                else if (typeof val === 'object' && val !== null) {
+                    unlockNode(val, currentPath);
                 }
             }
         }
 
-        if (body.user && typeof body.user === 'object') {
-            if (!body.user.premium_details) {
-                body.user.premium_details = {};
-            }
-            body.user.premium_details.level = 'premium';
-            body.user.premium_details.is_unlimited = 1;
-            body.user.premium_details.until = dateStr;
-            body.user.premium_details.type = 'premium';
-
-            body.user.subscriptions = [{
+        // Инъекция в объект пользователя, если он есть в корне
+        if (bodyObj && bodyObj.user && typeof bodyObj.user === 'object') {
+            var u = bodyObj.user;
+            if (!u.premium_details) u.premium_details = {};
+            u.premium_details.level = 'premium';
+            u.premium_details.is_unlimited = 1;
+            u.premium_details.until = futureDateStr;
+            u.premium_details.type = 'premium';
+            u.is_gold = true;
+            u.is_premium = true;
+            u.subscriptions = [{
                 type: 'premium',
                 status: 'active',
                 level: 'premium',
-                until: dateStr,
-                until_timestamp: timestamp
+                until: futureDateStr,
+                until_timestamp: futureTimestamp
             }];
-            logEntries.push("user.premium_details & subscriptions injected");
+            trackChange('user (root)', 'standard profile', 'full premium profile injected');
         }
 
-        deepUnlock(body);
+        unlockNode(bodyObj, '');
+        modifiedBodyStr = JSON.stringify(bodyObj);
 
-        console.log("=== [Lingualeo MITM Log] ===");
-        console.log("URL: " + url);
-        if (logEntries.length > 0) {
-            console.log("Modifications:\n" + logEntries.join("\n"));
+        logLines.push('| < ORIGINAL RES Body:\n' + rawResBody);
+        logLines.push('|');
+        logLines.push('| MODIFICATIONS (' + changes.length + ' applied):');
+        if (changes.length > 0) {
+            changes.forEach(function (c) { logLines.push('|   - ' + c); });
         } else {
-            console.log("No fields modified for this endpoint.");
+            logLines.push('|   (No matching flags found to modify)');
         }
-        console.log("=== [End Log] ===");
+        logLines.push('|');
+        logLines.push('| < MODIFIED RES Body:\n' + modifiedBodyStr);
 
-        $done({ body: JSON.stringify(body) });
     } catch (e) {
-        console.log("[Lingualeo MITM Error]: " + e.message);
-        $done({});
+        logLines.push('| [!] PARSE ERROR: ' + e.message);
+        logLines.push('| < ORIGINAL RES Body:\n' + rawResBody);
     }
-} else {
-    $done({});
-}
+
+    logLines.push('+---');
+    console.log(logLines.join('\n'));
+
+    $done({ body: modifiedBodyStr });
+})();
