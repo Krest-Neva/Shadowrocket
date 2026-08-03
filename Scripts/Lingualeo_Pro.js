@@ -1,39 +1,40 @@
-if (typeof $response !== 'undefined' && $response.body) {
-    try {
-        let body = JSON.parse($response.body);
-        let modified = false;
+let body = $response.body;
 
-        function applyRealPremium(u) {
-            if (!u) return;
-            u.is_gold = true;
-            u.premium_level = 'premium';
-            u.premium_unlimited = 1;
-            u.have_trial = 0;
-            
-            if (!u.premium_details) {
-                u.premium_details = {};
+try {
+    // Очистка возможных артефактов логирования в ключах JSON
+    let cleanBody = body.replace(/>>>premium<<</g, 'premium').replace(/>>>Token<<</g, 'token');
+    let obj = JSON.parse(cleanBody);
+
+    // Подмена данных профиля (эндпоинты /mobile/auth и /SetUserProfile)
+    if (obj.user) {
+        obj.user.is_gold = true;
+        
+        if (obj.user.premium_details !== undefined) {
+            obj.user.premium_details.is_unlimited = 1;
+            obj.user.premium_details.level = "premium";
+            obj.user.premium_details.until = "2099-12-31T23:59:59";
+        }
+        
+        obj.user.premium_level = "premium";
+        obj.user.premium_unlimited = 1;
+        obj.user.premium_until = "2099-12-31T23:59:59";
+        
+        // Дополнительная разблокировка разделов обучения
+        if (obj.user.config) {
+            for (let key in obj.user.config) {
+                obj.user.config[key] = "enable";
             }
-            u.premium_details.level = 'premium';
-            u.premium_details.is_unlimited = 1;
         }
-
-        if (body.user) {
-            applyRealPremium(body.user);
-            modified = true;
-        }
-        if (body.data && body.data.user) {
-            applyRealPremium(body.data.user);
-            modified = true;
-        }
-
-        if (modified) {
-            $done({ body: JSON.stringify(body) });
-        } else {
-            $done({});
-        }
-    } catch (e) {
-        $done({});
     }
-} else {
-    $done({});
+
+    // Подмена статуса в дашборде (/getDashboardData)
+    if (obj.premiumAvailable !== undefined) {
+        obj.premiumAvailable = "unlimited";
+    }
+
+    body = JSON.stringify(obj);
+} catch (e) {
+    console.log("JSON Parse Error: " + e.message);
 }
+
+$done({ body });
