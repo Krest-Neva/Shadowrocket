@@ -1,146 +1,120 @@
-(function () {
-    if (typeof $response === 'undefined' || !$response.body) {
-        $done({});
-        return;
-    }
-
-    var url = $request ? $request.url : 'UNKNOWN URL';
-    var method = $request ? $request.method : 'GET';
-    var status = $response.status || 200;
-    var rawReqBody = $request && $request.body ? $request.body : null;
-    var rawResBody = $response.body;
-
-    var logLines = [];
-    logLines.push('+--- [Lingualeo MITM Debug & Unlock] [' + method + '] ' + url + ' (Status: ' + status + ')');
-
-    if (rawReqBody) {
-        logLines.push('| > REQ Body: ' + rawReqBody);
-    } else {
-        logLines.push('| > REQ Body: (empty)');
-    }
-
-    var modifiedBodyStr = rawResBody;
-    var changes = [];
-
+if (typeof $response !== 'undefined' && $response.body) {
     try {
-        var bodyObj = JSON.parse(rawResBody);
-
-        var futureTimestamp = 2000000000; // 2033 год
-        var futureISO = '2033-01-01T00:00:00.000Z';
-        var futureDateStr = '2033-01-01';
-
-        function trackChange(path, oldVal, newVal) {
-            changes.push(path + ': ' + JSON.stringify(oldVal) + ' => ' + JSON.stringify(newVal));
+        let body = JSON.parse($response.body);
+        let url = $request ? $request.url : '';
+        function getFutureDate() {
+            let d = new Date();
+            d.setFullYear(d.getFullYear() + 10);
+            return d.toISOString().split('T')[0];
         }
-
-        function unlockNode(obj, path) {
-            if (!obj || typeof obj !== 'object') return;
-
-            if (Array.isArray(obj)) {
-                for (var i = 0; i < obj.length; i++) {
-                    unlockNode(obj[i], path + '[' + i + ']');
+        function getFutureISO() {
+            let d = new Date();
+            d.setFullYear(d.getFullYear() + 10);
+            return d.toISOString();
+        }
+        let modified = false;
+        if (url.includes('/mobile/auth') || url.includes('/mergeData') || url.includes('/v2/user/profile')) {
+            if (body.user) {
+                body.user.is_gold = true;
+                if (body.user.premium_details) {
+                    body.user.premium_details.level = 'premium';
+                    body.user.premium_details.is_unlimited = 0;
+                    body.user.premium_details.until = getFutureDate();
+                } else {
+                    body.user.premium_details = {
+                        level: 'premium',
+                        is_unlimited: 0,
+                        until: getFutureDate()
+                    };
                 }
-                return;
+                if (body.user.premium_level !== undefined) {
+                    body.user.premium_level = 'premium';
+                } else {
+                    body.user.premium_level = 'premium';
+                }
+                if (body.user.premium_unlimited !== undefined) {
+                    body.user.premium_unlimited = 0;
+                } else {
+                    body.user.premium_unlimited = 0;
+                }
+                if (body.user.premium_until !== undefined) {
+                    body.user.premium_until = getFutureDate();
+                } else {
+                    body.user.premium_until = getFutureDate();
+                }
+                if (body.user.have_trial !== undefined) {
+                    body.user.have_trial = 0;
+                } else {
+                    body.user.have_trial = 0;
+                }
+                modified = true;
             }
-
-            for (var key in obj) {
-                if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
-                var currentPath = path ? path + '.' + key : key;
-                var val = obj[key];
-
-                // 1. Флаги доступа и премиума
-                if (/^(is_gold|isGold|is_premium|isPremium|has_premium|hasPremium|has_access|hasAccess|is_available|isAvailable)$/i.test(key)) {
-                    if (val !== true && val !== 1) {
-                        trackChange(currentPath, val, true);
-                        obj[key] = true;
+        } else if (url.includes('/ProcessTraining')) {
+            if (body.data) {
+                if (body.data.isPremium !== undefined) {
+                    body.data.isPremium = 1;
+                } else {
+                    body.data.isPremium = 1;
+                }
+                if (body.data.premiumDays !== undefined) {
+                    body.data.premiumDays = 365;
+                } else {
+                    body.data.premiumDays = 365;
+                }
+                if (body.data.premiumExpire !== undefined) {
+                    delete body.data.premiumExpire;
+                }
+                if (body.data.premiumDiscount !== undefined) {
+                    delete body.data.premiumDiscount;
+                }
+                if (body.data.trialAvailable !== undefined) {
+                    body.data.trialAvailable = 0;
+                } else {
+                    body.data.trialAvailable = 0;
+                }
+                modified = true;
+            }
+        } else if (url.includes('/getDashboardData')) {
+            if (body.tasks && Array.isArray(body.tasks)) {
+                for (let task of body.tasks) {
+                    task.isPremium = false;
+                }
+                modified = true;
+            }
+            if (body.premiumAvailable !== undefined) {
+                body.premiumAvailable = null;
+                modified = true;
+            }
+        } else if (url.includes('/getLearningMain')) {
+            if (body.data && Array.isArray(body.data)) {
+                for (let section of body.data) {
+                    if (section.audio && Array.isArray(section.audio)) {
+                        for (let item of section.audio) {
+                            item.isPremium = false;
+                        }
+                    }
+                    if (section.word && Array.isArray(section.word)) {
+                        for (let item of section.word) {
+                            item.isPremium = false;
+                        }
+                    }
+                    if (section.reading && Array.isArray(section.reading)) {
+                        for (let item of section.reading) {
+                            item.isPremium = false;
+                        }
                     }
                 }
-                // 2. Снятие замков и блокировок
-                else if (/^(is_locked|isLocked|locked)$/i.test(key)) {
-                    if (val !== false && val !== 0) {
-                        trackChange(currentPath, val, false);
-                        obj[key] = false;
-                    }
-                }
-                else if (/^(lock_type|lockType|lock_reason|lockReason)$/i.test(key)) {
-                    if (val !== null && val !== '') {
-                        trackChange(currentPath, val, null);
-                        obj[key] = null;
-                    }
-                }
-                // 3. Уровни подписки и типы
-                else if (/^(premium_level|premiumLevel)$/i.test(key) || (key === 'level' && typeof val === 'string')) {
-                    if (val !== 'premium' && val !== 'gold') {
-                        trackChange(currentPath, val, 'premium');
-                        obj[key] = 'premium';
-                    }
-                }
-                // 4. Даты истечения
-                else if (/^(premium_until|until|expire|expireDate|expires_at)$/i.test(key)) {
-                    if (typeof val === 'number' && val !== futureTimestamp) {
-                        trackChange(currentPath, val, futureTimestamp);
-                        obj[key] = futureTimestamp;
-                    } else if (typeof val === 'string' && val !== futureISO && val !== futureDateStr) {
-                        var newVal = val.includes('T') ? futureISO : futureDateStr;
-                        trackChange(currentPath, val, newVal);
-                        obj[key] = newVal;
-                    }
-                }
-                // 5. Лимиты слов и тренировок
-                else if (/^(words_limit|limit|max_limit|daily_limit|available_count)$/i.test(key)) {
-                    if (typeof val === 'number' && val < 999999) {
-                        trackChange(currentPath, val, 999999);
-                        obj[key] = 999999;
-                    }
-                }
-                // Рекурсивный проход
-                else if (typeof val === 'object' && val !== null) {
-                    unlockNode(val, currentPath);
-                }
+                modified = true;
             }
         }
-
-        // Инъекция в объект пользователя, если он есть в корне
-        if (bodyObj && bodyObj.user && typeof bodyObj.user === 'object') {
-            var u = bodyObj.user;
-            if (!u.premium_details) u.premium_details = {};
-            u.premium_details.level = 'premium';
-            u.premium_details.is_unlimited = 1;
-            u.premium_details.until = futureDateStr;
-            u.premium_details.type = 'premium';
-            u.is_gold = true;
-            u.is_premium = true;
-            u.subscriptions = [{
-                type: 'premium',
-                status: 'active',
-                level: 'premium',
-                until: futureDateStr,
-                until_timestamp: futureTimestamp
-            }];
-            trackChange('user (root)', 'standard profile', 'full premium profile injected');
-        }
-
-        unlockNode(bodyObj, '');
-        modifiedBodyStr = JSON.stringify(bodyObj);
-
-        logLines.push('| < ORIGINAL RES Body:\n' + rawResBody);
-        logLines.push('|');
-        logLines.push('| MODIFICATIONS (' + changes.length + ' applied):');
-        if (changes.length > 0) {
-            changes.forEach(function (c) { logLines.push('|   - ' + c); });
+        if (modified) {
+            $done({ body: JSON.stringify(body) });
         } else {
-            logLines.push('|   (No matching flags found to modify)');
+            $done({});
         }
-        logLines.push('|');
-        logLines.push('| < MODIFIED RES Body:\n' + modifiedBodyStr);
-
     } catch (e) {
-        logLines.push('| [!] PARSE ERROR: ' + e.message);
-        logLines.push('| < ORIGINAL RES Body:\n' + rawResBody);
+        $done({});
     }
-
-    logLines.push('+---');
-    console.log(logLines.join('\n'));
-
-    $done({ body: modifiedBodyStr });
-})();
+} else {
+    $done({});
+}
