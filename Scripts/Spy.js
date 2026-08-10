@@ -43,11 +43,27 @@
     var url = $request.url;
     var method = $request.method;
     var reqHeaders = $request.headers;
-    var reqBody = $request.body;
     var hasResponse = typeof $response !== 'undefined';
     var resStatus = hasResponse ? $response.status : null;
     var resHeaders = hasResponse ? $response.headers : null;
-    var resBody = hasResponse ? $response.body : null;
+
+    var decodeBody = function(body) {
+        if (!body) return body;
+        if (typeof body === 'string') return body;
+        if (body instanceof Uint8Array) {
+            try { return new TextDecoder('utf-8', { fatal: false }).decode(body); }
+            catch(e) { return String.fromCharCode.apply(null, body); }
+        }
+        if (body instanceof ArrayBuffer) {
+            var uint8 = new Uint8Array(body);
+            try { return new TextDecoder('utf-8', { fatal: false }).decode(uint8); }
+            catch(e) { return String.fromCharCode.apply(null, uint8); }
+        }
+        return String(body);
+    };
+
+    var reqBody = decodeBody($request.body);
+    var resBody = hasResponse ? decodeBody($response.body) : null;
 
     var getMethodPrefix = function (m) {
         var map = { GET: '[GET]', POST: '[POST]', PUT: '[PUT]', DELETE: '[DEL]', PATCH: '[PATCH]', HEAD: '[HEAD]', OPTIONS: '[OPT]', TRACE: '[TRC]', CONNECT: '[CON]' };
