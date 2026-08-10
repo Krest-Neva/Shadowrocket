@@ -47,6 +47,9 @@
     var resStatus = hasResponse ? $response.status : null;
     var resHeaders = hasResponse ? $response.headers : null;
 
+    var originalReqBody = $request.body;
+    var originalResBody = hasResponse ? $response.body : null;
+
     var decodeBody = function(body) {
         if (!body) return body;
         if (typeof body === 'string') return body;
@@ -62,8 +65,8 @@
         return String(body);
     };
 
-    var reqBody = decodeBody($request.body);
-    var resBody = hasResponse ? decodeBody($response.body) : null;
+    var reqBodyForLog = decodeBody(originalReqBody);
+    var resBodyForLog = hasResponse ? decodeBody(originalResBody) : null;
 
     var getMethodPrefix = function (m) {
         var map = { GET: '[GET]', POST: '[POST]', PUT: '[PUT]', DELETE: '[DEL]', PATCH: '[PATCH]', HEAD: '[HEAD]', OPTIONS: '[OPT]', TRACE: '[TRC]', CONNECT: '[CON]' };
@@ -394,7 +397,7 @@
     };
 
     if (hasResponse && checkIgnored(resHeaders, OPT.ignoreTypes)) {
-        $done({ body: resBody });
+        $done({ body: originalResBody });
         return;
     }
     if (!hasResponse && OPT.ignoreRequestTypes && checkIgnored(reqHeaders, OPT.ignoreTypes)) {
@@ -404,9 +407,9 @@
 
     if (OPT.showBody) {
         if (OPT.compactBody) {
-            logLines.push('| > Body: ' + summarizeBody(reqBody, reqHeaders, OPT.highlight));
+            logLines.push('| > Body: ' + summarizeBody(reqBodyForLog, reqHeaders, OPT.highlight));
         } else {
-            var reqText = normalizeBody(reqBody);
+            var reqText = normalizeBody(reqBodyForLog);
             if (isLikelyBinary(reqText, reqHeaders)) {
                 logLines.push('| > Body: ' + summarizeBody(reqText, reqHeaders, OPT.highlight));
             } else {
@@ -425,12 +428,12 @@
         logLines.push('|');
         printHeaders('< Заголовки ответа:', resHeaders);
         printContentType(resHeaders);
-        printSize('(Res)', resBody);
+        printSize('(Res)', originalResBody);
         if (OPT.showBody) {
             if (OPT.compactBody) {
-                logLines.push('| < Body: ' + summarizeBody(resBody, resHeaders, OPT.highlight));
+                logLines.push('| < Body: ' + summarizeBody(resBodyForLog, resHeaders, OPT.highlight));
             } else {
-                var resText = normalizeBody(resBody);
+                var resText = normalizeBody(resBodyForLog);
                 if (isLikelyBinary(resText, resHeaders)) {
                     logLines.push('| < Body: ' + summarizeBody(resText, resHeaders, OPT.highlight));
                 } else {
@@ -450,7 +453,7 @@
     console.log(logLines.join('\n'));
 
     if (hasResponse) {
-        $done({ body: resBody });
+        $done({ body: originalResBody });
     } else {
         $done({});
     }
