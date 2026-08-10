@@ -25,7 +25,8 @@
             snippetRadius: 48,
             showHex: false,
             showAscii: true,
-            showEmptyBinary: true
+            showEmptyBinary: true,
+            repairMojibake: true
         };
         try {
             var raw = typeof $argument !== 'undefined' ? $argument : '{}';
@@ -50,19 +51,74 @@
     var originalReqBody = $request.body;
     var originalResBody = hasResponse ? $response.body : null;
 
-    var decodeBody = function(body) {
-        if (!body) return body;
-        if (typeof body === 'string') return body;
+    var safeString = function (value) {
+        if (value === null || value === undefined) return '';
+        if (typeof value === 'string') return value;
+        try { return String(value); } catch (e) { return ''; }
+    };
+
+    var bytesToUtf8 = function (bytes) {
+        try {
+            if (typeof TextDecoder !== 'undefined') {
+                return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+            }
+        } catch (e1) {}
+        try {
+            var bin = '';
+            for (var i = 0; i < bytes.length; i++) {
+                bin += String.fromCharCode(bytes[i] & 0xff);
+            }
+            return decodeURIComponent(escape(bin));
+        } catch (e2) {
+            try {
+                var out = '';
+                for (var j = 0; j < bytes.length; j++) {
+                    out += String.fromCharCode(bytes[j] & 0xff);
+                }
+                return out;
+            } catch (e3) {
+                return '';
+            }
+        }
+    };
+
+    var stringToBytes = function (str) {
+        var arr = new Uint8Array(str.length);
+        for (var i = 0; i < str.length; i++) {
+            arr[i] = str.charCodeAt(i) & 0xff;
+        }
+        return arr;
+    };
+
+    var repairMojibake = function (text) {
+        var s = safeString(text);
+        if (!s) return s;
+        if (!/[ÃÂÐÑØÙ]/.test(s)) return s;
+        try {
+            return bytesToUtf8(stringToBytes(s));
+        } catch (e) {
+            return s;
+        }
+    };
+
+    var decodeBody = function (body) {
+        if (body === null || body === undefined) return '';
+        if (typeof body === 'string') {
+            return OPT.repairMojibake ? repairMojibake(body) : body;
+        }
         if (body instanceof Uint8Array) {
-            try { return new TextDecoder('utf-8', { fatal: false }).decode(body); }
-            catch(e) { return String.fromCharCode.apply(null, body); }
+            return bytesToUtf8(body);
         }
         if (body instanceof ArrayBuffer) {
-            var uint8 = new Uint8Array(body);
-            try { return new TextDecoder('utf-8', { fatal: false }).decode(uint8); }
-            catch(e) { return String.fromCharCode.apply(null, uint8); }
+            return bytesToUtf8(new Uint8Array(body));
         }
-        return String(body);
+        if (body && body.buffer instanceof ArrayBuffer && typeof body.byteLength === 'number') {
+            try {
+                return bytesToUtf8(new Uint8Array(body.buffer, body.byteOffset || 0, body.byteLength));
+            } catch (e1) {}
+        }
+        var fallback = safeString(body);
+        return OPT.repairMojibake ? repairMojibake(fallback) : fallback;
     };
 
     var reqBodyForLog = decodeBody(originalReqBody);
@@ -85,16 +141,6 @@
         return (bytes / 1048576).toFixed(2) + ' MB';
     };
 
-    var safeString = function (value) {
-        if (value === null || value === undefined) return '';
-        if (typeof value === 'string') return value;
-        try { return String(value); } catch (e) { return ''; }
-    };
-
-    var normalizeBody = function (body) {
-        return safeString(body);
-    };
-
     var escapeRegExp = function (s) {
         return safeString(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     };
@@ -102,11 +148,12 @@
     var highlightText = function (text, words) {
         var result = safeString(text);
         if (!words || !words.length) return result;
-        words.forEach(function (w) {
-            if (w === undefined || w === null || w === '') return;
+        for (var i = 0; i < words.length; i++) {
+            var w = words[i];
+            if (w === undefined || w === null || w === '') continue;
             var regex = new RegExp(escapeRegExp(w), 'gi');
             result = result.replace(regex, '>>>$&<<<');
-        });
+        }
         return result;
     };
 
@@ -132,8 +179,11 @@
             seen.push(o);
             for (var key in o) {
                 if (!Object.prototype.hasOwnProperty.call(o, key)) continue;
-                if (words.some(function (w) { return safeString(key).toLowerCase().indexOf(safeString(w).toLowerCase()) !== -1; })) {
-                    if (found.indexOf(key) === -1) found.push(key);
+                for (var wi = 0; wi < words.length; wi++) {
+                    if (safeString(key).toLowerCase().indexOf(safeString(words[wi]).toLowerCase()) !== -1) {
+                        if (found.indexOf(key) === -1) found.push(key);
+                        break;
+                    }
                 }
                 walk(o[key]);
             }
@@ -268,7 +318,7 @@
     };
 
     var summarizeBody = function (body, headers, highlightWords) {
-        var text = normalizeBody(body);
+        var text = safeString(body);
         if (!text) return 'пусто';
 
         var parsed = tryParse(text);
@@ -339,6 +389,15 @@
         return parts.join(' ');
     };
 
+    if (hasResponse && checkIgnored(resHeaders, OPT.ignoreTypes)) {
+        $done({ body: originalResBody });
+        return;
+    }
+    if (!hasResponse && OPT.ignoreRequestTypes && checkIgnored(reqHeaders, OPT.ignoreTypes)) {
+        $done({});
+        return;
+    }
+
     var counter = '';
     if (OPT.counter) {
         try {
@@ -396,20 +455,11 @@
         logLines.push('| SIZE ' + label + ': ' + formatSize(len));
     };
 
-    if (hasResponse && checkIgnored(resHeaders, OPT.ignoreTypes)) {
-        $done({ body: originalResBody });
-        return;
-    }
-    if (!hasResponse && OPT.ignoreRequestTypes && checkIgnored(reqHeaders, OPT.ignoreTypes)) {
-        $done({});
-        return;
-    }
-
     if (OPT.showBody) {
         if (OPT.compactBody) {
             logLines.push('| > Body: ' + summarizeBody(reqBodyForLog, reqHeaders, OPT.highlight));
         } else {
-            var reqText = normalizeBody(reqBodyForLog);
+            var reqText = safeString(reqBodyForLog);
             if (isLikelyBinary(reqText, reqHeaders)) {
                 logLines.push('| > Body: ' + summarizeBody(reqText, reqHeaders, OPT.highlight));
             } else {
@@ -433,7 +483,7 @@
             if (OPT.compactBody) {
                 logLines.push('| < Body: ' + summarizeBody(resBodyForLog, resHeaders, OPT.highlight));
             } else {
-                var resText = normalizeBody(resBodyForLog);
+                var resText = safeString(resBodyForLog);
                 if (isLikelyBinary(resText, resHeaders)) {
                     logLines.push('| < Body: ' + summarizeBody(resText, resHeaders, OPT.highlight));
                 } else {
