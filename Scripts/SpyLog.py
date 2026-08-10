@@ -1,21 +1,6 @@
 #!/bin/sh
 clear
 
-echo "[*] Настройка DNS..."
-echo "nameserver 8.8.8.8" > /etc/resolv.conf
-echo "nameserver 8.8.4.4" >> /etc/resolv.conf
-echo "nameserver 94.140.14.14" >> /etc/resolv.conf
-echo "nameserver 94.140.15.15" >> /etc/resolv.conf
-echo "nameserver 1.1.1.1" >> /etc/resolv.conf
-
-echo "[*] Проверка соединения с интернетом..."
-while ! ping -c 3 google.com > /dev/null 2>&1; do
-    echo "[!] ОШИБКА: Нет подключения к интернету!"
-    echo "[*] Повторная проверка через 5 секунд..."
-    sleep 5
-done
-echo "[+] Интернет доступен."
-
 echo "[*] Обновление системы и установка зависимостей..."
 apk update
 apk upgrade
@@ -25,13 +10,11 @@ echo "[*] Создание папок..."
 mkdir -p ~/SRLog
 mkdir -p ~/SpyLog
 
-echo "[*] Удаление старых файлов..."
-rm -f ~/Spylog.py
-
 cat << 'EOF' > ~/Spylog.py
 import json
 import re
 import sys
+import os
 from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
@@ -83,6 +66,16 @@ def maybe_repair_mojibake(text):
     except Exception:
         return text
 
+def fix_mojibake_in_data(data):
+    if isinstance(data, dict):
+        return {k: fix_mojibake_in_data(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [fix_mojibake_in_data(v) for v in data]
+    elif isinstance(data, str):
+        return maybe_repair_mojibake(data)
+    else:
+        return data
+
 def load_log(path):
     text = read_text_auto(path)
     text = clean_text(text)
@@ -132,29 +125,90 @@ def parse_selection(text, max_index):
         raise ValueError
     return result
 
-def ask_files(files, compare=False):
+def ask_rename_file(files, mode="input"):
+    while True:
+        print("\n[?] Хотите переименовать файл? (y/n/back)")
+        ans = input().strip().lower()
+        if ans in ("n", "no"):
+            return None
+        if ans in ("b", "back"):
+            return "back"
+        if ans in ("y", "yes"):
+            break
+        print("[!] Введите y, n или back")
     print_files(files)
-    if compare:
+    while True:
+        choice = input("\n[?] Выберите номер файла для переименования: ").strip()
+        if choice.lower() in ("b", "back"):
+            return "back"
+        try:
+            idx = int(choice) - 1
+            if 0 <= idx < len(files):
+                break
+            print("[!] Неверный номер")
+        except:
+            print("[!] Введите число")
+    path = files[idx]
+    while True:
+        new_name = input(f"[?] Новое имя для {path.name}: ").strip()
+        if not new_name:
+            print("[!] Имя не может быть пустым")
+            continue
+        if new_name.lower() in ("b", "back"):
+            return "back"
+        new_path = path.parent / new_name
+        if new_path.exists():
+            print("[!] Файл с таким именем уже существует")
+            continue
+        break
+    while True:
+        confirm = input(f"[?] Переименовать {path.name} в {new_name}? (y/n/back): ").strip().lower()
+        if confirm == "y":
+            path.rename(new_path)
+            print(f"[+] Переименован в {new_name}")
+            return new_path
+        elif confirm == "n":
+            return None
+        elif confirm == "back":
+            return "back"
+        else:
+            print("[!] Введите y, n или back")
+
+def ask_files(files, compare=False):
+    while True:
         while True:
-            choice = input("\n[?] Выбери 2 файла для сравнения, например 1,2: ").strip()
+            renamed = ask_rename_file(files)
+            if renamed == "back":
+                return None
+            if renamed is not None:
+                files = list_input_files()
+                print_files(files)
+            break
+        if compare:
+            print("\n[?] Выберите файлы для сравнения (минимум 2), например 1,2,3 или all")
+            choice = input("[?] Ваш выбор: ").strip()
+            if choice.lower() in ("b", "back"):
+                return None
             try:
                 indices = parse_selection(choice, len(files))
-                if len(indices) != 2:
-                    print("[!] Нужно выбрать ровно 2 файла")
+                if len(indices) < 2:
+                    print("[!] Нужно выбрать минимум 2 файла")
                     continue
-                if indices[0] == indices[1]:
-                    print("[!] Файлы должны быть разными")
-                    continue
-                return [files[indices[0] - 1], files[indices[1] - 1]]
-            except Exception:
+                selected = [files[i-1] for i in indices]
+                return selected
+            except:
                 print("[!] Неверный выбор")
-    while True:
-        choice = input("\n[?] Выбери один или несколько файлов, например 1,3-4 или all: ").strip()
-        try:
-            indices = parse_selection(choice, len(files))
-            return [files[i - 1] for i in indices]
-        except Exception:
-            print("[!] Неверный выбор")
+        else:
+            print("\n[?] Выберите один или несколько файлов, например 1,3-4 или all (или 'back' для возврата)")
+            choice = input("[?] Ваш выбор: ").strip()
+            if choice.lower() in ("b", "back"):
+                return None
+            try:
+                indices = parse_selection(choice, len(files))
+                selected = [files[i-1] for i in indices]
+                return selected
+            except:
+                print("[!] Неверный выбор")
 
 def extract_spy_blocks(text):
     lines = text.split("\n")
@@ -234,7 +288,8 @@ def parse_json_maybe(text):
     if not s.startswith("{") and not s.startswith("["):
         return None
     try:
-        return json.loads(s)
+        obj = json.loads(s)
+        return fix_mojibake_in_data(obj)
     except Exception:
         return None
 
@@ -311,9 +366,11 @@ def parse_record(block, source_name):
         "response_json": parse_json_maybe(response_body),
     }
 
-def build_records(path):
+def build_records(path, progress_callback=None):
     text = load_log(path)
     blocks = extract_spy_blocks(text)
+    if progress_callback:
+        progress_callback(len(blocks), "extract")
     blocks = dedupe_exact(blocks)
     records = [parse_record(block, path.name) for block in blocks]
     return records, blocks
@@ -322,22 +379,44 @@ def extract_mode(selected_files):
     all_blocks = []
     per_file_counts = []
     total_found = 0
-    for path in selected_files:
+    total_files = len(selected_files)
+    for idx, path in enumerate(selected_files, 1):
+        print(f"\r[*] Обработка файла {idx}/{total_files}: {path.name}          ", end="")
         _, blocks = build_records(path)
         total_found += len(blocks)
         per_file_counts.append((path.name, len(blocks)))
         all_blocks.extend(blocks)
+    print("\r[*] Дедупликация блоков...          ", end="")
     all_blocks = dedupe_exact(all_blocks)
+    print("\r[+] Готово, сохраняем...          ")
     stamp = now_stamp()
     out_path = OUTPUT_DIR / f"Spylog_extract_{stamp}.txt"
-    header = [f"Source files: {', '.join(p.name for p in selected_files)}", f"Blocks before dedupe: {total_found}", f"Blocks after dedupe: {len(all_blocks)}", ""]
+    urls = set()
+    for block in all_blocks:
+        method, url = parse_header(block)
+        if url:
+            urls.add(url)
+    header = [
+        f"Source files: {', '.join(p.name for p in selected_files)}",
+        f"Blocks before dedupe: {total_found}",
+        f"Blocks after dedupe: {len(all_blocks)}",
+        "",
+        "=== Unique URLs found ===",
+        *sorted(urls),
+        "",
+        "=== Per-file block counts ===",
+    ]
     for name, count in per_file_counts:
         header.append(f"{name}: {count}")
     header.append("")
+    header.append("=== Extracted blocks ===")
+    header.append("")
     content = "\n\n".join(all_blocks)
-    save_text(out_path, "\n".join(header) + "\n" + content + "\n")
+    full_text = "\n".join(header) + "\n" + content + "\n"
+    save_text(out_path, full_text)
     print(f"[+] Готово: {out_path}")
     print(f"[+] Блоков: {len(all_blocks)}")
+    return out_path
 
 def group_by_signature(records):
     grouped = defaultdict(list)
@@ -351,30 +430,44 @@ def record_diff_lines(a, b):
         lines.append(f"Method: {a['method']} -> {b['method']}")
     if a["url"] != b["url"]:
         lines.append(f"URL: {a['url']} -> {b['url']}")
+    req_body_a = a["request_body"]
+    req_body_b = b["request_body"]
+    resp_body_a = a["response_body"]
+    resp_body_b = b["response_body"]
+    if req_body_a or req_body_b:
+        lines.append("--- Request body (A) ---")
+        lines.append(req_body_a if req_body_a else "(empty)")
+        lines.append("--- Request body (B) ---")
+        lines.append(req_body_b if req_body_b else "(empty)")
+    if resp_body_a or resp_body_b:
+        lines.append("--- Response body (A) ---")
+        lines.append(resp_body_a if resp_body_a else "(empty)")
+        lines.append("--- Response body (B) ---")
+        lines.append(resp_body_b if resp_body_b else "(empty)")
     if a["request_json"] is not None and b["request_json"] is not None:
         req_diffs = compare_values(a["request_json"], b["request_json"], "", [], 500)
         if req_diffs:
             lines.append("Request JSON changes:")
             lines.append(summarize_diff(req_diffs))
-    else:
-        left = sanitize_for_compare(a["request_body"])
-        right = sanitize_for_compare(b["request_body"])
+    elif req_body_a != req_body_b:
+        left = sanitize_for_compare(req_body_a)
+        right = sanitize_for_compare(req_body_b)
         if left != right:
-            lines.append("Request body changed:")
-            lines.append(f"- left: {left[:2000]}")
-            lines.append(f"- right: {right[:2000]}")
+            lines.append("Request body raw diff:")
+            lines.append(f"- left: {left[:500]}")
+            lines.append(f"- right: {right[:500]}")
     if a["response_json"] is not None and b["response_json"] is not None:
         res_diffs = compare_values(a["response_json"], b["response_json"], "", [], 500)
         if res_diffs:
             lines.append("Response JSON changes:")
             lines.append(summarize_diff(res_diffs))
-    else:
-        left = sanitize_for_compare(a["response_body"])
-        right = sanitize_for_compare(b["response_body"])
+    elif resp_body_a != resp_body_b:
+        left = sanitize_for_compare(resp_body_a)
+        right = sanitize_for_compare(resp_body_b)
         if left != right:
-            lines.append("Response body changed:")
-            lines.append(f"- left: {left[:2000]}")
-            lines.append(f"- right: {right[:2000]}")
+            lines.append("Response body raw diff:")
+            lines.append(f"- left: {left[:500]}")
+            lines.append(f"- right: {right[:500]}")
     return lines
 
 def compare_record(a, b):
@@ -385,90 +478,145 @@ def compare_record(a, b):
     out.extend(lines)
     return "\n".join(out)
 
-def compare_mode(file_a, file_b):
-    rec_a, _ = build_records(file_a)
-    rec_b, _ = build_records(file_b)
-    map_a = group_by_signature(rec_a)
-    map_b = group_by_signature(rec_b)
-    keys = sorted(set(map_a.keys()) | set(map_b.keys()))
+def compare_mode(selected_files):
+    base = selected_files[0]
+    others = selected_files[1:]
+    recs = []
+    total = len(selected_files)
+    for idx, path in enumerate(selected_files, 1):
+        print(f"\r[*] Чтение файла {idx}/{total}: {path.name}          ", end="")
+        rec, _ = build_records(path)
+        recs.append((path.name, rec))
+    print("\r[+] Чтение завершено          ")
+    base_name, base_recs = recs[0]
     lines = []
-    lines.append(f"File A: {file_a.name}")
-    lines.append(f"File B: {file_b.name}")
-    lines.append(f"Spylog blocks A: {len(rec_a)}")
-    lines.append(f"Spylog blocks B: {len(rec_b)}")
+    lines.append(f"=== COMPARE REPORT ===")
+    lines.append(f"Base file: {base_name}")
+    lines.append(f"Compared against: {', '.join(name for name, _ in recs[1:])}")
     lines.append("")
-    shared = 0
-    only_a = 0
-    only_b = 0
-    for key in keys:
-        la = map_a.get(key, [])
-        lb = map_b.get(key, [])
-        shared += min(len(la), len(lb))
-        if len(la) > len(lb):
-            only_a += len(la) - len(lb)
-        elif len(lb) > len(la):
-            only_b += len(lb) - len(la)
-    lines.append(f"Matched occurrences: {shared}")
-    lines.append(f"Unmatched in A: {only_a}")
-    lines.append(f"Unmatched in B: {only_b}")
+    all_urls = {}
+    for name, rec_list in recs:
+        urls = set()
+        for r in rec_list:
+            if r["url"]:
+                urls.add(r["url"])
+        all_urls[name] = urls
+    common = set.intersection(*[all_urls[name] for name, _ in recs]) if recs else set()
+    lines.append("=== URL STATISTICS ===")
+    for name, url_set in all_urls.items():
+        unique = url_set - common
+        lines.append(f"{name}: total {len(url_set)}, unique {len(unique)}")
+    lines.append(f"Common URLs across all files: {len(common)}")
+    if common:
+        lines.append("  " + "\n  ".join(sorted(common)))
     lines.append("")
-    diff_blocks = 0
-    for key in keys:
-        la = map_a.get(key, [])
-        lb = map_b.get(key, [])
-        pair_count = min(len(la), len(lb))
-        for i in range(pair_count):
-            section = compare_record(la[i], lb[i])
-            if section:
-                diff_blocks += 1
-                lines.append(f"=== {key} #{i + 1} ===")
-                lines.append(section)
-                lines.append("")
-    if diff_blocks == 0:
-        lines.append("Различий не найдено")
-    else:
-        lines.append(f"Blocks with differences: {diff_blocks}")
+    for idx, (other_name, other_recs) in enumerate(recs[1:], 1):
+        lines.append(f"=== Comparison with {other_name} (vs {base_name}) ===")
+        map_base = group_by_signature(base_recs)
+        map_other = group_by_signature(other_recs)
+        keys = sorted(set(map_base.keys()) | set(map_other.keys()))
+        shared = 0
+        only_base = 0
+        only_other = 0
+        for key in keys:
+            lb = map_base.get(key, [])
+            lo = map_other.get(key, [])
+            shared += min(len(lb), len(lo))
+            if len(lb) > len(lo):
+                only_base += len(lb) - len(lo)
+            elif len(lo) > len(lb):
+                only_other += len(lo) - len(lb)
+        lines.append(f"Shared signatures: {shared}")
+        lines.append(f"Only in {base_name}: {only_base}")
+        lines.append(f"Only in {other_name}: {only_other}")
+        lines.append("")
+        diff_blocks = 0
+        for key in keys:
+            lb = map_base.get(key, [])
+            lo = map_other.get(key, [])
+            pair_count = min(len(lb), len(lo))
+            for i in range(pair_count):
+                section = compare_record(lb[i], lo[i])
+                if section:
+                    diff_blocks += 1
+                    lines.append(f"--- {key} #{i+1} ---")
+                    lines.append(section)
+                    lines.append("")
+        if diff_blocks == 0:
+            lines.append("No differences found for this pair.")
+        else:
+            lines.append(f"Blocks with differences: {diff_blocks}")
+        lines.append("")
     stamp = now_stamp()
-    out_path = OUTPUT_DIR / f"Spylog_compare_{file_a.stem}_VS_{file_b.stem}_{stamp}.txt"
+    out_path = OUTPUT_DIR / f"Spylog_compare_{base_name}_VS_{len(others)}files_{stamp}.txt"
     save_text(out_path, "\n".join(lines).rstrip() + "\n")
     print(f"[+] Готово: {out_path}")
-    print(f"[+] Сопоставлено: {shared}")
-    print(f"[+] Блоков с отличиями: {diff_blocks}")
+    return out_path
+
+def rename_output_file(path):
+    while True:
+        print(f"\n[?] Переименовать выходной файл {path.name}? (y/n/back)")
+        ans = input().strip().lower()
+        if ans in ("n", "no"):
+            return path
+        if ans in ("b", "back"):
+            return path
+        if ans in ("y", "yes"):
+            break
+        print("[!] Введите y, n или back")
+    while True:
+        new_name = input(f"[?] Новое имя (без пути): ").strip()
+        if not new_name:
+            print("[!] Имя не может быть пустым")
+            continue
+        if new_name.lower() in ("b", "back"):
+            return path
+        new_path = path.parent / new_name
+        if new_path.exists():
+            print("[!] Файл уже существует")
+            continue
+        break
+    while True:
+        confirm = input(f"[?] Переименовать {path.name} в {new_name}? (y/n/back): ").strip().lower()
+        if confirm == "y":
+            path.rename(new_path)
+            print(f"[+] Переименован в {new_name}")
+            return new_path
+        elif confirm == "n":
+            return path
+        elif confirm == "back":
+            return path
+        else:
+            print("[!] Введите y, n или back")
 
 def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    files = list_input_files()
-    print("[1] Extract")
-    print("[2] Compare")
     while True:
-        mode = input("\n[?] Выбери режим 1 или 2: ").strip()
-        if mode in {"1", "2"}:
+        files = list_input_files()
+        print("\n[1] Extract")
+        print("[2] Compare")
+        print("[3] Exit")
+        mode = input("\n[?] Выберите режим (1/2/3): ").strip()
+        if mode == "3":
+            print("[+] Выход.")
             break
-        print("[!] Неверный выбор")
-    if mode == "1":
-        selected = ask_files(files, compare=False)
-        extract_mode(selected)
-    else:
-        selected = ask_files(files, compare=True)
-        compare_mode(selected[0], selected[1])
+        if mode not in ("1", "2"):
+            print("[!] Неверный выбор")
+            continue
+        selected = ask_files(files, compare=(mode == "2"))
+        if selected is None:
+            continue
+        if mode == "1":
+            out_path = extract_mode(selected)
+        else:
+            out_path = compare_mode(selected)
+        rename_output_file(out_path)
+        print("\n[+] Готово! Можете продолжить или выйти.")
+        input("[*] Нажмите Enter для продолжения...")
 
 if __name__ == "__main__":
     main()
 EOF
-
-echo "[*] Настройка DNS перед запуском..."
-echo "nameserver 8.8.8.8" > /etc/resolv.conf
-echo "nameserver 8.8.4.4" >> /etc/resolv.conf
-echo "nameserver 94.140.14.14" >> /etc/resolv.conf
-echo "nameserver 94.140.15.15" >> /etc/resolv.conf
-echo "nameserver 1.1.1.1" >> /etc/resolv.conf
-
-echo "[*] Повторная проверка интернета..."
-while ! ping -c 3 google.com > /dev/null 2>&1; do
-    echo "[!] ОШИБКА: Соединение потеряно."
-    echo "[*] Повторная проверка через 5 секунд..."
-    sleep 5
-done
 
 echo "[*] Запуск Spylog Analyzer..."
 python3 ~/Spylog.py
