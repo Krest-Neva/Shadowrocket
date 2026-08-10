@@ -87,8 +87,6 @@ def list_input_files():
         die(f"Папка {INPUT_DIR} не найдена")
     files = [p for p in INPUT_DIR.iterdir() if p.is_file() and not p.name.startswith(".")]
     files.sort(key=lambda p: p.name.lower())
-    if not files:
-        die(f"В папке {INPUT_DIR} нет файлов")
     return files
 
 def print_files(files):
@@ -125,10 +123,12 @@ def parse_selection(text, max_index):
         raise ValueError
     return result
 
-def ask_rename_file(files, mode="input"):
+def ask_rename_file(files):
     while True:
-        print("\n[?] Хотите переименовать файл? (y/n/back)")
+        print("\n[?] Хотите переименовать файл? (y/n/back) [n]: ", end="")
         ans = input().strip().lower()
+        if ans == "":
+            ans = "n"
         if ans in ("n", "no"):
             return None
         if ans in ("b", "back"):
@@ -162,7 +162,9 @@ def ask_rename_file(files, mode="input"):
             continue
         break
     while True:
-        confirm = input(f"[?] Переименовать {path.name} в {new_name}? (y/n/back): ").strip().lower()
+        confirm = input(f"[?] Переименовать {path.name} в {new_name}? (y/n/back) [n]: ").strip().lower()
+        if confirm == "":
+            confirm = "n"
         if confirm == "y":
             path.rename(new_path)
             print(f"[+] Переименован в {new_name}")
@@ -173,6 +175,25 @@ def ask_rename_file(files, mode="input"):
             return "back"
         else:
             print("[!] Введите y, n или back")
+
+def select_files(files, allow_multiple=True, prompt="Выберите файлы"):
+    while True:
+        if allow_multiple:
+            print(f"\n[?] {prompt} (можно несколько, например 1,3-4 или all)")
+        else:
+            print(f"\n[?] {prompt} (введите номер)")
+        choice = input("[?] Ваш выбор: ").strip()
+        if choice.lower() in ("b", "back"):
+            return None
+        try:
+            indices = parse_selection(choice, len(files))
+            if not allow_multiple and len(indices) != 1:
+                print("[!] Выберите ровно один файл")
+                continue
+            selected = [files[i-1] for i in indices]
+            return selected
+        except:
+            print("[!] Неверный выбор")
 
 def ask_files(files, compare=False):
     while True:
@@ -185,30 +206,29 @@ def ask_files(files, compare=False):
                 print_files(files)
             break
         if compare:
-            print("\n[?] Выберите файлы для сравнения (минимум 2), например 1,2,3 или all")
-            choice = input("[?] Ваш выбор: ").strip()
-            if choice.lower() in ("b", "back"):
-                return None
-            try:
-                indices = parse_selection(choice, len(files))
-                if len(indices) < 2:
-                    print("[!] Нужно выбрать минимум 2 файла")
-                    continue
-                selected = [files[i-1] for i in indices]
-                return selected
-            except:
-                print("[!] Неверный выбор")
+            return select_files(files, allow_multiple=True, prompt="Выберите файлы для сравнения (минимум 2)")
         else:
-            print("\n[?] Выберите один или несколько файлов, например 1,3-4 или all (или 'back' для возврата)")
-            choice = input("[?] Ваш выбор: ").strip()
-            if choice.lower() in ("b", "back"):
-                return None
-            try:
-                indices = parse_selection(choice, len(files))
-                selected = [files[i-1] for i in indices]
-                return selected
-            except:
-                print("[!] Неверный выбор")
+            return select_files(files, allow_multiple=True, prompt="Выберите один или несколько файлов")
+
+def ask_groups(files):
+    while True:
+        print("\n[?] Сколько групп создать? (минимум 2): ", end="")
+        try:
+            num = int(input().strip())
+            if num >= 2:
+                break
+            print("[!] Должно быть не меньше 2")
+        except:
+            print("[!] Введите число")
+    groups = []
+    for g in range(1, num+1):
+        print(f"\n=== Группа {g} ===")
+        print_files(files)
+        selected = select_files(files, allow_multiple=True, prompt=f"Выберите файлы для группы {g}")
+        if selected is None:
+            return None
+        groups.append(selected)
+    return groups
 
 def extract_spy_blocks(text):
     lines = text.split("\n")
@@ -365,6 +385,9 @@ def parse_record(block, source_name):
         "request_json": parse_json_maybe(request_body),
         "response_json": parse_json_maybe(response_body),
     }
+
+def build_records_from_blocks(blocks, source_name):
+    return [parse_record(block, source_name) for block in blocks]
 
 def build_records(path, progress_callback=None):
     text = load_log(path)
@@ -553,10 +576,99 @@ def compare_mode(selected_files):
     print(f"[+] Готово: {out_path}")
     return out_path
 
+def build_group_records(group_files, group_name):
+    all_blocks = []
+    for path in group_files:
+        _, blocks = build_records(path)
+        all_blocks.extend(blocks)
+    all_blocks = dedupe_exact(all_blocks)
+    records = [parse_record(block, group_name) for block in all_blocks]
+    return records, all_blocks
+
+def compare_groups(groups):
+    group_names = []
+    group_records = []
+    for idx, group in enumerate(groups, 1):
+        name = f"Group_{idx}"
+        print(f"\r[*] Обработка группы {idx} из {len(groups)}...          ", end="")
+        rec, _ = build_group_records(group, name)
+        group_names.append(name)
+        group_records.append(rec)
+    print("\r[+] Все группы обработаны          ")
+    base_name = group_names[0]
+    base_recs = group_records[0]
+    lines = []
+    lines.append("=== GROUP COMPARE REPORT ===")
+    lines.append(f"Base group: {base_name} (files: {', '.join(p.name for p in groups[0])})")
+    lines.append(f"Compared against: {', '.join(group_names[1:])}")
+    lines.append("")
+    all_urls = {}
+    for idx, (name, rec_list) in enumerate(zip(group_names, group_records)):
+        urls = set()
+        for r in rec_list:
+            if r["url"]:
+                urls.add(r["url"])
+        all_urls[name] = urls
+    common = set.intersection(*[all_urls[name] for name in group_names]) if group_names else set()
+    lines.append("=== URL STATISTICS ===")
+    for name, url_set in all_urls.items():
+        unique = url_set - common
+        lines.append(f"{name}: total {len(url_set)}, unique {len(unique)}")
+    lines.append(f"Common URLs across all groups: {len(common)}")
+    if common:
+        lines.append("  " + "\n  ".join(sorted(common)))
+    lines.append("")
+    for idx in range(1, len(group_names)):
+        other_name = group_names[idx]
+        other_recs = group_records[idx]
+        lines.append(f"=== Comparison with {other_name} (vs {base_name}) ===")
+        map_base = group_by_signature(base_recs)
+        map_other = group_by_signature(other_recs)
+        keys = sorted(set(map_base.keys()) | set(map_other.keys()))
+        shared = 0
+        only_base = 0
+        only_other = 0
+        for key in keys:
+            lb = map_base.get(key, [])
+            lo = map_other.get(key, [])
+            shared += min(len(lb), len(lo))
+            if len(lb) > len(lo):
+                only_base += len(lb) - len(lo)
+            elif len(lo) > len(lb):
+                only_other += len(lo) - len(lb)
+        lines.append(f"Shared signatures: {shared}")
+        lines.append(f"Only in {base_name}: {only_base}")
+        lines.append(f"Only in {other_name}: {only_other}")
+        lines.append("")
+        diff_blocks = 0
+        for key in keys:
+            lb = map_base.get(key, [])
+            lo = map_other.get(key, [])
+            pair_count = min(len(lb), len(lo))
+            for i in range(pair_count):
+                section = compare_record(lb[i], lo[i])
+                if section:
+                    diff_blocks += 1
+                    lines.append(f"--- {key} #{i+1} ---")
+                    lines.append(section)
+                    lines.append("")
+        if diff_blocks == 0:
+            lines.append("No differences found for this pair.")
+        else:
+            lines.append(f"Blocks with differences: {diff_blocks}")
+        lines.append("")
+    stamp = now_stamp()
+    out_path = OUTPUT_DIR / f"Spylog_compare_groups_{stamp}.txt"
+    save_text(out_path, "\n".join(lines).rstrip() + "\n")
+    print(f"[+] Готово: {out_path}")
+    return out_path
+
 def rename_output_file(path):
     while True:
-        print(f"\n[?] Переименовать выходной файл {path.name}? (y/n/back)")
+        print(f"\n[?] Переименовать выходной файл {path.name}? (y/n/back) [n]: ", end="")
         ans = input().strip().lower()
+        if ans == "":
+            ans = "n"
         if ans in ("n", "no"):
             return path
         if ans in ("b", "back"):
@@ -577,7 +689,9 @@ def rename_output_file(path):
             continue
         break
     while True:
-        confirm = input(f"[?] Переименовать {path.name} в {new_name}? (y/n/back): ").strip().lower()
+        confirm = input(f"[?] Переименовать {path.name} в {new_name}? (y/n/back) [n]: ").strip().lower()
+        if confirm == "":
+            confirm = "n"
         if confirm == "y":
             path.rename(new_path)
             print(f"[+] Переименован в {new_name}")
@@ -593,24 +707,54 @@ def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     while True:
         files = list_input_files()
+        while not files:
+            print("\n[!] В папке ~/SRLog нет файлов.")
+            print("[*] Поместите файлы в ~/SRLog и нажмите Enter для продолжения")
+            print("[*] Или введите 'exit' для выхода")
+            cmd = input().strip().lower()
+            if cmd == "exit":
+                print("[+] Выход.")
+                return
+            files = list_input_files()
         print("\n[1] Extract")
         print("[2] Compare")
         print("[3] Exit")
-        mode = input("\n[?] Выберите режим (1/2/3): ").strip()
+        mode = input("\n[?] Выберите режим (1/2/3) [1]: ").strip()
+        if mode == "":
+            mode = "1"
         if mode == "3":
             print("[+] Выход.")
             break
         if mode not in ("1", "2"):
             print("[!] Неверный выбор")
             continue
-        selected = ask_files(files, compare=(mode == "2"))
-        if selected is None:
-            continue
         if mode == "1":
+            selected = ask_files(files, compare=False)
+            if selected is None:
+                continue
             out_path = extract_mode(selected)
+            rename_output_file(out_path)
         else:
-            out_path = compare_mode(selected)
-        rename_output_file(out_path)
+            print("\n[?] Сравнивать файлы (1) или группы (2)? [1]: ", end="")
+            cmp_type = input().strip()
+            if cmp_type == "":
+                cmp_type = "1"
+            if cmp_type == "1":
+                selected = ask_files(files, compare=True)
+                if selected is None or len(selected) < 2:
+                    print("[!] Нужно минимум 2 файла")
+                    continue
+                out_path = compare_mode(selected)
+                rename_output_file(out_path)
+            elif cmp_type == "2":
+                groups = ask_groups(files)
+                if groups is None:
+                    continue
+                out_path = compare_groups(groups)
+                rename_output_file(out_path)
+            else:
+                print("[!] Неверный выбор")
+                continue
         print("\n[+] Готово! Можете продолжить или выйти.")
         input("[*] Нажмите Enter для продолжения...")
 
