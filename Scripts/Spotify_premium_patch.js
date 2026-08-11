@@ -138,7 +138,11 @@ let protobuf;
             function f(t) {
               if ("string" != typeof t) {
                 var i = c();
-                if ((i = "return " + i), t) {
+                if (
+                  (a.verbose && console.log("codegen: " + i),
+                  (i = "return " + i),
+                  t)
+                ) {
                   for (
                     var n = Object.keys(t),
                       r = Array(n.length + 1),
@@ -4022,6 +4026,7 @@ const spotifyJson = {
 
 const resStatus = $response.status ? $response.status : $response.statusCode;
 if (resStatus !== 200) {
+  console.log(`$response.status不为200:${resStatus}`);
   $done({});
 } else {
   const url = $request.url;
@@ -4042,6 +4047,7 @@ if (resStatus !== 200) {
         .accountAttributesSuccess.accountAttributes;
     processMapObj(accountAttributesMapObj);
     body = bootstrapResponseType.encode(bootstrapResponseObj).finish();
+    console.log("bootstrap");
   } else if (
     url.includes("user-customization-service/v1/customize") &&
     method === postMethod
@@ -4054,9 +4060,13 @@ if (resStatus !== 200) {
         .accountAttributes;
     processMapObj(accountAttributesMapObj);
     body = ucsResponseWrapperType.encode(ucsResponseWrapperMessage).finish();
-} else {
-    $done({});
-    return;
+    console.log("customize");
+  } else {
+    $notification.post(
+      "spotify解锁premium",
+      "路径/请求方法匹配错误:",
+      method + "," + url,
+    );
   }
   if (isQuanX) {
     $done({
@@ -4069,7 +4079,6 @@ if (resStatus !== 200) {
     $done({ body });
   }
 }
-
 function processMapObj(accountAttributesMapObj) {
   accountAttributesMapObj["smart-shuffle"] = { stringValue: "AVAILABLE" };
   accountAttributesMapObj["is-euterpe"] = { boolValue: true };
