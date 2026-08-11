@@ -7033,14 +7033,9 @@ ${o[0][b][0]}`;
         await l.pure(),
         w.timeEnd("modify"),
         l.done());
-    } else
-      (w.msg(
-        "YouTube Enhance",
-        "\u811A\u672C\u9700\u8981\u66F4\u65B0",
-        "\u5916\u90E8\u8D44\u6E90 -> \u5168\u90E8\u66F4\u65B0",
-      ),
-        w.exit());
-  }
+} else {
+        w.exit();
+    }
   qr().catch((l) => {
     (console.log(l.message), w.exit());
   });
