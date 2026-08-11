@@ -7,100 +7,64 @@ if (typeof $response !== 'undefined' && $response.body) {
             d.setFullYear(d.getFullYear() + 10);
             return d.toISOString().split('T')[0];
         }
-        function getFutureISO() {
-            let d = new Date();
-            d.setFullYear(d.getFullYear() + 10);
-            return d.toISOString();
-        }
         let modified = false;
-        if (url.includes('/mobile/auth') || url.includes('/mergeData') || url.includes('/v2/user/profile')) {
+        if (url.includes('/mobile/auth') || url.includes('/mergeData') || url.includes('/v2/user/profile') || url.includes('/GetUserProfile')) {
             if (body.user) {
                 body.user.is_gold = true;
-                if (body.user.premium_details) {
-                    body.user.premium_details.level = 'premium';
-                    body.user.premium_details.is_unlimited = 0;
-                    body.user.premium_details.until = getFutureDate();
-                } else {
-                    body.user.premium_details = {
-                        level: 'premium',
-                        is_unlimited: 0,
-                        until: getFutureDate()
-                    };
+                body.user.premium_level = 'premium';
+                body.user.premium_unlimited = 0;
+                body.user.premium_until = getFutureDate();
+                body.user.have_trial = 0;
+                if (!body.user.premium_details) {
+                    body.user.premium_details = {};
                 }
-                if (body.user.premium_level !== undefined) {
-                    body.user.premium_level = 'premium';
+                body.user.premium_details.level = 'premium';
+                body.user.premium_details.is_unlimited = 0;
+                body.user.premium_details.until = getFutureDate();
+                if (body.user.is_premium !== undefined) {
+                    body.user.is_premium = true;
                 } else {
-                    body.user.premium_level = 'premium';
-                }
-                if (body.user.premium_unlimited !== undefined) {
-                    body.user.premium_unlimited = 0;
-                } else {
-                    body.user.premium_unlimited = 0;
-                }
-                if (body.user.premium_until !== undefined) {
-                    body.user.premium_until = getFutureDate();
-                } else {
-                    body.user.premium_until = getFutureDate();
-                }
-                if (body.user.have_trial !== undefined) {
-                    body.user.have_trial = 0;
-                } else {
-                    body.user.have_trial = 0;
+                    body.user.is_premium = true;
                 }
                 modified = true;
             }
         } else if (url.includes('/ProcessTraining')) {
             if (body.data) {
-                if (body.data.isPremium !== undefined) {
-                    body.data.isPremium = 1;
-                } else {
-                    body.data.isPremium = 1;
-                }
-                if (body.data.premiumDays !== undefined) {
-                    body.data.premiumDays = 365;
-                } else {
-                    body.data.premiumDays = 365;
+                body.data.isPremium = 1;
+                body.data.premiumDays = 365;
+                body.data.trialAvailable = 0;
+                if (body.data.premiumDiscount !== undefined) {
+                    delete body.data.premiumDiscount;
                 }
                 if (body.data.premiumExpire !== undefined) {
                     delete body.data.premiumExpire;
                 }
-                if (body.data.premiumDiscount !== undefined) {
-                    delete body.data.premiumDiscount;
-                }
-                if (body.data.trialAvailable !== undefined) {
-                    body.data.trialAvailable = 0;
-                } else {
-                    body.data.trialAvailable = 0;
-                }
                 modified = true;
             }
         } else if (url.includes('/getDashboardData')) {
-            if (body.tasks && Array.isArray(body.tasks)) {
-                for (let task of body.tasks) {
-                    task.isPremium = false;
-                }
-                modified = true;
-            }
             if (body.premiumAvailable !== undefined) {
                 body.premiumAvailable = null;
+                modified = true;
+            }
+            if (body.tasks && Array.isArray(body.tasks)) {
+                for (let task of body.tasks) {
+                    if (task.isPremium !== undefined) {
+                        task.isPremium = false;
+                    }
+                }
                 modified = true;
             }
         } else if (url.includes('/getLearningMain')) {
             if (body.data && Array.isArray(body.data)) {
                 for (let section of body.data) {
-                    if (section.audio && Array.isArray(section.audio)) {
-                        for (let item of section.audio) {
-                            item.isPremium = false;
-                        }
-                    }
-                    if (section.word && Array.isArray(section.word)) {
-                        for (let item of section.word) {
-                            item.isPremium = false;
-                        }
-                    }
-                    if (section.reading && Array.isArray(section.reading)) {
-                        for (let item of section.reading) {
-                            item.isPremium = false;
+                    const types = ['audio', 'word', 'reading'];
+                    for (let type of types) {
+                        if (section[type] && Array.isArray(section[type])) {
+                            for (let item of section[type]) {
+                                if (item.isPremium !== undefined) {
+                                    item.isPremium = false;
+                                }
+                            }
                         }
                     }
                 }
