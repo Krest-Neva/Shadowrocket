@@ -4,50 +4,57 @@ if (typeof $response !== 'undefined' && $response.body) {
         let url = $request ? $request.url : '';
         let modified = false;
 
-        // Используем надежную дату в далеком будущем в формате ISO
-        const futureDate = "2099-01-01T00:00:00.000Z"; 
-        
-        // 1. Подмена профиля пользователя и авторизации
+        const futureDate = "2099-12-31";
+        const futureDateIso = "2099-12-31T23:59:59Z";
+
+        const unlockItems = (items) => {
+            if (Array.isArray(items)) {
+                items.forEach(item => {
+                    if (item.isPremium !== undefined) item.isPremium = false;
+                    if (item.is_premium !== undefined) item.is_premium = false;
+                    if (item.isPaid !== undefined) item.isPaid = false;
+                    if (item.is_paid !== undefined) item.is_paid = false;
+                    if (item.isPurchased !== undefined) item.isPurchased = true;
+                    if (item.is_purchased !== undefined) item.is_purchased = true;
+                });
+            }
+        };
+
         if (url.includes('/mobile/auth') || url.includes('/mergeData') || url.includes('/v2/user/profile') || url.includes('/GetUserProfile')) {
             if (body.user) {
-                // Основные флаги
-                body.user.is_gold = true;
                 body.user.is_premium = true;
+                body.user.is_gold = true;
                 body.user.premium_level = 'premium';
-                body.user.premium_unlimited = 0;
+                body.user.premium_unlimited = 1; 
                 body.user.premium_until = futureDate;
                 body.user.have_trial = 0;
                 
-                // Детали премиума для кнопки в профиле
                 if (!body.user.premium_details) {
                     body.user.premium_details = {};
                 }
                 body.user.premium_details.level = 'premium';
-                body.user.premium_details.is_unlimited = 0;
-                body.user.premium_details.until = futureDate;
-
-                // Удаляем баннеры со скидками из профиля
-                if (body.user.premium_discount !== undefined) delete body.user.premium_discount;
-                if (body.user.premium_expire !== undefined) delete body.user.premium_expire;
-                if (body.user.banners !== undefined) body.user.banners = [];
+                body.user.premium_details.is_unlimited = 1; 
+                body.user.premium_details.until = futureDateIso;
                 
                 modified = true;
             }
+            if (body.banner !== undefined) { delete body.banner; modified = true; }
+            if (body.banners !== undefined) { delete body.banners; modified = true; }
+            if (body.offers !== undefined) { body.offers = []; modified = true; }
         } 
         
-        // 2. Тренировки (ProcessTraining)
         else if (url.includes('/ProcessTraining')) {
             if (body.data) {
-                body.data.isPremium = true; 
-                body.data.premiumDays = 36500;
+                body.data.isPremium = 1;
+                body.data.premiumDays = 9999;
                 body.data.trialAvailable = 0;
                 if (body.data.premiumDiscount !== undefined) delete body.data.premiumDiscount;
                 if (body.data.premiumExpire !== undefined) delete body.data.premiumExpire;
                 modified = true;
             }
             if (body.userStatus) {
-                body.userStatus.isPremium = true;
-                body.userStatus.premiumDays = 36500;
+                body.userStatus.isPremium = 1;
+                body.userStatus.premiumDays = 9999;
                 body.userStatus.trialAvailable = 0;
                 if (body.userStatus.premiumDiscount !== undefined) delete body.userStatus.premiumDiscount;
                 if (body.userStatus.premiumExpire !== undefined) delete body.userStatus.premiumExpire;
@@ -55,75 +62,40 @@ if (typeof $response !== 'undefined' && $response.body) {
             }
         } 
         
-        // 3. Дашборд (Снятие замочков с карточек на главной и удаление баннеров)
         else if (url.includes('/getDashboardData')) {
             if (body.premiumAvailable !== undefined) {
                 body.premiumAvailable = null;
                 modified = true;
             }
-            if (body.tasks && Array.isArray(body.tasks)) {
-                for (let task of body.tasks) {
-                    if (task.hasOwnProperty('isPremium')) {
-                        task.isPremium = false; // Снимаем визуальный замок
-                    }
-                }
+            if (body.tasks) {
+                unlockItems(body.tasks);
                 modified = true;
             }
-            // Убираем баннер «забрать скидку» с дашборда
-            if (body.banners) {
-                body.banners = [];
-                modified = true;
-            }
-            if (body.promos) {
-                body.promos = [];
-                modified = true;
-            }
+            if (body.offers !== undefined) { body.offers = []; modified = true; }
+            if (body.banners !== undefined) { body.banners = []; modified = true; }
         } 
         
-        // 4. Обучение (Аудирование, чтение, слова)
-        else if (url.includes('/getLearningMain')) {
-            if (body.data && Array.isArray(body.data)) {
-                for (let section of body.data) {
-                    const types = ['audio', 'word', 'reading', 'grammar'];
-                    for (let type of types) {
-                        if (section[type] && Array.isArray(section[type])) {
-                            for (let item of section[type]) {
-                                if (item.hasOwnProperty('isPremium')) {
-                                    item.isPremium = false;
-                                }
-                            }
-                        }
-                    }
+        else if (url.includes('/getLearningMain') || url.includes('/getGrammar') || url.includes('/getCourses') || url.includes('/v2/courses')) {
+            if (body.data) {
+                if (Array.isArray(body.data)) {
+                    body.data.forEach(section => {
+                        const types = ['audio', 'word', 'reading', 'video', 'grammar', 'course'];
+                        types.forEach(type => {
+                            if (section[type]) unlockItems(section[type]);
+                        });
+                    });
+                    unlockItems(body.data); 
+                } else if (typeof body.data === 'object') {
+                    const types = ['audio', 'word', 'reading', 'video', 'grammar', 'courses'];
+                    types.forEach(type => {
+                        if (body.data[type]) unlockItems(body.data[type]);
+                    });
                 }
                 modified = true;
             }
-        }
-
-        // 5. Курсы (Разблокировка грамматики и джунглей)
-        else if (url.includes('/GetCourses') || url.includes('/course/')) {
-            if (body.courses && Array.isArray(body.courses)) {
-                for (let course of body.courses) {
-                    if (course.hasOwnProperty('isPremium')) course.isPremium = false;
-                    if (course.hasOwnProperty('is_premium')) course.is_premium = false;
-                }
-                modified = true;
-            }
-        }
-        
-        // 6. Биллинг (Лечим ошибку "Нет интернета")
-        else if (url.includes('/v2/billing/products/') || url.includes('/getProducts')) {
-            // Вместо {} возвращаем корректную структуру пустого массива
-            if (body.detail) {
-                // Если прилетела ошибка токена, переписываем на пустые продукты
-                body = { products: [] };
-                modified = true;
-            } else if (body.products) {
-                body.products = [];
-                modified = true;
-            } else {
-                body = { products: [] };
-                modified = true;
-            }
+            
+            if (body.courses) { unlockItems(body.courses); modified = true; }
+            if (body.grammar) { unlockItems(body.grammar); modified = true; }
         }
 
         if (modified) {
@@ -132,7 +104,6 @@ if (typeof $response !== 'undefined' && $response.body) {
             $done({});
         }
     } catch (e) {
-        // В случае ошибки парсинга возвращаем оригинальный ответ, чтобы не сломать интернет в приложении
         $done({});
     }
 } else {
