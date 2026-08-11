@@ -41,6 +41,18 @@ if (typeof $response !== 'undefined' && $response.body) {
                 }
                 modified = true;
             }
+            if (body.userStatus) {
+                body.userStatus.isPremium = 1;
+                body.userStatus.premiumDays = 365;
+                body.userStatus.trialAvailable = 0;
+                if (body.userStatus.premiumDiscount !== undefined) {
+                    delete body.userStatus.premiumDiscount;
+                }
+                if (body.userStatus.premiumExpire !== undefined) {
+                    delete body.userStatus.premiumExpire;
+                }
+                modified = true;
+            }
         } else if (url.includes('/getDashboardData')) {
             if (body.premiumAvailable !== undefined) {
                 body.premiumAvailable = null;
@@ -70,6 +82,12 @@ if (typeof $response !== 'undefined' && $response.body) {
                 }
                 modified = true;
             }
+        } else if (url.includes('/v2/billing/products/')) {
+            body = {};
+            modified = true;
+        } else if (url.includes('/getProducts')) {
+            body = {};
+            modified = true;
         }
         if (modified) {
             $done({ body: JSON.stringify(body) });
