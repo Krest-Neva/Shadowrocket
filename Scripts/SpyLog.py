@@ -22,6 +22,7 @@ import json
 import re
 import sys
 import os
+import shutil
 from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
@@ -59,6 +60,16 @@ def save_config():
         f.write(SPY_PATTERN)
 
 load_config()
+
+def sanitize_filename(name):
+    if not name:
+        return name
+    allowed = re.compile(r'[^a-zA-Z0-9_.\-]')
+    clean = allowed.sub('_', name)
+    clean = clean.strip('_')
+    if not clean:
+        clean = 'file'
+    return clean
 
 def clean_str(s):
     if not s:
@@ -839,6 +850,7 @@ def rename_output_file(path):
     while True:
         new_name = input(f"[?] Новое имя (без пути): ").strip()
         new_name = clean_str(new_name)
+        new_name = sanitize_filename(new_name)
         if not new_name:
             print("[!] Имя не может быть пустым")
             continue
@@ -879,6 +891,7 @@ def rename_mode(files):
             while True:
                 new_name = input(f"[?] Новое имя для {path.name}: ").strip()
                 new_name = clean_str(new_name)
+                new_name = sanitize_filename(new_name)
                 if not new_name:
                     print("[!] Имя не может быть пустым")
                     continue
@@ -904,6 +917,7 @@ def rename_mode(files):
         elif choice == "2":
             prefix = input("[?] Введите префикс для группы: ").strip()
             prefix = clean_str(prefix)
+            prefix = sanitize_filename(prefix)
             if not prefix:
                 print("[!] Префикс не может быть пустым")
                 continue
@@ -963,6 +977,92 @@ def change_pattern():
     else:
         print("[!] Отмена")
 
+def clean_broken_files():
+    print("\n=== Очистка повреждённых файлов ===")
+    print("[1] Очистить папку SRLog (удалить все файлы)")
+    print("[2] Очистить папку SpyLog (удалить все файлы)")
+    print("[3] Очистить обе папки")
+    print("[4] Показать файлы с подозрительными именами и удалить выборочно")
+    print("[5] Назад")
+    choice = input("[?] Ваш выбор [5]: ").strip()
+    if choice == "":
+        choice = "5"
+    if choice == "5":
+        return
+    if choice in ("1", "2", "3"):
+        dirs = []
+        if choice in ("1", "3"):
+            dirs.append(INPUT_DIR)
+        if choice in ("2", "3"):
+            dirs.append(OUTPUT_DIR)
+        for d in dirs:
+            if not d.exists():
+                print(f"[!] Папка {d} не существует")
+                continue
+            print(f"[?] Удалить всё содержимое {d}? (y/n) [n]: ", end="")
+            ans = input().strip().lower()
+            if ans == "y":
+                for item in d.iterdir():
+                    try:
+                        if item.is_dir():
+                            shutil.rmtree(item)
+                        else:
+                            item.unlink()
+                    except Exception as e:
+                        print(f"[!] Ошибка удаления {item}: {e}")
+                print(f"[+] Папка {d} очищена")
+            else:
+                print(f"[!] Пропущено {d}")
+        return
+    if choice == "4":
+        print("\n[+] Поиск файлов с недопустимыми символами в именах...")
+        bad_files = []
+        for d in [INPUT_DIR, OUTPUT_DIR]:
+            if not d.exists():
+                continue
+            for item in d.iterdir():
+                name = item.name
+                if re.search(r'[^a-zA-Z0-9_.\-]', name):
+                    bad_files.append(item)
+        if not bad_files:
+            print("[+] Подозрительных файлов не найдено")
+            return
+        print(f"[+] Найдено {len(bad_files)} файлов с проблемными именами:")
+        for i, p in enumerate(bad_files, 1):
+            size = p.stat().st_size if p.is_file() else 0
+            print(f"{i}. {p.name} ({size} bytes)")
+        print("\n[?] Удалить все проблемные файлы? (y/n) [n]: ", end="")
+        ans = input().strip().lower()
+        if ans == "y":
+            for p in bad_files:
+                try:
+                    if p.is_dir():
+                        shutil.rmtree(p)
+                    else:
+                        p.unlink()
+                    print(f"[+] Удалён: {p.name}")
+                except Exception as e:
+                    print(f"[!] Ошибка удаления {p.name}: {e}")
+            print("[+] Все проблемные файлы удалены")
+        else:
+            print("[?] Удалять по одному? (y/n) [n]: ", end="")
+            ans2 = input().strip().lower()
+            if ans2 == "y":
+                for p in bad_files:
+                    print(f"\n[?] Удалить {p.name}? (y/n) [n]: ", end="")
+                    ans3 = input().strip().lower()
+                    if ans3 == "y":
+                        try:
+                            if p.is_dir():
+                                shutil.rmtree(p)
+                            else:
+                                p.unlink()
+                            print(f"[+] Удалён: {p.name}")
+                        except Exception as e:
+                            print(f"[!] Ошибка: {e}")
+        return
+    print("[!] Неверный выбор")
+
 def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     while True:
@@ -981,12 +1081,16 @@ def main():
         print("[3] Rename files")
         print("[4] Change search pattern")
         print("[5] Exit")
-        mode = input("\n[?] Выберите режим (1/2/3/4/5) [1]: ").strip()
+        print("[6] Clean broken files")
+        mode = input("\n[?] Выберите режим (1/2/3/4/5/6) [1]: ").strip()
         if mode == "":
             mode = "1"
         if mode == "5":
             print("[+] Выход.")
             break
+        if mode == "6":
+            clean_broken_files()
+            continue
         if mode == "4":
             change_pattern()
             continue
