@@ -1,6 +1,13 @@
 #!/bin/sh
 clear
 
+echo "[*] Настройка DNS..."
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+echo "nameserver 94.140.14.14" >> /etc/resolv.conf
+echo "nameserver 94.140.15.15" >> /etc/resolv.conf
+echo "nameserver 1.1.1.1" >> /etc/resolv.conf
+
 echo "[*] Обновление системы и установка зависимостей..."
 apk update
 apk upgrade
@@ -18,6 +25,7 @@ import os
 from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
+from urllib.parse import unquote
 
 ROOT = Path.home()
 INPUT_DIR = ROOT / "SRLog"
@@ -123,59 +131,6 @@ def parse_selection(text, max_index):
         raise ValueError
     return result
 
-def ask_rename_file(files):
-    while True:
-        print("\n[?] Хотите переименовать файл? (y/n/back) [n]: ", end="")
-        ans = input().strip().lower()
-        if ans == "":
-            ans = "n"
-        if ans in ("n", "no"):
-            return None
-        if ans in ("b", "back"):
-            return "back"
-        if ans in ("y", "yes"):
-            break
-        print("[!] Введите y, n или back")
-    print_files(files)
-    while True:
-        choice = input("\n[?] Выберите номер файла для переименования: ").strip()
-        if choice.lower() in ("b", "back"):
-            return "back"
-        try:
-            idx = int(choice) - 1
-            if 0 <= idx < len(files):
-                break
-            print("[!] Неверный номер")
-        except:
-            print("[!] Введите число")
-    path = files[idx]
-    while True:
-        new_name = input(f"[?] Новое имя для {path.name}: ").strip()
-        if not new_name:
-            print("[!] Имя не может быть пустым")
-            continue
-        if new_name.lower() in ("b", "back"):
-            return "back"
-        new_path = path.parent / new_name
-        if new_path.exists():
-            print("[!] Файл с таким именем уже существует")
-            continue
-        break
-    while True:
-        confirm = input(f"[?] Переименовать {path.name} в {new_name}? (y/n/back) [n]: ").strip().lower()
-        if confirm == "":
-            confirm = "n"
-        if confirm == "y":
-            path.rename(new_path)
-            print(f"[+] Переименован в {new_name}")
-            return new_path
-        elif confirm == "n":
-            return None
-        elif confirm == "back":
-            return "back"
-        else:
-            print("[!] Введите y, n или back")
-
 def select_files(files, allow_multiple=True, prompt="Выберите файлы"):
     while True:
         if allow_multiple:
@@ -197,18 +152,14 @@ def select_files(files, allow_multiple=True, prompt="Выберите файлы
 
 def ask_files(files, compare=False):
     while True:
-        while True:
-            renamed = ask_rename_file(files)
-            if renamed == "back":
-                return None
-            if renamed is not None:
-                files = list_input_files()
-                print_files(files)
-            break
+        print_files(files)
         if compare:
-            return select_files(files, allow_multiple=True, prompt="Выберите файлы для сравнения (минимум 2)")
+            selected = select_files(files, allow_multiple=True, prompt="Выберите файлы для сравнения (минимум 2)")
         else:
-            return select_files(files, allow_multiple=True, prompt="Выберите один или несколько файлов")
+            selected = select_files(files, allow_multiple=True, prompt="Выберите один или несколько файлов")
+        if selected is None:
+            return None
+        return selected
 
 def ask_groups(files):
     while True:
@@ -398,6 +349,112 @@ def build_records(path, progress_callback=None):
     records = [parse_record(block, path.name) for block in blocks]
     return records, blocks
 
+def decode_all_strings(text):
+    try:
+        decoded = unquote(text)
+        decoded = maybe_repair_mojibake(decoded)
+        return decoded
+    except Exception:
+        return text
+
+def get_decoded_strings(blocks):
+    decoded_set = set()
+    for block in blocks:
+        for line in block.split('\n'):
+            if '%' in line or any(ch in line for ch in ("Ð", "Ñ", "Ã", "Â")):
+                decoded = decode_all_strings(line)
+                if decoded != line:
+                    decoded = decoded.strip()
+                    if decoded:
+                        decoded_set.add(decoded)
+    return sorted(decoded_set)
+
+def rename_mode(files):
+    while True:
+        print_files(files)
+        print("\n[?] Переименовать один файл (1) или группу с общим префиксом (2)? [1]: ", end="")
+        choice = input().strip()
+        if choice == "":
+            choice = "1"
+        if choice == "1":
+            selected = select_files(files, allow_multiple=False, prompt="Выберите файл для переименования")
+            if selected is None:
+                continue
+            path = selected[0]
+            while True:
+                new_name = input(f"[?] Новое имя для {path.name}: ").strip()
+                if not new_name:
+                    print("[!] Имя не может быть пустым")
+                    continue
+                if new_name.lower() in ("b", "back"):
+                    break
+                new_path = path.parent / new_name
+                if new_path.exists():
+                    print("[!] Файл с таким именем уже существует")
+                    continue
+                confirm = input(f"[?] Переименовать {path.name} в {new_name}? (y/n/back) [n]: ").strip().lower()
+                if confirm == "":
+                    confirm = "n"
+                if confirm == "y":
+                    path.rename(new_path)
+                    print(f"[+] Переименован в {new_name}")
+                    files = list_input_files()
+                    print_files(files)
+                    break
+                elif confirm == "back":
+                    break
+                else:
+                    print("[!] Введите y, n или back")
+        elif choice == "2":
+            prefix = input("[?] Введите префикс для группы: ").strip()
+            if not prefix:
+                print("[!] Префикс не может быть пустым")
+                continue
+            apply_all = input("[?] Применить ко всем файлам? (y/n) [y]: ").strip().lower()
+            if apply_all == "":
+                apply_all = "y"
+            if apply_all == "y":
+                selected_files = files
+            else:
+                selected_files = select_files(files, allow_multiple=True, prompt="Выберите файлы для переименования")
+                if selected_files is None:
+                    continue
+            if not selected_files:
+                print("[!] Нет файлов для переименования")
+                continue
+            selected_files_sorted = sorted(selected_files, key=lambda p: p.name)
+            conflicts = []
+            new_paths = []
+            for i, path in enumerate(selected_files_sorted, 1):
+                ext = path.suffix
+                new_name = f"{prefix}-{i}{ext}"
+                new_path = path.parent / new_name
+                if new_path.exists() and new_path != path:
+                    conflicts.append((path, new_path))
+                new_paths.append(new_path)
+            if conflicts:
+                print("[!] Следующие файлы будут перезаписаны:")
+                for old, new in conflicts:
+                    print(f"  {old.name} -> {new.name}")
+                confirm = input("[?] Продолжить? (y/n) [n]: ").strip().lower()
+                if confirm != "y":
+                    print("[!] Отменено")
+                    continue
+            for i, path in enumerate(selected_files_sorted, 1):
+                ext = path.suffix
+                new_name = f"{prefix}-{i}{ext}"
+                new_path = path.parent / new_name
+                path.rename(new_path)
+                print(f"[+] {path.name} -> {new_name}")
+            files = list_input_files()
+            print_files(files)
+        else:
+            print("[!] Неверный выбор")
+            continue
+        cont = input("[?] Продолжить переименование? (y/n) [n]: ").strip().lower()
+        if cont != "y":
+            break
+
 def extract_mode(selected_files):
     all_blocks = []
     per_file_counts = []
@@ -436,6 +493,10 @@ def extract_mode(selected_files):
     header.append("")
     content = "\n\n".join(all_blocks)
     full_text = "\n".join(header) + "\n" + content + "\n"
+    decoded = get_decoded_strings(all_blocks)
+    if decoded:
+        full_text += "\n\n=== Decoded strings ===\n"
+        full_text += "\n".join(decoded) + "\n"
     save_text(out_path, full_text)
     print(f"[+] Готово: {out_path}")
     print(f"[+] Блоков: {len(all_blocks)}")
@@ -570,6 +631,15 @@ def compare_mode(selected_files):
         else:
             lines.append(f"Blocks with differences: {diff_blocks}")
         lines.append("")
+    all_blocks = []
+    for _, rec_list in recs:
+        for rec in rec_list:
+            all_blocks.append(rec['raw'])
+    decoded = get_decoded_strings(all_blocks)
+    if decoded:
+        lines.append("=== Decoded strings ===")
+        lines.extend(decoded)
+        lines.append("")
     stamp = now_stamp()
     out_path = OUTPUT_DIR / f"Spylog_compare_{base_name}_VS_{len(others)}files_{stamp}.txt"
     save_text(out_path, "\n".join(lines).rstrip() + "\n")
@@ -657,6 +727,15 @@ def compare_groups(groups):
         else:
             lines.append(f"Blocks with differences: {diff_blocks}")
         lines.append("")
+    all_blocks = []
+    for rec_list in group_records:
+        for rec in rec_list:
+            all_blocks.append(rec['raw'])
+    decoded = get_decoded_strings(all_blocks)
+    if decoded:
+        lines.append("=== Decoded strings ===")
+        lines.extend(decoded)
+        lines.append("")
     stamp = now_stamp()
     out_path = OUTPUT_DIR / f"Spylog_compare_groups_{stamp}.txt"
     save_text(out_path, "\n".join(lines).rstrip() + "\n")
@@ -718,13 +797,17 @@ def main():
             files = list_input_files()
         print("\n[1] Extract")
         print("[2] Compare")
-        print("[3] Exit")
-        mode = input("\n[?] Выберите режим (1/2/3) [1]: ").strip()
+        print("[3] Rename files")
+        print("[4] Exit")
+        mode = input("\n[?] Выберите режим (1/2/3/4) [1]: ").strip()
         if mode == "":
             mode = "1"
-        if mode == "3":
+        if mode == "4":
             print("[+] Выход.")
             break
+        if mode == "3":
+            rename_mode(files)
+            continue
         if mode not in ("1", "2"):
             print("[!] Неверный выбор")
             continue
