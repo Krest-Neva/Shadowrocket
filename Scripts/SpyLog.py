@@ -321,10 +321,21 @@ def summarize_diff(diffs, limit=60):
         lines.append(f"- {path}: {format_value(left)} -> {format_value(right)}")
     return "\n".join(lines)
 
-def parse_record(block, source_name):
+def decode_all_strings(text):
+    try:
+        decoded = unquote(text)
+        decoded = maybe_repair_mojibake(decoded)
+        return decoded
+    except Exception:
+        return text
+
+def parse_record(block, source_name, decode=False):
     method, url = parse_header(block)
     request_body = extract_request_body(block)
     response_body = extract_response_body(block)
+    if decode:
+        request_body = decode_all_strings(request_body)
+        response_body = decode_all_strings(response_body)
     return {
         "source": source_name,
         "raw": block,
@@ -337,37 +348,372 @@ def parse_record(block, source_name):
         "response_json": parse_json_maybe(response_body),
     }
 
-def build_records_from_blocks(blocks, source_name):
-    return [parse_record(block, source_name) for block in blocks]
-
-def build_records(path, progress_callback=None):
+def build_records(path, decode=False):
     text = load_log(path)
     blocks = extract_spy_blocks(text)
-    if progress_callback:
-        progress_callback(len(blocks), "extract")
     blocks = dedupe_exact(blocks)
-    records = [parse_record(block, path.name) for block in blocks]
+    records = [parse_record(block, path.name, decode) for block in blocks]
     return records, blocks
 
-def decode_all_strings(text):
-    try:
-        decoded = unquote(text)
-        decoded = maybe_repair_mojibake(decoded)
-        return decoded
-    except Exception:
-        return text
+def ask_options(mode):
+    if mode == "extract":
+        print("\n=== Настройки вывода (введите строку из 0/1 длиной 3, Enter = 111) ===")
+        print("1. Показывать список уникальных URL")
+        print("2. Декодировать закодированные строки в телах")
+        print("3. Показывать количество блоков по каждому файлу")
+        default = "111"
+    else:
+        print("\n=== Настройки вывода (введите строку из 0/1 длиной 4, Enter = 1110) ===")
+        print("1. Показывать статистику URL")
+        print("2. Декодировать строки в телах перед сравнением")
+        print("3. Показывать детальные различия полей")
+        print("4. Включать полные блоки в отчёт")
+        default = "1110"
+    while True:
+        s = input("[?] Ваш выбор: ").strip()
+        if s == "":
+            s = default
+        if len(s) != len(default):
+            print(f"[!] Ожидается {len(default)} символов")
+            continue
+        if not all(c in "01" for c in s):
+            print("[!] Используйте только 0 и 1")
+            continue
+        return [c == "1" for c in s]
 
-def get_decoded_strings(blocks):
-    decoded_set = set()
-    for block in blocks:
-        for line in block.split('\n'):
-            if '%' in line or any(ch in line for ch in ("Ð", "Ñ", "Ã", "Â")):
-                decoded = decode_all_strings(line)
-                if decoded != line:
-                    decoded = decoded.strip()
-                    if decoded:
-                        decoded_set.add(decoded)
-    return sorted(decoded_set)
+def extract_mode(selected_files, show_urls, decode, show_stats):
+    all_blocks = []
+    per_file_counts = []
+    total_found = 0
+    total_files = len(selected_files)
+    for idx, path in enumerate(selected_files, 1):
+        print(f"\r[*] Обработка файла {idx}/{total_files}: {path.name}          ", end="")
+        _, blocks = build_records(path, decode)
+        total_found += len(blocks)
+        per_file_counts.append((path.name, len(blocks)))
+        all_blocks.extend(blocks)
+    print("\r[*] Дедупликация блоков...          ", end="")
+    all_blocks = dedupe_exact(all_blocks)
+    print("\r[+] Готово, сохраняем...          ")
+    stamp = now_stamp()
+    out_path = OUTPUT_DIR / f"Spylog_extract_{stamp}.txt"
+    lines = []
+    lines.append(f"Source files: {', '.join(p.name for p in selected_files)}")
+    lines.append(f"Blocks before dedupe: {total_found}")
+    lines.append(f"Blocks after dedupe: {len(all_blocks)}")
+    lines.append("")
+    if show_urls:
+        urls = set()
+        for block in all_blocks:
+            method, url = parse_header(block)
+            if url:
+                urls.add(url)
+        lines.append("=== Unique URLs found ===")
+        lines.extend(sorted(urls))
+        lines.append("")
+    if show_stats:
+        lines.append("=== Per-file block counts ===")
+        for name, count in per_file_counts:
+            lines.append(f"{name}: {count}")
+        lines.append("")
+    lines.append("=== Extracted blocks ===")
+    lines.append("")
+    content = "\n\n".join(all_blocks)
+    full_text = "\n".join(lines) + "\n" + content + "\n"
+    save_text(out_path, full_text)
+    print(f"[+] Готово: {out_path}")
+    print(f"[+] Блоков: {len(all_blocks)}")
+    return out_path
+
+def group_by_signature(records):
+    grouped = defaultdict(list)
+    for rec in records:
+        grouped[rec["signature"]].append(rec)
+    return grouped
+
+def record_diff_lines(a, b):
+    lines = []
+    if a["method"] != b["method"]:
+        lines.append(f"Method: {a['method']} -> {b['method']}")
+    if a["url"] != b["url"]:
+        lines.append(f"URL: {a['url']} -> {b['url']}")
+    req_body_a = a["request_body"]
+    req_body_b = b["request_body"]
+    resp_body_a = a["response_body"]
+    resp_body_b = b["response_body"]
+    if req_body_a or req_body_b:
+        lines.append("--- Request body (A) ---")
+        lines.append(req_body_a if req_body_a else "(empty)")
+        lines.append("--- Request body (B) ---")
+        lines.append(req_body_b if req_body_b else "(empty)")
+    if resp_body_a or resp_body_b:
+        lines.append("--- Response body (A) ---")
+        lines.append(resp_body_a if resp_body_a else "(empty)")
+        lines.append("--- Response body (B) ---")
+        lines.append(resp_body_b if resp_body_b else "(empty)")
+    if a["request_json"] is not None and b["request_json"] is not None:
+        req_diffs = compare_values(a["request_json"], b["request_json"], "", [], 500)
+        if req_diffs:
+            lines.append("Request JSON changes:")
+            lines.append(summarize_diff(req_diffs))
+    elif req_body_a != req_body_b:
+        left = sanitize_for_compare(req_body_a)
+        right = sanitize_for_compare(req_body_b)
+        if left != right:
+            lines.append("Request body raw diff:")
+            lines.append(f"- left: {left[:500]}")
+            lines.append(f"- right: {right[:500]}")
+    if a["response_json"] is not None and b["response_json"] is not None:
+        res_diffs = compare_values(a["response_json"], b["response_json"], "", [], 500)
+        if res_diffs:
+            lines.append("Response JSON changes:")
+            lines.append(summarize_diff(res_diffs))
+    elif resp_body_a != resp_body_b:
+        left = sanitize_for_compare(resp_body_a)
+        right = sanitize_for_compare(resp_body_b)
+        if left != right:
+            lines.append("Response body raw diff:")
+            lines.append(f"- left: {left[:500]}")
+            lines.append(f"- right: {right[:500]}")
+    return lines
+
+def compare_record(a, b):
+    lines = record_diff_lines(a, b)
+    if not lines:
+        return ""
+    out = [f"Signature: {a['signature']}"]
+    out.extend(lines)
+    return "\n".join(out)
+
+def compare_mode(selected_files, show_urls, decode, show_diffs, include_blocks):
+    base = selected_files[0]
+    others = selected_files[1:]
+    recs = []
+    total = len(selected_files)
+    for idx, path in enumerate(selected_files, 1):
+        print(f"\r[*] Чтение файла {idx}/{total}: {path.name}          ", end="")
+        rec, _ = build_records(path, decode)
+        recs.append((path.name, rec))
+    print("\r[+] Чтение завершено          ")
+    base_name, base_recs = recs[0]
+    lines = []
+    lines.append(f"=== COMPARE REPORT ===")
+    lines.append(f"Base file: {base_name}")
+    lines.append(f"Compared against: {', '.join(name for name, _ in recs[1:])}")
+    lines.append("")
+    all_urls = {}
+    if show_urls:
+        for name, rec_list in recs:
+            urls = set()
+            for r in rec_list:
+                if r["url"]:
+                    urls.add(r["url"])
+            all_urls[name] = urls
+        common = set.intersection(*[all_urls[name] for name, _ in recs]) if recs else set()
+        lines.append("=== URL STATISTICS ===")
+        for name, url_set in all_urls.items():
+            unique = url_set - common
+            lines.append(f"{name}: total {len(url_set)}, unique {len(unique)}")
+        lines.append(f"Common URLs across all files: {len(common)}")
+        if common:
+            lines.append("  " + "\n  ".join(sorted(common)))
+        lines.append("")
+    for idx, (other_name, other_recs) in enumerate(recs[1:], 1):
+        lines.append(f"=== Comparison with {other_name} (vs {base_name}) ===")
+        map_base = group_by_signature(base_recs)
+        map_other = group_by_signature(other_recs)
+        keys = sorted(set(map_base.keys()) | set(map_other.keys()))
+        shared = 0
+        only_base = 0
+        only_other = 0
+        for key in keys:
+            lb = map_base.get(key, [])
+            lo = map_other.get(key, [])
+            shared += min(len(lb), len(lo))
+            if len(lb) > len(lo):
+                only_base += len(lb) - len(lo)
+            elif len(lo) > len(lb):
+                only_other += len(lo) - len(lb)
+        lines.append(f"Shared signatures: {shared}")
+        lines.append(f"Only in {base_name}: {only_base}")
+        lines.append(f"Only in {other_name}: {only_other}")
+        lines.append("")
+        if show_diffs:
+            diff_blocks = 0
+            for key in keys:
+                lb = map_base.get(key, [])
+                lo = map_other.get(key, [])
+                pair_count = min(len(lb), len(lo))
+                for i in range(pair_count):
+                    section = compare_record(lb[i], lo[i])
+                    if section:
+                        diff_blocks += 1
+                        lines.append(f"--- {key} #{i+1} ---")
+                        lines.append(section)
+                        lines.append("")
+            if diff_blocks == 0:
+                lines.append("No differences found for this pair.")
+            else:
+                lines.append(f"Blocks with differences: {diff_blocks}")
+            lines.append("")
+        if include_blocks:
+            lines.append("--- Full blocks (base vs other) ---")
+            for key in keys:
+                lb = map_base.get(key, [])
+                lo = map_other.get(key, [])
+                pair_count = min(len(lb), len(lo))
+                for i in range(pair_count):
+                    lines.append(f"=== {key} #{i+1} (base) ===")
+                    lines.append(lb[i]["raw"])
+                    lines.append(f"=== {key} #{i+1} (other) ===")
+                    lines.append(lo[i]["raw"])
+                    lines.append("")
+    stamp = now_stamp()
+    out_path = OUTPUT_DIR / f"Spylog_compare_{base_name}_VS_{len(others)}files_{stamp}.txt"
+    save_text(out_path, "\n".join(lines).rstrip() + "\n")
+    print(f"[+] Готово: {out_path}")
+    return out_path
+
+def build_group_records(group_files, group_name, decode):
+    all_blocks = []
+    for path in group_files:
+        _, blocks = build_records(path, decode)
+        all_blocks.extend(blocks)
+    all_blocks = dedupe_exact(all_blocks)
+    records = [parse_record(block, group_name, decode) for block in all_blocks]
+    return records, all_blocks
+
+def compare_groups(groups, show_urls, decode, show_diffs, include_blocks):
+    group_names = []
+    group_records = []
+    for idx, group in enumerate(groups, 1):
+        name = f"Group_{idx}"
+        print(f"\r[*] Обработка группы {idx} из {len(groups)}...          ", end="")
+        rec, _ = build_group_records(group, name, decode)
+        group_names.append(name)
+        group_records.append(rec)
+    print("\r[+] Все группы обработаны          ")
+    base_name = group_names[0]
+    base_recs = group_records[0]
+    lines = []
+    lines.append("=== GROUP COMPARE REPORT ===")
+    lines.append(f"Base group: {base_name} (files: {', '.join(p.name for p in groups[0])})")
+    lines.append(f"Compared against: {', '.join(group_names[1:])}")
+    lines.append("")
+    all_urls = {}
+    if show_urls:
+        for idx, (name, rec_list) in enumerate(zip(group_names, group_records)):
+            urls = set()
+            for r in rec_list:
+                if r["url"]:
+                    urls.add(r["url"])
+            all_urls[name] = urls
+        common = set.intersection(*[all_urls[name] for name in group_names]) if group_names else set()
+        lines.append("=== URL STATISTICS ===")
+        for name, url_set in all_urls.items():
+            unique = url_set - common
+            lines.append(f"{name}: total {len(url_set)}, unique {len(unique)}")
+        lines.append(f"Common URLs across all groups: {len(common)}")
+        if common:
+            lines.append("  " + "\n  ".join(sorted(common)))
+        lines.append("")
+    for idx in range(1, len(group_names)):
+        other_name = group_names[idx]
+        other_recs = group_records[idx]
+        lines.append(f"=== Comparison with {other_name} (vs {base_name}) ===")
+        map_base = group_by_signature(base_recs)
+        map_other = group_by_signature(other_recs)
+        keys = sorted(set(map_base.keys()) | set(map_other.keys()))
+        shared = 0
+        only_base = 0
+        only_other = 0
+        for key in keys:
+            lb = map_base.get(key, [])
+            lo = map_other.get(key, [])
+            shared += min(len(lb), len(lo))
+            if len(lb) > len(lo):
+                only_base += len(lb) - len(lo)
+            elif len(lo) > len(lb):
+                only_other += len(lo) - len(lb)
+        lines.append(f"Shared signatures: {shared}")
+        lines.append(f"Only in {base_name}: {only_base}")
+        lines.append(f"Only in {other_name}: {only_other}")
+        lines.append("")
+        if show_diffs:
+            diff_blocks = 0
+            for key in keys:
+                lb = map_base.get(key, [])
+                lo = map_other.get(key, [])
+                pair_count = min(len(lb), len(lo))
+                for i in range(pair_count):
+                    section = compare_record(lb[i], lo[i])
+                    if section:
+                        diff_blocks += 1
+                        lines.append(f"--- {key} #{i+1} ---")
+                        lines.append(section)
+                        lines.append("")
+            if diff_blocks == 0:
+                lines.append("No differences found for this pair.")
+            else:
+                lines.append(f"Blocks with differences: {diff_blocks}")
+            lines.append("")
+        if include_blocks:
+            lines.append("--- Full blocks (base vs other) ---")
+            for key in keys:
+                lb = map_base.get(key, [])
+                lo = map_other.get(key, [])
+                pair_count = min(len(lb), len(lo))
+                for i in range(pair_count):
+                    lines.append(f"=== {key} #{i+1} (base) ===")
+                    lines.append(lb[i]["raw"])
+                    lines.append(f"=== {key} #{i+1} (other) ===")
+                    lines.append(lo[i]["raw"])
+                    lines.append("")
+    stamp = now_stamp()
+    out_path = OUTPUT_DIR / f"Spylog_compare_groups_{stamp}.txt"
+    save_text(out_path, "\n".join(lines).rstrip() + "\n")
+    print(f"[+] Готово: {out_path}")
+    return out_path
+
+def rename_output_file(path):
+    while True:
+        print(f"\n[?] Переименовать выходной файл {path.name}? (y/n/back) [n]: ", end="")
+        ans = input().strip().lower()
+        if ans == "":
+            ans = "n"
+        if ans in ("n", "no"):
+            return path
+        if ans in ("b", "back"):
+            return path
+        if ans in ("y", "yes"):
+            break
+        print("[!] Введите y, n или back")
+    while True:
+        new_name = input(f"[?] Новое имя (без пути): ").strip()
+        if not new_name:
+            print("[!] Имя не может быть пустым")
+            continue
+        if new_name.lower() in ("b", "back"):
+            return path
+        new_path = path.parent / new_name
+        if new_path.exists():
+            print("[!] Файл уже существует")
+            continue
+        break
+    while True:
+        confirm = input(f"[?] Переименовать {path.name} в {new_name}? (y/n/back) [n]: ").strip().lower()
+        if confirm == "":
+            confirm = "n"
+        if confirm == "y":
+            path.rename(new_path)
+            print(f"[+] Переименован в {new_name}")
+            return new_path
+        elif confirm == "n":
+            return path
+        elif confirm == "back":
+            return path
+        else:
+            print("[!] Введите y, n или back")
 
 def rename_mode(files):
     while True:
@@ -455,333 +801,6 @@ def rename_mode(files):
         if cont != "y":
             break
 
-def extract_mode(selected_files):
-    all_blocks = []
-    per_file_counts = []
-    total_found = 0
-    total_files = len(selected_files)
-    for idx, path in enumerate(selected_files, 1):
-        print(f"\r[*] Обработка файла {idx}/{total_files}: {path.name}          ", end="")
-        _, blocks = build_records(path)
-        total_found += len(blocks)
-        per_file_counts.append((path.name, len(blocks)))
-        all_blocks.extend(blocks)
-    print("\r[*] Дедупликация блоков...          ", end="")
-    all_blocks = dedupe_exact(all_blocks)
-    print("\r[+] Готово, сохраняем...          ")
-    stamp = now_stamp()
-    out_path = OUTPUT_DIR / f"Spylog_extract_{stamp}.txt"
-    urls = set()
-    for block in all_blocks:
-        method, url = parse_header(block)
-        if url:
-            urls.add(url)
-    header = [
-        f"Source files: {', '.join(p.name for p in selected_files)}",
-        f"Blocks before dedupe: {total_found}",
-        f"Blocks after dedupe: {len(all_blocks)}",
-        "",
-        "=== Unique URLs found ===",
-        *sorted(urls),
-        "",
-        "=== Per-file block counts ===",
-    ]
-    for name, count in per_file_counts:
-        header.append(f"{name}: {count}")
-    header.append("")
-    header.append("=== Extracted blocks ===")
-    header.append("")
-    content = "\n\n".join(all_blocks)
-    full_text = "\n".join(header) + "\n" + content + "\n"
-    decoded = get_decoded_strings(all_blocks)
-    if decoded:
-        full_text += "\n\n=== Decoded strings ===\n"
-        full_text += "\n".join(decoded) + "\n"
-    save_text(out_path, full_text)
-    print(f"[+] Готово: {out_path}")
-    print(f"[+] Блоков: {len(all_blocks)}")
-    return out_path
-
-def group_by_signature(records):
-    grouped = defaultdict(list)
-    for rec in records:
-        grouped[rec["signature"]].append(rec)
-    return grouped
-
-def record_diff_lines(a, b):
-    lines = []
-    if a["method"] != b["method"]:
-        lines.append(f"Method: {a['method']} -> {b['method']}")
-    if a["url"] != b["url"]:
-        lines.append(f"URL: {a['url']} -> {b['url']}")
-    req_body_a = a["request_body"]
-    req_body_b = b["request_body"]
-    resp_body_a = a["response_body"]
-    resp_body_b = b["response_body"]
-    if req_body_a or req_body_b:
-        lines.append("--- Request body (A) ---")
-        lines.append(req_body_a if req_body_a else "(empty)")
-        lines.append("--- Request body (B) ---")
-        lines.append(req_body_b if req_body_b else "(empty)")
-    if resp_body_a or resp_body_b:
-        lines.append("--- Response body (A) ---")
-        lines.append(resp_body_a if resp_body_a else "(empty)")
-        lines.append("--- Response body (B) ---")
-        lines.append(resp_body_b if resp_body_b else "(empty)")
-    if a["request_json"] is not None and b["request_json"] is not None:
-        req_diffs = compare_values(a["request_json"], b["request_json"], "", [], 500)
-        if req_diffs:
-            lines.append("Request JSON changes:")
-            lines.append(summarize_diff(req_diffs))
-    elif req_body_a != req_body_b:
-        left = sanitize_for_compare(req_body_a)
-        right = sanitize_for_compare(req_body_b)
-        if left != right:
-            lines.append("Request body raw diff:")
-            lines.append(f"- left: {left[:500]}")
-            lines.append(f"- right: {right[:500]}")
-    if a["response_json"] is not None and b["response_json"] is not None:
-        res_diffs = compare_values(a["response_json"], b["response_json"], "", [], 500)
-        if res_diffs:
-            lines.append("Response JSON changes:")
-            lines.append(summarize_diff(res_diffs))
-    elif resp_body_a != resp_body_b:
-        left = sanitize_for_compare(resp_body_a)
-        right = sanitize_for_compare(resp_body_b)
-        if left != right:
-            lines.append("Response body raw diff:")
-            lines.append(f"- left: {left[:500]}")
-            lines.append(f"- right: {right[:500]}")
-    return lines
-
-def compare_record(a, b):
-    lines = record_diff_lines(a, b)
-    if not lines:
-        return ""
-    out = [f"Signature: {a['signature']}"]
-    out.extend(lines)
-    return "\n".join(out)
-
-def compare_mode(selected_files):
-    base = selected_files[0]
-    others = selected_files[1:]
-    recs = []
-    total = len(selected_files)
-    for idx, path in enumerate(selected_files, 1):
-        print(f"\r[*] Чтение файла {idx}/{total}: {path.name}          ", end="")
-        rec, _ = build_records(path)
-        recs.append((path.name, rec))
-    print("\r[+] Чтение завершено          ")
-    base_name, base_recs = recs[0]
-    lines = []
-    lines.append(f"=== COMPARE REPORT ===")
-    lines.append(f"Base file: {base_name}")
-    lines.append(f"Compared against: {', '.join(name for name, _ in recs[1:])}")
-    lines.append("")
-    all_urls = {}
-    for name, rec_list in recs:
-        urls = set()
-        for r in rec_list:
-            if r["url"]:
-                urls.add(r["url"])
-        all_urls[name] = urls
-    common = set.intersection(*[all_urls[name] for name, _ in recs]) if recs else set()
-    lines.append("=== URL STATISTICS ===")
-    for name, url_set in all_urls.items():
-        unique = url_set - common
-        lines.append(f"{name}: total {len(url_set)}, unique {len(unique)}")
-    lines.append(f"Common URLs across all files: {len(common)}")
-    if common:
-        lines.append("  " + "\n  ".join(sorted(common)))
-    lines.append("")
-    for idx, (other_name, other_recs) in enumerate(recs[1:], 1):
-        lines.append(f"=== Comparison with {other_name} (vs {base_name}) ===")
-        map_base = group_by_signature(base_recs)
-        map_other = group_by_signature(other_recs)
-        keys = sorted(set(map_base.keys()) | set(map_other.keys()))
-        shared = 0
-        only_base = 0
-        only_other = 0
-        for key in keys:
-            lb = map_base.get(key, [])
-            lo = map_other.get(key, [])
-            shared += min(len(lb), len(lo))
-            if len(lb) > len(lo):
-                only_base += len(lb) - len(lo)
-            elif len(lo) > len(lb):
-                only_other += len(lo) - len(lb)
-        lines.append(f"Shared signatures: {shared}")
-        lines.append(f"Only in {base_name}: {only_base}")
-        lines.append(f"Only in {other_name}: {only_other}")
-        lines.append("")
-        diff_blocks = 0
-        for key in keys:
-            lb = map_base.get(key, [])
-            lo = map_other.get(key, [])
-            pair_count = min(len(lb), len(lo))
-            for i in range(pair_count):
-                section = compare_record(lb[i], lo[i])
-                if section:
-                    diff_blocks += 1
-                    lines.append(f"--- {key} #{i+1} ---")
-                    lines.append(section)
-                    lines.append("")
-        if diff_blocks == 0:
-            lines.append("No differences found for this pair.")
-        else:
-            lines.append(f"Blocks with differences: {diff_blocks}")
-        lines.append("")
-    all_blocks = []
-    for _, rec_list in recs:
-        for rec in rec_list:
-            all_blocks.append(rec['raw'])
-    decoded = get_decoded_strings(all_blocks)
-    if decoded:
-        lines.append("=== Decoded strings ===")
-        lines.extend(decoded)
-        lines.append("")
-    stamp = now_stamp()
-    out_path = OUTPUT_DIR / f"Spylog_compare_{base_name}_VS_{len(others)}files_{stamp}.txt"
-    save_text(out_path, "\n".join(lines).rstrip() + "\n")
-    print(f"[+] Готово: {out_path}")
-    return out_path
-
-def build_group_records(group_files, group_name):
-    all_blocks = []
-    for path in group_files:
-        _, blocks = build_records(path)
-        all_blocks.extend(blocks)
-    all_blocks = dedupe_exact(all_blocks)
-    records = [parse_record(block, group_name) for block in all_blocks]
-    return records, all_blocks
-
-def compare_groups(groups):
-    group_names = []
-    group_records = []
-    for idx, group in enumerate(groups, 1):
-        name = f"Group_{idx}"
-        print(f"\r[*] Обработка группы {idx} из {len(groups)}...          ", end="")
-        rec, _ = build_group_records(group, name)
-        group_names.append(name)
-        group_records.append(rec)
-    print("\r[+] Все группы обработаны          ")
-    base_name = group_names[0]
-    base_recs = group_records[0]
-    lines = []
-    lines.append("=== GROUP COMPARE REPORT ===")
-    lines.append(f"Base group: {base_name} (files: {', '.join(p.name for p in groups[0])})")
-    lines.append(f"Compared against: {', '.join(group_names[1:])}")
-    lines.append("")
-    all_urls = {}
-    for idx, (name, rec_list) in enumerate(zip(group_names, group_records)):
-        urls = set()
-        for r in rec_list:
-            if r["url"]:
-                urls.add(r["url"])
-        all_urls[name] = urls
-    common = set.intersection(*[all_urls[name] for name in group_names]) if group_names else set()
-    lines.append("=== URL STATISTICS ===")
-    for name, url_set in all_urls.items():
-        unique = url_set - common
-        lines.append(f"{name}: total {len(url_set)}, unique {len(unique)}")
-    lines.append(f"Common URLs across all groups: {len(common)}")
-    if common:
-        lines.append("  " + "\n  ".join(sorted(common)))
-    lines.append("")
-    for idx in range(1, len(group_names)):
-        other_name = group_names[idx]
-        other_recs = group_records[idx]
-        lines.append(f"=== Comparison with {other_name} (vs {base_name}) ===")
-        map_base = group_by_signature(base_recs)
-        map_other = group_by_signature(other_recs)
-        keys = sorted(set(map_base.keys()) | set(map_other.keys()))
-        shared = 0
-        only_base = 0
-        only_other = 0
-        for key in keys:
-            lb = map_base.get(key, [])
-            lo = map_other.get(key, [])
-            shared += min(len(lb), len(lo))
-            if len(lb) > len(lo):
-                only_base += len(lb) - len(lo)
-            elif len(lo) > len(lb):
-                only_other += len(lo) - len(lb)
-        lines.append(f"Shared signatures: {shared}")
-        lines.append(f"Only in {base_name}: {only_base}")
-        lines.append(f"Only in {other_name}: {only_other}")
-        lines.append("")
-        diff_blocks = 0
-        for key in keys:
-            lb = map_base.get(key, [])
-            lo = map_other.get(key, [])
-            pair_count = min(len(lb), len(lo))
-            for i in range(pair_count):
-                section = compare_record(lb[i], lo[i])
-                if section:
-                    diff_blocks += 1
-                    lines.append(f"--- {key} #{i+1} ---")
-                    lines.append(section)
-                    lines.append("")
-        if diff_blocks == 0:
-            lines.append("No differences found for this pair.")
-        else:
-            lines.append(f"Blocks with differences: {diff_blocks}")
-        lines.append("")
-    all_blocks = []
-    for rec_list in group_records:
-        for rec in rec_list:
-            all_blocks.append(rec['raw'])
-    decoded = get_decoded_strings(all_blocks)
-    if decoded:
-        lines.append("=== Decoded strings ===")
-        lines.extend(decoded)
-        lines.append("")
-    stamp = now_stamp()
-    out_path = OUTPUT_DIR / f"Spylog_compare_groups_{stamp}.txt"
-    save_text(out_path, "\n".join(lines).rstrip() + "\n")
-    print(f"[+] Готово: {out_path}")
-    return out_path
-
-def rename_output_file(path):
-    while True:
-        print(f"\n[?] Переименовать выходной файл {path.name}? (y/n/back) [n]: ", end="")
-        ans = input().strip().lower()
-        if ans == "":
-            ans = "n"
-        if ans in ("n", "no"):
-            return path
-        if ans in ("b", "back"):
-            return path
-        if ans in ("y", "yes"):
-            break
-        print("[!] Введите y, n или back")
-    while True:
-        new_name = input(f"[?] Новое имя (без пути): ").strip()
-        if not new_name:
-            print("[!] Имя не может быть пустым")
-            continue
-        if new_name.lower() in ("b", "back"):
-            return path
-        new_path = path.parent / new_name
-        if new_path.exists():
-            print("[!] Файл уже существует")
-            continue
-        break
-    while True:
-        confirm = input(f"[?] Переименовать {path.name} в {new_name}? (y/n/back) [n]: ").strip().lower()
-        if confirm == "":
-            confirm = "n"
-        if confirm == "y":
-            path.rename(new_path)
-            print(f"[+] Переименован в {new_name}")
-            return new_path
-        elif confirm == "n":
-            return path
-        elif confirm == "back":
-            return path
-        else:
-            print("[!] Введите y, n или back")
-
 def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     while True:
@@ -812,10 +831,11 @@ def main():
             print("[!] Неверный выбор")
             continue
         if mode == "1":
+            opts = ask_options("extract")
             selected = ask_files(files, compare=False)
             if selected is None:
                 continue
-            out_path = extract_mode(selected)
+            out_path = extract_mode(selected, opts[0], opts[1], opts[2])
             rename_output_file(out_path)
         else:
             print("\n[?] Сравнивать файлы (1) или группы (2)? [1]: ", end="")
@@ -827,13 +847,15 @@ def main():
                 if selected is None or len(selected) < 2:
                     print("[!] Нужно минимум 2 файла")
                     continue
-                out_path = compare_mode(selected)
+                opts = ask_options("compare")
+                out_path = compare_mode(selected, opts[0], opts[1], opts[2], opts[3])
                 rename_output_file(out_path)
             elif cmp_type == "2":
                 groups = ask_groups(files)
                 if groups is None:
                     continue
-                out_path = compare_groups(groups)
+                opts = ask_options("compare")
+                out_path = compare_groups(groups, opts[0], opts[1], opts[2], opts[3])
                 rename_output_file(out_path)
             else:
                 print("[!] Неверный выбор")
