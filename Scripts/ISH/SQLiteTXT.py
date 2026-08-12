@@ -181,7 +181,7 @@ def export_table_human(conn, table, out_file, dedupe=False, sort_by_policy=False
     cursor.execute(f"PRAGMA table_info({table})")
     columns = [row[1] for row in cursor.fetchall()]
     if not columns:
-        return
+        return 0
     cursor.execute(f"SELECT * FROM {table}")
     rows = cursor.fetchall()
 
@@ -190,7 +190,13 @@ def export_table_human(conn, table, out_file, dedupe=False, sort_by_policy=False
 
     if not rows:
         out_file.write("\n(нет записей, соответствующих фильтру)\n")
-        return
+        return 0
+
+    if sort_by_policy and table == "logging":
+        type_idx = columns.index('type') if 'type' in columns else None
+        if type_idx is not None:
+            policy_order = {'DIRECT': 0, 'PROXY': 1, 'REJECT': 2}
+            rows.sort(key=lambda r: policy_order.get(r[type_idx] if type_idx < len(r) else '', 3))
 
     if dedupe and table == "logging":
         url_idx = columns.index('url') if 'url' in columns else None
@@ -210,23 +216,48 @@ def export_table_human(conn, table, out_file, dedupe=False, sort_by_policy=False
         else:
             dedupe = False
 
-    if sort_by_policy and table == "logging":
-        type_idx = columns.index('type') if 'type' in columns else None
-        if type_idx is not None:
-            policy_order = {'DIRECT': 0, 'PROXY': 1, 'REJECT': 2}
-            def sort_key(row):
-                val = row[type_idx] if type_idx < len(row) else ''
-                return policy_order.get(val, 3)
-            rows.sort(key=sort_key)
-
-    for row in rows:
-        out_file.write("\n")
-        for col, val in zip(columns, row):
-            if val is not None:
-                out_file.write(f"{col}: {val}\n")
+    if sort_by_policy and table == "logging" and 'type' in columns:
+        type_idx = columns.index('type')
+        policy_groups = {'DIRECT': [], 'PROXY': [], 'REJECT': []}
+        other = []
+        for row in rows:
+            val = row[type_idx] if type_idx < len(row) else ''
+            if val in policy_groups:
+                policy_groups[val].append(row)
             else:
-                out_file.write(f"{col}: (null)\n")
-        out_file.write("\n")
+                other.append(row)
+        total_written = 0
+        for policy in ('DIRECT', 'PROXY', 'REJECT'):
+            if policy_groups[policy]:
+                out_file.write(f"\n--- {policy} ---\n")
+                for row in policy_groups[policy]:
+                    out_file.write("\n")
+                    for col, val in zip(columns, row):
+                        if val is not None:
+                            out_file.write(f"{col}: {val}\n")
+                        else:
+                            out_file.write(f"{col}: (null)\n")
+                    total_written += 1
+        if other:
+            out_file.write("\n--- OTHER ---\n")
+            for row in other:
+                out_file.write("\n")
+                for col, val in zip(columns, row):
+                    if val is not None:
+                        out_file.write(f"{col}: {val}\n")
+                    else:
+                        out_file.write(f"{col}: (null)\n")
+                total_written += 1
+        return total_written
+    else:
+        for row in rows:
+            out_file.write("\n")
+            for col, val in zip(columns, row):
+                if val is not None:
+                    out_file.write(f"{col}: {val}\n")
+                else:
+                    out_file.write(f"{col}: (null)\n")
+        return len(rows)
 
 def extract_mode(selected_files, show_schema, show_stats, keywords, dedupe, sort_by_policy):
     total_files = len(selected_files)
@@ -249,15 +280,25 @@ def extract_mode(selected_files, show_schema, show_stats, keywords, dedupe, sort
                 if show_schema:
                     f.write(f"=== Схема базы данных: {db_path.name} ===\n")
                     for table in tables:
-                        columns, count = get_table_info(conn, table)
+                        columns, total_count = get_table_info(conn, table)
                         f.write(f"\nТаблица: {table}\n")
                         f.write(f"Колонки: {', '.join(columns)}\n")
                         if show_stats:
-                            f.write(f"Количество записей: {count}\n")
+                            f.write(f"Общее количество записей: {total_count}\n")
                     f.write("\n" + "="*40 + "\n\n")
+                total_exported = 0
                 for table in tables:
                     f.write(f"\n=== Таблица: {table} ===\n")
-                    export_table_human(conn, table, f, dedupe, sort_by_policy, keywords)
+                    if keywords:
+                        f.write(f"Фильтр по ключевым словам: {', '.join(keywords)}\n")
+                    if dedupe:
+                        f.write("Дедупликация по URL включена (группировка с подсчётом)\n")
+                    if sort_by_policy:
+                        f.write("Сортировка по политике: DIRECT → PROXY → REJECT\n")
+                    count = export_table_human(conn, table, f, dedupe, sort_by_policy, keywords)
+                    total_exported += count
+                if show_stats:
+                    f.write(f"\n--- Итого записей после фильтрации/дедупликации: {total_exported} ---\n")
             conn.close()
             created.append(out_path)
             print(f"\r[+] Обработана {db_path.name} -> {out_path.name} (таблиц: {len(tables)})          ")
@@ -268,7 +309,7 @@ def extract_mode(selected_files, show_schema, show_stats, keywords, dedupe, sort
 def ask_options_extract():
     print("\n=== Настройки экспорта (введите строку из 0/1 длиной 5, Enter = 11000) ===")
     print("1. Показывать схему таблиц (колонки)")
-    print("2. Показывать количество записей в каждой таблице")
+    print("2. Показывать количество записей (общее и итоговое)")
     print("3. Фильтровать записи по ключевым словам (в поле URL) (если 1, затем введите слова)")
     print("4. Удалять дубликаты по URL (группировать, показывать количество)")
     print("5. Сортировать по политике: DIRECT → PROXY → REJECT")
