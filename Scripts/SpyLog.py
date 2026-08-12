@@ -25,7 +25,7 @@ import os
 from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse, parse_qs
 
 ROOT = Path.home()
 INPUT_DIR = ROOT / "SRLog"
@@ -352,33 +352,49 @@ def decode_all_strings(text):
     except Exception:
         return text
 
-def parse_record(block, source_name, decode=False):
+def normalize_url(url, level):
+    if not url:
+        return url
+    parsed = urlparse(url)
+    if level == 1:
+        return url
+    elif level == 2:
+        return f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+    elif level == 3:
+        return f"{parsed.path}" if parsed.path else "/"
+    elif level == 4:
+        return ""
+    return url
+
+def parse_record(block, source_name, decode=False, sig_level=1):
     method, url = parse_header(block)
     request_body = extract_request_body(block)
     response_body = extract_response_body(block)
     if decode:
         request_body = decode_all_strings(request_body)
         response_body = decode_all_strings(response_body)
+    norm_url = normalize_url(url, sig_level) if url else "UNKNOWN"
+    sig = f"{method or 'ANY'} {norm_url}"
     return {
         "source": source_name,
         "raw": block,
         "method": method or "",
         "url": url or "",
-        "signature": f"{method or 'ANY'} {url or 'UNKNOWN'}",
+        "signature": sig,
         "request_body": request_body,
         "response_body": response_body,
         "request_json": parse_json_maybe(request_body),
         "response_json": parse_json_maybe(response_body),
     }
 
-def build_records(path, decode=False, keep_duplicates=False):
+def build_records(path, decode=False, keep_duplicates=False, sig_level=1):
     text = load_log(path)
     blocks = extract_spy_blocks(text)
     blocks = dedupe_exact(blocks, keep_duplicates)
-    records = [parse_record(block, path.name, decode) for block in blocks]
+    records = [parse_record(block, path.name, decode, sig_level) for block in blocks]
     return records, blocks
 
-def ask_options(mode, extra_bits=0):
+def ask_options(mode):
     if mode == "extract":
         print("\n=== Настройки вывода (введите строку из 0/1 длиной 5, Enter = 11110) ===")
         print("1. Показывать список уникальных URL")
@@ -387,6 +403,23 @@ def ask_options(mode, extra_bits=0):
         print("4. Отделить логи с ключевыми словами (если 1, затем введите слова)")
         print("5. Показывать дубликаты (0 - удалять, 1 - оставлять)")
         default = "11110"
+        while True:
+            s = input("[?] Ваш выбор: ").strip()
+            if s == "":
+                s = default
+            if len(s) != len(default):
+                print(f"[!] Ожидается {len(default)} символов")
+                continue
+            if not all(c in "01" for c in s):
+                print("[!] Используйте только 0 и 1")
+                continue
+            bits = [c == "1" for c in s]
+            keywords = []
+            if bits[3]:
+                kw = input("[?] Введите ключевые слова (через запятую): ").strip()
+                if kw:
+                    keywords = [x.strip() for x in kw.split(",") if x.strip()]
+            return bits, keywords
     else:
         print("\n=== Настройки вывода (введите строку из 0/1 длиной 6, Enter = 111100) ===")
         print("1. Показывать статистику URL")
@@ -396,23 +429,31 @@ def ask_options(mode, extra_bits=0):
         print("5. Отделить логи с ключевыми словами (если 1, затем введите слова)")
         print("6. Показывать дубликаты (0 - удалять, 1 - оставлять)")
         default = "111100"
-    while True:
-        s = input("[?] Ваш выбор: ").strip()
-        if s == "":
-            s = default
-        if len(s) != len(default):
-            print(f"[!] Ожидается {len(default)} символов")
-            continue
-        if not all(c in "01" for c in s):
-            print("[!] Используйте только 0 и 1")
-            continue
-        bits = [c == "1" for c in s]
-        keywords = []
-        if bits[3] if len(bits) > 3 else False:
-            kw = input("[?] Введите ключевые слова (через запятую): ").strip()
-            if kw:
-                keywords = [x.strip() for x in kw.split(",") if x.strip()]
-        return bits, keywords
+        while True:
+            s = input("[?] Ваш выбор: ").strip()
+            if s == "":
+                s = default
+            if len(s) != len(default):
+                print(f"[!] Ожидается {len(default)} символов")
+                continue
+            if not all(c in "01" for c in s):
+                print("[!] Используйте только 0 и 1")
+                continue
+            bits = [c == "1" for c in s]
+            keywords = []
+            if bits[4]:
+                kw = input("[?] Введите ключевые слова (через запятую): ").strip()
+                if kw:
+                    keywords = [x.strip() for x in kw.split(",") if x.strip()]
+            print("\n[?] Как сравнивать сигнатуры (метод+URL)?")
+            print("1 - полный URL (включая параметры)")
+            print("2 - путь без параметров (схема+хост+путь)")
+            print("3 - только метод + путь (без хоста)")
+            print("4 - только метод")
+            sig_choice = input("[?] Ваш выбор [1]: ").strip()
+            if sig_choice not in ("1","2","3","4"):
+                sig_choice = "1"
+            return bits, keywords, int(sig_choice)
 
 def move_keyword_blocks(blocks, keywords):
     if not keywords:
@@ -536,14 +577,14 @@ def compare_record(a, b):
     out.extend(lines)
     return "\n".join(out)
 
-def compare_mode(selected_files, show_urls, decode, show_diffs, include_blocks, keywords, keep_duplicates):
+def compare_mode(selected_files, show_urls, decode, show_diffs, include_blocks, keywords, keep_duplicates, sig_level):
     base = selected_files[0]
     others = selected_files[1:]
     recs = []
     total = len(selected_files)
     for idx, path in enumerate(selected_files, 1):
         print(f"\r[*] Чтение файла {idx}/{total}: {path.name}          ", end="")
-        rec, _ = build_records(path, decode, keep_duplicates)
+        rec, _ = build_records(path, decode, keep_duplicates, sig_level)
         recs.append((path.name, rec))
     print("\r[+] Чтение завершено          ")
     base_name, base_recs = recs[0]
@@ -551,6 +592,7 @@ def compare_mode(selected_files, show_urls, decode, show_diffs, include_blocks, 
     lines.append(f"=== COMPARE REPORT ===")
     lines.append(f"Base file: {base_name}")
     lines.append(f"Compared against: {', '.join(name for name, _ in recs[1:])}")
+    lines.append(f"Signature level: {sig_level} (1=full URL, 2=path no params, 3=path only, 4=method only)")
     lines.append("")
     if keywords:
         lines.append(f"Keywords (blocks moved to top): {', '.join(keywords)}")
@@ -628,22 +670,22 @@ def compare_mode(selected_files, show_urls, decode, show_diffs, include_blocks, 
     print(f"[+] Готово: {out_path}")
     return out_path
 
-def build_group_records(group_files, group_name, decode, keep_duplicates):
+def build_group_records(group_files, group_name, decode, keep_duplicates, sig_level):
     all_blocks = []
     for path in group_files:
-        _, blocks = build_records(path, decode, keep_duplicates)
+        _, blocks = build_records(path, decode, keep_duplicates, sig_level)
         all_blocks.extend(blocks)
     all_blocks = dedupe_exact(all_blocks, keep_duplicates)
-    records = [parse_record(block, group_name, decode) for block in all_blocks]
+    records = [parse_record(block, group_name, decode, sig_level) for block in all_blocks]
     return records, all_blocks
 
-def compare_groups(groups, show_urls, decode, show_diffs, include_blocks, keywords, keep_duplicates):
+def compare_groups(groups, show_urls, decode, show_diffs, include_blocks, keywords, keep_duplicates, sig_level):
     group_names = []
     group_records = []
     for idx, group in enumerate(groups, 1):
         name = f"Group_{idx}"
         print(f"\r[*] Обработка группы {idx} из {len(groups)}...          ", end="")
-        rec, _ = build_group_records(group, name, decode, keep_duplicates)
+        rec, _ = build_group_records(group, name, decode, keep_duplicates, sig_level)
         group_names.append(name)
         group_records.append(rec)
     print("\r[+] Все группы обработаны          ")
@@ -653,6 +695,7 @@ def compare_groups(groups, show_urls, decode, show_diffs, include_blocks, keywor
     lines.append("=== GROUP COMPARE REPORT ===")
     lines.append(f"Base group: {base_name} (files: {', '.join(p.name for p in groups[0])})")
     lines.append(f"Compared against: {', '.join(group_names[1:])}")
+    lines.append(f"Signature level: {sig_level} (1=full URL, 2=path no params, 3=path only, 4=method only)")
     lines.append("")
     if keywords:
         lines.append(f"Keywords (blocks moved to top): {', '.join(keywords)}")
@@ -919,15 +962,15 @@ def main():
                 if selected is None or len(selected) < 2:
                     print("[!] Нужно минимум 2 файла")
                     continue
-                opts, keywords = ask_options("compare")
-                out_path = compare_mode(selected, opts[0], opts[1], opts[2], opts[3], keywords, opts[5])
+                opts, keywords, sig_level = ask_options("compare")
+                out_path = compare_mode(selected, opts[0], opts[1], opts[2], opts[3], keywords, opts[5], sig_level)
                 rename_output_file(out_path)
             elif cmp_type == "2":
                 groups = ask_groups(files)
                 if groups is None:
                     continue
-                opts, keywords = ask_options("compare")
-                out_path = compare_groups(groups, opts[0], opts[1], opts[2], opts[3], keywords, opts[5])
+                opts, keywords, sig_level = ask_options("compare")
+                out_path = compare_groups(groups, opts[0], opts[1], opts[2], opts[3], keywords, opts[5], sig_level)
                 rename_output_file(out_path)
             else:
                 print("[!] Неверный выбор")
