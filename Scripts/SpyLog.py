@@ -60,6 +60,11 @@ def save_config():
 
 load_config()
 
+def clean_str(s):
+    if not s:
+        return s
+    return ''.join(ch for ch in s if ord(ch) >= 32 or ch in '\n\r\t')
+
 def now_stamp():
     return datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -790,6 +795,7 @@ def rename_output_file(path):
         print("[!] Введите y, n или back")
     while True:
         new_name = input(f"[?] Новое имя (без пути): ").strip()
+        new_name = clean_str(new_name)
         if not new_name:
             print("[!] Имя не может быть пустым")
             continue
@@ -829,6 +835,7 @@ def rename_mode(files):
             path = selected[0]
             while True:
                 new_name = input(f"[?] Новое имя для {path.name}: ").strip()
+                new_name = clean_str(new_name)
                 if not new_name:
                     print("[!] Имя не может быть пустым")
                     continue
@@ -853,6 +860,7 @@ def rename_mode(files):
                     print("[!] Введите y, n или back")
         elif choice == "2":
             prefix = input("[?] Введите префикс для группы: ").strip()
+            prefix = clean_str(prefix)
             if not prefix:
                 print("[!] Префикс не может быть пустым")
                 continue
