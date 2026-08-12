@@ -155,7 +155,28 @@ def get_table_info(conn, table):
     count = cursor.fetchone()[0]
     return columns, count
 
-def export_table_human(conn, table, out_file, dedupe=False, sort_by_policy=False):
+def row_matches_filter(row, columns, keywords):
+    if not keywords:
+        return True
+    url_idx = columns.index('url') if 'url' in columns else None
+    if url_idx is not None:
+        val = str(row[url_idx]) if row[url_idx] is not None else ""
+        for kw in keywords:
+            if kw.lower() in val.lower():
+                return True
+        return False
+    else:
+        for col, val in zip(columns, row):
+            if val is not None:
+                s = str(val)
+                for kw in keywords:
+                    if kw.lower() in s.lower():
+                        return True
+        return False
+
+def export_table_human(conn, table, out_file, dedupe=False, sort_by_policy=False, keywords=None):
+    if keywords is None:
+        keywords = []
     cursor = conn.cursor()
     cursor.execute(f"PRAGMA table_info({table})")
     columns = [row[1] for row in cursor.fetchall()]
@@ -163,6 +184,13 @@ def export_table_human(conn, table, out_file, dedupe=False, sort_by_policy=False
         return
     cursor.execute(f"SELECT * FROM {table}")
     rows = cursor.fetchall()
+
+    if keywords:
+        rows = [r for r in rows if row_matches_filter(r, columns, keywords)]
+
+    if not rows:
+        out_file.write("\n(нет записей, соответствующих фильтру)\n")
+        return
 
     if dedupe and table == "logging":
         url_idx = columns.index('url') if 'url' in columns else None
@@ -200,7 +228,7 @@ def export_table_human(conn, table, out_file, dedupe=False, sort_by_policy=False
                 out_file.write(f"{col}: (null)\n")
         out_file.write("\n")
 
-def extract_mode(selected_files, show_schema, show_stats, table_filter, dedupe, sort_by_policy):
+def extract_mode(selected_files, show_schema, show_stats, keywords, dedupe, sort_by_policy):
     total_files = len(selected_files)
     created = []
     for idx, db_path in enumerate(selected_files, 1):
@@ -211,11 +239,9 @@ def extract_mode(selected_files, show_schema, show_stats, table_filter, dedupe, 
         try:
             conn = sqlite3.connect(str(db_path))
             tables = get_user_tables(conn)
-            if table_filter:
-                tables = [t for t in tables if any(kw.lower() in t.lower() for kw in table_filter)]
             if not tables:
                 with open(out_path, 'w', encoding='utf-8') as f:
-                    f.write(f"База данных {db_path.name} не содержит таблиц (или после фильтрации).\n")
+                    f.write(f"База данных {db_path.name} не содержит таблиц.\n")
                 conn.close()
                 created.append(out_path)
                 continue
@@ -231,7 +257,7 @@ def extract_mode(selected_files, show_schema, show_stats, table_filter, dedupe, 
                     f.write("\n" + "="*40 + "\n\n")
                 for table in tables:
                     f.write(f"\n=== Таблица: {table} ===\n")
-                    export_table_human(conn, table, f, dedupe, sort_by_policy)
+                    export_table_human(conn, table, f, dedupe, sort_by_policy, keywords)
             conn.close()
             created.append(out_path)
             print(f"\r[+] Обработана {db_path.name} -> {out_path.name} (таблиц: {len(tables)})          ")
@@ -243,7 +269,7 @@ def ask_options_extract():
     print("\n=== Настройки экспорта (введите строку из 0/1 длиной 5, Enter = 11000) ===")
     print("1. Показывать схему таблиц (колонки)")
     print("2. Показывать количество записей в каждой таблице")
-    print("3. Фильтровать таблицы по ключевым словам (если 1, затем введите слова)")
+    print("3. Фильтровать записи по ключевым словам (в поле URL) (если 1, затем введите слова)")
     print("4. Удалять дубликаты по URL (группировать, показывать количество)")
     print("5. Сортировать по политике: DIRECT → PROXY → REJECT")
     default = "11000"
@@ -260,7 +286,7 @@ def ask_options_extract():
         bits = [c == "1" for c in s]
         keywords = []
         if bits[2]:
-            kw = input("[?] Введите ключевые слова для фильтрации таблиц (через запятую): ").strip()
+            kw = input("[?] Введите ключевые слова для фильтрации (через запятую): ").strip()
             if kw:
                 keywords = [x.strip() for x in kw.split(",") if x.strip()]
         return bits, keywords
