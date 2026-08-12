@@ -31,7 +31,7 @@ ROOT = Path.home()
 INPUT_DIR = ROOT / "SRLog"
 OUTPUT_DIR = ROOT / "SpyLog"
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
-SPY_TAG = "[Spylog]"
+SPY_PATTERN = "[Spylog]"
 KNOWN_SECTION_PREFIXES = (
     "| < Заголовки ответа:",
     "| TYPE:",
@@ -43,6 +43,22 @@ KNOWN_SECTION_PREFIXES = (
     "| [RES]",
 )
 METHODS = {"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "TRACE", "CONNECT"}
+CONFIG_FILE = ROOT / ".spylog_config"
+
+def load_config():
+    global SPY_PATTERN
+    if CONFIG_FILE.exists():
+        try:
+            with open(CONFIG_FILE, 'r') as f:
+                SPY_PATTERN = f.read().strip()
+        except:
+            pass
+
+def save_config():
+    with open(CONFIG_FILE, 'w') as f:
+        f.write(SPY_PATTERN)
+
+load_config()
 
 def now_stamp():
     return datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -188,7 +204,7 @@ def extract_spy_blocks(text):
     active = False
     for line in lines:
         if not active:
-            if SPY_TAG in line:
+            if SPY_PATTERN in line:
                 active = True
                 current = [line]
             continue
@@ -201,11 +217,18 @@ def extract_spy_blocks(text):
         blocks.append("\n".join(current).strip("\n"))
     return blocks
 
-def dedupe_exact(blocks):
+def dedupe_exact(blocks, keep_duplicates):
+    if keep_duplicates:
+        return blocks
     seen = set()
     out = []
     for block in blocks:
-        key = block.replace("\r\n", "\n").strip("\n")
+        lines = block.split("\n")
+        if len(lines) >= 2 and lines[-1].strip() == "+---":
+            body = "\n".join(lines[1:-1])
+        else:
+            body = "\n".join(lines[1:]) if len(lines) > 1 else ""
+        key = body.replace("\r\n", "\n").strip("\n")
         if key not in seen:
             seen.add(key)
             out.append(block)
@@ -348,27 +371,31 @@ def parse_record(block, source_name, decode=False):
         "response_json": parse_json_maybe(response_body),
     }
 
-def build_records(path, decode=False):
+def build_records(path, decode=False, keep_duplicates=False):
     text = load_log(path)
     blocks = extract_spy_blocks(text)
-    blocks = dedupe_exact(blocks)
+    blocks = dedupe_exact(blocks, keep_duplicates)
     records = [parse_record(block, path.name, decode) for block in blocks]
     return records, blocks
 
-def ask_options(mode):
+def ask_options(mode, extra_bits=0):
     if mode == "extract":
-        print("\n=== Настройки вывода (введите строку из 0/1 длиной 3, Enter = 111) ===")
+        print("\n=== Настройки вывода (введите строку из 0/1 длиной 5, Enter = 11110) ===")
         print("1. Показывать список уникальных URL")
         print("2. Декодировать закодированные строки в телах")
         print("3. Показывать количество блоков по каждому файлу")
-        default = "111"
+        print("4. Отделить логи с ключевыми словами (если 1, затем введите слова)")
+        print("5. Показывать дубликаты (0 - удалять, 1 - оставлять)")
+        default = "11110"
     else:
-        print("\n=== Настройки вывода (введите строку из 0/1 длиной 4, Enter = 1110) ===")
+        print("\n=== Настройки вывода (введите строку из 0/1 длиной 6, Enter = 111100) ===")
         print("1. Показывать статистику URL")
         print("2. Декодировать строки в телах перед сравнением")
         print("3. Показывать детальные различия полей")
         print("4. Включать полные блоки в отчёт")
-        default = "1110"
+        print("5. Отделить логи с ключевыми словами (если 1, затем введите слова)")
+        print("6. Показывать дубликаты (0 - удалять, 1 - оставлять)")
+        default = "111100"
     while True:
         s = input("[?] Ваш выбор: ").strip()
         if s == "":
@@ -379,21 +406,41 @@ def ask_options(mode):
         if not all(c in "01" for c in s):
             print("[!] Используйте только 0 и 1")
             continue
-        return [c == "1" for c in s]
+        bits = [c == "1" for c in s]
+        keywords = []
+        if bits[3] if len(bits) > 3 else False:
+            kw = input("[?] Введите ключевые слова (через запятую): ").strip()
+            if kw:
+                keywords = [x.strip() for x in kw.split(",") if x.strip()]
+        return bits, keywords
 
-def extract_mode(selected_files, show_urls, decode, show_stats):
+def move_keyword_blocks(blocks, keywords):
+    if not keywords:
+        return blocks
+    matched = []
+    other = []
+    for block in blocks:
+        lower = block.lower()
+        if any(kw.lower() in lower for kw in keywords):
+            matched.append(block)
+        else:
+            other.append(block)
+    return matched + other
+
+def extract_mode(selected_files, show_urls, decode, show_stats, keywords, keep_duplicates):
     all_blocks = []
     per_file_counts = []
     total_found = 0
     total_files = len(selected_files)
     for idx, path in enumerate(selected_files, 1):
         print(f"\r[*] Обработка файла {idx}/{total_files}: {path.name}          ", end="")
-        _, blocks = build_records(path, decode)
+        _, blocks = build_records(path, decode, keep_duplicates)
         total_found += len(blocks)
         per_file_counts.append((path.name, len(blocks)))
         all_blocks.extend(blocks)
-    print("\r[*] Дедупликация блоков...          ", end="")
-    all_blocks = dedupe_exact(all_blocks)
+    print("\r[*] Дедупликация (по содержимому)...          ", end="")
+    all_blocks = dedupe_exact(all_blocks, keep_duplicates)
+    all_blocks = move_keyword_blocks(all_blocks, keywords)
     print("\r[+] Готово, сохраняем...          ")
     stamp = now_stamp()
     out_path = OUTPUT_DIR / f"Spylog_extract_{stamp}.txt"
@@ -415,6 +462,10 @@ def extract_mode(selected_files, show_urls, decode, show_stats):
         lines.append("=== Per-file block counts ===")
         for name, count in per_file_counts:
             lines.append(f"{name}: {count}")
+        lines.append("")
+    if keywords:
+        lines.append("=== Blocks with keywords (moved to top) ===")
+        lines.append(f"Keywords: {', '.join(keywords)}")
         lines.append("")
     lines.append("=== Extracted blocks ===")
     lines.append("")
@@ -485,14 +536,14 @@ def compare_record(a, b):
     out.extend(lines)
     return "\n".join(out)
 
-def compare_mode(selected_files, show_urls, decode, show_diffs, include_blocks):
+def compare_mode(selected_files, show_urls, decode, show_diffs, include_blocks, keywords, keep_duplicates):
     base = selected_files[0]
     others = selected_files[1:]
     recs = []
     total = len(selected_files)
     for idx, path in enumerate(selected_files, 1):
         print(f"\r[*] Чтение файла {idx}/{total}: {path.name}          ", end="")
-        rec, _ = build_records(path, decode)
+        rec, _ = build_records(path, decode, keep_duplicates)
         recs.append((path.name, rec))
     print("\r[+] Чтение завершено          ")
     base_name, base_recs = recs[0]
@@ -501,6 +552,9 @@ def compare_mode(selected_files, show_urls, decode, show_diffs, include_blocks):
     lines.append(f"Base file: {base_name}")
     lines.append(f"Compared against: {', '.join(name for name, _ in recs[1:])}")
     lines.append("")
+    if keywords:
+        lines.append(f"Keywords (blocks moved to top): {', '.join(keywords)}")
+        lines.append("")
     all_urls = {}
     if show_urls:
         for name, rec_list in recs:
@@ -574,22 +628,22 @@ def compare_mode(selected_files, show_urls, decode, show_diffs, include_blocks):
     print(f"[+] Готово: {out_path}")
     return out_path
 
-def build_group_records(group_files, group_name, decode):
+def build_group_records(group_files, group_name, decode, keep_duplicates):
     all_blocks = []
     for path in group_files:
-        _, blocks = build_records(path, decode)
+        _, blocks = build_records(path, decode, keep_duplicates)
         all_blocks.extend(blocks)
-    all_blocks = dedupe_exact(all_blocks)
+    all_blocks = dedupe_exact(all_blocks, keep_duplicates)
     records = [parse_record(block, group_name, decode) for block in all_blocks]
     return records, all_blocks
 
-def compare_groups(groups, show_urls, decode, show_diffs, include_blocks):
+def compare_groups(groups, show_urls, decode, show_diffs, include_blocks, keywords, keep_duplicates):
     group_names = []
     group_records = []
     for idx, group in enumerate(groups, 1):
         name = f"Group_{idx}"
         print(f"\r[*] Обработка группы {idx} из {len(groups)}...          ", end="")
-        rec, _ = build_group_records(group, name, decode)
+        rec, _ = build_group_records(group, name, decode, keep_duplicates)
         group_names.append(name)
         group_records.append(rec)
     print("\r[+] Все группы обработаны          ")
@@ -600,6 +654,9 @@ def compare_groups(groups, show_urls, decode, show_diffs, include_blocks):
     lines.append(f"Base group: {base_name} (files: {', '.join(p.name for p in groups[0])})")
     lines.append(f"Compared against: {', '.join(group_names[1:])}")
     lines.append("")
+    if keywords:
+        lines.append(f"Keywords (blocks moved to top): {', '.join(keywords)}")
+        lines.append("")
     all_urls = {}
     if show_urls:
         for idx, (name, rec_list) in enumerate(zip(group_names, group_records)):
@@ -801,6 +858,17 @@ def rename_mode(files):
         if cont != "y":
             break
 
+def change_pattern():
+    global SPY_PATTERN
+    print(f"\n[+] Текущий паттерн: '{SPY_PATTERN}'")
+    new = input("[?] Введите новый паттерн (пусто - отмена): ").strip()
+    if new:
+        SPY_PATTERN = new
+        save_config()
+        print(f"[+] Паттерн изменён на '{SPY_PATTERN}'")
+    else:
+        print("[!] Отмена")
+
 def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     while True:
@@ -817,13 +885,17 @@ def main():
         print("\n[1] Extract")
         print("[2] Compare")
         print("[3] Rename files")
-        print("[4] Exit")
-        mode = input("\n[?] Выберите режим (1/2/3/4) [1]: ").strip()
+        print("[4] Change search pattern")
+        print("[5] Exit")
+        mode = input("\n[?] Выберите режим (1/2/3/4/5) [1]: ").strip()
         if mode == "":
             mode = "1"
-        if mode == "4":
+        if mode == "5":
             print("[+] Выход.")
             break
+        if mode == "4":
+            change_pattern()
+            continue
         if mode == "3":
             rename_mode(files)
             continue
@@ -831,11 +903,11 @@ def main():
             print("[!] Неверный выбор")
             continue
         if mode == "1":
-            opts = ask_options("extract")
+            opts, keywords = ask_options("extract")
             selected = ask_files(files, compare=False)
             if selected is None:
                 continue
-            out_path = extract_mode(selected, opts[0], opts[1], opts[2])
+            out_path = extract_mode(selected, opts[0], opts[1], opts[2], keywords, opts[4])
             rename_output_file(out_path)
         else:
             print("\n[?] Сравнивать файлы (1) или группы (2)? [1]: ", end="")
@@ -847,15 +919,15 @@ def main():
                 if selected is None or len(selected) < 2:
                     print("[!] Нужно минимум 2 файла")
                     continue
-                opts = ask_options("compare")
-                out_path = compare_mode(selected, opts[0], opts[1], opts[2], opts[3])
+                opts, keywords = ask_options("compare")
+                out_path = compare_mode(selected, opts[0], opts[1], opts[2], opts[3], keywords, opts[5])
                 rename_output_file(out_path)
             elif cmp_type == "2":
                 groups = ask_groups(files)
                 if groups is None:
                     continue
-                opts = ask_options("compare")
-                out_path = compare_groups(groups, opts[0], opts[1], opts[2], opts[3])
+                opts, keywords = ask_options("compare")
+                out_path = compare_groups(groups, opts[0], opts[1], opts[2], opts[3], keywords, opts[5])
                 rename_output_file(out_path)
             else:
                 print("[!] Неверный выбор")
