@@ -619,6 +619,30 @@ def compare_mode(selected_files, show_urls, decode, show_diffs, include_blocks, 
         if common:
             lines.append("  " + "\n  ".join(sorted(common)))
         lines.append("")
+
+    sigs = {}
+    for name, rec_list in recs:
+        sig_set = set(r["signature"] for r in rec_list)
+        sigs[name] = sig_set
+        lines.append(f"[{name}] Total blocks: {len(rec_list)}, unique signatures: {len(sig_set)}")
+    lines.append("")
+    for name, rec_list in recs:
+        sample = [r["signature"] for r in rec_list[:10]]
+        lines.append(f"Sample signatures from {name} (first 10):")
+        for s in sample:
+            lines.append(f"  {s}")
+        lines.append("")
+    common_sigs = set.intersection(*[sigs[name] for name, _ in recs]) if recs else set()
+    if not common_sigs:
+        lines.append("!!! WARNING: No common signatures found between files !!!")
+        lines.append("This means that none of the requests match by method+URL (with current signature level).")
+        lines.append("Possible reasons: different domains, paths, or the files contain completely different logs.")
+        lines.append("Check the sample signatures above to see the differences.")
+        lines.append("")
+    else:
+        lines.append(f"Common signatures: {len(common_sigs)}")
+        lines.append("")
+
     for idx, (other_name, other_recs) in enumerate(recs[1:], 1):
         lines.append(f"=== Comparison with {other_name} (vs {base_name}) ===")
         map_base = group_by_signature(base_recs)
@@ -721,6 +745,25 @@ def compare_groups(groups, show_urls, decode, show_diffs, include_blocks, keywor
         lines.append(f"Common URLs across all groups: {len(common)}")
         if common:
             lines.append("  " + "\n  ".join(sorted(common)))
+        lines.append("")
+    sigs = {}
+    for name, rec_list in zip(group_names, group_records):
+        sig_set = set(r["signature"] for r in rec_list)
+        sigs[name] = sig_set
+        lines.append(f"[{name}] Total blocks: {len(rec_list)}, unique signatures: {len(sig_set)}")
+    lines.append("")
+    for name, rec_list in zip(group_names, group_records):
+        sample = [r["signature"] for r in rec_list[:10]]
+        lines.append(f"Sample signatures from {name} (first 10):")
+        for s in sample:
+            lines.append(f"  {s}")
+        lines.append("")
+    common_sigs = set.intersection(*[sigs[name] for name in group_names]) if group_names else set()
+    if not common_sigs:
+        lines.append("!!! WARNING: No common signatures found between groups !!!")
+        lines.append("")
+    else:
+        lines.append(f"Common signatures: {len(common_sigs)}")
         lines.append("")
     for idx in range(1, len(group_names)):
         other_name = group_names[idx]
