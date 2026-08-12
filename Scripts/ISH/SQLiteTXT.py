@@ -24,6 +24,7 @@ import csv
 import shutil
 from pathlib import Path
 from datetime import datetime
+from collections import defaultdict
 
 ROOT = Path.home()
 INPUT_DIR = ROOT / "DBLog"
@@ -142,7 +143,7 @@ def get_user_tables(conn):
     cursor = conn.cursor()
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
     all_tables = [row[0] for row in cursor.fetchall()]
-    skip = ('logging_segments', 'logging_segdir')
+    skip = ('logging_segments', 'logging_segdir', 'logging_content')
     tables = [t for t in all_tables if t not in skip]
     return tables
 
@@ -154,7 +155,7 @@ def get_table_info(conn, table):
     count = cursor.fetchone()[0]
     return columns, count
 
-def export_table_human(conn, table, out_file):
+def export_table_human(conn, table, out_file, dedupe=False, sort_by_policy=False):
     cursor = conn.cursor()
     cursor.execute(f"PRAGMA table_info({table})")
     columns = [row[1] for row in cursor.fetchall()]
@@ -162,6 +163,34 @@ def export_table_human(conn, table, out_file):
         return
     cursor.execute(f"SELECT * FROM {table}")
     rows = cursor.fetchall()
+
+    if dedupe and table == "logging":
+        url_idx = columns.index('url') if 'url' in columns else None
+        if url_idx is not None:
+            groups = defaultdict(list)
+            for row in rows:
+                groups[row[url_idx]].append(row)
+            grouped_rows = []
+            for url, group in groups.items():
+                first = group[0]
+                count = len(group)
+                row_list = list(first)
+                row_list.append(count)
+                grouped_rows.append(row_list)
+            columns = columns + ['count']
+            rows = grouped_rows
+        else:
+            dedupe = False
+
+    if sort_by_policy and table == "logging":
+        type_idx = columns.index('type') if 'type' in columns else None
+        if type_idx is not None:
+            policy_order = {'DIRECT': 0, 'PROXY': 1, 'REJECT': 2}
+            def sort_key(row):
+                val = row[type_idx] if type_idx < len(row) else ''
+                return policy_order.get(val, 3)
+            rows.sort(key=sort_key)
+
     for row in rows:
         out_file.write("\n")
         for col, val in zip(columns, row):
@@ -171,7 +200,7 @@ def export_table_human(conn, table, out_file):
                 out_file.write(f"{col}: (null)\n")
         out_file.write("\n")
 
-def extract_mode(selected_files, show_schema, show_stats, table_filter):
+def extract_mode(selected_files, show_schema, show_stats, table_filter, dedupe, sort_by_policy):
     total_files = len(selected_files)
     created = []
     for idx, db_path in enumerate(selected_files, 1):
@@ -202,7 +231,7 @@ def extract_mode(selected_files, show_schema, show_stats, table_filter):
                     f.write("\n" + "="*40 + "\n\n")
                 for table in tables:
                     f.write(f"\n=== Таблица: {table} ===\n")
-                    export_table_human(conn, table, f)
+                    export_table_human(conn, table, f, dedupe, sort_by_policy)
             conn.close()
             created.append(out_path)
             print(f"\r[+] Обработана {db_path.name} -> {out_path.name} (таблиц: {len(tables)})          ")
@@ -211,11 +240,13 @@ def extract_mode(selected_files, show_schema, show_stats, table_filter):
     return created
 
 def ask_options_extract():
-    print("\n=== Настройки экспорта (введите строку из 0/1 длиной 3, Enter = 110) ===")
+    print("\n=== Настройки экспорта (введите строку из 0/1 длиной 5, Enter = 11000) ===")
     print("1. Показывать схему таблиц (колонки)")
     print("2. Показывать количество записей в каждой таблице")
     print("3. Фильтровать таблицы по ключевым словам (если 1, затем введите слова)")
-    default = "110"
+    print("4. Удалять дубликаты по URL (группировать, показывать количество)")
+    print("5. Сортировать по политике: DIRECT → PROXY → REJECT")
+    default = "11000"
     while True:
         s = input("[?] Ваш выбор: ").strip()
         if s == "":
@@ -473,8 +504,8 @@ def main():
             if selected is None:
                 continue
             opts, keywords = ask_options_extract()
-            show_schema, show_stats, _ = opts
-            created = extract_mode(selected, show_schema, show_stats, keywords)
+            show_schema, show_stats, _, dedupe, sort_by_policy = opts
+            created = extract_mode(selected, show_schema, show_stats, keywords, dedupe, sort_by_policy)
             print("\n[+] Экспорт завершён. Файлы сохранены в ~/TextLog")
             if len(created) == 1:
                 ans = input("[?] Переименовать созданный файл? (y/n) [n]: ").strip().lower()
