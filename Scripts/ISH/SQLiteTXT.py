@@ -1,18 +1,15 @@
 #!/bin/sh
 clear
-
 echo "[*] Настройка DNS..."
 echo "nameserver 8.8.8.8" > /etc/resolv.conf
 echo "nameserver 8.8.4.4" >> /etc/resolv.conf
 echo "nameserver 94.140.14.14" >> /etc/resolv.conf
 echo "nameserver 94.140.15.15" >> /etc/resolv.conf
 echo "nameserver 1.1.1.1" >> /etc/resolv.conf
-
 echo "[*] Обновление системы и установка зависимостей..."
 apk update
 apk upgrade
 apk add --no-cache python3 sqlite curl wget bash
-
 echo "[*] Создание папок..."
 mkdir -p ~/DBLog
 mkdir -p ~/TextLog
@@ -30,9 +27,8 @@ from datetime import datetime
 
 ROOT = Path.home()
 INPUT_DIR = ROOT / "DBLog"
-OUTPUT_DIR = ROOT / "TextLog"
+OUTPUT_DIR =ROOT / "TextLog"
 CONFIG_FILE = ROOT / ".sqlitetxt_config"
-
 SEPARATOR = "\t"
 SEP_NAME = "tab"
 
@@ -124,6 +120,7 @@ def parse_selection(text, max_index):
 
 def select_files(files, allow_multiple=True, prompt="Выберите файлы"):
     while True:
+        print_files(files)
         if allow_multiple:
             print(f"\n[?] {prompt} (можно несколько, например 1,3-4 или all)")
         else:
@@ -141,18 +138,21 @@ def select_files(files, allow_multiple=True, prompt="Выберите файлы
         except:
             print("[!] Неверный выбор")
 
-def get_table_info(conn):
+def get_user_tables(conn):
     cursor = conn.cursor()
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
-    tables = [row[0] for row in cursor.fetchall()]
-    info = {}
-    for table in tables:
-        cursor.execute(f"PRAGMA table_info({table})")
-        columns = [row[1] for row in cursor.fetchall()]
-        cursor.execute(f"SELECT COUNT(*) FROM {table}")
-        count = cursor.fetchone()[0]
-        info[table] = {"columns": columns, "count": count}
-    return info
+    all_tables = [row[0] for row in cursor.fetchall()]
+    skip = ('logging_segments', 'logging_segdir')
+    tables = [t for t in all_tables if t not in skip]
+    return tables
+
+def get_table_info(conn, table):
+    cursor = conn.cursor()
+    cursor.execute(f"PRAGMA table_info({table})")
+    columns = [row[1] for row in cursor.fetchall()]
+    cursor.execute(f"SELECT COUNT(*) FROM {table}")
+    count = cursor.fetchone()[0]
+    return columns, count
 
 def export_table(conn, table, out_file, separator):
     cursor = conn.cursor()
@@ -174,8 +174,7 @@ def extract_mode(selected_files, show_schema, show_stats, table_filter, separato
         out_path = OUTPUT_DIR / f"{base_name}.txt"
         try:
             conn = sqlite3.connect(str(db_path))
-            info = get_table_info(conn)
-            tables = list(info.keys())
+            tables = get_user_tables(conn)
             if table_filter:
                 tables = [t for t in tables if any(kw.lower() in t.lower() for kw in table_filter)]
             if not tables:
@@ -187,10 +186,11 @@ def extract_mode(selected_files, show_schema, show_stats, table_filter, separato
                 if show_schema:
                     f.write(f"=== Схема базы данных: {db_path.name} ===\n")
                     for table in tables:
+                        columns, count = get_table_info(conn, table)
                         f.write(f"\nТаблица: {table}\n")
-                        f.write(f"Колонки: {', '.join(info[table]['columns'])}\n")
+                        f.write(f"Колонки: {', '.join(columns)}\n")
                         if show_stats:
-                            f.write(f"Количество записей: {info[table]['count']}\n")
+                            f.write(f"Количество записей: {count}\n")
                     f.write("\n" + "="*40 + "\n\n")
                 for table in tables:
                     f.write(f"\n=== Таблица: {table} ===\n")
@@ -382,6 +382,8 @@ def clean_broken_files():
             continue
         print(f"[?] Удалить всё содержимое {d}? (y/n) [n]: ", end="")
         ans = input().strip().lower()
+        if ans == "":
+            ans = "n"
         if ans == "y":
             for item in d.iterdir():
                 try:
@@ -448,5 +450,4 @@ EOF
 
 echo "[*] Запуск SQLiteTXT.py..."
 python3 ~/SQLiteTXT.py
-
 echo "[*] Готово! Текстовые файлы находятся в ~/TextLog"
