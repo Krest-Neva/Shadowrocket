@@ -154,25 +154,31 @@ def get_table_info(conn, table):
     count = cursor.fetchone()[0]
     return columns, count
 
-def export_table(conn, table, out_file, separator):
+def export_table_human(conn, table, out_file):
     cursor = conn.cursor()
     cursor.execute(f"PRAGMA table_info({table})")
     columns = [row[1] for row in cursor.fetchall()]
     if not columns:
         return
     cursor.execute(f"SELECT * FROM {table}")
-    writer = csv.writer(out_file, delimiter=separator, quoting=csv.QUOTE_MINIMAL)
-    writer.writerow(columns)
-    for row in cursor.fetchall():
-        writer.writerow(row)
+    rows = cursor.fetchall()
+    for row in rows:
+        out_file.write("\n")
+        for col, val in zip(columns, row):
+            if val is not None:
+                out_file.write(f"{col}: {val}\n")
+            else:
+                out_file.write(f"{col}: (null)\n")
+        out_file.write("\n")
 
-def extract_mode(selected_files, show_schema, show_stats, table_filter, separator):
+def extract_mode(selected_files, show_schema, show_stats, table_filter):
     total_files = len(selected_files)
     created = []
     for idx, db_path in enumerate(selected_files, 1):
         print(f"\r[*] Обработка {idx}/{total_files}: {db_path.name}          ", end="")
         base_name = db_path.stem
-        out_path = OUTPUT_DIR / f"{base_name}.txt"
+        timestamp = now_stamp()
+        out_path = OUTPUT_DIR / f"{base_name}_{timestamp}.txt"
         try:
             conn = sqlite3.connect(str(db_path))
             tables = get_user_tables(conn)
@@ -184,7 +190,7 @@ def extract_mode(selected_files, show_schema, show_stats, table_filter, separato
                 conn.close()
                 created.append(out_path)
                 continue
-            with open(out_path, 'w', encoding='utf-8', newline='') as f:
+            with open(out_path, 'w', encoding='utf-8') as f:
                 if show_schema:
                     f.write(f"=== Схема базы данных: {db_path.name} ===\n")
                     for table in tables:
@@ -196,7 +202,7 @@ def extract_mode(selected_files, show_schema, show_stats, table_filter, separato
                     f.write("\n" + "="*40 + "\n\n")
                 for table in tables:
                     f.write(f"\n=== Таблица: {table} ===\n")
-                    export_table(conn, table, f, separator)
+                    export_table_human(conn, table, f)
             conn.close()
             created.append(out_path)
             print(f"\r[+] Обработана {db_path.name} -> {out_path.name} (таблиц: {len(tables)})          ")
@@ -318,99 +324,33 @@ def rename_mode(files):
         if cont != "y":
             break
 
-def rename_output_files(files):
-    if not files:
-        return
+def rename_single_output_file(file_path):
     while True:
-        print_files(files, title="[+] Созданные .txt файлы:")
-        print("\n[?] Переименовать один файл (1) или группу с общим префиксом (2)? [1]: ", end="")
-        choice = input().strip()
-        if choice == "":
-            choice = "1"
-        if choice == "1":
-            selected = select_files(files, allow_multiple=False, prompt="Выберите файл для переименования")
-            if selected is None:
-                continue
-            path = selected[0]
-            while True:
-                new_name = input(f"[?] Новое имя для {path.name}: ").strip()
-                new_name = clean_str(new_name)
-                new_name = sanitize_filename(new_name)
-                if not new_name:
-                    print("[!] Имя не может быть пустым")
-                    continue
-                if new_name.lower() in ("b", "back"):
-                    break
-                if not new_name.endswith(".txt"):
-                    new_name += ".txt"
-                new_path = path.parent / new_name
-                if new_path.exists():
-                    print("[!] Файл с таким именем уже существует")
-                    continue
-                confirm = input(f"[?] Переименовать {path.name} в {new_name}? (y/n/back) [n]: ").strip().lower()
-                if confirm == "":
-                    confirm = "n"
-                if confirm == "y":
-                    path.rename(new_path)
-                    print(f"[+] Переименован в {new_name}")
-                    files = [p for p in files if p != path] + [new_path]
-                    print_files(files, title="[+] Обновлённый список .txt файлов:")
-                    break
-                elif confirm == "back":
-                    break
-                else:
-                    print("[!] Введите y, n или back")
-        elif choice == "2":
-            prefix = input("[?] Введите префикс для группы: ").strip()
-            prefix = clean_str(prefix)
-            prefix = sanitize_filename(prefix)
-            if not prefix:
-                print("[!] Префикс не может быть пустым")
-                continue
-            apply_all = input("[?] Применить ко всем файлам? (y/n) [y]: ").strip().lower()
-            if apply_all == "":
-                apply_all = "y"
-            if apply_all == "y":
-                selected_files = files
-            else:
-                selected_files = select_files(files, allow_multiple=True, prompt="Выберите файлы для переименования")
-                if selected_files is None:
-                    continue
-            if not selected_files:
-                print("[!] Нет файлов для переименования")
-                continue
-            selected_files_sorted = sorted(selected_files, key=lambda p: p.name)
-            conflicts = []
-            for i, path in enumerate(selected_files_sorted, 1):
-                ext = path.suffix
-                new_name = f"{prefix}-{i}{ext}"
-                new_path = path.parent / new_name
-                if new_path.exists() and new_path != path:
-                    conflicts.append((path, new_path))
-            if conflicts:
-                print("[!] Следующие файлы будут перезаписаны:")
-                for old, new in conflicts:
-                    print(f"  {old.name} -> {new.name}")
-                confirm = input("[?] Продолжить? (y/n) [n]: ").strip().lower()
-                if confirm != "y":
-                    print("[!] Отменено")
-                    continue
-            new_paths = []
-            for i, path in enumerate(selected_files_sorted, 1):
-                ext = path.suffix
-                new_name = f"{prefix}-{i}{ext}"
-                new_path = path.parent / new_name
-                path.rename(new_path)
-                print(f"[+] {path.name} -> {new_name}")
-                new_paths.append(new_path)
-            files = [p for p in files if p not in selected_files_sorted] + new_paths
-            print_files(files, title="[+] Обновлённый список .txt файлов:")
-        else:
-            print("[!] Неверный выбор")
+        new_name = input(f"[?] Новое имя для {file_path.name}: ").strip()
+        new_name = clean_str(new_name)
+        new_name = sanitize_filename(new_name)
+        if not new_name:
+            print("[!] Имя не может быть пустым")
             continue
-        cont = input("[?] Продолжить переименование? (y/n) [n]: ").strip().lower()
-        if cont != "y":
-            break
+        if new_name.lower() in ("b", "back"):
+            return None
+        if not new_name.endswith(".txt"):
+            new_name += ".txt"
+        new_path = file_path.parent / new_name
+        if new_path.exists():
+            print("[!] Файл с таким именем уже существует")
+            continue
+        confirm = input(f"[?] Переименовать {file_path.name} в {new_name}? (y/n) [n]: ").strip().lower()
+        if confirm == "":
+            confirm = "n"
+        if confirm == "y":
+            file_path.rename(new_path)
+            print(f"[+] Переименован в {new_name}")
+            return new_path
+        elif confirm == "back":
+            return None
+        else:
+            print("[!] Введите y, n или back")
 
 def change_separator():
     global SEPARATOR, SEP_NAME
@@ -508,7 +448,7 @@ def main():
                 print("[+] Выход.")
                 return
             files = list_input_files()
-        print("\n[1] Export (экспорт в текст)")
+        print("\n[1] Export")
         print("[2] Rename input files")
         print("[3] Change output separator")
         print("[4] Clean broken files")
@@ -534,13 +474,12 @@ def main():
                 continue
             opts, keywords = ask_options_extract()
             show_schema, show_stats, _ = opts
-            created = extract_mode(selected, show_schema, show_stats, keywords, SEPARATOR)
+            created = extract_mode(selected, show_schema, show_stats, keywords)
             print("\n[+] Экспорт завершён. Файлы сохранены в ~/TextLog")
-            if created:
-                print("\n[?] Хотите переименовать какой-либо из созданных файлов? (y/n) [n]: ", end="")
-                ans = input().strip().lower()
+            if len(created) == 1:
+                ans = input("[?] Переименовать созданный файл? (y/n) [n]: ").strip().lower()
                 if ans == "y":
-                    rename_output_files(created)
+                    rename_single_output_file(created[0])
         else:
             print("[!] Неверный выбор")
             continue
