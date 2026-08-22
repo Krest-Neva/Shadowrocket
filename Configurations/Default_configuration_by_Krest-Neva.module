@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=Pro-grade networking for iOS/macOS
 
-#Последние изменения 01.08.2026 23:00
+#Последние изменения 22.08.2026 23:00
 #Фильтры обновлены 20.07.2026 15:00
 
 #==================================================
@@ -1154,6 +1154,7 @@ IP-CIDR,110.43.63.242/32,BESTPROXY,no-resolve
 IP-CIDR,120.133.33.222/32,BESTPROXY,no-resolve
 
 #Apple🍎
+DOMAIN-SUFFIX,push.apple.com,DIRECT
 RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/apple.txt,SPEEDPROXY
 RULE-SET,https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/icloud.txt,SPEEDPROXY
 DOMAIN-SUFFIX,aaplimg.com,SPEEDPROXY
