@@ -99,6 +99,8 @@ def clean_text(text):
     return strip_ansi(text).replace("\r\n", "\n").replace("\r", "\n")
 
 def maybe_repair_mojibake(text):
+    if not text:
+        return text
     if not any(ch in text for ch in ("Ð", "Ñ", "Ã", "Â")):
         return text
     try:
@@ -386,6 +388,8 @@ def parse_record(block, source_name, decode=False, sig_level=1):
     method, url = parse_header(block)
     request_body = extract_request_body(block)
     response_body = extract_response_body(block)
+    request_body = maybe_repair_mojibake(request_body)
+    response_body = maybe_repair_mojibake(response_body)
     if decode:
         request_body = decode_all_strings(request_body)
         response_body = decode_all_strings(response_body)
