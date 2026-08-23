@@ -26,16 +26,16 @@ import shutil
 from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
-from urllib.parse import unquote, urlparse, parse_qs
-import codecs
+from urllib.parse import unquote, urlparse
 import base64
 import html
+import codecs
 
 ROOT = Path.home()
 INPUT_DIR = ROOT / "SRLog"
 OUTPUT_DIR = ROOT / "SpyLog"
-ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
-SPY_PATTERN = "[Spylog]"
+ANSI_RE = re.compile(rb"\x1b\[[0-9;]*[A-Za-z]")
+SPY_PATTERN = b"[Spylog]"
 KNOWN_SECTION_PREFIXES = (
     "| < Заголовки ответа:",
     "| TYPE:",
@@ -53,14 +53,14 @@ def load_config():
     global SPY_PATTERN
     if CONFIG_FILE.exists():
         try:
-            with open(CONFIG_FILE, 'r') as f:
+            with open(CONFIG_FILE, 'rb') as f:
                 SPY_PATTERN = f.read().strip()
         except:
             pass
 
 def save_config():
     with open(CONFIG_FILE, 'w') as f:
-        f.write(SPY_PATTERN)
+        f.write(SPY_PATTERN.decode('utf-8', errors='ignore'))
 
 load_config()
 
@@ -86,144 +86,142 @@ def die(message):
     print(f"[!] {message}")
     sys.exit(1)
 
-def read_text_auto(path):
-    raw = path.read_bytes()
-    encodings = [
-        'utf-8', 'utf-8-sig', 'cp1251', 'windows-1251', 'koi8-r', 'koi8-u',
-        'cp866', 'ibm866', 'mac-cyrillic', 'iso-8859-5', 'latin-1', 'cp1252',
-        'utf-16', 'utf-16-le', 'utf-16-be', 'utf-32', 'utf-32-le', 'utf-32-be',
-        'cp437', 'cp850', 'cp852', 'cp855', 'cp857', 'cp860', 'cp861', 'cp862',
-        'cp863', 'cp864', 'cp865', 'cp869', 'cp874', 'cp932', 'cp936', 'cp949', 'cp950',
-        'euc-jp', 'euc-kr', 'shift-jis', 'gb2312', 'gb18030', 'big5', 'hz'
-    ]
-    best = None
+def strip_ansi_bytes(data):
+    return ANSI_RE.sub(b"", data)
+
+def best_decode_block(data):
+    encodings = ['utf-8', 'cp1251', 'koi8-r', 'cp866', 'mac-cyrillic', 'iso-8859-5', 'latin-1']
+    best_text = None
     best_score = -1
     for enc in encodings:
         try:
-            text = raw.decode(enc)
+            text = data.decode(enc)
         except:
             continue
         score = 0
+        cyrillic = sum(1 for c in text if 0x0400 <= ord(c) <= 0x04FF)
+        score += cyrillic * 5
         rep = text.count('\ufffd')
         score -= rep * 10
-        cyrillic = sum(1 for c in text if 0x0400 <= ord(c) <= 0x04FF)
-        score += cyrillic * 2
-        ascii_letters = sum(1 for c in text if c.isascii() and c.isalpha())
-        score += min(ascii_letters, 100)
-        if score > best_score:
+        if cyrillic > 0 and score > best_score:
             best_score = score
-            best = (text, enc)
-    if best:
-        return best[0]
-    return raw.decode('utf-8', errors='replace')
+            best_text = text
+    if best_text is None:
+        best_text = data.decode('utf-8', errors='replace')
+    return best_text
 
-def strip_ansi(text):
-    return ANSI_RE.sub("", text)
+def decode_unicode_escapes(text):
+    def repl(m):
+        return chr(int(m.group(1), 16))
+    return re.sub(r'\\u([0-9a-fA-F]{4})', repl, text)
 
-def clean_text(text):
-    return strip_ansi(text).replace("\r\n", "\n").replace("\r", "\n")
-
-def repair_mojibake(text):
-    if not text:
-        return text
-    if not any(ord(c) > 127 for c in text):
-        return text
-    candidates = []
-    for enc_from, enc_to in [
-        ('latin1', 'utf-8'), ('latin1', 'cp1251'), ('latin1', 'koi8-r'),
-        ('cp1251', 'utf-8'), ('koi8-r', 'utf-8'), ('cp866', 'utf-8'),
-        ('mac-cyrillic', 'utf-8'), ('iso-8859-5', 'utf-8'),
-        ('cp437', 'cp1251'), ('cp850', 'cp1251'), ('cp852', 'cp1251'),
-        ('utf-16', 'utf-8'), ('utf-16-le', 'utf-8'), ('utf-16-be', 'utf-8')
-    ]:
-        try:
-            test = text.encode(enc_from, errors='replace').decode(enc_to, errors='replace')
-            candidates.append(test)
-        except:
-            continue
-    best = text
-    best_score = -1
-    for cand in candidates:
-        score = 0
-        score -= cand.count('\ufffd') * 5
-        cyrillic = sum(1 for c in cand if 0x0400 <= ord(c) <= 0x04FF)
-        score += cyrillic * 3
-        if score > best_score:
-            best_score = score
-            best = cand
-    return best
-
-def decode_base64_if_possible(text):
-    if not text:
-        return text
-    text = text.strip()
-    if not re.match(r'^[A-Za-z0-9+/]+=*$', text):
-        return text
-    if len(text) % 4 != 0:
-        return text
+def decode_percent(text):
     try:
-        decoded = base64.b64decode(text, validate=True).decode('utf-8', errors='replace')
-        if len(decoded) > 0 and (any(0x0400 <= ord(c) <= 0x04FF for c in decoded) or decoded.isprintable()):
-            return decoded
+        return unquote(text, encoding='utf-8', errors='replace')
     except:
-        pass
-    try:
-        decoded = base64.b64decode(text, validate=True).decode('cp1251', errors='replace')
-        if len(decoded) > 0 and (any(0x0400 <= ord(c) <= 0x04FF for c in decoded) or decoded.isprintable()):
-            return decoded
-    except:
-        pass
-    return text
-
-def decode_quoted_printable(text):
-    if not text:
         return text
-    if '=' in text:
-        try:
-            return codecs.decode(text, 'quopri').decode('utf-8', errors='replace')
-        except:
-            pass
-    return text
 
-def universal_decode(text):
-    if not text:
-        return text
+def universal_decode_text(text):
     text = html.unescape(text)
-    text = decode_quoted_printable(text)
+    text = decode_percent(text)
+    text = decode_unicode_escapes(text)
     try:
-        text = unquote(text)
+        text = codecs.decode(text, 'quopri')
     except:
         pass
-    try:
-        text = re.sub(r'\\u([0-9a-fA-F]{4})', lambda m: chr(int(m.group(1), 16)), text)
-    except:
-        pass
-    try:
-        text = re.sub(r'%([0-9a-fA-F]{2})', lambda m: bytes.fromhex(m.group(1)).decode('cp1251', errors='replace'), text)
-    except:
-        pass
-    if any(ord(c) > 127 for c in text):
-        repaired = repair_mojibake(text)
-        if repaired != text:
-            text = repaired
-    text = decode_base64_if_possible(text)
     return text
 
-def fix_mojibake_in_data(data):
-    if isinstance(data, dict):
-        return {k: fix_mojibake_in_data(v) for k, v in data.items()}
-    elif isinstance(data, list):
-        return [fix_mojibake_in_data(v) for v in data]
-    elif isinstance(data, str):
-        return universal_decode(data)
-    else:
-        return data
+def extract_spy_blocks_bytes(raw):
+    lines = raw.split(b'\n')
+    blocks = []
+    current = []
+    active = False
+    for line in lines:
+        if not active:
+            if SPY_PATTERN in line:
+                active = True
+                current = [line]
+            continue
+        current.append(line)
+        if line.strip() == b"+---":
+            blocks.append(b"\n".join(current))
+            current = []
+            active = False
+    if active and current:
+        blocks.append(b"\n".join(current))
+    return blocks
 
-def load_log(path):
-    text = read_text_auto(path)
-    text = clean_text(text)
-    text = universal_decode(text)
-    return text
+def parse_header(block_text):
+    first_line = block_text.split("\n", 1)[0]
+    m = re.search(r"\[Spylog\].*?\[([A-Z]+)\]\s+([A-Z]+)\s+(https?://\S+)", first_line)
+    if m:
+        method = m.group(2)
+        url = m.group(3).rstrip("]")
+        return method, url
+    m = re.search(r"(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|TRACE|CONNECT)\s+(https?://\S+)", block_text)
+    if m:
+        return m.group(1), m.group(2).rstrip("]")
+    return None, None
+
+def collect_section(lines, marker, stop_on_pipe_section):
+    idx = -1
+    for i, line in enumerate(lines):
+        if marker in line:
+            idx = i
+            break
+    if idx < 0:
+        return ""
+    first = lines[idx].split(marker, 1)[1]
+    collected = [first]
+    for line in lines[idx + 1:]:
+        if line.strip() == "+---":
+            break
+        if stop_on_pipe_section and line.startswith("|") and any(line.startswith(prefix) for prefix in KNOWN_SECTION_PREFIXES):
+            break
+        collected.append(line)
+    return "\n".join(collected).strip("\n")
+
+def parse_record_from_text(block_text, source_name, decode=False, sig_level=1):
+    if decode:
+        block_text = universal_decode_text(block_text)
+    method, url = parse_header(block_text)
+    lines = block_text.split('\n')
+    request_body = collect_section(lines, "| > Body:", True)
+    response_body = collect_section(lines, "| < Body:", False)
+    if decode:
+        request_body = universal_decode_text(request_body)
+        response_body = universal_decode_text(response_body)
+    norm_url = url if url else "UNKNOWN"
+    if sig_level == 2:
+        parsed = urlparse(norm_url)
+        norm_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+    elif sig_level == 3:
+        parsed = urlparse(norm_url)
+        norm_url = parsed.path if parsed.path else "/"
+    elif sig_level == 4:
+        norm_url = ""
+    sig = f"{method or 'ANY'} {norm_url}"
+    return {
+        "source": source_name,
+        "raw": block_text,
+        "method": method or "",
+        "url": url or "",
+        "signature": sig,
+        "request_body": request_body,
+        "response_body": response_body,
+        "request_json": None,
+        "response_json": None,
+    }
+
+def load_log_and_extract_blocks(path):
+    raw = path.read_bytes()
+    raw = strip_ansi_bytes(raw)
+    blocks_bytes = extract_spy_blocks_bytes(raw)
+    blocks_text = []
+    for bb in blocks_bytes:
+        text = best_decode_block(bb)
+        blocks_text.append(text)
+    return blocks_text
 
 def list_input_files():
     if not INPUT_DIR.exists():
@@ -316,26 +314,6 @@ def ask_groups(files):
         groups.append(selected)
     return groups
 
-def extract_spy_blocks(text):
-    lines = text.split("\n")
-    blocks = []
-    current = []
-    active = False
-    for line in lines:
-        if not active:
-            if SPY_PATTERN in line:
-                active = True
-                current = [line]
-            continue
-        current.append(line)
-        if line.strip() == "+---":
-            blocks.append("\n".join(current).strip("\n"))
-            current = []
-            active = False
-    if active and current:
-        blocks.append("\n".join(current).strip("\n"))
-    return blocks
-
 def dedupe_exact(blocks, keep_duplicates):
     if keep_duplicates:
         return blocks
@@ -357,159 +335,18 @@ def save_text(path, text):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
 
-def sanitize_for_compare(text):
-    text = strip_ansi(text)
-    text = text.replace(">>>", "").replace("<<<", "")
-    text = text.replace("\r\n", "\n").replace("\r", "\n")
-    return text.strip()
-
-def parse_header(block):
-    first_line = block.split("\n", 1)[0]
-    m = re.search(r"\[Spylog\].*?\[([A-Z]+)\]\s+([A-Z]+)\s+(https?://\S+)", first_line)
-    if m:
-        method = m.group(2)
-        url = m.group(3).rstrip("]")
-        return method, url
-    m = re.search(r"(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS|TRACE|CONNECT)\s+(https?://\S+)", block)
-    if m:
-        return m.group(1), m.group(2).rstrip("]")
-    return None, None
-
-def collect_section(lines, marker, stop_on_pipe_section):
-    idx = -1
-    for i, line in enumerate(lines):
-        if marker in line:
-            idx = i
-            break
-    if idx < 0:
-        return ""
-    first = lines[idx].split(marker, 1)[1]
-    collected = [first]
-    for line in lines[idx + 1:]:
-        if line.strip() == "+---":
-            break
-        if stop_on_pipe_section and line.startswith("|") and any(line.startswith(prefix) for prefix in KNOWN_SECTION_PREFIXES):
-            break
-        collected.append(line)
-    return "\n".join(collected).strip("\n")
-
-def parse_json_maybe(text):
-    s = sanitize_for_compare(text)
-    if not s:
-        return None
-    s = s.replace(">>>", "").replace("<<<", "")
-    if not s.startswith("{") and not s.startswith("["):
-        return None
-    try:
-        obj = json.loads(s)
-        return fix_mojibake_in_data(obj)
-    except Exception:
-        return None
-
-def extract_request_body(block):
-    return collect_section(block.split("\n"), "| > Body:", True)
-
-def extract_response_body(block):
-    return collect_section(block.split("\n"), "| < Body:", False)
-
-def compare_values(a, b, path="", out=None, limit=500):
-    if out is None:
-        out = []
-    if len(out) >= limit:
-        return out
-    if type(a) != type(b):
-        out.append((path or "$", a, b))
-        return out
-    if isinstance(a, dict):
-        keys = sorted(set(a.keys()) | set(b.keys()), key=lambda x: str(x))
-        for key in keys:
-            if len(out) >= limit:
-                break
-            p = f"{path}.{key}" if path else str(key)
-            if key not in a:
-                out.append((p, None, b[key]))
-            elif key not in b:
-                out.append((p, a[key], None))
-            else:
-                compare_values(a[key], b[key], p, out, limit)
-        return out
-    if isinstance(a, list):
-        if len(a) != len(b):
-            out.append((path or "$", f"list[{len(a)}]", f"list[{len(b)}]"))
-            if len(out) >= limit:
-                return out
-        for i in range(min(len(a), len(b))):
-            if len(out) >= limit:
-                break
-            p = f"{path}[{i}]" if path else f"[{i}]"
-            compare_values(a[i], b[i], p, out, limit)
-        return out
-    if a != b:
-        out.append((path or "$", a, b))
-    return out
-
-def format_value(value):
-    try:
-        return json.dumps(value, ensure_ascii=False)
-    except Exception:
-        return repr(value)
-
-def summarize_diff(diffs, limit=60):
-    lines = []
-    for i, (path, left, right) in enumerate(diffs):
-        if i >= limit:
-            lines.append(f"... и ещё {len(diffs) - limit} изменений")
-            break
-        lines.append(f"- {path}: {format_value(left)} -> {format_value(right)}")
-    return "\n".join(lines)
-
-def normalize_url(url, level):
-    if not url:
-        return url
-    parsed = urlparse(url)
-    if level == 1:
-        return url
-    elif level == 2:
-        return f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
-    elif level == 3:
-        return f"{parsed.path}" if parsed.path else "/"
-    elif level == 4:
-        return ""
-    return url
-
-def parse_record(block, source_name, decode=False, sig_level=1):
-    if decode:
-        block = universal_decode(block)
-    method, url = parse_header(block)
-    request_body = extract_request_body(block)
-    response_body = extract_response_body(block)
-    if decode:
-        request_body = universal_decode(request_body)
-        response_body = universal_decode(response_body)
-        if method:
-            method = universal_decode(method)
-        if url:
-            url = universal_decode(url)
-    norm_url = normalize_url(url, sig_level) if url else "UNKNOWN"
-    sig = f"{method or 'ANY'} {norm_url}"
-    return {
-        "source": source_name,
-        "raw": block,
-        "method": method or "",
-        "url": url or "",
-        "signature": sig,
-        "request_body": request_body,
-        "response_body": response_body,
-        "request_json": parse_json_maybe(request_body),
-        "response_json": parse_json_maybe(response_body),
-    }
-
-def build_records(path, decode=False, keep_duplicates=False, sig_level=1):
-    text = load_log(path)
-    blocks = extract_spy_blocks(text)
-    blocks = dedupe_exact(blocks, keep_duplicates)
-    records = [parse_record(block, path.name, decode, sig_level) for block in blocks]
-    return records, blocks
+def move_keyword_blocks(blocks, keywords):
+    if not keywords:
+        return blocks
+    matched = []
+    other = []
+    for block in blocks:
+        lower = block.lower()
+        if any(kw.lower() in lower for kw in keywords):
+            matched.append(block)
+        else:
+            other.append(block)
+    return matched + other
 
 def ask_options(mode):
     if mode == "extract":
@@ -572,18 +409,12 @@ def ask_options(mode):
                 sig_choice = "1"
             return bits, keywords, int(sig_choice)
 
-def move_keyword_blocks(blocks, keywords):
-    if not keywords:
-        return blocks
-    matched = []
-    other = []
+def build_records_from_blocks(blocks, source_name, decode=False, sig_level=1):
+    records = []
     for block in blocks:
-        lower = block.lower()
-        if any(kw.lower() in lower for kw in keywords):
-            matched.append(block)
-        else:
-            other.append(block)
-    return matched + other
+        rec = parse_record_from_text(block, source_name, decode, sig_level)
+        records.append(rec)
+    return records
 
 def extract_mode(selected_files, show_urls, decode, show_stats, keywords, keep_duplicates):
     all_blocks = []
@@ -592,9 +423,9 @@ def extract_mode(selected_files, show_urls, decode, show_stats, keywords, keep_d
     total_files = len(selected_files)
     for idx, path in enumerate(selected_files, 1):
         print(f"\r[*] Обработка файла {idx}/{total_files}: {path.name}          ", end="")
-        _, blocks = build_records(path, decode, keep_duplicates)
+        blocks = load_log_and_extract_blocks(path)
         if decode:
-            blocks = [universal_decode(b) for b in blocks]
+            blocks = [universal_decode_text(b) for b in blocks]
         total_found += len(blocks)
         per_file_counts.append((path.name, len(blocks)))
         all_blocks.extend(blocks)
@@ -642,59 +473,25 @@ def group_by_signature(records):
         grouped[rec["signature"]].append(rec)
     return grouped
 
-def record_diff_lines(a, b):
+def compare_record(a, b):
     lines = []
     if a["method"] != b["method"]:
         lines.append(f"Method: {a['method']} -> {b['method']}")
     if a["url"] != b["url"]:
         lines.append(f"URL: {a['url']} -> {b['url']}")
-    req_body_a = a["request_body"]
-    req_body_b = b["request_body"]
-    resp_body_a = a["response_body"]
-    resp_body_b = b["response_body"]
-    if req_body_a or req_body_b:
+    if a["request_body"] != b["request_body"]:
         lines.append("--- Request body (A) ---")
-        lines.append(req_body_a if req_body_a else "(empty)")
+        lines.append(a["request_body"])
         lines.append("--- Request body (B) ---")
-        lines.append(req_body_b if req_body_b else "(empty)")
-    if resp_body_a or resp_body_b:
+        lines.append(b["request_body"])
+    if a["response_body"] != b["response_body"]:
         lines.append("--- Response body (A) ---")
-        lines.append(resp_body_a if resp_body_a else "(empty)")
+        lines.append(a["response_body"])
         lines.append("--- Response body (B) ---")
-        lines.append(resp_body_b if resp_body_b else "(empty)")
-    if a["request_json"] is not None and b["request_json"] is not None:
-        req_diffs = compare_values(a["request_json"], b["request_json"], "", [], 500)
-        if req_diffs:
-            lines.append("Request JSON changes:")
-            lines.append(summarize_diff(req_diffs))
-    elif req_body_a != req_body_b:
-        left = sanitize_for_compare(req_body_a)
-        right = sanitize_for_compare(req_body_b)
-        if left != right:
-            lines.append("Request body raw diff:")
-            lines.append(f"- left: {left[:500]}")
-            lines.append(f"- right: {right[:500]}")
-    if a["response_json"] is not None and b["response_json"] is not None:
-        res_diffs = compare_values(a["response_json"], b["response_json"], "", [], 500)
-        if res_diffs:
-            lines.append("Response JSON changes:")
-            lines.append(summarize_diff(res_diffs))
-    elif resp_body_a != resp_body_b:
-        left = sanitize_for_compare(resp_body_a)
-        right = sanitize_for_compare(resp_body_b)
-        if left != right:
-            lines.append("Response body raw diff:")
-            lines.append(f"- left: {left[:500]}")
-            lines.append(f"- right: {right[:500]}")
-    return lines
-
-def compare_record(a, b):
-    lines = record_diff_lines(a, b)
-    if not lines:
-        return ""
-    out = [f"Signature: {a['signature']}"]
-    out.extend(lines)
-    return "\n".join(out)
+        lines.append(b["response_body"])
+    if lines:
+        return f"Signature: {a['signature']}\n" + "\n".join(lines)
+    return ""
 
 def compare_mode(selected_files, show_urls, decode, show_diffs, include_blocks, keywords, keep_duplicates, sig_level):
     base = selected_files[0]
@@ -703,8 +500,11 @@ def compare_mode(selected_files, show_urls, decode, show_diffs, include_blocks, 
     total = len(selected_files)
     for idx, path in enumerate(selected_files, 1):
         print(f"\r[*] Чтение файла {idx}/{total}: {path.name}          ", end="")
-        rec, _ = build_records(path, decode, keep_duplicates, sig_level)
-        recs.append((path.name, rec))
+        blocks = load_log_and_extract_blocks(path)
+        if decode:
+            blocks = [universal_decode_text(b) for b in blocks]
+        records = build_records_from_blocks(blocks, path.name, decode, sig_level)
+        recs.append((path.name, records))
     print("\r[+] Чтение завершено          ")
     base_name, base_recs = recs[0]
     lines = []
@@ -733,7 +533,6 @@ def compare_mode(selected_files, show_urls, decode, show_diffs, include_blocks, 
         if common:
             lines.append("  " + "\n  ".join(sorted(common)))
         lines.append("")
-
     sigs = {}
     for name, rec_list in recs:
         sig_set = set(r["signature"] for r in rec_list)
@@ -749,14 +548,10 @@ def compare_mode(selected_files, show_urls, decode, show_diffs, include_blocks, 
     common_sigs = set.intersection(*[sigs[name] for name, _ in recs]) if recs else set()
     if not common_sigs:
         lines.append("!!! WARNING: No common signatures found between files !!!")
-        lines.append("This means that none of the requests match by method+URL (with current signature level).")
-        lines.append("Possible reasons: different domains, paths, or the files contain completely different logs.")
-        lines.append("Check the sample signatures above to see the differences.")
         lines.append("")
     else:
         lines.append(f"Common signatures: {len(common_sigs)}")
         lines.append("")
-
     for idx, (other_name, other_recs) in enumerate(recs[1:], 1):
         lines.append(f"=== Comparison with {other_name} (vs {base_name}) ===")
         map_base = group_by_signature(base_recs)
@@ -816,10 +611,12 @@ def compare_mode(selected_files, show_urls, decode, show_diffs, include_blocks, 
 def build_group_records(group_files, group_name, decode, keep_duplicates, sig_level):
     all_blocks = []
     for path in group_files:
-        _, blocks = build_records(path, decode, keep_duplicates, sig_level)
+        blocks = load_log_and_extract_blocks(path)
+        if decode:
+            blocks = [universal_decode_text(b) for b in blocks]
         all_blocks.extend(blocks)
     all_blocks = dedupe_exact(all_blocks, keep_duplicates)
-    records = [parse_record(block, group_name, decode, sig_level) for block in all_blocks]
+    records = build_records_from_blocks(all_blocks, group_name, decode, sig_level)
     return records, all_blocks
 
 def compare_groups(groups, show_urls, decode, show_diffs, include_blocks, keywords, keep_duplicates, sig_level):
@@ -1071,12 +868,12 @@ def rename_mode(files):
 
 def change_pattern():
     global SPY_PATTERN
-    print(f"\n[+] Текущий паттерн: '{SPY_PATTERN}'")
+    print(f"\n[+] Текущий паттерн: '{SPY_PATTERN.decode('utf-8', errors='ignore')}'")
     new = input("[?] Введите новый паттерн (пусто - отмена): ").strip()
     if new:
-        SPY_PATTERN = new
+        SPY_PATTERN = new.encode('utf-8')
         save_config()
-        print(f"[+] Паттерн изменён на '{SPY_PATTERN}'")
+        print(f"[+] Паттерн изменён на '{new}'")
     else:
         print("[!] Отмена")
 
