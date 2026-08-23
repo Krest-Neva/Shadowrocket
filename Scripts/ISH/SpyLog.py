@@ -30,6 +30,7 @@ from urllib.parse import unquote, urlparse
 import base64
 import html
 import codecs
+import chardet
 
 ROOT = Path.home()
 INPUT_DIR = ROOT / "SRLog"
@@ -89,7 +90,13 @@ def die(message):
 def strip_ansi_bytes(data):
     return ANSI_RE.sub(b"", data)
 
-def best_decode_block(data):
+def detect_and_decode(data):
+    try:
+        detected = chardet.detect(data)
+        if detected and detected['encoding'] and detected['confidence'] > 0.5:
+            return data.decode(detected['encoding'], errors='replace')
+    except:
+        pass
     encodings = ['utf-8', 'cp1251', 'koi8-r', 'cp866', 'mac-cyrillic', 'iso-8859-5', 'latin-1']
     best_text = None
     best_score = -1
@@ -122,6 +129,8 @@ def decode_percent(text):
         return text
 
 def universal_decode_text(text):
+    if not text:
+        return text
     text = html.unescape(text)
     text = decode_percent(text)
     text = decode_unicode_escapes(text)
@@ -219,7 +228,7 @@ def load_log_and_extract_blocks(path):
     blocks_bytes = extract_spy_blocks_bytes(raw)
     blocks_text = []
     for bb in blocks_bytes:
-        text = best_decode_block(bb)
+        text = detect_and_decode(bb)
         blocks_text.append(text)
     return blocks_text
 
