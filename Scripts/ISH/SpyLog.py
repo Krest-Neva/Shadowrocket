@@ -28,6 +28,8 @@ from datetime import datetime
 from collections import defaultdict
 from urllib.parse import unquote, urlparse, parse_qs
 import codecs
+import base64
+import html
 
 ROOT = Path.home()
 INPUT_DIR = ROOT / "SRLog"
@@ -86,12 +88,33 @@ def die(message):
 
 def read_text_auto(path):
     raw = path.read_bytes()
-    encodings = ['utf-8-sig', 'utf-8', 'cp1251', 'koi8-r', 'cp866', 'mac-cyrillic', 'latin-1', 'iso-8859-5']
+    encodings = [
+        'utf-8', 'utf-8-sig', 'cp1251', 'windows-1251', 'koi8-r', 'koi8-u',
+        'cp866', 'ibm866', 'mac-cyrillic', 'iso-8859-5', 'latin-1', 'cp1252',
+        'utf-16', 'utf-16-le', 'utf-16-be', 'utf-32', 'utf-32-le', 'utf-32-be',
+        'cp437', 'cp850', 'cp852', 'cp855', 'cp857', 'cp860', 'cp861', 'cp862',
+        'cp863', 'cp864', 'cp865', 'cp869', 'cp874', 'cp932', 'cp936', 'cp949', 'cp950',
+        'euc-jp', 'euc-kr', 'shift-jis', 'gb2312', 'gb18030', 'big5', 'hz'
+    ]
+    best = None
+    best_score = -1
     for enc in encodings:
         try:
-            return raw.decode(enc)
+            text = raw.decode(enc)
         except:
             continue
+        score = 0
+        rep = text.count('\ufffd')
+        score -= rep * 10
+        cyrillic = sum(1 for c in text if 0x0400 <= ord(c) <= 0x04FF)
+        score += cyrillic * 2
+        ascii_letters = sum(1 for c in text if c.isascii() and c.isalpha())
+        score += min(ascii_letters, 100)
+        if score > best_score:
+            best_score = score
+            best = (text, enc)
+    if best:
+        return best[0]
     return raw.decode('utf-8', errors='replace')
 
 def strip_ansi(text):
@@ -100,9 +123,73 @@ def strip_ansi(text):
 def clean_text(text):
     return strip_ansi(text).replace("\r\n", "\n").replace("\r", "\n")
 
+def repair_mojibake(text):
+    if not text:
+        return text
+    if not any(ord(c) > 127 for c in text):
+        return text
+    candidates = []
+    for enc_from, enc_to in [
+        ('latin1', 'utf-8'), ('latin1', 'cp1251'), ('latin1', 'koi8-r'),
+        ('cp1251', 'utf-8'), ('koi8-r', 'utf-8'), ('cp866', 'utf-8'),
+        ('mac-cyrillic', 'utf-8'), ('iso-8859-5', 'utf-8'),
+        ('cp437', 'cp1251'), ('cp850', 'cp1251'), ('cp852', 'cp1251'),
+        ('utf-16', 'utf-8'), ('utf-16-le', 'utf-8'), ('utf-16-be', 'utf-8')
+    ]:
+        try:
+            test = text.encode(enc_from, errors='replace').decode(enc_to, errors='replace')
+            candidates.append(test)
+        except:
+            continue
+    best = text
+    best_score = -1
+    for cand in candidates:
+        score = 0
+        score -= cand.count('\ufffd') * 5
+        cyrillic = sum(1 for c in cand if 0x0400 <= ord(c) <= 0x04FF)
+        score += cyrillic * 3
+        if score > best_score:
+            best_score = score
+            best = cand
+    return best
+
+def decode_base64_if_possible(text):
+    if not text:
+        return text
+    text = text.strip()
+    if not re.match(r'^[A-Za-z0-9+/]+=*$', text):
+        return text
+    if len(text) % 4 != 0:
+        return text
+    try:
+        decoded = base64.b64decode(text, validate=True).decode('utf-8', errors='replace')
+        if len(decoded) > 0 and (any(0x0400 <= ord(c) <= 0x04FF for c in decoded) or decoded.isprintable()):
+            return decoded
+    except:
+        pass
+    try:
+        decoded = base64.b64decode(text, validate=True).decode('cp1251', errors='replace')
+        if len(decoded) > 0 and (any(0x0400 <= ord(c) <= 0x04FF for c in decoded) or decoded.isprintable()):
+            return decoded
+    except:
+        pass
+    return text
+
+def decode_quoted_printable(text):
+    if not text:
+        return text
+    if '=' in text:
+        try:
+            return codecs.decode(text, 'quopri').decode('utf-8', errors='replace')
+        except:
+            pass
+    return text
+
 def universal_decode(text):
     if not text:
         return text
+    text = html.unescape(text)
+    text = decode_quoted_printable(text)
     try:
         text = unquote(text)
     except:
@@ -115,14 +202,11 @@ def universal_decode(text):
         text = re.sub(r'%([0-9a-fA-F]{2})', lambda m: bytes.fromhex(m.group(1)).decode('cp1251', errors='replace'), text)
     except:
         pass
-    for enc_from, enc_to in [('latin1', 'utf-8'), ('latin1', 'cp1251'), ('latin1', 'koi8-r'), ('cp1251', 'utf-8'), ('koi8-r', 'utf-8')]:
-        try:
-            test = text.encode(enc_from).decode(enc_to, errors='replace')
-            if not any(ch in test for ch in ('�', '?', '\ufffd')):
-                text = test
-                break
-        except:
-            continue
+    if any(ord(c) > 127 for c in text):
+        repaired = repair_mojibake(text)
+        if repaired != text:
+            text = repaired
+    text = decode_base64_if_possible(text)
     return text
 
 def fix_mojibake_in_data(data):
@@ -379,9 +463,6 @@ def summarize_diff(diffs, limit=60):
         lines.append(f"- {path}: {format_value(left)} -> {format_value(right)}")
     return "\n".join(lines)
 
-def decode_all_strings(text):
-    return universal_decode(text)
-
 def normalize_url(url, level):
     if not url:
         return url
@@ -397,15 +478,18 @@ def normalize_url(url, level):
     return url
 
 def parse_record(block, source_name, decode=False, sig_level=1):
+    if decode:
+        block = universal_decode(block)
     method, url = parse_header(block)
     request_body = extract_request_body(block)
     response_body = extract_response_body(block)
     if decode:
-        request_body = decode_all_strings(request_body)
-        response_body = decode_all_strings(response_body)
-    else:
         request_body = universal_decode(request_body)
         response_body = universal_decode(response_body)
+        if method:
+            method = universal_decode(method)
+        if url:
+            url = universal_decode(url)
     norm_url = normalize_url(url, sig_level) if url else "UNKNOWN"
     sig = f"{method or 'ANY'} {norm_url}"
     return {
@@ -509,6 +593,8 @@ def extract_mode(selected_files, show_urls, decode, show_stats, keywords, keep_d
     for idx, path in enumerate(selected_files, 1):
         print(f"\r[*] Обработка файла {idx}/{total_files}: {path.name}          ", end="")
         _, blocks = build_records(path, decode, keep_duplicates)
+        if decode:
+            blocks = [universal_decode(b) for b in blocks]
         total_found += len(blocks)
         per_file_counts.append((path.name, len(blocks)))
         all_blocks.extend(blocks)
