@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=Pro-grade networking for iOS/macOS
 
-#Последние изменения 01.09.2026 20:00
+#Последние изменения 05.09.2026 17:00
 #Фильтры обновлены 20.07.2026 15:00
 
 #==================================================
@@ -1249,8 +1249,25 @@ DOMAIN-SUFFIX,2kcoretech.online,DIRECT
 DOMAIN-SUFFIX,miniclippt.com,SPEEDPROXY
 
 #Supercell⚔️
+DOMAIN-SUFFIX,boombeach.com,SPEEDPROXY
 DOMAIN-SUFFIX,brawlstars.com,SPEEDPROXY
 DOMAIN-SUFFIX,brawlstarsgame.com,SPEEDPROXY
+DOMAIN-SUFFIX,clash.com,SPEEDPROXY
+DOMAIN-SUFFIX,clashmini.com,SPEEDPROXY
+DOMAIN-SUFFIX,clashofclans.com,SPEEDPROXY
+DOMAIN-SUFFIX,clashroyale.com,SPEEDPROXY
+DOMAIN-SUFFIX,clashroyaleapp.com,SPEEDPROXY
+DOMAIN-SUFFIX,gamesfirsthelsinki.com,SPEEDPROXY
+DOMAIN-SUFFIX,hayday.com,SPEEDPROXY
+DOMAIN-SUFFIX,haydaygame.com,SPEEDPROXY
+DOMAIN-SUFFIX,mo.co,SPEEDPROXY
+DOMAIN-SUFFIX,seeurlpcl.com,SPEEDPROXY
+DOMAIN-SUFFIX,squadbusters.com,SPEEDPROXY
+DOMAIN-SUFFIX,supercell.com,SPEEDPROXY
+DOMAIN-SUFFIX,supercellcreators.com,SPEEDPROXY
+DOMAIN-SUFFIX,supercellgames.com,SPEEDPROXY
+DOMAIN-SUFFIX,supercellid.com,SPEEDPROXY
+DOMAIN-SUFFIX,supercellstore.com,SPEEDPROXY
 IP-CIDR,3.1.80.68/32,SPEEDPROXY,no-resolve
 IP-CIDR,3.25.190.152/32,SPEEDPROXY,no-resolve
 IP-CIDR,3.82.147.36/32,SPEEDPROXY,no-resolve
