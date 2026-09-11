@@ -1365,7 +1365,7 @@ localhost = 127.0.0.1
 ^(https?:\/\/[^?]+)\?utm_[^&]+$ $1 302
 
 #Штука
-^https?:\/\/([^\/]+\.)?gdebenz\.ru(\/.*)?$ https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Other/Redirect 302
+^https?:\/\/([^\/]+\.)?pornhub\.com(\/.*)?$ https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Other/Redirect 302
 
 [Map Local]
 #YOUTUBE🔴
