@@ -1364,6 +1364,9 @@ localhost = 127.0.0.1
 ^(https?:\/\/[^?]+)\?utm_[^&]+&(.+)$ $1?$2 302
 ^(https?:\/\/[^?]+)\?utm_[^&]+$ $1 302
 
+#Штука
+^https?:\/\/([^\/]+\.)?gdebenz\.ru(\/.*)?$ https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Other/Redirect 302
+
 [Map Local]
 #YOUTUBE🔴
 ^https?:\/\/[\w-]+\.googlevideo\.com\/initplayback.+&oad data-type=text data="" status-code=200
@@ -1392,7 +1395,7 @@ PicsArt = type=http-request,pattern=^https:\/\/api\.picsart\.com\/gw-v2\/shop\/s
 [MITM]
 enable = true
 h2 = false
-hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com,*.yandex.*,*.ya.ru,*.yastatic.net,api-mobile.soundcloud.com,spclient.wg.spotify.com,*-spclient.spotify.com,*.spotify.com,app.ftscrt.com,api.picsart.com,api.lingualeo.com
+hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com,*.yandex.*,*.ya.ru,*.yastatic.net,api-mobile.soundcloud.com,spclient.wg.spotify.com,*-spclient.spotify.com,*.spotify.com,app.ftscrt.com,api.picsart.com,api.lingualeo.com,*.pornhub.com,pornhub.com
 
 # ╱|、           ∧＿∧
 #(˚ˎ 。7        (｡･ω･｡)つ━☆・*。
