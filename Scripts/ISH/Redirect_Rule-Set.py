@@ -43,6 +43,8 @@ OUT_URL = "URL_REWRITE.list"
 OUT_MITM = "MITM.list"
 LOG_FILE = "LogsRedirectScript"
 
+STEP = 100
+
 WHITE_URLS = {
     "direct": [
         "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/direct.txt",
@@ -78,7 +80,7 @@ WHITE_URLS = {
     ],
     "tele2_msk": "https://raw.githubusercontent.com/chebur-net/russia-mobile-whitelist/refs/heads/main/moscow-tele2/domains.txt",
     "tele2_spb": "https://raw.githubusercontent.com/chebur-net/russia-mobile-whitelist/refs/heads/main/spb-tele2/domains.txt",
-    "reject_rules_std": "https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_STD.list"
+    "rej_std": "https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_STD.list"
 }
 
 EXCLUDE_KEYWORDS = [
@@ -435,7 +437,7 @@ def parse_whitelists(raw):
         count = 0
         total = len(lines)
         for i, raw_line in enumerate(lines, 1):
-            if i % 2000 == 0 or i == total:
+            if i % STEP == 0 or i == total:
                 progress_bar("  [wl] " + name, i, total)
             d = parse_whitelist_line(raw_line)
             if not d or not is_valid_domain(d):
@@ -606,7 +608,7 @@ def main():
     excluded = 0
     total = len(black_lines)
     for i, raw_line in enumerate(black_lines, 1):
-        if i % 2000 == 0 or i == total:
+        if i % STEP == 0 or i == total:
             progress_bar("  [parse]", i, total)
         d = parse_line(raw_line)
         if not d:
