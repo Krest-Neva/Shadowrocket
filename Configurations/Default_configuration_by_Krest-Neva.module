@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=Pro-grade networking for iOS/macOS
 
-#Последние изменения 11.09.2026 15:00
+#Последние изменения 14.09.2026 02:00
 #Фильтры обновлены 08.09.2026 14:00
 
 #==================================================
@@ -122,7 +122,7 @@ ipv6-vif = auto
 # Предпочтение IPv6 перед IPv4
 prefer-ipv6 = false
 # Таймаут тестирования соединения (сек)
-#test-timeout = 5
+#test-timeout = 3
 # URL для проверки доступа в интернет
 #internet-test-url = https://www.google.com
 # URL для проверки работы прокси
@@ -243,6 +243,26 @@ IP-CIDR,5.28.195.2,DIRECT,no-resolve
 DOMAIN-SUFFIX,content-storage-upload.googleapis.com,DIRECT
 DOMAIN-SUFFIX,afafb.com,BESTPROXY
 DOMAIN-SUFFIX,lb-apple.com.akadns.net,DIRECT
+#Временно
+#Звонки
+# WhatsApp/Telegram/FaceTime — Голос
+# https://faq.whatsapp.com/490531153094849/?cms_platform=iphone&helpref=platform_switcher
+# https://www.netify.ai/resources/protocols/telegram
+# https://www.netify.ai/resources/applications/whatsapp
+#DST-PORT,3478,PROXY
+#DST-PORT,3480,PROXY
+#DST-PORT,3484,PROXY
+# WhatsApp — Видео
+# https://developers.facebook.com/docs/whatsapp/guides/network-requirements/
+#DST-PORT,5222,PROXY
+# Telegram — Голос и видео (RTP / P2P)
+#DST-PORT,596-599,PROXY
+# DST-PORT,50000-59999,PROXY
+# TCP порт для сигнальных звонков Telegram
+#DST-PORT,1400,PROXY
+# Google Meet
+# https://support.google.com/a/answer/1279090?hl=en#zippy=%2Cavoid-using-vpns%2Cavoid-using-qos%2Cavoid-using-proxies%2Cusing-vdi%2Cusing-wi-fi%2Cconfiguring-default-video-quality%2Cstep-review-bandwidth-requirements%2Cstep-allow-access-to-google-ip-address-ranges-for-audio-and-video%2Cstep-allow-access-to-uniform-resource-identifiers-uris%2Cstep-set-up-outbound-ports-for-media-traffic
+#DST-PORT,19302​–19309,PROXY
 
 #Реклама, трекеры, аналитика, фишинг и остальная кака💩
 RULE-SET,https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/REJECT_RULES/REJECT_RULES_STD.list,REJECT-DROP
@@ -278,17 +298,27 @@ DOMAIN-SUFFIX,2ip.io,REJECT-DROP
 DOMAIN-SUFFIX,2ip.ua,REJECT-DROP
 DOMAIN-SUFFIX,51degrees.com,REJECT-DROP
 DOMAIN-SUFFIX,abstractapi.com,REJECT-DROP
+DOMAIN-SUFFIX,addr.tools,REJECT-DROP
 DOMAIN-SUFFIX,apiip.net,REJECT-DROP
 DOMAIN-SUFFIX,apivoid.com,REJECT-DROP
+DOMAIN-SUFFIX,bgp.he.net,REJECT-DROP
+DOMAIN-SUFFIX,bgp.tools,REJECT-DROP
 DOMAIN-SUFFIX,bigdatacloud.net,REJECT-DROP
+DOMAIN-SUFFIX,browserleaks.com,REJECT-DROP
 DOMAIN-SUFFIX,check-host.net,REJECT-DROP
 DOMAIN-SUFFIX,checkip.amazonaws.com,REJECT-DROP
+DOMAIN-SUFFIX,checkip.com.vn,REJECT-DROP
 DOMAIN-SUFFIX,checkip.dyn.com,REJECT-DROP
 DOMAIN-SUFFIX,checkip.dyndns.org,REJECT-DROP
+DOMAIN-SUFFIX,checkip.global.api.aws,REJECT-DROP
 DOMAIN-SUFFIX,checkip.org,REJECT-DROP
+DOMAIN-SUFFIX,checkip.sh,REJECT-DROP
+DOMAIN-SUFFIX,checkmyip.now,REJECT-DROP
 DOMAIN-SUFFIX,country.is,REJECT-DROP
+DOMAIN-SUFFIX,criminalip.io,REJECT-DROP
 DOMAIN-SUFFIX,curlmyip.net,REJECT-DROP
 DOMAIN-SUFFIX,db-ip.com,REJECT-DROP
+DOMAIN-SUFFIX,dnsleaktest.com,REJECT-DROP
 DOMAIN-SUFFIX,extreme-ip-lookup.com,REJECT-DROP
 DOMAIN-SUFFIX,find-my-ip.com,REJECT-DROP
 DOMAIN-SUFFIX,find-my-ip.net,REJECT-DROP
@@ -303,24 +333,31 @@ DOMAIN-SUFFIX,geojs.io,REJECT-DROP
 DOMAIN-SUFFIX,geolocation-db.com,REJECT-DROP
 DOMAIN-SUFFIX,geoplugin.com,REJECT-DROP
 DOMAIN-SUFFIX,geoplugin.net,REJECT-DROP
+DOMAIN-SUFFIX,get-ipv4.com,REJECT-DROP
+DOMAIN-SUFFIX,get-ipv6.com,REJECT-DROP
 DOMAIN-SUFFIX,getipintel.net,REJECT-DROP
+DOMAIN-SUFFIX,getjsonip.com,REJECT-DROP
 DOMAIN-SUFFIX,greip.io,REJECT-DROP
 DOMAIN-SUFFIX,hackertarget.com,REJECT-DROP
 DOMAIN-SUFFIX,httpbin.org,REJECT-DROP
+DOMAIN-SUFFIX,i.pn,REJECT-DROP
 DOMAIN-SUFFIX,icanhazip.com,REJECT-DROP
 DOMAIN-SUFFIX,ident.me,REJECT-DROP
 DOMAIN-SUFFIX,ifconfig.co,REJECT-DROP
 DOMAIN-SUFFIX,ifconfig.es,REJECT-DROP
 DOMAIN-SUFFIX,ifconfig.io,REJECT-DROP
 DOMAIN-SUFFIX,ifconfig.me,REJECT-DROP
+DOMAIN-SUFFIX,infosniper.net,REJECT-DROP
 DOMAIN-SUFFIX,ip-adress.com,REJECT-DROP
 DOMAIN-SUFFIX,ip-api.com,REJECT-DROP
 DOMAIN-SUFFIX,ip-api.io,REJECT-DROP
+DOMAIN-SUFFIX,ip-check-perf.radar.cloudflare.com,REJECT-DROP
 DOMAIN-SUFFIX,ip-check.info,REJECT-DROP
 DOMAIN-SUFFIX,ip-score.com,REJECT-DROP
 DOMAIN-SUFFIX,ip.comss.net,REJECT-DROP
 DOMAIN-SUFFIX,ip.hetzner.com,REJECT-DROP
 DOMAIN-SUFFIX,ip.me,REJECT-DROP
+DOMAIN-SUFFIX,ip.pe.kr,REJECT-DROP
 DOMAIN-SUFFIX,ip.sb,REJECT-DROP
 DOMAIN-SUFFIX,ip.tyk.nu,REJECT-DROP
 DOMAIN-SUFFIX,ip2c.org,REJECT-DROP
@@ -335,11 +372,14 @@ DOMAIN-SUFFIX,ipaddr.site,REJECT-DROP
 DOMAIN-SUFFIX,ipaddress.com,REJECT-DROP
 DOMAIN-SUFFIX,ipaddress.my,REJECT-DROP
 DOMAIN-SUFFIX,ipaddress.sh,REJECT-DROP
+DOMAIN-SUFFIX,ipaddress.to,REJECT-DROP
 DOMAIN-SUFFIX,ipapi.co,REJECT-DROP
 DOMAIN-SUFFIX,ipapi.com,REJECT-DROP
 DOMAIN-SUFFIX,ipapi.is,REJECT-DROP
 DOMAIN-SUFFIX,ipbase.com,REJECT-DROP
+DOMAIN-SUFFIX,ipbot.com,REJECT-DROP
 DOMAIN-SUFFIX,ipcalf.com,REJECT-DROP
+DOMAIN-SUFFIX,ipcheck.ing,REJECT-DROP
 DOMAIN-SUFFIX,ipchicken.com,REJECT-DROP
 DOMAIN-SUFFIX,ipdata.co,REJECT-DROP
 DOMAIN-SUFFIX,ipecho.net,REJECT-DROP
@@ -347,7 +387,9 @@ DOMAIN-SUFFIX,ipfind.io,REJECT-DROP
 DOMAIN-SUFFIX,ipfinder.io,REJECT-DROP
 DOMAIN-SUFFIX,ipgeo.vercel.app,REJECT-DROP
 DOMAIN-SUFFIX,ipgeolocation.io,REJECT-DROP
+DOMAIN-SUFFIX,ipify.cn,REJECT-DROP
 DOMAIN-SUFFIX,ipify.org,REJECT-DROP
+DOMAIN-SUFFIX,ipinfo.app,REJECT-DROP
 DOMAIN-SUFFIX,ipinfo.io,REJECT-DROP
 DOMAIN-SUFFIX,ipip.net,REJECT-DROP
 DOMAIN-SUFFIX,iplark.com,REJECT-DROP
@@ -357,36 +399,81 @@ DOMAIN-SUFFIX,iplocate.io,REJECT-DROP
 DOMAIN-SUFFIX,iplocation.com,REJECT-DROP
 DOMAIN-SUFFIX,iplocation.io,REJECT-DROP
 DOMAIN-SUFFIX,iplocation.net,REJECT-DROP
+DOMAIN-SUFFIX,iplookup.it,REJECT-DROP
+DOMAIN-SUFFIX,ipme.co,REJECT-DROP
+DOMAIN-SUFFIX,ipme.in,REJECT-DROP
 DOMAIN-SUFFIX,ipqualityscore.com,REJECT-DROP
 DOMAIN-SUFFIX,ipquery.io,REJECT-DROP
 DOMAIN-SUFFIX,ipregistry.co,REJECT-DROP
 DOMAIN-SUFFIX,iproyal.com,REJECT-DROP
+DOMAIN-SUFFIX,ipsimple.org,REJECT-DROP
 DOMAIN-SUFFIX,ipstack.com,REJECT-DROP
 DOMAIN-SUFFIX,ipv4-check-perf.radar.cloudflare.com,REJECT-DROP
 DOMAIN-SUFFIX,ipv4-internet.yandex.net,REJECT-DROP
+DOMAIN-SUFFIX,ipv4.internet.yandex.net,REJECT-DROP
 DOMAIN-SUFFIX,ipv6-check-perf.radar.cloudflare.com,REJECT-DROP
 DOMAIN-SUFFIX,ipv6-internet.yandex.net,REJECT-DROP
+DOMAIN-SUFFIX,ipv6.internet.yandex.net,REJECT-DROP
+DOMAIN-SUFFIX,ipv6ready.me,REJECT-DROP
 DOMAIN-SUFFIX,ipverify.com,REJECT-DROP
 DOMAIN-SUFFIX,ipw.cn,REJECT-DROP
+DOMAIN-SUFFIX,ipwho.is,REJECT-DROP
 DOMAIN-SUFFIX,ipwhois.io,REJECT-DROP
 DOMAIN-SUFFIX,ipxapi.com,REJECT-DROP
+DOMAIN-SUFFIX,jsonip.com,REJECT-DROP
 DOMAIN-SUFFIX,l2.io,REJECT-DROP
 DOMAIN-SUFFIX,maxmind.com,REJECT-DROP
 DOMAIN-SUFFIX,mon-ip.com,REJECT-DROP
 DOMAIN-SUFFIX,monip.org,REJECT-DROP
+DOMAIN-SUFFIX,my-ip.io,REJECT-DROP
 DOMAIN-SUFFIX,my.ipinfo.app,REJECT-DROP
 DOMAIN-SUFFIX,myexternalip.com,REJECT-DROP
+DOMAIN-SUFFIX,myip.ae,REJECT-DROP
+DOMAIN-SUFFIX,myip.at,REJECT-DROP
+DOMAIN-SUFFIX,myip.by,REJECT-DROP
+DOMAIN-SUFFIX,myip.ch,REJECT-DROP
 DOMAIN-SUFFIX,myip.com,REJECT-DROP
+DOMAIN-SUFFIX,myip.cx,REJECT-DROP
+DOMAIN-SUFFIX,myip.dk,REJECT-DROP
+DOMAIN-SUFFIX,myip.dnsomatic.com,REJECT-DROP
+DOMAIN-SUFFIX,myip.eu,REJECT-DROP
+DOMAIN-SUFFIX,myip.expert,REJECT-DROP
+DOMAIN-SUFFIX,myip.fi,REJECT-DROP
+DOMAIN-SUFFIX,myip.ge,REJECT-DROP
+DOMAIN-SUFFIX,myip.hk,REJECT-DROP
+DOMAIN-SUFFIX,myip.id,REJECT-DROP
+DOMAIN-SUFFIX,myip.is,REJECT-DROP
+DOMAIN-SUFFIX,myip.kz,REJECT-DROP
 DOMAIN-SUFFIX,myip.la,REJECT-DROP
+DOMAIN-SUFFIX,myip.link,REJECT-DROP
+DOMAIN-SUFFIX,myip.lt,REJECT-DROP
+DOMAIN-SUFFIX,myip.lv,REJECT-DROP
+DOMAIN-SUFFIX,myip.ma,REJECT-DROP
+DOMAIN-SUFFIX,myip.md,REJECT-DROP
+DOMAIN-SUFFIX,myip.mk,REJECT-DROP
+DOMAIN-SUFFIX,myip.mn,REJECT-DROP
 DOMAIN-SUFFIX,myip.ms,REJECT-DROP
+DOMAIN-SUFFIX,myip.mx,REJECT-DROP
+DOMAIN-SUFFIX,myip.my,REJECT-DROP
+DOMAIN-SUFFIX,myip.ng,REJECT-DROP
+DOMAIN-SUFFIX,myip.nl,REJECT-DROP
+DOMAIN-SUFFIX,myip.pw,REJECT-DROP
+DOMAIN-SUFFIX,myip.qa,REJECT-DROP
+DOMAIN-SUFFIX,myip.ro,REJECT-DROP
+DOMAIN-SUFFIX,myip.rs,REJECT-DROP
+DOMAIN-SUFFIX,myip.sg,REJECT-DROP
+DOMAIN-SUFFIX,myip.sh,REJECT-DROP
+DOMAIN-SUFFIX,myip.sk,REJECT-DROP
 DOMAIN-SUFFIX,myip.wtf,REJECT-DROP
 DOMAIN-SUFFIX,myipaddress.com,REJECT-DROP
 DOMAIN-SUFFIX,myiplookup.com,REJECT-DROP
 DOMAIN-SUFFIX,mylocation.org,REJECT-DROP
 DOMAIN-SUFFIX,nodedata.io,REJECT-DROP
+DOMAIN-SUFFIX,nossl.sh,REJECT-DROP
 DOMAIN-SUFFIX,osint.sh,REJECT-DROP
 DOMAIN-SUFFIX,proxycheck.io,REJECT-DROP
 DOMAIN-SUFFIX,realip.cc,REJECT-DROP
+DOMAIN-SUFFIX,reallyfreegeoip.org,REJECT-DROP
 DOMAIN-SUFFIX,seeip.org,REJECT-DROP
 DOMAIN-SUFFIX,showip.net,REJECT-DROP
 DOMAIN-SUFFIX,showmyip.com,REJECT-DROP
@@ -394,11 +481,30 @@ DOMAIN-SUFFIX,showmyipaddress.com,REJECT-DROP
 DOMAIN-SUFFIX,spur.us,REJECT-DROP
 DOMAIN-SUFFIX,sxgeo.city,REJECT-DROP
 DOMAIN-SUFFIX,sypexgeo.net,REJECT-DROP
+DOMAIN-SUFFIX,test-ipv6.alpinedc.ch,REJECT-DROP
+DOMAIN-SUFFIX,test-ipv6.ams.vr.org,REJECT-DROP
+DOMAIN-SUFFIX,test-ipv6.arauc.br,REJECT-DROP
+DOMAIN-SUFFIX,test-ipv6.cl,REJECT-DROP
+DOMAIN-SUFFIX,test-ipv6.com,REJECT-DROP
+DOMAIN-SUFFIX,test-ipv6.csclub.uwaterloo.ca,REJECT-DROP
+DOMAIN-SUFFIX,test-ipv6.cz,REJECT-DROP
+DOMAIN-SUFFIX,test-ipv6.fratec.net,REJECT-DROP
+DOMAIN-SUFFIX,test-ipv6.jp,REJECT-DROP
+DOMAIN-SUFFIX,test-ipv6.nl,REJECT-DROP
+DOMAIN-SUFFIX,test-ipv6.noroutetohost.net,REJECT-DROP
+DOMAIN-SUFFIX,test-ipv6.roedu.net,REJECT-DROP
+DOMAIN-SUFFIX,test-ipv6.run,REJECT-DROP
+DOMAIN-SUFFIX,test-ipv6.se,REJECT-DROP
+DOMAIN-SUFFIX,testipv6.cn,REJECT-DROP
+DOMAIN-SUFFIX,testipv6.de,REJECT-DROP
+DOMAIN-SUFFIX,thatsmyip.com,REJECT-DROP
 DOMAIN-SUFFIX,tnx.nl,REJECT-DROP
 DOMAIN-SUFFIX,tracemyip.org,REJECT-DROP
 DOMAIN-SUFFIX,trustmyip.com,REJECT-DROP
 DOMAIN-SUFFIX,wgetip.com,REJECT-DROP
+DOMAIN-SUFFIX,whatismyip.akamai.com,REJECT-DROP
 DOMAIN-SUFFIX,whatismyip.com,REJECT-DROP
+DOMAIN-SUFFIX,whatismyip.io,REJECT-DROP
 DOMAIN-SUFFIX,whatismyip.net,REJECT-DROP
 DOMAIN-SUFFIX,whatismyip.org,REJECT-DROP
 DOMAIN-SUFFIX,whatismyipaddress.com,REJECT-DROP
@@ -560,187 +666,21 @@ AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
 AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 DOMAIN,oauthaccountmanager.googleapis.com,SPEEDPROXY
 DOMAIN,youtubei.googleapis.com,SPEEDPROXY
-DOMAIN-SUFFIX,ggpht.cn,SPEEDPROXY
-DOMAIN-SUFFIX,ggpht.com,SPEEDPROXY
-DOMAIN-SUFFIX,googlevideo.com,SPEEDPROXY
-DOMAIN-SUFFIX,gvt1.com,SPEEDPROXY
-DOMAIN-SUFFIX,gvt2.com,SPEEDPROXY
-DOMAIN-SUFFIX,music.youtube.com,SPEEDPROXY
-DOMAIN-SUFFIX,video.google.com,SPEEDPROXY
-DOMAIN-SUFFIX,wide-youtube.l.google.com,SPEEDPROXY
-DOMAIN-SUFFIX,withyoutube.com,SPEEDPROXY
+DOMAIN-WILDCARD,*.youtube.*,SPEEDPROXY
 DOMAIN-SUFFIX,youtu.be,SPEEDPROXY
-DOMAIN-SUFFIX,youtube-nocookie.com,SPEEDPROXY
-DOMAIN-SUFFIX,youtube-ui.l.google.com,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.ae,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.al,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.am,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.at,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.az,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.ba,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.be,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.bg,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.bh,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.bo,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.by,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.ca,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.cat,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.ch,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.cl,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.co,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.co.ae,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.co.at,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.co.cr,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.co.hu,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.co.id,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.co.il,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.co.in,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.co.jp,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.co.ke,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.co.kr,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.co.ma,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.co.nz,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.co.th,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.co.tz,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.co.ug,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.co.uk,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.co.ve,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.co.za,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.co.zw,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.ar,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.au,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.az,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.bd,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.bh,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.bo,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.br,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.by,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.co,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.do,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.ec,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.ee,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.eg,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.es,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.gh,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.gr,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.gt,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.hk,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.hn,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.hr,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.jm,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.jo,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.kw,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.lb,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.lv,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.ly,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.mk,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.mt,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.mx,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.my,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.ng,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.ni,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.om,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.pa,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.pe,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.ph,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.pk,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.pt,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.py,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.qa,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.ro,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.sa,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.sg,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.sv,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.tn,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.tr,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.tw,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.ua,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.uy,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.com.ve,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.cr,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.cz,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.de,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.dk,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.ee,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.es,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.fi,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.fr,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.ge,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.googleapis.com,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.gr,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.gt,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.hk,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.hr,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.hu,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.ie,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.in,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.iq,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.is,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.it,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.jo,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.jp,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.kr,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.kz,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.la,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.lk,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.lt,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.lu,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.lv,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.ly,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.ma,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.md,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.me,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.mk,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.mn,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.mx,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.my,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.ng,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.ni,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.nl,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.no,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.pa,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.pe,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.ph,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.pk,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.pl,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.pr,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.pt,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.qa,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.ro,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.rs,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.ru,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.sa,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.se,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.sg,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.si,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.sk,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.sn,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.soy,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.sv,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.tn,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.tv,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.ua,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.ug,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.uy,SPEEDPROXY
-DOMAIN-SUFFIX,youtube.vn,SPEEDPROXY
-DOMAIN-SUFFIX,youtubeeducation.com,SPEEDPROXY
-DOMAIN-SUFFIX,youtubeembeddedplayer.googleapis.com,SPEEDPROXY
-DOMAIN-SUFFIX,youtubefanfest.com,SPEEDPROXY
-DOMAIN-SUFFIX,youtubegaming.com,SPEEDPROXY
-DOMAIN-SUFFIX,youtubego.co.id,SPEEDPROXY
-DOMAIN-SUFFIX,youtubego.co.in,SPEEDPROXY
-DOMAIN-SUFFIX,youtubego.com,SPEEDPROXY
-DOMAIN-SUFFIX,youtubego.com.br,SPEEDPROXY
-DOMAIN-SUFFIX,youtubego.id,SPEEDPROXY
-DOMAIN-SUFFIX,youtubego.in,SPEEDPROXY
-DOMAIN-SUFFIX,youtubei.googleapis.com,SPEEDPROXY
-DOMAIN-SUFFIX,youtubekids.com,SPEEDPROXY
-DOMAIN-SUFFIX,youtubemobilesupport.com,SPEEDPROXY
 DOMAIN-SUFFIX,yt.be,SPEEDPROXY
 DOMAIN-SUFFIX,ytimg.com,SPEEDPROXY
-DOMAIN-KEYWORD,youtube,SPEEDPROXY
-DOMAIN-KEYWORD,ytimg.com,SPEEDPROXY
+DOMAIN-SUFFIX,googlevideo.com,SPEEDPROXY
+DOMAIN-SUFFIX,ggpht.com,SPEEDPROXY
+DOMAIN-SUFFIX,ggpht.cn,SPEEDPROXY
+DOMAIN-SUFFIX,gvt1.com,SPEEDPROXY
+DOMAIN-SUFFIX,gvt2.com,SPEEDPROXY
+DOMAIN-SUFFIX,withyoutube.com,SPEEDPROXY
+DOMAIN-SUFFIX,video.google.com,SPEEDPROXY
+DOMAIN-SUFFIX,wide-youtube.l.google.com,SPEEDPROXY
+DOMAIN-SUFFIX,youtube-ui.l.google.com,SPEEDPROXY
+DOMAIN-SUFFIX,youtubeembeddedplayer.googleapis.com,SPEEDPROXY
+DOMAIN-SUFFIX,youtubei.googleapis.com,SPEEDPROXY
 USER-AGENT,*YouTubeMusic*,SPEEDPROXY
 USER-AGENT,*com.google.ios.youtubemusic*,SPEEDPROXY
 USER-AGENT,*youtube*,SPEEDPROXY
@@ -934,7 +874,6 @@ IP-CIDR,34.96.0.0/16,SPEEDPROXY,no-resolve
 IP-CIDR,34.120.0.0/16,SPEEDPROXY,no-resolve
 IP-CIDR,34.128.0.0/16,SPEEDPROXY,no-resolve
 IP-CIDR,155.102.0.0/16,SPEEDPROXY,no-resolve
-IP-CIDR,157.240.0.0/16,SPEEDPROXY,no-resolve
 
 #Meta
 DOMAIN,analytics.facebook.com,REJECT
@@ -1335,6 +1274,89 @@ localhost = 127.0.0.1
 [Header Rewrite]
 #Spotify🎶
 ^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/user-customization-service\/v1\/customize header-del if-none-match
+
+[Body Rewrite]
+# Возвращает пустой JSON-объект вместо рекламного блока
+# http-response ^https?://api\.example\.com/feed "ad_banner"\s*:\s*\{[^}]*\} "ad_banner":{}
+# Заменяет рекламное поле на false в любом JSON-ответе
+# http-response ^https?://api\.example\.com/config "show_ads"\s*:\s*true "show_ads":false
+# Заменяет значение "tracking_enabled" на false
+# http-response ^https?://api\.example\.com/settings "tracking_enabled"\s*:\s*true "tracking_enabled":false
+# Очищает массив рекламных элементов
+# http-response ^https?://api\.example\.com/list "ads"\s*:\s*\[.*?\] "ads":[]
+# Удаляет поле с рекламным URL (если оно не последнее в объекте!)
+# http-response ^https?://api\.example\.com/data "banner_url"\s*:\s*"https?://[^"]+", 
+# Заменяет редирект на прямую ссылку (обходит промежуточные рекламные страницы)
+# http-response ^https?://api\.example\.com/redirect "redirect_url"\s*:\s*"https?://[^"]+" "redirect_url":"https://direct.example.com"
+# Заменяет статус подписки на "premium" или "pro"
+# http-response ^https?://api\.example\.com/user "is_premium"\s*:\s*false "is_premium":true
+# http-response ^https?://api\.example\.com/user "subscription"\s*:\s*"free" "subscription":"premium"
+# http-response ^https?://api\.example\.com/account "plan"\s*:\s*"basic" "plan":"pro"
+# Устанавливает максимальный уровень доступа
+# http-response ^https?://api\.example\.com/limits "max_level"\s*:\s*\d+ "max_level":999
+# Убирает требование подписки для доступа к функции
+# http-response ^https?://api\.example\.com/feature "requires_premium"\s*:\s*true "requires_premium":false
+# Разрешает сохранение/экспорт
+# http-response ^https?://api\.example\.com/export "can_export"\s*:\s*false "can_export":true
+# Снимает ограничение на количество устройств
+# http-response ^https?://api\.example\.com/devices "max_devices"\s*:\s*\d+ "max_devices":100
+# Меняет строковое значение на другое
+# http-response ^https?://api\.example\.com/data "status"\s*:\s*"trial" "status":"active"
+# http-response ^https?://api\.example\.com/data "region"\s*:\s*"CN" "region":"US"
+# Меняет булево значение
+# http-response ^https?://api\.example\.com/config "beta"\s*:\s*false "beta":true
+# Заменяет число
+# http-response ^https?://api\.example\.com/limits "quota"\s*:\s*\d+ "quota":99999
+# Убирает поле "premium_required" (если оно не последнее в объекте!)
+# http-response ^https?://api\.example\.com/check "premium_required"\s*:\s*true, 
+# Меняет title страницы
+# http-response ^https?://example\.com/ <title>Free Version</title> <title>Premium Version</title>
+# Заменяет текст в HTML
+# http-response ^https?://example\.com/ "Sign up for Premium" "You are Premium"
+# Подменяет номер версии в ответе
+# http-response ^https?://api\.example\.com/version "version"\s*:\s*"1.0" "version":"2.0"
+# Заменяет User-Agent в ответе (если сервер его отражает)
+# http-response ^https?://api\.example\.com/ "User-Agent":"[^"]*" "User-Agent":"Mozilla/5.0 (iPhone)"
+# Удаляет все ключи, начинающиеся с "ad_" (рекурсивно по всему JSON)
+# http-response-jq ^https?://api\.example\.com/data 'walk(if type == "object" then with_entries(select(.key | test("^ad_") | not)) else . end)'
+# Устанавливает поле "is_premium" в true, даже если его не было
+# http-response-jq ^https?://api\.example\.com/user '.is_premium = true'
+# Добавляет массив "features" с нужными элементами
+# http-response-jq ^https?://api\.example\.com/config '.features = ["offline_sync","no_audio_ads","hq_audio"]'
+# Удаляет поле "ads" из ответа (если оно есть)
+# http-response-jq ^https?://api\.example\.com/feed 'del(.ads)'
+# Устанавливает максимальное значение для всех числовых полей "limit"
+# http-response-jq ^https?://api\.example\.com/limits '.[] |= (if type == "number" and . > 0 then 99999 else . end)'
+# Меняет статус подписки, если он "free"
+# http-response-jq ^https?://api\.example\.com/account 'if .plan == "free" then .plan = "premium" else . end'
+# Рекурсивно заменяет все "false" на "true" (осторожно, может задеть лишнее)
+# http-response-jq ^https?://api\.example\.com/flags 'walk(if type == "boolean" then true else . end)'
+# Замена строки
+# http-response ^https?://api\.example\.com/ "ключевое_слово":"старое_значение" "ключевое_слово":"новое_значение"
+# Замена булева значения
+# http-response ^https?://api\.example\.com/ "ключевое_слово":false "ключевое_слово":true
+# Замена числа
+# http-response ^https?://api\.example\.com/ "ключевое_слово":\d+ "ключевое_слово":999
+# Удаление поля (если оно не последнее)
+# http-response ^https?://api\.example\.com/ "ключевое_слово":"[^"]*", 
+# Установка значения (создаёт поле, если его нет)
+# http-response-jq ^https?://api\.example\.com/ '.ключевое_слово = "новое_значение"'
+# Установка булева значения
+# http-response-jq ^https?://api\.example\.com/ '.ключевое_слово = true'
+# Удаление поля
+# http-response-jq ^https?://api\.example\.com/ 'del(.ключевое_слово)'
+# Добавление элемента в массив
+# http-response-jq ^https?://api\.example\.com/ '.массив += ["новый_элемент"]'
+# Условная замена (только если поле имеет определённое значение)
+# http-response-jq ^https?://api\.example\.com/ 'if .ключевое_слово == "старое" then .ключевое_слово = "новое" else . end'
+# Заменяет значение в теле запроса (например, при отправке формы)
+# http-request ^https?://api\.example\.com/submit "is_premium=false" "is_premium=true"
+# Меняет User-Agent в теле запроса (если он передаётся в JSON)
+# http-request ^https?://api\.example\.com/auth "user_agent":"[^"]*" "user_agent":"Premium/1.0"
+# Убирает поле "device_id" из запроса (если оно не последнее)
+# http-request ^https?://api\.example\.com/analytics "device_id":"[^"]*", 
+# JQ-правило для запроса: удаляет все поля, начинающиеся с "ad_"
+# http-request-jq ^https?://api\.example\.com/data 'walk(if type == "object" then with_entries(select(.key | test("^ad_") | not)) else . end)'
 
 [URL Rewrite]
 #YOUTUBE🔴
