@@ -1,0 +1,1491 @@
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "dns": {
+    "servers": [
+      {
+        "address": "https://dns.comss.one/dns-query",
+        "domains": ["geosite:geolocation-!cn"],
+        "expectIPs": ["geoip:!cn"]
+      },
+      {
+        "address": "https://dns.comss.one/dns-query",
+        "domains": ["geosite:cn"]
+      },
+      {
+        "address": "https://1.1.1.1/dns-query",
+        "domains": ["geosite:geolocation-!cn"]
+      },
+      {
+        "address": "https://8.8.8.8/dns-query",
+        "domains": ["geosite:cn"]
+      }
+    ],
+    "queryStrategy": "UseIPv4"
+  },
+  "inbounds": [
+    {
+      "port": 10808,
+      "listen": "127.0.0.1",
+      "protocol": "mixed",
+      "settings": {
+        "udp": true
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"]
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "🇨🇭Аня — швейцарский шоколад 🎮",
+      "protocol": "hysteria",
+      "settings": {
+        "version": 2,
+        "address": "154.222.132.226",
+        "port": 8449
+      },
+      "streamSettings": {
+        "network": "hysteria",
+        "hysteriaSettings": {
+          "version": 2,
+          "auth": "0a0536aa-827d-44aa-95ef-cf2419d8c90c"
+        }
+      }
+    },
+    {
+      "tag": "🇳🇱Аня — голландский тюльпан 🎮",
+      "protocol": "hysteria",
+      "settings": {
+        "version": 2,
+        "address": "31.56.150.7",
+        "port": 8449
+      },
+      "streamSettings": {
+        "network": "hysteria",
+        "hysteriaSettings": {
+          "version": 2,
+          "auth": "0a0536aa-827d-44aa-95ef-cf2419d8c90c"
+        }
+      }
+    },
+    {
+      "tag": "🇫🇮Аня — финская сказка 🎮",
+      "protocol": "hysteria",
+      "settings": {
+        "version": 2,
+        "address": "31.56.150.4",
+        "port": 8449
+      },
+      "streamSettings": {
+        "network": "hysteria",
+        "hysteriaSettings": {
+          "version": 2,
+          "auth": "0a0536aa-827d-44aa-95ef-cf2419d8c90c"
+        }
+      }
+    },
+    {
+      "tag": "🇫🇷Аня — французский поцелуй",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "31.56.150.32",
+          "port": 8443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "nonstandard.sales.mail.ru",
+          "publicKey": "rWRM2cPptEBzNrJ0UGmTJ5yzE7jzDueFBG7N26IQ6Bw",
+          "shortId": "7f93b4c2da2a3166",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇪🇸Аня — испанское солнышко",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "31.56.150.161",
+          "port": 8443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "dev2.mail.ru",
+          "publicKey": "ORFKlz-2ycrEzhqrILJHADpdAtEIBtkTIMz7XWW2MDM",
+          "shortId": "49116d5932056cd6",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇩🇪Аня — немецкое счастье",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "31.56.4.21",
+          "port": 8443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "rev.mail.ru",
+          "publicKey": "nYrWjkzhBoGSNusIv7c-32q9M3-CmUcZRQT7WKURL0Y",
+          "shortId": "d53b1f99c1990356",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇸🇪Аня — шведская мечта",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "154.222.69.211",
+          "port": 443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "nonstandard.sales.mail.ru",
+          "publicKey": "JjHZYImPLSxYd-hVQ-jazFoAGoveZeb74nNFLH5dAnI",
+          "shortId": "5150547f3a338b31",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇳🇱Аня — игривая звёздочка",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "31.56.150.6",
+          "port": 443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "games.mail.ru",
+          "publicKey": "2NtvNsBpKxbXdM10sXCDOedKkdZ3gwAs3WUnwqbv5Hs",
+          "shortId": "db8f0dbb1308ce69",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇭🇺Аня — венгерская нежность",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "31.56.4.79",
+          "port": 8443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "static.operator.mail.ru",
+          "publicKey": "3L3i_4b1jo-cCwx3TwIEjjOxQIMm6ysblH3AvTlvgBk",
+          "shortId": "54d4120352ec07fe",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇬🇧Аня — английский рассвет",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "31.56.4.8",
+          "port": 443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "bratva-mr.mail.ru",
+          "publicKey": "ObdaDJ1-OGV8eq3pV3uw7CX1LR9snkN9YDkaCqfxtik",
+          "shortId": "0dbc71ad79ff7805",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇬🇧Аня — туманный Альбион любви",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "234604.aib2bsas.online",
+          "port": 443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "navigation.maps.yandex.net",
+          "publicKey": "ObdaDJ1-OGV8eq3pV3uw7CX1LR9snkN9YDkaCqfxtik",
+          "shortId": "d52706e0677ceb7d",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇵🇱Аня — польская мелодия",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "31.56.150.155",
+          "port": 8443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "rm.mail.ru",
+          "publicKey": "a4E6GoR8p4OH_5ktTgRgdJfhS98lbTCzmf_B0JdgOT8",
+          "shortId": "57c55e55e4bf190b",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇨🇭Аня — альпийская свежесть",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "31.56.150.135",
+          "port": 8443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "quantum.mail.ru",
+          "publicKey": "ur0hPeVOiN-1EwdJKQ7sLa8kDNMmkLuxt5v7epB6_2c",
+          "shortId": "2db2f7357d0b7b54",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇨🇭Аня — горный воздух любви",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "154.222.132.226",
+          "port": 443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "kombo.mail.ru",
+          "publicKey": "r3LWtIVIAzCZoRM7tSlM7akmgCDcYpMtmvfISlS4oWc",
+          "shortId": "dccb92bdaad0309f",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇨🇭Аня — сладкая нега",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "263160.aib2bsas.online",
+          "port": 443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "navigation.maps.yandex.net",
+          "publicKey": "r3LWtIVIAzCZoRM7tSlM7akmgCDcYpMtmvfISlS4oWc",
+          "shortId": "12d945ea6f5bb6f1",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇫🇮Аня — северное сияние души",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "31.56.4.88",
+          "port": 8443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "answer.mail.ru",
+          "publicKey": "DyaJbQTstATDS6roBW3zGNndY4NmGmGiO0Nxr-pD4gU",
+          "shortId": "73f22a22c6d98dc9",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇫🇮Аня — белые ночи",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "31.56.150.4",
+          "port": 8443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "support.tech.mail.ru",
+          "publicKey": "aVgexqDLnJJzvD2O_S-N6qDdzFxSliDEwRkvCUq-khY",
+          "shortId": "17b36276292e81f3",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇧🇷Аня — бразильский карнавал",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "154.222.69.168",
+          "port": 443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "blackfriday.mail.ru",
+          "publicKey": "0tTVSDFx38GghBBU2CtojH8T8mfr18Wrr6JXA5lVjVY",
+          "shortId": "a9934e1f55a0cbce",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇰🇿Аня — степной ветерок",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "31.56.4.27",
+          "port": 443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "warheaven.mail.ru",
+          "publicKey": "-q97GmwI_UXqbG2u5IMWjXz8fgOg_yDfZA9yQqWj6mc",
+          "shortId": "73b67c42a7cb0d29",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇮🇳Аня — йога моего сердца",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "31.56.4.162",
+          "port": 443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "dev3.mail.ru",
+          "publicKey": "tG_N47Tmpu9e2kBdiDhoWvMDdpbFlCq4GqfvFvlNhlo",
+          "shortId": "053bb560203484bc",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇹🇷Аня — лунный свет Босфора",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "31.56.4.90",
+          "port": 8443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "tmgame.mail.ru",
+          "publicKey": "dQX4kiGNJiB7zrun7Fx3ZYN447_IRaPHlVm1ysM2lBY",
+          "shortId": "dbceee074705f13f",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇭🇰Аня — неоновый огонёк",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "31.56.4.140",
+          "port": 443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "1l-view.mail.ru",
+          "publicKey": "wbtr_JuN9J6aAqvSJp2JtMGbBMQ4Pl_wH0eVKlKBCGw",
+          "shortId": "c1394d51f6a713ab",
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "tag": "🇨🇦Аня — канадский кленовый лист",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "31.56.150.202",
+          "port": 8443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "www.mail.ru",
+          "publicKey": "h58QamOIqDou70WaOwo_X22rO-CMA_gZ6SxSRAdmLg4",
+          "shortId": "5cb63e766ac97c01",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇺🇸Аня — американская мечта",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "31.56.4.71",
+          "port": 443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "rl.mail.ru",
+          "publicKey": "aIccmJzVSmtgQbNjTMPPm88BTb39llloNV-y2hyltAM",
+          "shortId": "c86c2d4130e41b6a",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇮🇹Аня — итальянское солнце",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "31.56.4.30",
+          "port": 8443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "notes.mail.ru",
+          "publicKey": "zrKZwkypVvTg2qwqg3cY_Y0MdBwDfenxVCDVNeyBI1Q",
+          "shortId": "2ed7c28a8307b14f",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇲🇩Аня — молдавская нежность",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "31.56.150.17",
+          "port": 443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "cars.mail.ru",
+          "publicKey": "uIH7gOx_hHxyTJeu8JHfa4JIypRplsEVZnOIin4s9jI",
+          "shortId": "13eaf1db88af6b37",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇯🇵Аня — японская сакура",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "31.56.4.3",
+          "port": 443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "www.pubg.mail.ru",
+          "publicKey": "KIcDFvV5yAPDS2cMYMYu5iJ3qCzbzpDw37DEOQ-KJFc",
+          "shortId": "e0c74181593233af",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇧🇪Аня — бельгийский шоколад",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "31.56.150.218",
+          "port": 443,
+          "users": [{
+            "id": "0a0536aa-827d-44aa-95ef-cf2419d8c90c",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "2018.mail.ru",
+          "publicKey": "k6rz_-vWxwgMf8VwXhW0mksond9nH7fEzfcqIp-8kk4",
+          "shortId": "c6ac16147408dc58",
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "tag": "🇦🇱Аня — албанское сердце",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "albania.claudpath.com",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "cdn9-61.cachemesh.top",
+          "publicKey": "Icoy9hpLcMz5dX3hrWqcyFskbiO3NT6ovb1E98HRuQk",
+          "shortId": "0f33569b",
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "tag": "🇦🇺Аня — солнце с другого полюса",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "australia.claudpath.com",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "cdn8-73.cachemesh.top",
+          "publicKey": "ZzsjviqPC2jIqX2WraTE3W79vd9crIKfx_eMfuCm2WE",
+          "shortId": "cf9a6ac4",
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "tag": "🇮🇳Аня — обнимашки и тепло",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "india.claudpath.com",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "cdn1-12.cachemesh.top",
+          "publicKey": "MHNRrFT7Dk0-JZSt0kt_AveU-QOXkWnhuycJjdTmn0Y",
+          "shortId": "9bf83930",
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "tag": "🇭🇰Аня — неоновый зайчик",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "hong-kong.claudpath.com",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "cdn8-73.cachemesh.top",
+          "publicKey": "Lgyucem7HvbB2uDDdnsliUcuuhsLgjNVSR9B6D0Dq28",
+          "shortId": "c9641866",
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "tag": "🇹🇷Аня — нежность в каждом взгляде",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "turkey.claudpath.com",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "cdn8-39.cachemesh.top",
+          "publicKey": "XimszdLdXWYSfODURsloKP6Lbd2s_N-eGaEZwwK3ggw",
+          "shortId": "dcf3a20a",
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "tag": "🇯🇵Аня — родная и любимая",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "japan.claudpath.com",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "cdn9-31.cachemesh.top",
+          "publicKey": "0zGSn2yrwO8V3OkXwwg1579Y3e0yrDgq-TmNO08h6Tw",
+          "shortId": "3e8acbfb",
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "tag": "🇨🇦Аня — тёплое северное сияние",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "canada.claudpath.com",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "vip.asus.com",
+          "publicKey": "w-Ol-9Ec9de1IDPNZCTS4NHB8uAhZz6ekjvL6oo2KFY",
+          "shortId": "258e22e3",
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "tag": "🇫🇮Аня — как весенний рассвет",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "finland.claudpath.com",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "cdn7-57.cachemesh.top",
+          "publicKey": "wKtWduFeuLfED3gUZo3KE4_EKlBTK7sNk3DXgRF7HSk",
+          "shortId": "172066e9",
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "tag": "🇳🇬Аня — моя тихая гавань",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "nigeria.claudpath.com",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "cdn8-73.cachemesh.top",
+          "publicKey": "3G3tTbdRlEpLxnoYWbsgjg4r28-9wuIs66S4Xlf-lVM",
+          "shortId": "46f679e8",
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "tag": "🇧🇷Аня — карнавальная мелодия",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "brazil.claudpath.com",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "cdn8-98.cachemesh.top",
+          "publicKey": "-3s7mi5wVtRA-71tIQciXVq358V8KNBLHb_QOr8TljI",
+          "shortId": "15bb109f",
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "tag": "🇦🇪Аня — жемчужина пустыни",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "uae.claudpath.com",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "cdn4-40.cachemesh.top",
+          "publicKey": "Sl6rz_F3tpxLqrahwUmETO79-BRkinyGzbp8GHE9jRk",
+          "shortId": "803fa830",
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "tag": "🇰🇿Аня — тёплый плед для души",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "kazakhstan.claudpath.com",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "cdn8-39.cachemesh.top",
+          "publicKey": "28c2jrCIChYmpAzF1Y_XnAiAFz8IEFYMC54GFcFzowM",
+          "shortId": "837e643a",
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "tag": "🇦🇷Аня — страстный поцелуй ветра",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "argentina.claudpath.com",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "cdn3-98.cachemesh.top",
+          "publicKey": "901sQIr3_F6HIafUUvXOHwgP4vMACxrntDfp-pCwEF0",
+          "shortId": "d85536c1",
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "tag": "🇸🇬Аня — огонёк в ночи",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "singapore.claudpath.com",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "cdn4-46.cachemesh.top",
+          "publicKey": "sR-p7NvWNnddi9FTtvBFf-F9W6CyPjKTgTjGTCVCTlE",
+          "shortId": "53928e9a",
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "tag": "🇺🇸Аня — снежная нежность",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "usa.claudpath.com",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "cdn1-22.cachemesh.top",
+          "publicKey": "Snz4gU0lC49Ggl0IQpXCUGuqRDWRafZ4UgnOu_EnS0U",
+          "shortId": "c86d6442",
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "tag": "🇩🇪Аня — немецкая мелодия",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "cdn.mediacdnpro.top",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "wsSettings": {
+          "path": "/stream/updates/9b5a7358",
+          "headers": {
+            "Host": "cdn.mediacdnpro.top"
+          }
+        }
+      }
+    },
+    {
+      "tag": "🇩🇪Аня — немецкая мелодия",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "edge.mediacdnpro.top",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "wsSettings": {
+          "path": "/stream/updates/9b5a7358",
+          "headers": {
+            "Host": "cdn.mediacdnpro.top"
+          }
+        }
+      }
+    },
+    {
+      "tag": "🇫🇮Аня — финский рассвет",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "cdn.mediagrid.top",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "wsSettings": {
+          "path": "/stream/updates/dc5318fd",
+          "headers": {
+            "Host": "cdn.mediagrid.top"
+          }
+        }
+      }
+    },
+    {
+      "tag": "🇫🇮Аня — финский рассвет",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "edge.mediagrid.top",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "wsSettings": {
+          "path": "/stream/updates/dc5318fd",
+          "headers": {
+            "Host": "cdn.mediagrid.top"
+          }
+        }
+      }
+    },
+    {
+      "tag": "🇩🇪Аня — германская нежность",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "cdn.mediahubcloud.top",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "wsSettings": {
+          "path": "/stream/updates/542346fb",
+          "headers": {
+            "Host": "cdn.mediahubcloud.top"
+          }
+        }
+      }
+    },
+    {
+      "tag": "🇩🇪Аня — германская нежность",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "edge.mediahubcloud.top",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "wsSettings": {
+          "path": "/stream/updates/542346fb",
+          "headers": {
+            "Host": "cdn.mediahubcloud.top"
+          }
+        }
+      }
+    },
+    {
+      "tag": "🇫🇮Аня — финское чудо",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "cdn.mediahubcloud.top",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "wsSettings": {
+          "path": "/stream/updates/2851becd",
+          "headers": {
+            "Host": "cdn.mediahubcloud.top"
+          }
+        }
+      }
+    },
+    {
+      "tag": "🇫🇮Аня — финское чудо",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "edge.mediahubcloud.top",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "wsSettings": {
+          "path": "/stream/updates/2851becd",
+          "headers": {
+            "Host": "cdn.mediahubcloud.top"
+          }
+        }
+      }
+    },
+    {
+      "tag": "🇺🇸Аня — американский рассвет",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "cdn.mediacdnpro.top",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "wsSettings": {
+          "path": "/stream/updates/e22e6c76",
+          "headers": {
+            "Host": "cdn.mediacdnpro.top"
+          }
+        }
+      }
+    },
+    {
+      "tag": "🇺🇸Аня — американский рассвет",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "edge.mediacdnpro.top",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "wsSettings": {
+          "path": "/stream/updates/e22e6c76",
+          "headers": {
+            "Host": "cdn.mediacdnpro.top"
+          }
+        }
+      }
+    },
+    {
+      "tag": "🇩🇪Аня — немецкий вечер",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "cdn.mediagrid.top",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "wsSettings": {
+          "path": "/stream/updates/ce3214a2",
+          "headers": {
+            "Host": "cdn.mediagrid.top"
+          }
+        }
+      }
+    },
+    {
+      "tag": "🇩🇪Аня — немецкий вечер",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [{
+          "address": "edge.mediagrid.top",
+          "port": 443,
+          "users": [{
+            "id": "b3e6991f-f06b-5357-a67a-b4f38c61319f",
+            "flow": "xtls-rprx-vision",
+            "encryption": "none"
+          }]
+        }]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "wsSettings": {
+          "path": "/stream/updates/ce3214a2",
+          "headers": {
+            "Host": "cdn.mediagrid.top"
+          }
+        }
+      }
+    },
+    {
+      "tag": "🇨🇦Аня — канадский кленовый лист SS",
+      "protocol": "shadowsocks",
+      "settings": {
+        "servers": [{
+          "address": "31.56.150.202",
+          "port": 2030,
+          "method": "chacha20-ietf-poly1305",
+          "password": "7kwnoYNhcu3LdEbtfQ7R-KKdkvwt9hB-"
+        }]
+      }
+    },
+    {
+      "tag": "🇮🇹Аня — итальянское солнце SS",
+      "protocol": "shadowsocks",
+      "settings": {
+        "servers": [{
+          "address": "31.56.4.30",
+          "port": 2030,
+          "method": "chacha20-ietf-poly1305",
+          "password": "7kwnoYNhcu3LdEbtfQ7R-KKdkvwt9hB-"
+        }]
+      }
+    },
+    {
+      "tag": "🇬🇧Аня — английский рассвет SS",
+      "protocol": "shadowsocks",
+      "settings": {
+        "servers": [{
+          "address": "31.56.4.8",
+          "port": 2030,
+          "method": "chacha20-ietf-poly1305",
+          "password": "7kwnoYNhcu3LdEbtfQ7R-KKdkvwt9hB-"
+        }]
+      }
+    },
+    {
+      "tag": "direct",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
+    }
+  ],
+  "observatory": {
+    "subjectSelector": [
+      "🇦🇱Аня", "🇦🇺Аня", "🇧🇷Аня", "🇨🇦Аня", "🇫🇮Аня", "🇭🇰Аня",
+      "🇮🇳Аня", "🇮🇹Аня", "🇯🇵Аня", "🇰🇿Аня", "🇳🇬Аня", "🇸🇬Аня",
+      "🇹🇷Аня", "🇦🇪Аня", "🇺🇸Аня", "🇦🇷Аня", "🇬🇧Аня"
+    ],
+    "probeUrl": "https://cp.cloudflare.com/generate_204",
+    "probeInterval": "100s",
+    "enableConcurrency": true
+  },
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "balancers": [
+      {
+        "tag": "auto-proxy",
+        "selector": [
+          "🇦🇱Аня", "🇦🇺Аня", "🇧🇷Аня", "🇨🇦Аня", "🇫🇮Аня", "🇭🇰Аня",
+          "🇮🇳Аня", "🇮🇹Аня", "🇯🇵Аня", "🇰🇿Аня", "🇳🇬Аня", "🇸🇬Аня",
+          "🇹🇷Аня", "🇦🇪Аня", "🇺🇸Аня", "🇦🇷Аня", "🇬🇧Аня"
+        ],
+        "strategy": {
+          "type": "leastPing"
+        },
+        "fallbackTag": "direct"
+      }
+    ],
+    "rules": [
+      {
+        "type": "field",
+        "network": "udp",
+        "domain": [
+          "googlevideo.com",
+          "*.googlevideo.com",
+          "www.youtube.com",
+          "s.youtube.com",
+          "youtubei.googleapis.com",
+          "*.yandex.*",
+          "*.ya.ru",
+          "*.yastatic.net",
+          "api-mobile.soundcloud.com",
+          "spclient.wg.spotify.com",
+          "*-spclient.spotify.com",
+          "*.spotify.com",
+          "app.ftscrt.com",
+          "api.picsart.com",
+          "api.lingualeo.com"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "type": "field",
+        "network": "tcp,udp",
+        "balancerTag": "auto-proxy"
+      }
+    ]
+  }
+}
