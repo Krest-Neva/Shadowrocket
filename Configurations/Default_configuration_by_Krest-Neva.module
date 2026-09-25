@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=Pro-grade networking for iOS/macOS
 
-#Последние изменения 14.09.2026 02:00
+#Последние изменения 26.09.2026 02:00
 #Фильтры обновлены 08.09.2026 14:00
 
 #==================================================
@@ -232,6 +232,7 @@ BESTPROXY = load-balance,interval=220,timeout=2,url=https://cp.cloudflare.com/ge
 METAPROXY = load-balance,interval=150,timeout=2,url=https://www.instagram.com,policy-regex-filter=(?i)^(?!.*(?:госуслуги|⬇️\sLTE\sлокации\sРоссия\s7\s-\s15\s⬇️|📶\sлимит\s35гб\s⬇️|⬇️\sНиже\sлимитов\sнет\s⬇️|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|трафик|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇹🇲|туркменистан|turkmenistan|🇨🇺|куба|cuba|🇹🇷|турция|turkey|🇧🇾|беларусь|belarus|auto|авто|оптимальная|локация)|^(?=.\s)(?!.*(?:белые\sсписки|бс|white\slist|white\slists|auto|авто|inst|instagram|🇷🇺\s*\[LTE\]\s*Россия\s*№)))(?:(?!.*(?:россия|russia|🇷🇺)).*|.*🇷🇺\s*\[LTE\]\s*Россия\s*№\s*\d+.*)$
 SPEEDPROXY = url-test,interval=100,timeout=2,tolerance=50,url=https://www.youtube.com,policy-regex-filter=(?i)^(?!.*(?:госуслуги|⬇️\sLTE\sлокации\sРоссия\s7\s-\s15\s⬇️|📶\sлимит\s35гб\s⬇️|⬇️\sНиже\sлимитов\sнет\s⬇️|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|трафик|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|🇮🇷|иран|iran|🇹🇲|туркменистан|turkmenistan|🇨🇺|куба|cuba|🇹🇷|турция|turkey|🇧🇾|беларусь|belarus|🇻🇪|венесуэла|venezuela|🇸🇩|судан|sudan|🇯🇵|япония|japan|🇨🇦|канада|canada|🇮🇳|индия|india|🇺🇸|сша|usa|🇧🇷|бразилия|brazil|🇦🇪|оаэ|uae|🇪🇬|египет|egypt|🇴🇲|оман|oman|🇸🇾|сирия|syria|🇬🇧|англия|england|🇦🇫|афганистан|afghanistan|🇵🇰|пакистан|pakistan|🇧🇩|бангладеш|bangladesh|🇱🇾|ливия|libya|auto|авто|оптимальная|локация)|^(?=.\s)(?!.*(?:белые\sсписки|бс|white\slist|white\slists|auto|авто|youtube|🇷🇺\s*\[LTE\]\s*Россия\s*№)))(?:(?!.*(?:россия|russia|🇷🇺)).*|.*🇷🇺\s*\[LTE\]\s*Россия\s*№\s*\d+.*)$
 TGPROXY = load-balance,interval=150,timeout=2,url=https://web.telegram.org,policy-regex-filter=(?i)^(?!.*(?:госуслуги|⬇️\sLTE\sлокации\sРоссия\s7\s-\s15\s⬇️|📶\sлимит\s35гб\s⬇️|⬇️\sНиже\sлимитов\sнет\s⬇️|подписка|subscribe|закончилась|истекла|оплатить|продлить|поддержка|поддержкой|поддержку|поддерживается|устройств|трафик|🇨🇳|китай|china|🇭🇰|гонконг|hong\s+kong|auto|авто|оптимальная|локация)|^(?=.\s)(?!.*(?:белые\sсписки|бс|white\slist|white\slists|auto|авто|🇷🇺\s*\[LTE\]\s*Россия\s*№)))(?:(?!.*(?:россия|russia|🇷🇺)).*|.*🇷🇺\s*\[LTE\]\s*Россия\s*№\s*\d+.*)$
+SPOTIFYPROXY = load-balance,interval=600,timeout=2,url=https://open.spotify.com,policy-regex-filter=(?i)^.*(?:нидерланды|netherlands|🇳🇱).*$
 
 [Rule]
 #Локальные сети
@@ -919,13 +920,13 @@ DOMAIN-SUFFIX,tenor.com,METAPROXY
 AND,((DOMAIN-SUFFIX,spotify.com), (PROTOCOL,UDP)),REJECT
 AND,((USER-AGENT,Spotify*), (PROTOCOL,UDP)),REJECT
 URL-REGEX,^https?:\/\/(.*-ad-logic.*|crashdump\.spotify\.com|log\.spotify\.com|spclient\.wg\.spotify\.com\/(ad-logic|ads))\/,REJECT
-DOMAIN-SUFFIX,pscdn.co,PROXY
-DOMAIN-SUFFIX,scdn.co,PROXY
-DOMAIN-SUFFIX,spoti.fi,PROXY
-DOMAIN-KEYWORD,spotify,PROXY
-USER-AGENT,Spotify*,PROXY
-IP-CIDR,35.186.224.47/32,PROXY,no-resolve
-IP-CIDR,104.154.127.126/32,PROXY,no-resolve
+DOMAIN-SUFFIX,pscdn.co,SPOTIFYPROXY
+DOMAIN-SUFFIX,scdn.co,SPOTIFYPROXY
+DOMAIN-SUFFIX,spoti.fi,SPOTIFYPROXY
+DOMAIN-KEYWORD,spotify,SPOTIFYPROXY
+USER-AGENT,Spotify*,SPOTIFYPROXY
+IP-CIDR,35.186.224.47/32,SPOTIFYPROXY,no-resolve
+IP-CIDR,104.154.127.126/32,SPOTIFYPROXY,no-resolve
 
 #SoundCloud☁️
 DOMAIN-SUFFIX,soundcloud.com,PROXY
@@ -1401,8 +1402,8 @@ YT-Premium = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/(y
 SoundCloudGoPlus = type=http-response,pattern=https://api-mobile.soundcloud.com/configuration/ios,requires-body=1,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/SoundCloud_Go_Plus.js
 
 #Spotify🎶
-Spotify-request-patch = type=http-request, pattern=^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/user-customization-service\/v1\/customize$,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_request_patch.js,timeout=60
-Spotify-content-patch = type=http-request,pattern=^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/(artistview\/v1\/artist|album-entity-view\/v2\/album)\/,requires-body=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_content_patch.js,timeout=10
+#Spotify-request-patch = type=http-request, pattern=^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/user-customization-service\/v1\/customize$,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_request_patch.js,timeout=60
+#Spotify-content-patch = type=http-request,pattern=^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/(artistview\/v1\/artist|album-entity-view\/v2\/album)\/,requires-body=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_content_patch.js,timeout=10
 Spotify-premium-patch = type=http-response,pattern=^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/(bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$,requires-body=1,binary-body-mode=1,max-size=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_premium_patch.js,timeout=10
 
 #FatSecret🍏
