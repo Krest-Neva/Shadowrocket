@@ -46,7 +46,7 @@ function processMapObj(accountAttributesMapObj){
     accountAttributesMapObj['can_use_superbird'] = {boolValue : true};
     accountAttributesMapObj['jam-social-session'] = {stringValue : 'EXPANDED'};
     accountAttributesMapObj['offline'] = {boolValue : true};
-    accountAttributesMapObj['audio-quality'] = {stringValue : '3'};
+    accountAttributesMapObj['audio-quality'] = {stringValue : '1'};
     accountAttributesMapObj['shuffle-algorithm'] = {stringValue : 'RANDOM'};
     accountAttributesMapObj['is-thalia'] = {boolValue : true};
     accountAttributesMapObj['shuffle'] = {boolValue : false};
