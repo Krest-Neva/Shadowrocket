@@ -60,7 +60,7 @@ function processMapObj(accountAttributesMapObj){
     accountAttributesMapObj['ads'] = {boolValue : false};
     accountAttributesMapObj['on-demand'] = {boolValue : true};
     accountAttributesMapObj['name'] = {stringValue : 'Spotify Premium'};
-    accountAttributesMapObj['loudness-levels'] = {stringValue : '1:-5.0,0.0,3.0:-2.0'};
+    accountAttributesMapObj['loudness-levels'] = {stringValue: ''};
     accountAttributesMapObj['product-expiry'] = {stringValue : endDateStr};
     accountAttributesMapObj['social-session'] = {boolValue : true};
     accountAttributesMapObj['pick-and-shuffle'] = {boolValue : false};
