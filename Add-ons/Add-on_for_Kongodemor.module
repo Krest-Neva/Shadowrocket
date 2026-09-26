@@ -1,9 +1,7 @@
 #!name=Add-on for Kongodemor😎
 #!desc=Этот модуль должен находиться выше
 
-#Последние изменения 26.04.2026 19:00
+#Последние изменения 26.09.2026 12:00
 
-# Привет! Пока тут ничего нет. Как дела?
-
-[Rule]
-DOMAIN,example.com,DIRECT
+[Proxy Group]
+SPOTIFYPROXY = load-balance,interval=600,timeout=2,url=https://open.spotify.com,policy-regex-filter=(?i)^.*(?:франция|france|🇫🇷).*$
