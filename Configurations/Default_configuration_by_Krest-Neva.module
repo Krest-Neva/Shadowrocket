@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=Pro-grade networking for iOS/macOS
 
-#Последние изменения 26.09.2026 12:00
+#Последние изменения 28.09.2026 09:00
 #Фильтры обновлены 26.09.2026 12:00
 
 #==================================================
@@ -1386,6 +1386,9 @@ localhost = 127.0.0.1
 ^(https?:\/\/[^?]+)\?(.+)&utm_[^&]+(.*)$ $1?$2$3 302
 ^(https?:\/\/[^?]+)\?utm_[^&]+&(.+)$ $1?$2 302
 ^(https?:\/\/[^?]+)\?utm_[^&]+$ $1 302
+
+#Twitch HTTPS
+^http://(([^/]+.)?twitch.tv)(/.*)?$ https://3 302
 
 #Штука
 ^https?:\/\/([^\/]+\.)?pornhub\.com(\/.*)?$ https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Other/Redirect 302
