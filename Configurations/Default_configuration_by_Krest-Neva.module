@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=Pro-grade networking for iOS/macOS
 
-#Последние изменения 28.09.2026 09:00
+#Последние изменения 02.10.2026 12:00
 #Фильтры обновлены 26.09.2026 12:00
 
 #==================================================
@@ -239,6 +239,9 @@ SPOTIFYPROXY = load-balance,interval=600,timeout=2,url=https://open.spotify.com,
 GEOIP,PRIVATE,DIRECT
 
 #Исключения
+DOMAIN-SUFFIX,xapi.iuuuacademy.icu,DIRECT
+DOMAIN-SUFFIX,conn-liberty.net,DIRECT
+DOMAIN-SUFFIX,your-durev.com,DIRECT
 DOMAIN-SUFFIX,kinopoisk.ru,DIRECT,pre-matching
 IP-CIDR,5.28.195.2,DIRECT,no-resolve
 DOMAIN-SUFFIX,content-storage-upload.googleapis.com,DIRECT
