@@ -47,6 +47,94 @@ DNS_SERVERS = ["8.8.8.8", "8.8.4.4", "1.1.1.1", "94.140.14.14", "94.140.15.15"]
 DURATION_RE = re.compile(r'^(\d+(?:\.\d+)?)(ms|s|m|h|d)?$')
 DURATION_UNITS = {'ms', 's', 'm', 'h', 'd'}
 BALANCER_TYPES = {"leastload": "leastLoad", "leastping": "leastPing", "random": "random", "roundrobin": "roundRobin"}
+TLD_ONLY = {'ru', 'su', 'by', 'kz', 'xn--p1ai', 'рф'}
+
+PARAM_DEFAULTS = {
+    "scheme": "vless",
+    "type": "tcp",
+    "security": "reality",
+    "flow": "xtls-rprx-vision",
+    "path": "/",
+    "host": "",
+    "sni": "",
+    "pbk": "",
+    "sid": "",
+    "fp": "chrome",
+    "serviceName": "",
+    "authority": "",
+    "mode": "auto",
+    "port": "443",
+    "host_addr": "",
+    "alpn": "h2",
+    "obfs": "salamander",
+    "obfs-password": "",
+    "id": "",
+    "password": "",
+    "method": "aes-256-gcm",
+    "concurrency": "4",
+    "spiderX": "/",
+    "headerType": "none",
+    "heartbeatPeriod": "0",
+    "alterId": "0",
+    "encryption": "auto",
+    "allowedIPs": "0.0.0.0/0",
+    "mtu": "1420",
+    "dns": "1.1.1.1",
+    "presharedKey": "",
+    "keepalive": "0",
+    "up": "",
+    "down": "",
+    "congestion_control": "cubic",
+    "pinned_certchain_sha256": "",
+    "verify_peer_cert_by_name": "",
+    "jc": "4",
+    "jmin": "40",
+    "jmax": "70",
+    "s1": "30",
+    "s2": "30",
+    "h1": "1",
+    "h2": "2",
+    "h3": "3",
+    "h4": "4",
+}
+
+GEOSITE_SUGGESTIONS = [
+    "geosite:private",
+    "geosite:category-ads-all",
+    "geosite:category-ru",
+    "geosite:category-porn",
+    "geosite:google",
+    "geosite:youtube",
+    "geosite:telegram",
+    "geosite:twitter",
+    "geosite:facebook",
+    "geosite:instagram",
+    "geosite:openai",
+    "geosite:geolocation-cn",
+    "geosite:cn",
+    "geosite:apple",
+    "geosite:icloud",
+    "geosite:microsoft",
+    "geosite:github",
+    "geosite:netflix",
+    "geosite:spotify",
+    "geosite:discord",
+    "geosite:tiktok",
+    "geosite:category-games",
+    "geosite:category-media-ru",
+    "geosite:category-communication",
+]
+
+GEOIP_SUGGESTIONS = [
+    "geoip:private",
+    "geoip:ru",
+    "geoip:by",
+    "geoip:kz",
+    "geoip:cn",
+    "geoip:us",
+    "geoip:eu",
+    "geoip:telegram",
+]
 
 
 def normalize_duration(val, default_unit='s'):
@@ -94,6 +182,44 @@ def normalize_float(val, default=0.0):
         return float(val)
     except (ValueError, TypeError):
         return default
+
+
+def process_domain_list(domains):
+    dom_only = []
+    kw_set = set()
+    re_set = set()
+    other = []
+    for d in domains:
+        if not isinstance(d, str):
+            continue
+        if d.startswith("domain:"):
+            base = d[7:]
+            if '.' not in base and base.lower() in TLD_ONLY:
+                kw_set.add(f"keyword:.{base.lower()}")
+            else:
+                dom_only.append(base)
+        elif d.startswith("keyword:"):
+            kw_set.add(d)
+        elif d.startswith("regexp:"):
+            re_set.add(d)
+        else:
+            other.append(d)
+    dom_only.sort(key=lambda x: x.count('.'))
+    keep = set()
+    for d in dom_only:
+        parts = d.split('.')
+        is_child = False
+        for i in range(1, len(parts)):
+            if '.'.join(parts[i:]) in keep:
+                is_child = True
+                break
+        if not is_child:
+            keep.add(d)
+    result = [f"domain:{d}" for d in sorted(keep)]
+    result.extend(sorted(kw_set))
+    result.extend(sorted(re_set))
+    result.extend(sorted(set(other)))
+    return result
 
 
 def clr():
@@ -797,7 +923,7 @@ def cfg_default():
         "observatory_interval": "1m",
         "observatory_timeout": "3s",
         "balancer_strategy": "leastLoad",
-        "balancer_expected": 1,
+        "balancer_expected": 3,
         "balancer_max_rtt": "2s",
         "balancer_tolerance": 0,
         "balancer_baselines": ["2s"],
@@ -841,7 +967,7 @@ def normalize_cfg(cfg):
     cfg['observatory_timeout'] = normalize_duration(cfg.get('observatory_timeout', '3s'), 's')
     cfg['balancer_max_rtt'] = normalize_duration(cfg.get('balancer_max_rtt', '2s'), 's')
     cfg['balancer_strategy'] = normalize_balancer_type(cfg.get('balancer_strategy', 'leastLoad'))
-    cfg['balancer_expected'] = normalize_int(cfg.get('balancer_expected', 1), 1, 1, 999)
+    cfg['balancer_expected'] = normalize_int(cfg.get('balancer_expected', 3), 3, 1, 999)
     cfg['balancer_tolerance'] = normalize_float(cfg.get('balancer_tolerance', 0), 0.0)
     bl = cfg.get('balancer_baselines', ['2s'])
     if not isinstance(bl, list):
@@ -1291,6 +1417,18 @@ SS_METHODS = [
 ]
 
 
+def get_param_current(s, pkey):
+    if pkey == 'port':
+        return s.get('port', '')
+    if pkey == 'host_addr':
+        return s.get('host', '')
+    if pkey == 'scheme':
+        return s.get('scheme', '')
+    if pkey in ('id', 'password', 'method'):
+        return s.get(pkey, '')
+    return s['params'].get(pkey, '')
+
+
 def edit_params_for_group(servers, indices):
     if not indices:
         return
@@ -1332,13 +1470,18 @@ def edit_params_for_group(servers, indices):
         print()
         for i in compatible[:15]:
             s = servers[i]
-            cur = s.get(pkey) if pkey in ('id', 'password', 'method') else s['params'].get(pkey, s.get(pkey, ''))
-            if pkey == 'port': cur = s['port']
-            if pkey == 'host_addr': cur = s['host']
-            if pkey == 'scheme': cur = s['scheme']
+            cur = get_param_current(s, pkey)
             print(f"    {i+1}. {s.get('name', '')[:28]} -> {cur}")
         if len(compatible) > 15:
             print(f"    ... и ещё {len(compatible) - 15}")
+        cur_default = ''
+        for i in compatible:
+            v = get_param_current(servers[i], pkey)
+            if v:
+                cur_default = str(v)
+                break
+        if not cur_default:
+            cur_default = PARAM_DEFAULTS.get(pkey, '')
         ln()
         if pkey == "scheme":
             print(f"  Варианты: {', '.join(CHOICES_MAP['scheme'])}")
@@ -1346,11 +1489,22 @@ def edit_params_for_group(servers, indices):
             print(f"  Варианты: {', '.join(CHOICES_MAP[pkey])}")
         elif pkey == "method":
             print(f"  Варианты: {', '.join(SS_METHODS)}")
-        print("  Пусто = удалить параметр")
-        print("  q = отмена")
-        nv = ask("Новое значение: ")
-        if nv == EXIT:
+        print(f"  Значение по умолчанию: {cur_default}")
+        print("  Enter = применить значение по умолчанию")
+        print("  '-'   = удалить параметр")
+        print("  q     = отмена")
+        try:
+            raw = input(f"Новое значение [{cur_default}]: ").strip()
+        except (EOFError, KeyboardInterrupt):
             continue
+        if raw.lower() in ('q', 'exit', 'back', 'назад'):
+            continue
+        if raw == '-':
+            nv = ''
+        elif raw == '':
+            nv = cur_default
+        else:
+            nv = raw
         for i in compatible:
             s = servers[i]
             if pkey == "scheme":
@@ -1687,6 +1841,32 @@ def gen_outbound(s, tag, cfg):
     return out
 
 
+def merge_group_rules(rules, outbound_type):
+    domains = []
+    others = []
+    for r in rules:
+        if not isinstance(r, dict):
+            continue
+        keys = set(r.keys()) - {'outboundTag', 'balancerTag'}
+        if r.get('type') == 'field' and keys == {'type', 'domain'}:
+            for d in r.get('domain', []):
+                if isinstance(d, str):
+                    domains.append(d)
+        else:
+            others.append(r)
+    result = []
+    if domains:
+        deduped = process_domain_list(domains)
+        rule = {'type': 'field', 'domain': deduped}
+        if outbound_type == 'proxy':
+            rule['balancerTag'] = 'balancer'
+        else:
+            rule['outboundTag'] = outbound_type
+        result.append(rule)
+    result.extend(others)
+    return result
+
+
 def gen_config(servers, cfg):
     outbounds = []
     tags = []
@@ -1730,17 +1910,22 @@ def gen_config(servers, cfg):
         groups['direct'].append({"type": "field", "domain": rt['direct_domains'], "outboundTag": "direct"})
 
     for r in rt.get('custom_rules', []):
+        if not isinstance(r, dict):
+            continue
         tag = r.get('outboundTag') or r.get('balancerTag', '')
         if tag == 'block':
             groups['block'].append(r)
         elif tag == 'direct':
             groups['direct'].append(r)
         else:
-            groups['proxy'].append(r)
+            r2 = dict(r)
+            r2.pop('outboundTag', None)
+            r2['balancerTag'] = 'balancer'
+            groups['proxy'].append(r2)
 
     rules = []
     for name in order:
-        rules.extend(groups.get(name, []))
+        rules.extend(merge_group_rules(groups.get(name, []), name))
 
     gp = cfg.get('global_proxy', 'proxy')
     if gp == 'direct':
@@ -1750,7 +1935,7 @@ def gen_config(servers, cfg):
     else:
         rules.append({"type": "field", "network": "tcp,udp", "balancerTag": "balancer"})
 
-    expected = normalize_int(cfg.get('balancer_expected', 1), 1, 1, 999)
+    expected = normalize_int(cfg.get('balancer_expected', 3), 3, 1, 999)
     if len(tags) > 0 and expected > len(tags):
         print(f"[!] expected={expected} больше числа серверов ({len(tags)}). Установлено {len(tags)}.")
         expected = len(tags)
@@ -1768,6 +1953,8 @@ def gen_config(servers, cfg):
             }
         }
     }
+    if tags:
+        balancer["fallbackTag"] = tags[0]
     observatory = {
         "subjectSelector": tags,
         "probeUrl": cfg.get('observatory_url', 'https://www.google.com/generate_204'),
@@ -1876,6 +2063,23 @@ def normalize_existing_config_file(path):
                             t = 0.0
                             changes.append(f"balancers[{bi}].strategy.settings.tolerance: '{settings.get('tolerance')}' -> '0'")
                             settings['tolerance'] = t
+
+        rules = rt.get('rules', [])
+        if isinstance(rules, list):
+            for ri, r in enumerate(rules):
+                if not isinstance(r, dict):
+                    continue
+                if r.get('outboundTag') == 'proxy':
+                    changes.append(f"rules[{ri}]: outboundTag 'proxy' -> balancerTag 'balancer'")
+                    del r['outboundTag']
+                    r['balancerTag'] = 'balancer'
+                if 'domain' in r and isinstance(r['domain'], list):
+                    old_domains = list(r['domain'])
+                    new_domains = process_domain_list(old_domains)
+                    if new_domains != old_domains:
+                        diff = len(old_domains) - len(new_domains)
+                        changes.append(f"rules[{ri}]: доменов было {len(old_domains)}, стало {len(new_domains)} (TLD->keyword, убрано дочерних: {diff})")
+                        r['domain'] = new_domains
 
     if 'outbounds' in data and isinstance(data['outbounds'], list):
         for oi, ob in enumerate(data['outbounds']):
@@ -2429,17 +2633,22 @@ def config_menu(servers, cfg):
                 print(f"    -> {cfg['observatory_timeout']}")
             cfg_save(cfg)
         elif ch == "3":
+            print(f"  Стратегии: leastLoad — топ-серверы по задержке и стабильности;")
+            print(f"             leastPing — топ-серверы по чистому пингу;")
+            print(f"             random — случайный сервер;")
+            print(f"             roundRobin — по кругу.")
+            print(f"  expected — сколько 'лучших' серверов использовать (1=только лучший, 3-5=пул).")
             st = ask(f"Стратегия [{cfg.get('balancer_strategy')}]: ", choices=['leastLoad', 'leastPing', 'random', 'roundRobin'])
             if st != EXIT:
                 cfg['balancer_strategy'] = normalize_balancer_type(st)
-            e = ask_int(f"Expected [{cfg.get('balancer_expected')}]: ", default=cfg.get('balancer_expected'))
+            e = ask_int(f"Expected [{cfg.get('balancer_expected')}] (1=только лучший; 3=пул 3 серверов; 5+ баланс): ", default=cfg.get('balancer_expected'))
             if e != EXIT and e is not None:
                 cfg['balancer_expected'] = e
-            m = ask(f"MaxRTT [{cfg.get('balancer_max_rtt')}] (например 1s, 2s, 3s): ", default="")
+            m = ask(f"MaxRTT [{cfg.get('balancer_max_rtt')}] (1s/2s/3s) - сервера с большим пингом не рассматриваются: ", default="")
             if m != EXIT and m:
                 cfg['balancer_max_rtt'] = normalize_duration(m, 's')
                 print(f"    -> {cfg['balancer_max_rtt']}")
-            tol = ask(f"Tolerance [{cfg.get('balancer_tolerance')}]: ", default="")
+            tol = ask(f"Tolerance [{cfg.get('balancer_tolerance')}] - допустимое отклонение от лучшего: ", default="")
             if tol != EXIT and tol:
                 cfg['balancer_tolerance'] = normalize_float(tol, 0.0)
             bl = ask(f"Baselines через запятую [{','.join(cfg.get('balancer_baselines', ['2s']))}]: ", default="")
@@ -2457,6 +2666,9 @@ def config_menu(servers, cfg):
             cfg_save(cfg)
         elif ch == "5":
             print(f"  Текущие: {rt.get('direct_domains', [])}")
+            print(f"  Подсказки geosite: {', '.join(GEOSITE_SUGGESTIONS[:10])}")
+            print(f"  Всего geosite-вариантов: {len(GEOSITE_SUGGESTIONS)}")
+            print(f"  Формат: geosite:category-ru, domain:example.com, keyword:.ru, regexp:.*\\.google\\.com$")
             v = ask("Direct домены (через запятую, пусто=очистить, q=отмена): ")
             if v == EXIT:
                 continue
@@ -2464,6 +2676,9 @@ def config_menu(servers, cfg):
             cfg_save(cfg)
         elif ch == "6":
             print(f"  Текущие: {rt.get('block_domains', [])}")
+            print(f"  Подсказки geosite: {', '.join(GEOSITE_SUGGESTIONS[:10])}")
+            print(f"  Всего geosite-вариантов: {len(GEOSITE_SUGGESTIONS)}")
+            print(f"  Формат: geosite:category-ads-all, domain:ads.example.com, keyword:ads, regexp:.*\\.ads\\.com$")
             v = ask("Block домены (через запятую, пусто=очистить, q=отмена): ")
             if v == EXIT:
                 continue
@@ -2471,16 +2686,20 @@ def config_menu(servers, cfg):
             cfg_save(cfg)
         elif ch == "7":
             print(f"  Direct IP: {rt.get('direct_ips', [])}")
+            print(f"  Подсказки geoip: {', '.join(GEOIP_SUGGESTIONS)}")
+            print(f"  Формат: geoip:ru, geoip:private, 1.1.1.1, 192.168.0.0/16")
             v = ask("Direct IP: ")
             if v != EXIT:
                 cfg['routing']['direct_ips'] = [x.strip() for x in v.split(',') if x.strip()] if v else []
             print(f"  Block IP: {rt.get('block_ips', [])}")
+            print(f"  Подсказки geoip: {', '.join(GEOIP_SUGGESTIONS)}")
             v = ask("Block IP: ")
             if v != EXIT:
                 cfg['routing']['block_ips'] = [x.strip() for x in v.split(',') if x.strip()] if v else []
             cfg_save(cfg)
         elif ch == "8":
             print(f"  Текущие: {rt.get('block_protocols', [])}")
+            print(f"  Примеры: bittorrent, quic, http")
             v = ask("Протоколы (через запятую, пусто=очистить, q=отмена): ")
             if v == EXIT:
                 continue
@@ -2488,6 +2707,7 @@ def config_menu(servers, cfg):
             cfg_save(cfg)
         elif ch == "9":
             print(f"  Текущий: {' -> '.join(cfg.get('routing_order', []))}")
+            print(f"  Доступные: block, direct, proxy")
             v = ask("Порядок (block,direct,proxy): ")
             if v == EXIT:
                 continue
@@ -2532,6 +2752,7 @@ def config_menu(servers, cfg):
                     cfg_save(cfg)
                     print(f"[+] Удалено: {len(sel)}")
         elif ch == "12":
+            print(f"  proxy — через балансировщик; direct — напрямую; block — блокировать всё")
             gp = ask(f"Глобальный прокси [{cfg.get('global_proxy')}]: ", choices=['proxy', 'direct', 'block'])
             if gp != EXIT:
                 cfg['global_proxy'] = gp
