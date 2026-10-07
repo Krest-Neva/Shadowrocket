@@ -1213,8 +1213,8 @@ PARAM_LIST = [
     ("up", "Up (hysteria)"),
     ("down", "Down (hysteria)"),
     ("congestion_control", "Congestion Control"),
-    ("pinned_certchain_sha256", "PinnedCertHash"),
-    ("allow_insecure", "AllowInsecure"),
+    ("pinned_certchain_sha256", "PinnedCertHash (hex)"),
+    ("verify_peer_cert_by_name", "VerifyPeerCertByName"),
     ("jc", "Jc (AWG)"),
     ("jmin", "Jmin (AWG)"),
     ("jmax", "Jmax (AWG)"),
@@ -1271,8 +1271,8 @@ COMPAT = {
     "up": lambda s: s['scheme'] == 'hysteria',
     "down": lambda s: s['scheme'] == 'hysteria',
     "congestion_control": lambda s: s['scheme'] in ('tuic', 'juicity'),
-    "pinned_certchain_sha256": lambda s: s['scheme'] == 'juicity',
-    "allow_insecure": lambda s: s['scheme'] in ('tuic', 'juicity'),
+    "pinned_certchain_sha256": lambda s: s['params'].get('security') == 'tls',
+    "verify_peer_cert_by_name": lambda s: s['params'].get('security') == 'tls',
     "jc": lambda s: s['scheme'] in ('amneziawg', 'awg'),
     "jmin": lambda s: s['scheme'] in ('amneziawg', 'awg'),
     "jmax": lambda s: s['scheme'] in ('amneziawg', 'awg'),
@@ -1518,11 +1518,15 @@ def gen_outbound(s, tag, cfg):
                 rs["spiderX"] = s['params']['spiderX']
             out["streamSettings"]["realitySettings"] = rs
         elif sec == 'tls':
-            tls = {"serverName": s['params'].get('sni', host), "allowInsecure": True}
+            tls = {"serverName": s['params'].get('sni', host)}
             if 'alpn' in s['params']:
                 tls["alpn"] = [a.strip() for a in str(s['params']['alpn']).split(',') if a.strip()]
             if 'fp' in s['params']:
                 tls["fingerprint"] = s['params']['fp']
+            if 'pinned_certchain_sha256' in s['params']:
+                tls["pinnedPeerCertSha256"] = s['params']['pinned_certchain_sha256']
+            if 'verify_peer_cert_by_name' in s['params']:
+                tls["verifyPeerCertByName"] = s['params']['verify_peer_cert_by_name']
             out["streamSettings"]["tlsSettings"] = tls
         net = out["streamSettings"]["network"]
         if net == 'ws':
@@ -1566,9 +1570,13 @@ def gen_outbound(s, tag, cfg):
         }
         sec = out["streamSettings"]["security"]
         if sec == 'tls':
-            tls = {"serverName": s['params'].get('sni', host), "allowInsecure": True}
+            tls = {"serverName": s['params'].get('sni', host)}
             if 'alpn' in s['params']:
                 tls["alpn"] = [a.strip() for a in str(s['params']['alpn']).split(',') if a.strip()]
+            if 'pinned_certchain_sha256' in s['params']:
+                tls["pinnedPeerCertSha256"] = s['params']['pinned_certchain_sha256']
+            if 'verify_peer_cert_by_name' in s['params']:
+                tls["verifyPeerCertByName"] = s['params']['verify_peer_cert_by_name']
             out["streamSettings"]["tlsSettings"] = tls
         net = out["streamSettings"]["network"]
         if net == 'ws':
@@ -1587,7 +1595,6 @@ def gen_outbound(s, tag, cfg):
             "settings": {"address": host, "port": port, "password": s.get('password', '')},
             "streamSettings": {"network": "hysteria2", "security": "tls",
                                "tlsSettings": {"serverName": s['params'].get('sni', host),
-                                               "allowInsecure": True,
                                                "alpn": [a.strip() for a in str(s['params'].get('alpn', 'h3')).split(',') if a.strip()]}},
             "tag": tag
         }
@@ -1601,7 +1608,6 @@ def gen_outbound(s, tag, cfg):
             "settings": {"address": host, "port": port, "auth": s.get('password', '')},
             "streamSettings": {"network": "hysteria", "security": "tls",
                                "tlsSettings": {"serverName": s['params'].get('sni', host),
-                                               "allowInsecure": True,
                                                "alpn": [a.strip() for a in str(s['params'].get('alpn', 'h3')).split(',') if a.strip()]}},
             "tag": tag
         }
@@ -1624,9 +1630,13 @@ def gen_outbound(s, tag, cfg):
             "streamSettings": {"network": s['params'].get('type', 'tcp'), "security": s['params'].get('security', 'tls')},
             "tag": tag
         }
-        ts = {"serverName": s['params'].get('sni', host), "allowInsecure": True}
+        ts = {"serverName": s['params'].get('sni', host)}
         if 'alpn' in s['params']:
             ts["alpn"] = [a.strip() for a in str(s['params']['alpn']).split(',') if a.strip()]
+        if 'pinned_certchain_sha256' in s['params']:
+            ts["pinnedPeerCertSha256"] = s['params']['pinned_certchain_sha256']
+        if 'verify_peer_cert_by_name' in s['params']:
+            ts["verifyPeerCertByName"] = s['params']['verify_peer_cert_by_name']
         out["streamSettings"]["tlsSettings"] = ts
     elif scheme == 'socks5':
         out = {
@@ -1866,6 +1876,27 @@ def normalize_existing_config_file(path):
                             t = 0.0
                             changes.append(f"balancers[{bi}].strategy.settings.tolerance: '{settings.get('tolerance')}' -> '0'")
                             settings['tolerance'] = t
+
+    if 'outbounds' in data and isinstance(data['outbounds'], list):
+        for oi, ob in enumerate(data['outbounds']):
+            if not isinstance(ob, dict):
+                continue
+            ss = ob.get('streamSettings', {})
+            if not isinstance(ss, dict):
+                continue
+            sec = ss.get('security', 'none')
+            if sec == 'tls':
+                ts = ss.get('tlsSettings', {})
+                if isinstance(ts, dict):
+                    if 'allowInsecure' in ts:
+                        changes.append(f"outbounds[{oi}].streamSettings.tlsSettings.allowInsecure: удалён")
+                        del ts['allowInsecure']
+                    if 'verifyPeerCertInNames' in ts:
+                        changes.append(f"outbounds[{oi}].streamSettings.tlsSettings.verifyPeerCertInNames -> verifyPeerCertByName")
+                        ts['verifyPeerCertByName'] = ts.pop('verifyPeerCertInNames')
+                    if 'pinnedPeerCertificateChainSha256' in ts:
+                        changes.append(f"outbounds[{oi}].streamSettings.tlsSettings.pinnedPeerCertificateChainSha256 -> pinnedPeerCertSha256")
+                        ts['pinnedPeerCertSha256'] = ts.pop('pinnedPeerCertificateChainSha256')
 
     if not changes:
         print("[+] Конфиг уже корректен, изменений не требуется.")
