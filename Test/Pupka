@@ -532,14 +532,14 @@
       "tag": "___-14"
     },
     {
-      "protocol": "hysteria2",
+      "protocol": "hysteria",
       "settings": {
         "address": "kkohxfneuu.liberty-nodes.online",
         "port": 8449,
         "password": "0a0536aa-827d-44aa-95ef-cf2419d8c90c"
       },
       "streamSettings": {
-        "network": "hysteria2",
+        "network": "hysteria",
         "security": "tls",
         "tlsSettings": {
           "serverName": "snidp36462.jasontech.online",
@@ -551,14 +551,14 @@
       "tag": "___-15"
     },
     {
-      "protocol": "hysteria2",
+      "protocol": "hysteria",
       "settings": {
         "address": "fuhzxtidee.liberty-nodes.online",
         "port": 8449,
         "password": "0a0536aa-827d-44aa-95ef-cf2419d8c90c"
       },
       "streamSettings": {
-        "network": "hysteria2",
+        "network": "hysteria",
         "security": "tls",
         "tlsSettings": {
           "serverName": "sni263160.jasontech.online",
@@ -570,14 +570,14 @@
       "tag": "___-16"
     },
     {
-      "protocol": "hysteria2",
+      "protocol": "hysteria",
       "settings": {
         "address": "jrlrwtdtbn.liberty-nodes.online",
         "port": 8449,
         "password": "0a0536aa-827d-44aa-95ef-cf2419d8c90c"
       },
       "streamSettings": {
-        "network": "hysteria2",
+        "network": "hysteria",
         "security": "tls",
         "tlsSettings": {
           "serverName": "snihelsinki02.jasontech.online",
