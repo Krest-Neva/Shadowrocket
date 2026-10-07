@@ -44,6 +44,57 @@ W = 52
 EXIT = "__EXIT__"
 DNS_SERVERS = ["8.8.8.8", "8.8.4.4", "1.1.1.1", "94.140.14.14", "94.140.15.15"]
 
+DURATION_RE = re.compile(r'^(\d+(?:\.\d+)?)(ms|s|m|h|d)?$')
+DURATION_UNITS = {'ms', 's', 'm', 'h', 'd'}
+BALANCER_TYPES = {"leastload": "leastLoad", "leastping": "leastPing", "random": "random", "roundrobin": "roundRobin"}
+
+
+def normalize_duration(val, default_unit='s'):
+    if val is None:
+        return f"1{default_unit}"
+    v = str(val).strip().lower()
+    if not v:
+        return f"1{default_unit}"
+    m = DURATION_RE.match(v)
+    if not m:
+        return f"1{default_unit}"
+    num, unit = m.group(1), m.group(2)
+    if unit is None:
+        unit = default_unit
+    if unit not in DURATION_UNITS:
+        unit = default_unit
+    try:
+        float(num)
+    except ValueError:
+        return f"1{default_unit}"
+    return f"{num}{unit}"
+
+
+def normalize_balancer_type(val):
+    if not val:
+        return "leastLoad"
+    key = re.sub(r'[^a-z]', '', str(val).lower())
+    return BALANCER_TYPES.get(key, "leastLoad")
+
+
+def normalize_int(val, default=0, mn=None, mx=None):
+    try:
+        n = int(val)
+    except (ValueError, TypeError):
+        return default
+    if mn is not None and n < mn:
+        n = mn
+    if mx is not None and n > mx:
+        n = mx
+    return n
+
+
+def normalize_float(val, default=0.0):
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return default
+
 
 def clr():
     os.system('clear')
@@ -764,11 +815,11 @@ def cfg_default():
         "json_use_remarks_as_name": False,
         "routing_order": ["block", "direct", "proxy"],
         "routing": {
-            "direct_domains": ["geosite:private", "geosite:category-ru"],
-            "block_domains": ["geosite:category-ads-all"],
+            "direct_domains": [],
+            "block_domains": [],
             "direct_ips": [],
             "block_ips": [],
-            "block_protocols": ["bittorrent"],
+            "block_protocols": [],
             "direct_ports": [],
             "block_ports": [],
             "custom_rules": []
@@ -776,24 +827,65 @@ def cfg_default():
     }
 
 
+def normalize_cfg(cfg):
+    d = cfg_default()
+    for k, v in cfg.items():
+        if isinstance(v, dict) and k in d and isinstance(d[k], dict):
+            merged = dict(d[k])
+            merged.update(v)
+            cfg[k] = merged
+        else:
+            d[k] = v
+    cfg = d
+    cfg['observatory_interval'] = normalize_duration(cfg.get('observatory_interval', '1m'), 'm')
+    cfg['observatory_timeout'] = normalize_duration(cfg.get('observatory_timeout', '3s'), 's')
+    cfg['balancer_max_rtt'] = normalize_duration(cfg.get('balancer_max_rtt', '2s'), 's')
+    cfg['balancer_strategy'] = normalize_balancer_type(cfg.get('balancer_strategy', 'leastLoad'))
+    cfg['balancer_expected'] = normalize_int(cfg.get('balancer_expected', 1), 1, 1, 999)
+    cfg['balancer_tolerance'] = normalize_float(cfg.get('balancer_tolerance', 0), 0.0)
+    bl = cfg.get('balancer_baselines', ['2s'])
+    if not isinstance(bl, list):
+        bl = ['2s']
+    cfg['balancer_baselines'] = [normalize_duration(b, 's') for b in bl]
+    pp = cfg.get('proxy_ports', [10808, 10809])
+    if not isinstance(pp, list) or len(pp) != 2:
+        pp = [10808, 10809]
+    cfg['proxy_ports'] = [normalize_int(pp[0], 10808, 1, 65535), normalize_int(pp[1], 10809, 1, 65535)]
+    cfg['mux_concurrency'] = normalize_int(cfg.get('mux_concurrency', 8), 8, 1, 128)
+    cfg['mux_xudp_concurrency'] = normalize_int(cfg.get('mux_xudp_concurrency', 0), 0, 0, 1024)
+    if cfg.get('mux_xudp_proxy_udp443') not in ('reject', 'skip', 'allow'):
+        cfg['mux_xudp_proxy_udp443'] = 'reject'
+    if cfg.get('global_proxy') not in ('proxy', 'direct', 'block'):
+        cfg['global_proxy'] = 'proxy'
+    if cfg.get('dns_query_strategy') not in ('UseIP', 'UseIPv4', 'UseIPv6', 'AsIs'):
+        cfg['dns_query_strategy'] = 'UseIP'
+    ds = cfg.get('dns_servers', DNS_SERVERS)
+    if not isinstance(ds, list) or not ds:
+        cfg['dns_servers'] = DNS_SERVERS
+    so = cfg.get('sniffing_dest_override', ["http", "tls", "quic"])
+    if not isinstance(so, list):
+        so = ["http", "tls", "quic"]
+    cfg['sniffing_dest_override'] = so
+    ro = cfg.get('routing_order', ["block", "direct", "proxy"])
+    if not isinstance(ro, list) or set(ro) != {'block', 'direct', 'proxy'}:
+        ro = ["block", "direct", "proxy"]
+    cfg['routing_order'] = ro
+    return cfg
+
+
 def cfg_load():
     if CFG_FILE.exists():
         try:
             with open(CFG_FILE, 'r', encoding='utf-8') as f:
                 saved = json.load(f)
-            base = cfg_default()
-            for k, v in saved.items():
-                if isinstance(v, dict) and k in base and isinstance(base[k], dict):
-                    base[k].update(v)
-                else:
-                    base[k] = v
-            return base
+            return normalize_cfg(saved)
         except Exception:
             pass
     return cfg_default()
 
 
 def cfg_save(cfg):
+    cfg = normalize_cfg(cfg)
     CFG_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(CFG_FILE, 'w', encoding='utf-8') as f:
         json.dump(cfg, f, ensure_ascii=False, indent=2)
@@ -1648,24 +1740,29 @@ def gen_config(servers, cfg):
     else:
         rules.append({"type": "field", "network": "tcp,udp", "balancerTag": "balancer"})
 
+    expected = normalize_int(cfg.get('balancer_expected', 1), 1, 1, 999)
+    if len(tags) > 0 and expected > len(tags):
+        print(f"[!] expected={expected} больше числа серверов ({len(tags)}). Установлено {len(tags)}.")
+        expected = len(tags)
+
     balancer = {
         "tag": "balancer",
         "selector": tags,
         "strategy": {
-            "type": cfg.get('balancer_strategy', 'leastLoad'),
+            "type": normalize_balancer_type(cfg.get('balancer_strategy', 'leastLoad')),
             "settings": {
-                "expected": cfg.get('balancer_expected', 1),
-                "maxRTT": cfg.get('balancer_max_rtt', '2s'),
-                "tolerance": cfg.get('balancer_tolerance', 0),
-                "baselines": cfg.get('balancer_baselines', ['2s'])
+                "expected": expected,
+                "maxRTT": normalize_duration(cfg.get('balancer_max_rtt', '2s'), 's'),
+                "tolerance": normalize_float(cfg.get('balancer_tolerance', 0), 0.0),
+                "baselines": [normalize_duration(b, 's') for b in cfg.get('balancer_baselines', ['2s'])]
             }
         }
     }
     observatory = {
         "subjectSelector": tags,
         "probeUrl": cfg.get('observatory_url', 'https://www.google.com/generate_204'),
-        "probeInterval": cfg.get('observatory_interval', '1m'),
-        "probeTimeout": cfg.get('observatory_timeout', '3s'),
+        "probeInterval": normalize_duration(cfg.get('observatory_interval', '1m'), 'm'),
+        "probeTimeout": normalize_duration(cfg.get('observatory_timeout', '3s'), 's'),
         "enableConcurrency": True
     }
     dns = {"servers": cfg.get('dns_servers', DNS_SERVERS),
@@ -1693,54 +1790,215 @@ def gen_config(servers, cfg):
     }
 
 
-def save_json(config, cfg, name_override=None, remarks_override=None):
-    name = name_override or cfg.get('json_name', 'xray_config')
-    if not name.endswith('.json'):
-        name += '.json'
-    if remarks_override is not None:
-        config['remarks'] = remarks_override
-    p = OUTPUT_DIR / name
-    with open(p, 'w', encoding='utf-8') as f:
-        json.dump(config, f, ensure_ascii=False, indent=2)
-    print(f"[+] JSON: {p}")
-    if 'remarks' in config:
-        print(f"    Примечание сервера: {config['remarks']}")
-    return p
+def normalize_existing_config_file(path):
+    hdr("НОРМАЛИЗАЦИЯ СУЩЕСТВУЮЩЕГО КОНФИГА")
+    if not path.exists():
+        print(f"[!] Файл не найден: {path}")
+        return None
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    except Exception as e:
+        print(f"[!] Ошибка чтения JSON: {e}")
+        return None
+
+    changes = []
+
+    if 'observatory' in data and isinstance(data['observatory'], dict):
+        obs = data['observatory']
+        if 'probeInterval' in obs:
+            old = obs['probeInterval']
+            new = normalize_duration(old, 'm')
+            if old != new:
+                changes.append(f"observatory.probeInterval: '{old}' -> '{new}'")
+                obs['probeInterval'] = new
+        if 'probeTimeout' in obs:
+            old = obs['probeTimeout']
+            new = normalize_duration(old, 's')
+            if old != new:
+                changes.append(f"observatory.probeTimeout: '{old}' -> '{new}'")
+                obs['probeTimeout'] = new
+
+    if 'routing' in data and isinstance(data['routing'], dict):
+        rt = data['routing']
+        bals = rt.get('balancers', [])
+        if isinstance(bals, list):
+            for bi, b in enumerate(bals):
+                if not isinstance(b, dict):
+                    continue
+                st = b.get('strategy', {})
+                if not isinstance(st, dict):
+                    continue
+                old_type = st.get('type', '')
+                new_type = normalize_balancer_type(old_type)
+                if old_type != new_type:
+                    changes.append(f"balancers[{bi}].strategy.type: '{old_type}' -> '{new_type}'")
+                    st['type'] = new_type
+                settings = st.get('settings', {})
+                if isinstance(settings, dict):
+                    if 'maxRTT' in settings:
+                        old = settings['maxRTT']
+                        new = normalize_duration(old, 's')
+                        if old != new:
+                            changes.append(f"balancers[{bi}].strategy.settings.maxRTT: '{old}' -> '{new}'")
+                            settings['maxRTT'] = new
+                    if 'baselines' in settings and isinstance(settings['baselines'], list):
+                        new_bl = []
+                        for bval in settings['baselines']:
+                            old = bval
+                            new = normalize_duration(old, 's')
+                            new_bl.append(new)
+                            if old != new:
+                                changes.append(f"balancers[{bi}].strategy.settings.baselines[]: '{old}' -> '{new}'")
+                        settings['baselines'] = new_bl
+                    if 'expected' in settings:
+                        try:
+                            e = int(settings['expected'])
+                        except Exception:
+                            e = 1
+                        if e < 1:
+                            changes.append(f"balancers[{bi}].strategy.settings.expected: '{settings['expected']}' -> '1'")
+                            settings['expected'] = 1
+                    if 'tolerance' in settings:
+                        try:
+                            t = float(settings['tolerance'])
+                        except Exception:
+                            t = 0.0
+                            changes.append(f"balancers[{bi}].strategy.settings.tolerance: '{settings.get('tolerance')}' -> '0'")
+                            settings['tolerance'] = t
+
+    if not changes:
+        print("[+] Конфиг уже корректен, изменений не требуется.")
+        return data
+
+    print(f"[+] Найдено исправлений: {len(changes)}")
+    for c in changes:
+        print(f"    - {c}")
+
+    ans = ask("\nСохранить исправленный файл? (y/n) [y]: ", default="y")
+    if ans.lower() == 'y':
+        p = path.parent / (path.stem + "_fixed.json")
+        with open(p, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        print(f"[+] Сохранено: {p}")
+        return data
+    return data
 
 
-def ask_json_name_and_remarks(cfg, default_name=None):
-    default_name = default_name or cfg.get('json_name', 'xray_config')
-    default_remarks = cfg.get('json_remarks', 'SubManager Auto')
-    print("\n[?] Настройка имени JSON-сервера")
-    print(f"    Текущее имя файла:    {default_name}.json")
-    print(f"    Текущее примечание:   {default_remarks}")
-    print("    (Enter - оставить текущие, q - отмена)")
-    use = ask("Изменить имя/примечание? (y/n) [n]: ", default="n")
-    if use == EXIT:
-        return None, None
-    if use.lower() != 'y':
-        return default_name, default_remarks
-    remarks = ask(f"Примечание сервера в Happ/клиенте [{default_remarks}]: ", default=default_remarks)
-    if remarks == EXIT:
-        return None, None
-    cfg['json_remarks'] = remarks
-    auto = ask("Использовать примечание как имя файла (транслитом)? (y/n) [n]: ", default="n")
-    if auto == EXIT:
-        return None, None
-    if auto.lower() == 'y':
-        tr = transliterate(remarks)
-        fname = sanitize_filename(tr)
-        cfg['json_use_remarks_as_name'] = True
-        cfg_save(cfg)
-        print(f"    Имя файла будет: {fname}.json")
-        return fname, remarks
+def normalize_existing_config_menu():
+    hdr("НОРМАЛИЗАЦИЯ СУЩЕСТВУЮЩЕГО КОНФИГА")
+    print("  1 - Из папки Output")
+    print("  2 - Из папки Input")
+    print("  3 - Ввести путь вручную")
+    print("  q - Отмена")
+    ch = ask("Выбор: ", choices=["1", "2", "3"])
+    if ch == EXIT:
+        return
+    path = None
+    if ch == "1":
+        files = sorted([p for p in OUTPUT_DIR.glob("*.json") if p.is_file()])
+        if not files:
+            print("[!] В Output нет JSON файлов.")
+            input("Enter...")
+            return
+        for i, f in enumerate(files, 1):
+            print(f"  {i}. {f.name} ({fmt_size(f.stat().st_size)})")
+        idx = ask_int("Номер файла: ", mn=1, mx=len(files))
+        if idx == EXIT or idx is None:
+            return
+        path = files[idx - 1]
+    elif ch == "2":
+        files = sorted([p for p in INPUT_DIR.glob("*.json") if p.is_file()])
+        if not files:
+            print("[!] В Input нет JSON файлов.")
+            input("Enter...")
+            return
+        for i, f in enumerate(files, 1):
+            print(f"  {i}. {f.name} ({fmt_size(f.stat().st_size)})")
+        idx = ask_int("Номер файла: ", mn=1, mx=len(files))
+        if idx == EXIT or idx is None:
+            return
+        path = files[idx - 1]
+    elif ch == "3":
+        p = ask("Путь к файлу (q - отмена): ")
+        if p == EXIT or not p:
+            return
+        path = Path(p)
+    if path:
+        normalize_existing_config_file(path)
+        input("Enter...")
+
+
+def normalize_existing_servers_menu():
+    hdr("НОРМАЛИЗАЦИЯ БЭКАПА СЕРВЕРОВ")
+    print("  1 - Из папки Backups")
+    print("  2 - Из папки Output")
+    print("  3 - Из папки Input")
+    print("  4 - Ввести путь вручную")
+    print("  q - Отмена")
+    ch = ask("Выбор: ", choices=["1", "2", "3", "4"])
+    if ch == EXIT:
+        return
+    path = None
+    if ch == "1":
+        files = sorted([p for p in BACKUP_DIR.glob("*") if p.is_file()])
+    elif ch == "2":
+        files = sorted([p for p in OUTPUT_DIR.glob("*.txt") if p.is_file()])
+    elif ch == "3":
+        files = sorted([p for p in INPUT_DIR.glob("*") if p.is_file()])
+    elif ch == "4":
+        p = ask("Путь к файлу (q - отмена): ")
+        if p == EXIT or not p:
+            return
+        path = Path(p)
+        files = None
     else:
-        name = ask(f"Имя файла (без .json) [{default_name}]: ", default=default_name)
-        if name == EXIT:
-            return None, None
-        cfg['json_name'] = name
-        cfg_save(cfg)
-        return name, remarks
+        return
+    if files is not None:
+        if not files:
+            print("[!] Нет файлов.")
+            input("Enter...")
+            return
+        for i, f in enumerate(files, 1):
+            print(f"  {i}. {f.name} ({fmt_size(f.stat().st_size)})")
+        idx = ask_int("Номер файла: ", mn=1, mx=len(files))
+        if idx == EXIT or idx is None:
+            return
+        path = files[idx - 1]
+    if path:
+        try:
+            raw = path.read_text(encoding='utf-8', errors='ignore')
+        except Exception as e:
+            print(f"[!] Ошибка чтения: {e}")
+            input("Enter...")
+            return
+        raw2 = auto_decode(raw)
+        servers, _ = parse_input(raw2)
+        if not servers:
+            print("[!] Не удалось распарсить серверы.")
+            input("Enter...")
+            return
+        print(f"[+] Распарсено серверов: {len(servers)}")
+        valid = []
+        for s in servers:
+            if not s.get('host'):
+                continue
+            if not str(s.get('port', '')).isdigit():
+                continue
+            s['port'] = str(s['port'])
+            valid.append(s)
+        print(f"[+] Валидных: {len(valid)}")
+        if len(valid) != len(servers):
+            print(f"[!] Отброшено некорректных: {len(servers) - len(valid)}")
+        ans = ask("Сохранить нормализованный список? (y/n) [y]: ", default="y")
+        if ans.lower() == 'y':
+            ts = time.strftime("%Y%m%d_%H%M%S")
+            out = BACKUP_DIR / f"normalized_{ts}.txt"
+            lines = [build_uri(s) for s in valid]
+            with open(out, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(lines))
+            print(f"[+] Сохранено: {out}")
+        input("Enter...")
 
 
 def parse_shadowrocket_rules(text):
@@ -1902,7 +2160,7 @@ def gen_happ_routing(cfg):
         "DomesticDNSType": "DoH",
         "GeositeUrl": "https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat",
         "GeoipUrl": "https://github.com/v2fly/geoip/releases/download/202501090053/geoip.dat",
-        "ProxySites": ["geosite:google"],
+        "ProxySites": [],
         "DirectSites": rt.get('direct_domains', []),
         "BlockSites": rt.get('block_domains', []),
         "DirectIp": rt.get('direct_ips', []),
@@ -2130,23 +2388,32 @@ def config_menu(servers, cfg):
                 continue
             if u:
                 cfg['observatory_url'] = u
-            i = ask(f"Интервал [{cfg.get('observatory_interval')}]: ", default="")
+            i = ask(f"Интервал [{cfg.get('observatory_interval')}] (например 30s, 1m, 2m): ", default="")
             if i != EXIT and i:
-                cfg['observatory_interval'] = i
-            t = ask(f"Таймаут [{cfg.get('observatory_timeout')}]: ", default="")
+                cfg['observatory_interval'] = normalize_duration(i, 'm')
+                print(f"    -> {cfg['observatory_interval']}")
+            t = ask(f"Таймаут [{cfg.get('observatory_timeout')}] (например 2s, 5s): ", default="")
             if t != EXIT and t:
-                cfg['observatory_timeout'] = t
+                cfg['observatory_timeout'] = normalize_duration(t, 's')
+                print(f"    -> {cfg['observatory_timeout']}")
             cfg_save(cfg)
         elif ch == "3":
             st = ask(f"Стратегия [{cfg.get('balancer_strategy')}]: ", choices=['leastLoad', 'leastPing', 'random', 'roundRobin'])
             if st != EXIT:
-                cfg['balancer_strategy'] = st
+                cfg['balancer_strategy'] = normalize_balancer_type(st)
             e = ask_int(f"Expected [{cfg.get('balancer_expected')}]: ", default=cfg.get('balancer_expected'))
             if e != EXIT and e is not None:
                 cfg['balancer_expected'] = e
-            m = ask(f"MaxRTT [{cfg.get('balancer_max_rtt')}]: ", default="")
+            m = ask(f"MaxRTT [{cfg.get('balancer_max_rtt')}] (например 1s, 2s, 3s): ", default="")
             if m != EXIT and m:
-                cfg['balancer_max_rtt'] = m
+                cfg['balancer_max_rtt'] = normalize_duration(m, 's')
+                print(f"    -> {cfg['balancer_max_rtt']}")
+            tol = ask(f"Tolerance [{cfg.get('balancer_tolerance')}]: ", default="")
+            if tol != EXIT and tol:
+                cfg['balancer_tolerance'] = normalize_float(tol, 0.0)
+            bl = ask(f"Baselines через запятую [{','.join(cfg.get('balancer_baselines', ['2s']))}]: ", default="")
+            if bl != EXIT and bl:
+                cfg['balancer_baselines'] = [normalize_duration(x, 's') for x in bl.split(',') if x.strip()]
             cfg_save(cfg)
         elif ch == "4":
             ps = ask_int(f"SOCKS [{cfg.get('proxy_ports', [10808, 10809])[0]}]: ", default=cfg.get('proxy_ports', [10808, 10809])[0])
@@ -2159,29 +2426,27 @@ def config_menu(servers, cfg):
             cfg_save(cfg)
         elif ch == "5":
             print(f"  Текущие: {rt.get('direct_domains', [])}")
-            v = ask("Direct домены (через запятую, пусто=оставить, q=отмена): ")
+            v = ask("Direct домены (через запятую, пусто=очистить, q=отмена): ")
             if v == EXIT:
                 continue
-            if v:
-                cfg['routing']['direct_domains'] = [x.strip() for x in v.split(',') if x.strip()]
+            cfg['routing']['direct_domains'] = [x.strip() for x in v.split(',') if x.strip()] if v else []
             cfg_save(cfg)
         elif ch == "6":
             print(f"  Текущие: {rt.get('block_domains', [])}")
-            v = ask("Block домены (через запятую, пусто=оставить, q=отмена): ")
+            v = ask("Block домены (через запятую, пусто=очистить, q=отмена): ")
             if v == EXIT:
                 continue
-            if v:
-                cfg['routing']['block_domains'] = [x.strip() for x in v.split(',') if x.strip()]
+            cfg['routing']['block_domains'] = [x.strip() for x in v.split(',') if x.strip()] if v else []
             cfg_save(cfg)
         elif ch == "7":
             print(f"  Direct IP: {rt.get('direct_ips', [])}")
             v = ask("Direct IP: ")
-            if v != EXIT and v:
-                cfg['routing']['direct_ips'] = [x.strip() for x in v.split(',') if x.strip()]
+            if v != EXIT:
+                cfg['routing']['direct_ips'] = [x.strip() for x in v.split(',') if x.strip()] if v else []
             print(f"  Block IP: {rt.get('block_ips', [])}")
             v = ask("Block IP: ")
-            if v != EXIT and v:
-                cfg['routing']['block_ips'] = [x.strip() for x in v.split(',') if x.strip()]
+            if v != EXIT:
+                cfg['routing']['block_ips'] = [x.strip() for x in v.split(',') if x.strip()] if v else []
             cfg_save(cfg)
         elif ch == "8":
             print(f"  Текущие: {rt.get('block_protocols', [])}")
@@ -2361,6 +2626,56 @@ def export_menu(servers, cfg):
         input("Enter...")
 
 
+def save_json(config, cfg, name_override=None, remarks_override=None):
+    name = name_override or cfg.get('json_name', 'xray_config')
+    if not name.endswith('.json'):
+        name += '.json'
+    if remarks_override is not None:
+        config['remarks'] = remarks_override
+    p = OUTPUT_DIR / name
+    with open(p, 'w', encoding='utf-8') as f:
+        json.dump(config, f, ensure_ascii=False, indent=2)
+    print(f"[+] JSON: {p}")
+    if 'remarks' in config:
+        print(f"    Примечание сервера: {config['remarks']}")
+    return p
+
+
+def ask_json_name_and_remarks(cfg, default_name=None):
+    default_name = default_name or cfg.get('json_name', 'xray_config')
+    default_remarks = cfg.get('json_remarks', 'SubManager Auto')
+    print("\n[?] Настройка имени JSON-сервера")
+    print(f"    Текущее имя файла:    {default_name}.json")
+    print(f"    Текущее примечание:   {default_remarks}")
+    print("    (Enter - оставить текущие, q - отмена)")
+    use = ask("Изменить имя/примечание? (y/n) [n]: ", default="n")
+    if use == EXIT:
+        return None, None
+    if use.lower() != 'y':
+        return default_name, default_remarks
+    remarks = ask(f"Примечание сервера в Happ/клиенте [{default_remarks}]: ", default=default_remarks)
+    if remarks == EXIT:
+        return None, None
+    cfg['json_remarks'] = remarks
+    auto = ask("Использовать примечание как имя файла (транслитом)? (y/n) [n]: ", default="n")
+    if auto == EXIT:
+        return None, None
+    if auto.lower() == 'y':
+        tr = transliterate(remarks)
+        fname = sanitize_filename(tr)
+        cfg['json_use_remarks_as_name'] = True
+        cfg_save(cfg)
+        print(f"    Имя файла будет: {fname}.json")
+        return fname, remarks
+    else:
+        name = ask(f"Имя файла (без .json) [{default_name}]: ", default=default_name)
+        if name == EXIT:
+            return None, None
+        cfg['json_name'] = name
+        cfg_save(cfg)
+        return name, remarks
+
+
 def save_yaml_clash(servers, name="clash_proxies.yaml"):
     lines = ["proxies:"]
     for s in servers:
@@ -2448,11 +2763,12 @@ def stats(servers):
 def main():
     ensure_dirs()
     cfg = cfg_load()
+    cfg_save(cfg)
     clr()
     hdr("SubManager")
     print(f"  Input:   {INPUT_DIR}")
     print(f"  Output:  {OUTPUT_DIR}")
-    print(f"  Routing: {ROUTING_DIR}")
+    print(f"  Backups: {BACKUP_DIR}")
     print("=" * W)
     servers = []
     json_template = None
@@ -2474,8 +2790,10 @@ def main():
         print("  9 - Сохранить ссылки (txt + base64)")
         print(" 10 - Сохранить Clash YAML")
         print(" 11 - Сделать бэкап")
+        print(" 12 - Нормализовать существующий конфиг")
+        print(" 13 - Нормализовать бэкап серверов")
         print("  q - Выход")
-        ch = ask("Выбор: ", choices=[str(i) for i in range(1, 12)])
+        ch = ask("Выбор: ", choices=[str(i) for i in range(1, 14)])
         if ch == EXIT:
             if servers:
                 a = ask("Сделать бэкап перед выходом? (y/n) [n]: ", default="n")
@@ -2552,6 +2870,10 @@ def main():
                 continue
             backup_servers(servers)
             input("\nEnter...")
+        elif ch == "12":
+            normalize_existing_config_menu()
+        elif ch == "13":
+            normalize_existing_servers_menu()
 
 
 if __name__ == "__main__":
