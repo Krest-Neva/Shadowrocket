@@ -8,20 +8,19 @@ echo "nameserver 94.140.14.14" >> /etc/resolv.conf
 echo "nameserver 94.140.15.15" >> /etc/resolv.conf
 echo "nameserver 1.1.1.1" >> /etc/resolv.conf
 
-echo "[*] Проверка соединения с интернетом..."
+echo "[*] Проверка соединения..."
 while ! ping -c 3 google.com > /dev/null 2>&1; do
-    echo "[!] ОШИБКА: Нет подключения к интернету!"
-    echo "[*] Повторная проверка через 5 секунд..."
+    echo "[!] Нет подключения. Повтор через 5 сек..."
     sleep 5
 done
 echo "[+] Интернет доступен."
 
-echo "[*] Обновление системы и установка зависимостей..."
+echo "[*] Обновление и установка зависимостей..."
 apk update
 apk upgrade
 apk add python3 curl wget aria2 openssl ca-certificates bind-tools bash py3-pip git
 
-echo "[*] Создание рабочих папок..."
+echo "[*] Создание папок..."
 mkdir -p ~/SubManager/Input
 mkdir -p ~/SubManager/Output
 mkdir -p ~/SubManager/Backups
@@ -29,108 +28,45 @@ mkdir -p ~/SubManager/Routing
 
 cat << 'PYEOF' > ~/SubManager/SubManager.py
 #!/usr/bin/env python3
-import os, sys, re, json, base64, urllib.request, urllib.error, ssl, subprocess, shutil, time, ipaddress, random
+import os, sys, re, json, base64, urllib.request, ssl, subprocess, shutil, time, random, copy, ipaddress
 from urllib.parse import urlparse, parse_qs, urlencode, unquote, quote
 from pathlib import Path
 
 HOME = Path.home()
-BASE_DIR = HOME / "SubManager"
-INPUT_DIR = BASE_DIR / "Input"
-OUTPUT_DIR = BASE_DIR / "Output"
-BACKUP_DIR = BASE_DIR / "Backups"
-ROUTING_DIR = BASE_DIR / "Routing"
-CONFIG_FILE = BASE_DIR / "config.json"
+BASE = HOME / "SubManager"
+INPUT_DIR = BASE / "Input"
+OUTPUT_DIR = BASE / "Output"
+BACKUP_DIR = BASE / "Backups"
+ROUTING_DIR = BASE / "Routing"
+CFG_FILE = BASE / "config.json"
 UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
-
+W = 52
+EXIT = "__EXIT__"
 DNS_SERVERS = ["8.8.8.8", "8.8.4.4", "1.1.1.1", "94.140.14.14", "94.140.15.15"]
-W = 50
 
 
 def clr():
     os.system('clear')
 
 
-def hdr(title):
+def hdr(t):
     print("=" * W)
-    print(f" {title}")
+    print(f" {t}")
     print("=" * W)
 
 
-def line():
+def ln():
     print("-" * W)
 
 
-def cfg_default():
-    return {
-        "dns_servers": DNS_SERVERS,
-        "dns_query_strategy": "UseIP",
-        "observatory_url": "https://www.google.com/generate_204",
-        "observatory_interval": "1m",
-        "observatory_timeout": "3s",
-        "observatory_probing_url": "https://cp.cloudflare.com/generate_204",
-        "balancer_strategy": "leastLoad",
-        "balancer_expected": 1,
-        "balancer_max_rtt": "2s",
-        "balancer_tolerance": 0,
-        "balancer_baselines": ["2s"],
-        "proxy_ports": [10808, 10809],
-        "mux_enabled": False,
-        "mux_concurrency": 8,
-        "mux_xudp_concurrency": 0,
-        "mux_xudp_proxy_udp443": "reject",
-        "global_proxy": "proxy",
-        "sniffing_enabled": True,
-        "sniffing_dest_override": ["http", "tls", "quic"],
-        "sniffing_route_only": True,
-        "routing": {
-            "direct_domains": ["geosite:private", "geosite:category-ru"],
-            "block_domains": ["geosite:category-ads-all"],
-            "direct_ips": [],
-            "block_ips": [],
-            "block_protocols": ["bittorrent"],
-            "direct_ports": [],
-            "block_ports": [],
-            "block_networks": [],
-            "rules": []
-        },
-        "json_name": "xray_config"
-    }
-
-
-def cfg_load():
-    if CONFIG_FILE.exists():
-        try:
-            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-                saved = json.load(f)
-            base = cfg_default()
-            for k, v in saved.items():
-                if isinstance(v, dict) and k in base:
-                    base[k].update(v)
-                else:
-                    base[k] = v
-            return base
-        except Exception:
-            pass
-    return cfg_default()
-
-
-def cfg_save(cfg):
-    CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-        json.dump(cfg, f, ensure_ascii=False, indent=2)
-
-
-def ensure_dirs():
-    for d in [INPUT_DIR, OUTPUT_DIR, BACKUP_DIR, ROUTING_DIR]:
-        d.mkdir(parents=True, exist_ok=True)
-
-
-def ask(prompt, default=None, choices=None):
+def ask(prompt, default=None, choices=None, allow_exit=True):
     while True:
         try:
             v = input(prompt).strip()
-        except EOFError:
-            return default
+        except (EOFError, KeyboardInterrupt):
+            return EXIT if allow_exit else default
+        if allow_exit and v.lower() in ('q', 'exit', 'back', 'назад'):
+            return EXIT
         if not v and default is not None:
             return default
         if choices:
@@ -145,6 +81,8 @@ def ask_int(prompt, default=None, mn=None, mx=None):
     while True:
         try:
             v = input(prompt).strip()
+            if v.lower() in ('q', 'exit', 'back', 'назад'):
+                return EXIT
             if not v and default is not None:
                 return default
             n = int(v)
@@ -156,15 +94,17 @@ def ask_int(prompt, default=None, mn=None, mx=None):
                 continue
             return n
         except ValueError:
-            print("[!] Введите число.")
-        except EOFError:
-            return default
+            print("[!] Введите число или 'q' для выхода.")
+        except (EOFError, KeyboardInterrupt):
+            return EXIT
 
 
 def ask_multi(prompt, mn, mx):
     while True:
         try:
             v = input(prompt).strip()
+            if v.lower() in ('q', 'exit', 'back', 'назад'):
+                return EXIT
             if not v:
                 return None
             if v.lower() in ('all', 'a', '*'):
@@ -188,7 +128,7 @@ def ask_multi(prompt, mn, mx):
                 return result
             print("[!] Пусто.")
         except Exception:
-            print("[!] Формат: 1,3-5 или all")
+            print("[!] Формат: 1,3-5 или all (или q)")
 
 
 def fmt_size(b):
@@ -325,62 +265,37 @@ def dl_url(url, method='auto', show_progress=True):
     return None
 
 
-def decode_base64_if_needed(raw):
-    cl = raw.strip().replace('\n', '').replace('\r', '').replace(' ', '')
-    if len(cl) > 20 and re.fullmatch(r'[A-Za-z0-9+/=_\-]+', cl):
+def try_decode_base64(raw):
+    s = raw.strip().replace('\n', '').replace('\r', '').replace(' ', '')
+    if len(s) < 16 or not re.fullmatch(r'[A-Za-z0-9+/=_\-]+', s):
+        return None
+    for enc in ['urlsafe_b64', 'b64']:
         try:
-            pad = 4 - len(cl) % 4
-            padded = cl + ('=' * pad if pad != 4 else '')
-            decoded = base64.b64decode(padded).decode('utf-8', errors='ignore')
-            if '://' in decoded and ('vless://' in decoded or 'vmess://' in decoded or 'ss://' in decoded or 'trojan://' in decoded or 'hysteria2://' in decoded or 'hy2://' in decoded):
-                return decoded, True
+            pad = 4 - len(s) % 4
+            padded = s + ('=' * pad if pad != 4 else '')
+            if enc == 'urlsafe_b64':
+                decoded = base64.urlsafe_b64decode(padded).decode('utf-8', errors='ignore')
+            else:
+                decoded = base64.b64decode(padded).decode('utf-8', errors='ignore')
+            if '://' in decoded or decoded.strip().startswith('{') or 'proxies:' in decoded:
+                return decoded
         except Exception:
-            pass
-    return raw, False
+            continue
+    return None
 
 
-def load_source():
-    hdr("ЗАГРУЗКА ИСХОДНИКОВ")
-    print("  1 - Локальный файл")
-    print("  2 - По ссылке (URL)")
-    print("  3 - Несколько ссылок подряд")
-    ch = ask("Выбор [1]: ", default="1", choices=["1", "2", "3"])
-    raw = ""
-    if ch == "1":
-        files = sorted([p for p in INPUT_DIR.glob("*") if p.is_file()])
-        if not files:
-            print(f"[!] Папка {INPUT_DIR} пуста.")
-            return None
-        for i, f in enumerate(files, 1):
-            print(f"  {i}. {f.name} ({fmt_size(f.stat().st_size)})")
-        idx = ask_int("Номер файла: ", mn=1, mx=len(files))
-        if idx is None:
-            return None
-        raw = files[idx - 1].read_text(encoding='utf-8', errors='ignore')
-    elif ch == "2":
-        url = ask("URL подписки: ")
-        if not url:
-            return None
-        raw = dl_url(url)
-        if not raw:
-            print("[!] Не удалось загрузить.")
-            return None
-    else:
-        print("[?] Вводите URL по одному. Пустая строка - завершить.")
-        parts = []
-        while True:
-            u = ask("URL: ")
-            if not u:
-                break
-            t = dl_url(u)
-            if t:
-                parts.append(t)
-        if not parts:
-            return None
-        raw = "\n".join(parts)
-    raw, was_b64 = decode_base64_if_needed(raw)
-    if was_b64:
+def auto_decode(raw):
+    if not raw:
+        return raw
+    stripped = raw.strip()
+    if stripped.startswith('{') or stripped.startswith('['):
+        return raw
+    if '://' in raw[:500] or 'proxies:' in raw[:200]:
+        return raw
+    dec = try_decode_base64(raw)
+    if dec:
         print("[+] Base64 декодирован.")
+        return dec
     return raw
 
 
@@ -403,7 +318,7 @@ def parse_uri(uri):
             r['port'] = str(p.port) if p.port else ''
             for k, v in parse_qs(p.query).items():
                 r['params'][k] = v[0] if len(v) == 1 else v
-        elif scheme in ('hysteria2', 'hy2'):
+        elif scheme in ('hysteria2', 'hy2', 'hysteria', 'hy'):
             p = urlparse(uri)
             r['password'] = unquote(p.username or '')
             r['host'] = p.hostname or ''
@@ -449,6 +364,75 @@ def parse_uri(uri):
             if '?' in uri:
                 for k, v in parse_qs(uri.split('?', 1)[1]).items():
                     r['params'][k] = v[0] if len(v) == 1 else v
+        elif scheme == 'socks5':
+            p = urlparse(uri)
+            r['id'] = unquote(p.username or '')
+            r['password'] = unquote(p.password or '')
+            r['host'] = p.hostname or ''
+            r['port'] = str(p.port) if p.port else ''
+            for k, v in parse_qs(p.query).items():
+                r['params'][k] = v[0] if len(v) == 1 else v
+        elif scheme == 'http':
+            p = urlparse(uri)
+            r['id'] = unquote(p.username or '')
+            r['password'] = unquote(p.password or '')
+            r['host'] = p.hostname or ''
+            r['port'] = str(p.port) if p.port else ''
+            for k, v in parse_qs(p.query).items():
+                r['params'][k] = v[0] if len(v) == 1 else v
+        elif scheme == 'tuic':
+            p = urlparse(uri)
+            r['id'] = unquote(p.username or '')
+            r['password'] = unquote(p.password or '')
+            r['host'] = p.hostname or ''
+            r['port'] = str(p.port) if p.port else ''
+            for k, v in parse_qs(p.query).items():
+                r['params'][k] = v[0] if len(v) == 1 else v
+        elif scheme == 'juicity':
+            p = urlparse(uri)
+            r['id'] = unquote(p.username or '')
+            r['password'] = unquote(p.password or '')
+            r['host'] = p.hostname or ''
+            r['port'] = str(p.port) if p.port else ''
+            for k, v in parse_qs(p.query).items():
+                r['params'][k] = v[0] if len(v) == 1 else v
+        elif scheme == 'wireguard':
+            p = urlparse(uri)
+            r['id'] = unquote(p.username or '')
+            r['host'] = p.hostname or ''
+            r['port'] = str(p.port) if p.port else ''
+            for k, v in parse_qs(p.query).items():
+                r['params'][k] = v[0] if len(v) == 1 else v
+        elif scheme in ('amneziawg', 'awg'):
+            p = urlparse(uri)
+            r['id'] = unquote(p.username or '')
+            r['host'] = p.hostname or ''
+            r['port'] = str(p.port) if p.port else ''
+            for k, v in parse_qs(p.query).items():
+                r['params'][k] = v[0] if len(v) == 1 else v
+        elif scheme == 'mieru':
+            p = urlparse(uri)
+            r['id'] = unquote(p.username or '')
+            r['password'] = unquote(p.password or '')
+            r['host'] = p.hostname or ''
+            r['port'] = str(p.port) if p.port else ''
+            for k, v in parse_qs(p.query).items():
+                r['params'][k] = v[0] if len(v) == 1 else v
+        elif scheme == 'sudoku':
+            p = urlparse(uri)
+            r['id'] = unquote(p.username or '')
+            r['password'] = unquote(p.password or '')
+            r['host'] = p.hostname or ''
+            r['port'] = str(p.port) if p.port else ''
+            for k, v in parse_qs(p.query).items():
+                r['params'][k] = v[0] if len(v) == 1 else v
+        elif scheme == 'openconnect':
+            p = urlparse(uri)
+            r['id'] = unquote(p.username or '')
+            r['host'] = p.hostname or ''
+            r['port'] = str(p.port) if p.port else ''
+            for k, v in parse_qs(p.query).items():
+                r['params'][k] = v[0] if len(v) == 1 else v
         else:
             return None
     except Exception:
@@ -458,31 +442,271 @@ def parse_uri(uri):
 
 def extract_links(text):
     out = []
-    for ln in text.splitlines():
-        ln = ln.strip()
-        if not ln or ln.startswith('#'):
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith('#'):
             continue
-        if any(ln.startswith(s) for s in ['vless://', 'vmess://', 'trojan://', 'ss://', 'hysteria2://', 'hy2://']):
-            out.append(ln)
+        if any(line.startswith(s + '://') for s in ['vless', 'vmess', 'trojan', 'ss', 'hysteria2', 'hy2', 'hysteria', 'hy', 'socks5', 'http', 'tuic', 'juicity', 'wireguard', 'amneziawg', 'awg', 'mieru', 'sudoku', 'openconnect']):
+            out.append(line)
     return out
 
 
-def build_uri(info):
-    scheme = info['scheme']
-    host = info['host']
-    port = info['port']
-    params = info['params']
-    name = info.get('name', '')
+def parse_xray_outbound(ob):
+    proto = (ob.get('protocol') or '').lower()
+    tag = ob.get('tag', '')
+    ss = ob.get('streamSettings', {}) or {}
+    net = ss.get('network', 'tcp')
+    sec = ss.get('security', 'none')
+
+    if proto == 'vless':
+        vnext = (ob.get('settings', {}) or {}).get('vnext', [{}])
+        if not vnext:
+            return None
+        vn = vnext[0]
+        users = vn.get('users', [{}])
+        user = users[0] if users else {}
+        s = {
+            'scheme': 'vless', 'name': tag or 'vless',
+            'host': vn.get('address', ''), 'port': str(vn.get('port', '443')),
+            'id': user.get('id', ''), 'password': '', 'method': '',
+            'params': {'type': net, 'security': sec}
+        }
+        if user.get('flow'):
+            s['params']['flow'] = user['flow']
+        if sec == 'reality':
+            rs = ss.get('realitySettings', {}) or {}
+            for src, dst in [('serverName', 'sni'), ('publicKey', 'pbk'),
+                             ('shortId', 'sid'), ('fingerprint', 'fp'),
+                             ('spiderX', 'spiderX')]:
+                if rs.get(src):
+                    s['params'][dst] = str(rs[src])
+        elif sec == 'tls':
+            ts = ss.get('tlsSettings', {}) or {}
+            if ts.get('serverName'):
+                s['params']['sni'] = ts['serverName']
+            if ts.get('fingerprint'):
+                s['params']['fp'] = ts['fingerprint']
+            if ts.get('alpn'):
+                s['params']['alpn'] = ','.join(ts['alpn'])
+        if net == 'ws':
+            w = ss.get('wsSettings', {}) or {}
+            s['params']['path'] = w.get('path', '/')
+            headers = w.get('headers', {}) or {}
+            if headers.get('Host'):
+                s['params']['host'] = headers['Host']
+            if w.get('heartbeatPeriod'):
+                s['params']['heartbeatPeriod'] = str(w['heartbeatPeriod'])
+        elif net == 'grpc':
+            g = ss.get('grpcSettings', {}) or {}
+            if g.get('serviceName'):
+                s['params']['serviceName'] = g['serviceName']
+            if g.get('authority'):
+                s['params']['authority'] = g['authority']
+            s['params']['mode'] = 'multi' if g.get('multiMode') else 'auto'
+        elif net == 'tcp':
+            th = (ss.get('tcpSettings', {}) or {}).get('header', {}) or {}
+            s['params']['headerType'] = th.get('type', 'none')
+        elif net in ('xhttp', 'splithttp'):
+            x = ss.get('xhttpSettings', {}) or {}
+            if x.get('path'): s['params']['path'] = x['path']
+            if x.get('host'): s['params']['host'] = x['host']
+            if x.get('mode'): s['params']['mode'] = x['mode']
+            if x.get('concurrency'): s['params']['concurrency'] = str(x['concurrency'])
+        elif net == 'httpupgrade':
+            h = ss.get('httpupgradeSettings', {}) or {}
+            if h.get('path'): s['params']['path'] = h['path']
+            if h.get('host'): s['params']['host'] = h['host']
+        return s
+
+    elif proto == 'vmess':
+        vnext = (ob.get('settings', {}) or {}).get('vnext', [{}])
+        if not vnext:
+            return None
+        vn = vnext[0]
+        users = vn.get('users', [{}])
+        user = users[0] if users else {}
+        s = {
+            'scheme': 'vmess', 'name': tag or 'vmess',
+            'host': vn.get('address', ''), 'port': str(vn.get('port', '443')),
+            'id': user.get('id', ''), 'password': '', 'method': '',
+            'params': {'type': net, 'security': sec}
+        }
+        if user.get('alterId'):
+            s['params']['alterId'] = str(user['alterId'])
+        if user.get('security'):
+            s['params']['encryption'] = user['security']
+        if sec == 'tls':
+            ts = ss.get('tlsSettings', {}) or {}
+            if ts.get('serverName'):
+                s['params']['sni'] = ts['serverName']
+        return s
+
+    elif proto in ('shadowsocks', 'ss'):
+        servers = (ob.get('settings', {}) or {}).get('servers', [{}])
+        if not servers:
+            return None
+        srv = servers[0]
+        return {
+            'scheme': 'ss', 'name': tag or 'ss',
+            'host': srv.get('address', ''), 'port': str(srv.get('port', '443')),
+            'id': '', 'password': srv.get('password', ''),
+            'method': srv.get('method', 'aes-256-gcm'), 'params': {}
+        }
+
+    elif proto == 'hysteria2':
+        st = ob.get('settings', {}) or {}
+        s = {
+            'scheme': 'hysteria2', 'name': tag or 'hysteria2',
+            'host': st.get('address', ''), 'port': str(st.get('port', '443')),
+            'id': '', 'password': st.get('password', ''), 'method': '',
+            'params': {'type': 'hysteria2', 'security': 'tls'}
+        }
+        if st.get('obfs'):
+            s['params']['obfs'] = st['obfs']
+            if st.get('obfsPassword'):
+                s['params']['obfs-password'] = st['obfsPassword']
+        ts = ss.get('tlsSettings', {}) or {}
+        if ts.get('serverName'):
+            s['params']['sni'] = ts['serverName']
+        if ts.get('alpn'):
+            s['params']['alpn'] = ','.join(ts['alpn'])
+        return s
+
+    elif proto == 'hysteria':
+        st = ob.get('settings', {}) or {}
+        s = {
+            'scheme': 'hysteria', 'name': tag or 'hysteria',
+            'host': st.get('address', ''), 'port': str(st.get('port', '443')),
+            'id': '', 'password': st.get('auth', ''), 'method': '',
+            'params': {'type': 'hysteria', 'security': 'tls'}
+        }
+        if st.get('up'):
+            s['params']['up'] = str(st['up'])
+        if st.get('down'):
+            s['params']['down'] = str(st['down'])
+        return s
+
+    elif proto == 'trojan':
+        servers = (ob.get('settings', {}) or {}).get('servers', [{}])
+        if not servers:
+            return None
+        srv = servers[0]
+        s = {
+            'scheme': 'trojan', 'name': tag or 'trojan',
+            'host': srv.get('address', ''), 'port': str(srv.get('port', '443')),
+            'id': '', 'password': srv.get('password', ''), 'method': '',
+            'params': {'type': net, 'security': sec if sec != 'none' else 'tls'}
+        }
+        if sec == 'tls':
+            ts = ss.get('tlsSettings', {}) or {}
+            if ts.get('serverName'):
+                s['params']['sni'] = ts['serverName']
+        return s
+
+    elif proto == 'socks':
+        servers = (ob.get('settings', {}) or {}).get('servers', [{}])
+        if not servers:
+            return None
+        srv = servers[0]
+        return {
+            'scheme': 'socks5', 'name': tag or 'socks5',
+            'host': srv.get('address', ''), 'port': str(srv.get('port', '1080')),
+            'id': srv.get('user', ''), 'password': srv.get('pass', ''), 'method': '',
+            'params': {}
+        }
+
+    elif proto == 'http':
+        servers = (ob.get('settings', {}) or {}).get('servers', [{}])
+        if not servers:
+            return None
+        srv = servers[0]
+        return {
+            'scheme': 'http', 'name': tag or 'http',
+            'host': srv.get('address', ''), 'port': str(srv.get('port', '8080')),
+            'id': srv.get('user', ''), 'password': srv.get('pass', ''), 'method': '',
+            'params': {}
+        }
+
+    elif proto == 'wireguard':
+        st = ob.get('settings', {}) or {}
+        peers = st.get('peers', [{}])
+        peer = peers[0] if peers else {}
+        return {
+            'scheme': 'wireguard', 'name': tag or 'wireguard',
+            'host': peer.get('endpoint', '').split(':')[0] if peer.get('endpoint') else '',
+            'port': peer.get('endpoint', '').split(':')[1] if peer.get('endpoint') and ':' in peer.get('endpoint') else '51820',
+            'id': st.get('secretKey', ''), 'password': peer.get('publicKey', ''), 'method': '',
+            'params': {
+                'allowedIPs': ','.join(peer.get('allowedIPs', ['0.0.0.0/0'])),
+                'mtu': str(st.get('mtu', 1420)),
+                'dns': st.get('dns', ''),
+                'presharedKey': peer.get('preSharedKey', ''),
+                'keepalive': str(peer.get('persistentKeepalive', 0))
+            }
+        }
+    return None
+
+
+def extract_servers_from_json(text):
+    try:
+        data = json.loads(text)
+    except Exception:
+        return [], None
+    if not isinstance(data, dict):
+        return [], None
+    outbounds = data.get('outbounds', [])
+    servers = []
+    for ob in outbounds:
+        if not isinstance(ob, dict):
+            continue
+        proto = (ob.get('protocol') or '').lower()
+        if proto in ('vless', 'vmess', 'trojan', 'ss', 'shadowsocks', 'hysteria2', 'hysteria', 'socks', 'http', 'wireguard'):
+            s = parse_xray_outbound(ob)
+            if s:
+                servers.append(s)
+    return servers, data
+
+
+def build_uri(s):
+    scheme = s['scheme']
+    host = s['host']
+    port = s['port']
+    params = dict(s['params'])
+    name = s.get('name', '')
     if scheme in ('vless', 'vmess', 'trojan'):
-        uri = f"{scheme}://{quote(info.get('id', ''))}@{host}:{port}"
-    elif scheme in ('hysteria2', 'hy2'):
-        uri = f"{scheme}://{quote(info.get('password', ''))}@{host}:{port}"
+        uri = f"{scheme}://{quote(s.get('id', ''))}@{host}:{port}"
+    elif scheme in ('hysteria2', 'hy2', 'hysteria', 'hy'):
+        uri = f"{scheme}://{quote(s.get('password', ''))}@{host}:{port}"
     elif scheme == 'ss':
-        ui = f"{info.get('method', '')}:{info.get('password', '')}"
+        ui = f"{s.get('method', '')}:{s.get('password', '')}"
         b = base64.b64encode(ui.encode()).decode().rstrip('=')
         uri = f"ss://{b}@{host}:{port}"
+    elif scheme == 'socks5':
+        auth = ''
+        if s.get('id') or s.get('password'):
+            auth = f"{quote(s.get('id', ''))}:{quote(s.get('password', ''))}@"
+        uri = f"socks5://{auth}{host}:{port}"
+    elif scheme == 'http':
+        auth = ''
+        if s.get('id') or s.get('password'):
+            auth = f"{quote(s.get('id', ''))}:{quote(s.get('password', ''))}@"
+        uri = f"http://{auth}{host}:{port}"
+    elif scheme == 'tuic':
+        uri = f"tuic://{quote(s.get('id', ''))}:{quote(s.get('password', ''))}@{host}:{port}"
+    elif scheme == 'juicity':
+        uri = f"juicity://{quote(s.get('id', ''))}:{quote(s.get('password', ''))}@{host}:{port}"
+    elif scheme == 'wireguard':
+        uri = f"wireguard://{quote(s.get('id', ''))}@{host}:{port}"
+    elif scheme in ('amneziawg', 'awg'):
+        uri = f"{scheme}://{quote(s.get('id', ''))}@{host}:{port}"
+    elif scheme == 'mieru':
+        uri = f"mieru://{quote(s.get('id', ''))}:{quote(s.get('password', ''))}@{host}:{port}"
+    elif scheme == 'sudoku':
+        uri = f"sudoku://{quote(s.get('id', ''))}:{quote(s.get('password', ''))}@{host}:{port}"
+    elif scheme == 'openconnect':
+        uri = f"openconnect://{quote(s.get('id', ''))}@{host}:{port}"
     else:
-        return info['raw']
+        return s.get('raw', '')
     if params:
         uri += '?' + urlencode(params, doseq=True)
     if name:
@@ -494,18 +718,229 @@ def show_servers_list(servers, show_params=False):
     if not servers:
         print("[!] Список пуст.")
         return
+    print(f"\n{'#':>3} {'Протокол':12} {'Имя':28} {'Адрес':30} {'Транспорт':8} {'Sec':8}")
+    ln()
     for i, s in enumerate(servers, 1):
-        name = s.get('name', '') or '(без имени)'
+        name = (s.get('name', '') or '(без имени)')[:28]
+        addr = f"{s['host']}:{s['port']}"[:30]
         t = s['params'].get('type', 'tcp')
         sec = s['params'].get('security', 'none')
-        print(f"  {i:3}. [{s['scheme']:9}] {name[:28]:28} {s['host']}:{s['port']}")
+        print(f"{i:>3} {s['scheme']:12} {name:28} {addr:30} {t:8} {sec:8}")
         if show_params:
-            print(f"        type={t} sec={sec} flow={s['params'].get('flow','')}")
-            print(f"        path={s['params'].get('path','')} sni={s['params'].get('sni','')}")
+            extra = []
+            for k in ('flow', 'path', 'host', 'sni', 'pbk', 'sid', 'fp', 'serviceName', 'mode', 'concurrency', 'alpn', 'obfs', 'method', 'alterId', 'encryption', 'allowedIPs', 'mtu', 'dns', 'keepalive'):
+                if k in s['params'] and s['params'][k]:
+                    val = str(s['params'][k])
+                    if len(val) > 40:
+                        val = val[:37] + "..."
+                    extra.append(f"{k}={val}")
+            if extra:
+                print(f"      {', '.join(extra)}")
 
 
-def get_uri_info(uri):
-    return parse_uri(uri)
+def cfg_default():
+    return {
+        "dns_servers": DNS_SERVERS,
+        "dns_query_strategy": "UseIP",
+        "observatory_url": "https://www.google.com/generate_204",
+        "observatory_interval": "1m",
+        "observatory_timeout": "3s",
+        "balancer_strategy": "leastLoad",
+        "balancer_expected": 1,
+        "balancer_max_rtt": "2s",
+        "balancer_tolerance": 0,
+        "balancer_baselines": ["2s"],
+        "proxy_ports": [10808, 10809],
+        "mux_enabled": False,
+        "mux_concurrency": 8,
+        "mux_xudp_concurrency": 0,
+        "mux_xudp_proxy_udp443": "reject",
+        "global_proxy": "proxy",
+        "sniffing_enabled": True,
+        "sniffing_dest_override": ["http", "tls", "quic"],
+        "sniffing_route_only": True,
+        "json_name": "xray_config",
+        "json_remarks": "SubManager Auto",
+        "json_use_remarks_as_name": False,
+        "routing_order": ["block", "direct", "proxy"],
+        "routing": {
+            "direct_domains": ["geosite:private", "geosite:category-ru"],
+            "block_domains": ["geosite:category-ads-all"],
+            "direct_ips": [],
+            "block_ips": [],
+            "block_protocols": ["bittorrent"],
+            "direct_ports": [],
+            "block_ports": [],
+            "custom_rules": []
+        }
+    }
+
+
+def cfg_load():
+    if CFG_FILE.exists():
+        try:
+            with open(CFG_FILE, 'r', encoding='utf-8') as f:
+                saved = json.load(f)
+            base = cfg_default()
+            for k, v in saved.items():
+                if isinstance(v, dict) and k in base and isinstance(base[k], dict):
+                    base[k].update(v)
+                else:
+                    base[k] = v
+            return base
+        except Exception:
+            pass
+    return cfg_default()
+
+
+def cfg_save(cfg):
+    CFG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(CFG_FILE, 'w', encoding='utf-8') as f:
+        json.dump(cfg, f, ensure_ascii=False, indent=2)
+
+
+def ensure_dirs():
+    for d in [INPUT_DIR, OUTPUT_DIR, BACKUP_DIR, ROUTING_DIR]:
+        d.mkdir(parents=True, exist_ok=True)
+
+
+def sanitize_filename(name):
+    name = re.sub(r'[\\/:*?"<>|]', '_', name)
+    name = name.strip().strip('.')
+    return name or "xray_config"
+
+
+def transliterate(name):
+    mapping = {
+        'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e','ж':'zh','з':'z',
+        'и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r',
+        'с':'s','т':'t','у':'u','ф':'f','х':'h','ц':'ts','ч':'ch','ш':'sh','щ':'sch',
+        'ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya',
+        'А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ё':'E','Ж':'Zh','З':'Z',
+        'И':'I','Й':'Y','К':'K','Л':'L','М':'M','Н':'N','О':'O','П':'P','Р':'R',
+        'С':'S','Т':'T','У':'U','Ф':'F','Х':'H','Ц':'Ts','Ч':'Ch','Ш':'Sh','Щ':'Sch',
+        'Ъ':'','Ы':'Y','Ь':'','Э':'E','Ю':'Yu','Я':'Ya',
+        ' ':'_'
+    }
+    out = []
+    for ch in name:
+        out.append(mapping.get(ch, ch))
+    return ''.join(out)
+
+
+def load_source():
+    hdr("ЗАГРУЗКА ИСХОДНИКОВ")
+    print("  1 - Локальный файл")
+    print("  2 - По ссылке (URL)")
+    print("  3 - Несколько ссылок подряд")
+    print("  q - Назад")
+    ch = ask("Выбор [1]: ", default="1", choices=["1", "2", "3"])
+    if ch == EXIT:
+        return None
+    if ch == "1":
+        files = sorted([p for p in INPUT_DIR.glob("*") if p.is_file()])
+        if not files:
+            print(f"[!] Папка {INPUT_DIR} пуста.")
+            print(f"    Поместите файл (ссылки, base64 или JSON) в {INPUT_DIR}")
+            input("Enter...")
+            return None
+        print("\n[+] Доступные файлы:")
+        for i, f in enumerate(files, 1):
+            print(f"  {i}. {f.name} ({fmt_size(f.stat().st_size)})")
+        idx = ask_int("Номер файла (q - назад): ", mn=1, mx=len(files))
+        if idx == EXIT or idx is None:
+            return None
+        raw = files[idx - 1].read_text(encoding='utf-8', errors='ignore')
+    elif ch == "2":
+        url = ask("URL подписки (q - назад): ")
+        if url == EXIT or not url:
+            return None
+        raw = dl_url(url)
+        if not raw:
+            print("[!] Не удалось загрузить.")
+            input("Enter...")
+            return None
+    else:
+        print("[?] Вводите URL по одному. 'q' - завершить.")
+        parts = []
+        while True:
+            u = ask("URL (q - конец): ")
+            if u == EXIT or not u:
+                break
+            t = dl_url(u)
+            if t:
+                t2 = auto_decode(t)
+                parts.append(t2)
+                print(f"  [+] Добавлено. Всего частей: {len(parts)}")
+            else:
+                print(f"  [!] Не удалось загрузить: {u}")
+        if not parts:
+            input("Enter...")
+            return None
+        raw = "\n".join(parts)
+        print(f"[+] Объединено частей: {len(parts)}")
+        return raw
+    return auto_decode(raw)
+
+
+def parse_input(raw):
+    if not raw:
+        return [], None
+    stripped = raw.strip()
+    if stripped.startswith('{'):
+        servers, json_data = extract_servers_from_json(stripped)
+        if servers:
+            print(f"[+] Обнаружен JSON конфиг. Извлечено outbounds: {len(servers)}")
+            return servers, json_data
+        else:
+            print("[!] JSON найден, но прокси outbounds не обнаружены.")
+    links = extract_links(raw)
+    if links:
+        servers = []
+        for l in links:
+            p = parse_uri(l)
+            if p:
+                servers.append(p)
+        print(f"[+] Найдено ссылок: {len(links)}, успешно распарсено: {len(servers)}")
+        return servers, None
+    return [], None
+
+
+def dedupe_servers(servers, mode='full'):
+    seen = set()
+    out = []
+    for s in servers:
+        if mode == 'full':
+            key = (s['scheme'], s['host'], s['port'], s.get('id', '') or s.get('password', '') or s.get('method', ''))
+        elif mode == 'name':
+            key = s.get('name', '')
+        elif mode == 'addr':
+            key = (s['host'], s['port'])
+        elif mode == 'user':
+            key = (s['host'], s['port'], s.get('id', '') or s.get('password', ''))
+        else:
+            key = (s['scheme'], s['host'], s['port'])
+        if key not in seen:
+            seen.add(key)
+            out.append(s)
+    removed = len(servers) - len(out)
+    print(f"[+] Удалено дубликатов: {removed}" if removed else "[+] Дубликатов нет.")
+    return out
+
+
+def dedupe_menu(servers):
+    hdr("ДЕДУПЛИКАЦИЯ")
+    print("  1 - Полное сходство (scheme+host+port+id/password)")
+    print("  2 - По имени")
+    print("  3 - По адресу (host+port)")
+    print("  4 - По адресу и пользователю")
+    print("  5 - По протоколу + адрес + порт")
+    print("  q - Отмена")
+    ch = ask("Выбор: ", choices=["1", "2", "3", "4", "5"])
+    if ch == EXIT:
+        return servers
+    mode_map = {"1": "full", "2": "name", "3": "addr", "4": "user", "5": "proto"}
+    return dedupe_servers(servers, mode_map[ch])
 
 
 def delete_by_keyword(servers):
@@ -515,51 +950,64 @@ def delete_by_keyword(servers):
     print("  3 - По транспорту")
     print("  4 - По security")
     print("  5 - По домену")
-    print("  6 - Инвертировать (оставить только совпадающие)")
-    print("  7 - По номерам (1,3-5)")
-    print("  0 - Отмена")
-    ch = ask("Выбор: ", choices=["0", "1", "2", "3", "4", "5", "6", "7"])
-    if ch == "0":
+    print("  6 - По номерам")
+    print("  7 - Инвертировать (оставить только совпадающие)")
+    print("  q - Отмена")
+    ch = ask("Выбор: ", choices=["1", "2", "3", "4", "5", "6", "7"])
+    if ch == EXIT:
         return servers
     idxs = None
     if ch == "1":
-        kw = ask("Ключевые слова (через запятую): ")
+        kw = ask("Ключевые слова через запятую (q - отмена): ")
+        if kw == EXIT:
+            return servers
         kws = [k.strip().lower() for k in kw.split(',') if k.strip()]
         if not kws:
             return servers
         idxs = [i for i, s in enumerate(servers) if any(k in s.get('name', '').lower() for k in kws)]
     elif ch == "2":
-        proto = ask("Протокол (vless/hysteria2/ss): ").lower()
+        proto = ask("Протокол (vless/ss/hysteria2/trojan/vmess/wireguard): ").lower()
+        if proto == EXIT:
+            return servers
         idxs = [i for i, s in enumerate(servers) if s['scheme'] == proto]
     elif ch == "3":
-        t = ask("Транспорт (tcp/ws/grpc/xhttp): ").lower()
+        t = ask("Транспорт (tcp/ws/grpc/xhttp/httpupgrade): ").lower()
+        if t == EXIT:
+            return servers
         idxs = [i for i, s in enumerate(servers) if s['params'].get('type', 'tcp') == t]
     elif ch == "4":
         sec = ask("Security (none/tls/reality): ").lower()
+        if sec == EXIT:
+            return servers
         idxs = [i for i, s in enumerate(servers) if s['params'].get('security', 'none') == sec]
     elif ch == "5":
         dom = ask("Домен (часть): ").lower()
+        if dom == EXIT:
+            return servers
         idxs = [i for i, s in enumerate(servers) if dom in s['host'].lower()]
     elif ch == "6":
-        kw = ask("Ключевые слова для ИНВЕРТИРОВАНИЯ: ")
+        show_servers_list(servers)
+        sel = ask_multi("Номера (q - отмена): ", 1, len(servers))
+        if sel == EXIT or not sel:
+            return servers
+        idxs = [i - 1 for i in sel]
+    elif ch == "7":
+        kw = ask("Ключевые слова для ИНВЕРТА: ")
+        if kw == EXIT:
+            return servers
         kws = [k.strip().lower() for k in kw.split(',') if k.strip()]
         if not kws:
             return servers
         idxs = [i for i, s in enumerate(servers) if not any(k in s.get('name', '').lower() for k in kws)]
-    elif ch == "7":
-        show_servers_list(servers)
-        sel = ask_multi("Номера для удаления: ", 1, len(servers))
-        if not sel:
-            return servers
-        idxs = [i - 1 for i in sel]
     if not idxs:
         print("[!] Ничего не найдено.")
+        input("Enter...")
         return servers
     print(f"\n[+] Найдено: {len(idxs)}")
-    for i in idxs[:15]:
+    for i in idxs[:20]:
         print(f"   - {servers[i].get('name', '')} ({servers[i]['scheme']}://{servers[i]['host']})")
-    if len(idxs) > 15:
-        print(f"   ... и ещё {len(idxs) - 15}")
+    if len(idxs) > 20:
+        print(f"   ... и ещё {len(idxs) - 20}")
     ans = ask("Удалить? (y/n) [n]: ", default="n")
     if ans.lower() == 'y':
         for i in sorted(idxs, reverse=True):
@@ -568,28 +1016,18 @@ def delete_by_keyword(servers):
     return servers
 
 
-def dedupe_servers(servers):
-    seen = set()
-    out = []
-    for s in servers:
-        key = (s['scheme'], s['host'], s['port'], s.get('id', '') or s.get('password', '') or s.get('method', ''))
-        if key not in seen:
-            seen.add(key)
-            out.append(s)
-    removed = len(servers) - len(out)
-    print(f"[+] Удалено дубликатов: {removed}" if removed else "[+] Дубликатов не найдено.")
-    return out
-
-
 def sort_servers(servers):
     hdr("СОРТИРОВКА")
     print("  1 - По имени (A-Z)")
     print("  2 - По имени (Z-A)")
     print("  3 - По протоколу")
     print("  4 - По хосту")
-    print("  5 - Случайно")
-    print("  0 - Отмена")
-    ch = ask("Выбор: ", choices=["0", "1", "2", "3", "4", "5"])
+    print("  5 - По порту")
+    print("  6 - Случайно")
+    print("  q - Отмена")
+    ch = ask("Выбор: ", choices=["1", "2", "3", "4", "5", "6"])
+    if ch == EXIT:
+        return servers
     if ch == "1":
         servers.sort(key=lambda x: x.get('name', '').lower())
     elif ch == "2":
@@ -599,6 +1037,8 @@ def sort_servers(servers):
     elif ch == "4":
         servers.sort(key=lambda x: x['host'].lower())
     elif ch == "5":
+        servers.sort(key=lambda x: int(x['port']) if str(x['port']).isdigit() else 0)
+    elif ch == "6":
         random.shuffle(servers)
     else:
         return servers
@@ -606,36 +1046,96 @@ def sort_servers(servers):
     return servers
 
 
+def move_server(servers):
+    show_servers_list(servers)
+    idx = ask_int("Номер сервера для перемещения (q - отмена): ", mn=1, mx=len(servers))
+    if idx == EXIT or idx is None:
+        return servers
+    direction = ask("Направление (u=вверх / d=вниз): ", choices=["u", "d"])
+    if direction == EXIT:
+        return servers
+    i = idx - 1
+    if direction == "u" and i > 0:
+        servers[i], servers[i - 1] = servers[i - 1], servers[i]
+        print("[+] Перемещён вверх.")
+    elif direction == "d" and i < len(servers) - 1:
+        servers[i], servers[i + 1] = servers[i + 1], servers[i]
+        print("[+] Перемещён вниз.")
+    else:
+        print("[!] Некуда двигать.")
+    return servers
+
+
+def duplicate_servers(servers):
+    show_servers_list(servers)
+    sel = ask_multi("Номера для дублирования (1,3-5,all): ", 1, len(servers))
+    if sel == EXIT or not sel:
+        return servers
+    new = []
+    for idx in sel:
+        s = copy.deepcopy(servers[idx - 1])
+        s['name'] = f"{s.get('name', '')} (copy)"
+        new.append(s)
+    servers.extend(new)
+    print(f"[+] Создано дубликатов: {len(new)}")
+    ans = ask("Отредактировать дубликаты сейчас? (y/n) [n]: ", default="n")
+    if ans.lower() == 'y':
+        new_indices = list(range(len(servers) - len(new), len(servers)))
+        edit_params_for_group(servers, new_indices)
+    return servers
+
+
 PARAM_LIST = [
-    ("scheme", "Протокол (vless/hysteria2/ss)"),
-    ("type", "Транспорт (tcp/ws/grpc/xhttp)"),
-    ("security", "Безопасность (none/tls/reality)"),
-    ("flow", "Flow (xtls-rprx-vision)"),
+    ("scheme", "Протокол"),
+    ("type", "Транспорт"),
+    ("security", "Безопасность"),
+    ("flow", "Flow"),
     ("path", "Path"),
-    ("host", "Host"),
+    ("host", "Host (заголовок)"),
     ("sni", "SNI"),
     ("pbk", "PublicKey (pbk)"),
     ("sid", "ShortId (sid)"),
     ("fp", "Fingerprint (fp)"),
     ("serviceName", "ServiceName (gRPC)"),
+    ("authority", "Authority (gRPC)"),
     ("mode", "Mode"),
     ("port", "Порт"),
-    ("host_addr", "Адрес"),
+    ("host_addr", "Адрес сервера"),
     ("alpn", "ALPN"),
-    ("obfs", "Obfs (hysteria2)"),
+    ("obfs", "Obfs"),
     ("obfs-password", "Obfs-password"),
-    ("id", "UUID (id)"),
+    ("id", "UUID / логин"),
     ("password", "Пароль"),
-    ("method", "Метод шифрования (ss)"),
-    ("authority", "Authority (gRPC)"),
-    ("concurrency", "concurrency (xhttp)"),
-    ("spiderX", "SpiderX"),
+    ("method", "Метод шифрования"),
+    ("concurrency", "Concurrency (xhttp)"),
+    ("spiderX", "SpiderX (reality)"),
     ("headerType", "Header Type (tcp)"),
-    ("heartbeatPeriod", "Heartbeat Period (ws)"),
+    ("heartbeatPeriod", "HeartbeatPeriod (ws)"),
+    ("alterId", "AlterID (vmess)"),
+    ("encryption", "Шифрование (vmess)"),
+    ("allowedIPs", "AllowedIPs (wg)"),
+    ("mtu", "MTU (wg)"),
+    ("dns", "DNS (wg)"),
+    ("presharedKey", "PresharedKey (wg)"),
+    ("keepalive", "Keepalive (wg)"),
+    ("up", "Up (hysteria)"),
+    ("down", "Down (hysteria)"),
+    ("congestion_control", "Congestion Control"),
+    ("pinned_certchain_sha256", "PinnedCertHash"),
+    ("allow_insecure", "AllowInsecure"),
+    ("jc", "Jc (AWG)"),
+    ("jmin", "Jmin (AWG)"),
+    ("jmax", "Jmax (AWG)"),
+    ("s1", "S1 (AWG)"),
+    ("s2", "S2 (AWG)"),
+    ("h1", "H1 (AWG)"),
+    ("h2", "H2 (AWG)"),
+    ("h3", "H3 (AWG)"),
+    ("h4", "H4 (AWG)"),
 ]
 
 CHOICES_MAP = {
-    "scheme": ["vless", "vmess", "trojan", "hysteria2", "hy2", "ss"],
+    "scheme": ["vless", "vmess", "trojan", "hysteria2", "hysteria", "ss", "socks5", "http", "tuic", "juicity", "wireguard", "amneziawg", "mieru", "sudoku", "openconnect"],
     "type": ["tcp", "ws", "grpc", "xhttp", "splithttp", "httpupgrade", "h2", "kcp", "quic"],
     "security": ["none", "tls", "reality"],
     "flow": ["xtls-rprx-vision", ""],
@@ -643,30 +1143,53 @@ CHOICES_MAP = {
     "mode": ["auto", "packet-up", "stream-up", "stream-one", "multi"],
     "headerType": ["none", "http"],
     "alpn": ["h3", "h2", "http/1.1", "h3,h2", "h2,http/1.1"],
-    "spiderX": ["/", ""],
+    "congestion_control": ["cubic", "new_reno", "bbr"],
+    "encryption": ["auto", "none", "zero"],
+    "allow_insecure": ["0", "1"],
 }
 
 COMPAT = {
     "flow": lambda s: s['scheme'] == 'vless' and s['params'].get('type', 'tcp') == 'tcp' and s['params'].get('security') == 'reality',
     "pbk": lambda s: s['scheme'] == 'vless' and s['params'].get('security') == 'reality',
     "sid": lambda s: s['scheme'] == 'vless' and s['params'].get('security') == 'reality',
-    "sni": lambda s: s['scheme'] in ('vless', 'hysteria2', 'hy2', 'trojan'),
-    "fp": lambda s: s['scheme'] in ('vless', 'trojan'),
-    "serviceName": lambda s: s['scheme'] == 'vless' and s['params'].get('type') == 'grpc',
-    "authority": lambda s: s['scheme'] == 'vless' and s['params'].get('type') == 'grpc',
-    "path": lambda s: s['scheme'] == 'vless' and s['params'].get('type') in ('ws', 'xhttp', 'splithttp', 'httpupgrade'),
-    "host": lambda s: s['scheme'] == 'vless' and s['params'].get('type') in ('ws', 'xhttp', 'splithttp', 'httpupgrade'),
-    "mode": lambda s: s['scheme'] == 'vless' and s['params'].get('type') in ('grpc', 'xhttp', 'splithttp'),
-    "concurrency": lambda s: s['scheme'] == 'vless' and s['params'].get('type') in ('xhttp', 'splithttp'),
-    "obfs": lambda s: s['scheme'] in ('hysteria2', 'hy2'),
-    "obfs-password": lambda s: s['scheme'] in ('hysteria2', 'hy2'),
-    "alpn": lambda s: s['params'].get('security') == 'tls' or s['scheme'] in ('hysteria2', 'hy2'),
+    "sni": lambda s: s['scheme'] in ('vless', 'hysteria2', 'trojan', 'tuic', 'juicity', 'vmess'),
+    "fp": lambda s: s['scheme'] in ('vless', 'trojan', 'vmess'),
+    "serviceName": lambda s: s['scheme'] in ('vless', 'vmess') and s['params'].get('type') == 'grpc',
+    "authority": lambda s: s['scheme'] in ('vless', 'vmess') and s['params'].get('type') == 'grpc',
+    "path": lambda s: s['scheme'] in ('vless', 'vmess') and s['params'].get('type') in ('ws', 'xhttp', 'splithttp', 'httpupgrade'),
+    "host": lambda s: s['scheme'] in ('vless', 'vmess') and s['params'].get('type') in ('ws', 'xhttp', 'splithttp', 'httpupgrade'),
+    "mode": lambda s: s['scheme'] in ('vless', 'vmess') and s['params'].get('type') in ('grpc', 'xhttp', 'splithttp'),
+    "concurrency": lambda s: s['scheme'] in ('vless', 'vmess') and s['params'].get('type') in ('xhttp', 'splithttp'),
+    "obfs": lambda s: s['scheme'] in ('hysteria2',),
+    "obfs-password": lambda s: s['scheme'] in ('hysteria2',),
+    "alpn": lambda s: s['params'].get('security') == 'tls' or s['scheme'] in ('hysteria2', 'tuic', 'juicity'),
     "method": lambda s: s['scheme'] == 'ss',
-    "id": lambda s: s['scheme'] in ('vless', 'vmess', 'trojan'),
-    "password": lambda s: s['scheme'] in ('hysteria2', 'hy2', 'ss', 'trojan'),
+    "id": lambda s: s['scheme'] in ('vless', 'vmess', 'trojan', 'tuic', 'juicity', 'wireguard', 'amneziawg', 'mieru', 'sudoku', 'openconnect'),
+    "password": lambda s: s['scheme'] in ('hysteria2', 'hysteria', 'ss', 'trojan', 'tuic', 'juicity', 'mieru', 'sudoku'),
     "spiderX": lambda s: s['scheme'] == 'vless' and s['params'].get('security') == 'reality',
-    "headerType": lambda s: s['scheme'] == 'vless' and s['params'].get('type') == 'tcp' and s['params'].get('security') != 'reality',
-    "heartbeatPeriod": lambda s: s['scheme'] == 'vless' and s['params'].get('type') == 'ws',
+    "headerType": lambda s: s['scheme'] in ('vless', 'vmess') and s['params'].get('type') == 'tcp' and s['params'].get('security') != 'reality',
+    "heartbeatPeriod": lambda s: s['scheme'] in ('vless', 'vmess') and s['params'].get('type') == 'ws',
+    "alterId": lambda s: s['scheme'] == 'vmess',
+    "encryption": lambda s: s['scheme'] == 'vmess',
+    "allowedIPs": lambda s: s['scheme'] == 'wireguard',
+    "mtu": lambda s: s['scheme'] in ('wireguard', 'amneziawg'),
+    "dns": lambda s: s['scheme'] in ('wireguard', 'amneziawg'),
+    "presharedKey": lambda s: s['scheme'] == 'wireguard',
+    "keepalive": lambda s: s['scheme'] == 'wireguard',
+    "up": lambda s: s['scheme'] == 'hysteria',
+    "down": lambda s: s['scheme'] == 'hysteria',
+    "congestion_control": lambda s: s['scheme'] in ('tuic', 'juicity'),
+    "pinned_certchain_sha256": lambda s: s['scheme'] == 'juicity',
+    "allow_insecure": lambda s: s['scheme'] in ('tuic', 'juicity'),
+    "jc": lambda s: s['scheme'] in ('amneziawg', 'awg'),
+    "jmin": lambda s: s['scheme'] in ('amneziawg', 'awg'),
+    "jmax": lambda s: s['scheme'] in ('amneziawg', 'awg'),
+    "s1": lambda s: s['scheme'] in ('amneziawg', 'awg'),
+    "s2": lambda s: s['scheme'] in ('amneziawg', 'awg'),
+    "h1": lambda s: s['scheme'] in ('amneziawg', 'awg'),
+    "h2": lambda s: s['scheme'] in ('amneziawg', 'awg'),
+    "h3": lambda s: s['scheme'] in ('amneziawg', 'awg'),
+    "h4": lambda s: s['scheme'] in ('amneziawg', 'awg'),
 }
 
 SS_METHODS = [
@@ -681,19 +1204,19 @@ def edit_params_for_group(servers, indices):
         return
     while True:
         clr()
-        hdr("РЕДАКТИРОВАНИЕ ВЫБРАННОЙ ГРУППЫ")
+        hdr("РЕДАКТИРОВАНИЕ ГРУППЫ")
         print(f"  Выбрано серверов: {len(indices)}")
-        for i in indices[:20]:
+        for i in indices[:25]:
             s = servers[i]
-            print(f"    {i+1}. {s.get('name', '')[:30]} [{s['scheme']}] {s['host']}:{s['port']}")
-        if len(indices) > 20:
-            print(f"    ... и ещё {len(indices) - 20}")
-        line()
+            print(f"    {i+1}. {s.get('name', '')[:32]} [{s['scheme']}] {s['host']}:{s['port']}")
+        if len(indices) > 25:
+            print(f"    ... и ещё {len(indices) - 25}")
+        ln()
         for idx, (k, desc) in enumerate(PARAM_LIST, 1):
             print(f"  {idx:2}. {desc}")
-        print("   0. Назад")
-        ch = ask("Выбор: ", choices=[str(i) for i in range(0, len(PARAM_LIST)+1)] + ["0"])
-        if ch == "0":
+        print("   q. Назад")
+        ch = ask("Выбор: ")
+        if ch == EXIT or ch == "0":
             break
         try:
             pi = int(ch) - 1
@@ -708,15 +1231,34 @@ def edit_params_for_group(servers, indices):
             print("[!] Нет совместимых серверов в выборке.")
             input("Enter...")
             continue
-        print(f"\n[?] '{pname}'")
-        print(f"    Совместимых: {len(compatible)}, несовместимых: {len(indices) - len(compatible)}")
+        clr()
+        hdr(f"ИЗМЕНЕНИЕ: {pname}")
+        print(f"  Совместимых: {len(compatible)} / всего в выборке: {len(indices)}")
+        print(f"  Будут изменены: {len(compatible)}")
+        if len(indices) - len(compatible) > 0:
+            print(f"  Несовместимых (пропустятся): {len(indices) - len(compatible)}")
+        print()
+        for i in compatible[:15]:
+            s = servers[i]
+            cur = s.get(pkey) if pkey in ('id', 'password', 'method') else s['params'].get(pkey, s.get(pkey, ''))
+            if pkey == 'port': cur = s['port']
+            if pkey == 'host_addr': cur = s['host']
+            if pkey == 'scheme': cur = s['scheme']
+            print(f"    {i+1}. {s.get('name', '')[:28]} -> {cur}")
+        if len(compatible) > 15:
+            print(f"    ... и ещё {len(compatible) - 15}")
+        ln()
         if pkey == "scheme":
-            print(f"    Варианты: {', '.join(CHOICES_MAP['scheme'])}")
+            print(f"  Варианты: {', '.join(CHOICES_MAP['scheme'])}")
         elif pkey in CHOICES_MAP:
-            print(f"    Варианты: {', '.join(CHOICES_MAP[pkey])}")
+            print(f"  Варианты: {', '.join(CHOICES_MAP[pkey])}")
         elif pkey == "method":
-            print(f"    Варианты: {', '.join(SS_METHODS)}")
-        nv = ask("Новое значение (пусто = удалить): ")
+            print(f"  Варианты: {', '.join(SS_METHODS)}")
+        print("  Пусто = удалить параметр")
+        print("  q = отмена")
+        nv = ask("Новое значение: ")
+        if nv == EXIT:
+            continue
         for i in compatible:
             s = servers[i]
             if pkey == "scheme":
@@ -725,18 +1267,14 @@ def edit_params_for_group(servers, indices):
                 s['port'] = nv
             elif pkey == "host_addr":
                 s['host'] = nv
-            elif pkey == "id":
-                s['id'] = nv
-            elif pkey == "password":
-                s['password'] = nv
-            elif pkey == "method":
-                s['method'] = nv
+            elif pkey in ("id", "password", "method"):
+                s[pkey] = nv
             else:
                 if nv == "":
                     s['params'].pop(pkey, None)
                 else:
                     s['params'][pkey] = nv
-        print(f"[+] Обновлено: {len(compatible)}")
+        print(f"\n[+] Обновлено: {len(compatible)}")
 
 
 def edit_servers(servers):
@@ -745,109 +1283,120 @@ def edit_servers(servers):
         hdr("РЕДАКТИРОВАНИЕ СЕРВЕРОВ")
         show_servers_list(servers)
         print(f"\n  Всего: {len(servers)}")
-        line()
-        print("  1 - Имена (все / группа / по одному)")
+        ln()
+        print("  1 - Имена")
         print("  2 - Параметры (выбрать группу)")
-        print("  3 - Удалить сервер(ы)")
-        print("  4 - Удалить по ключевым словам/фильтру")
+        print("  3 - Удалить сервер(ы) по номерам")
+        print("  4 - Удалить по фильтру")
         print("  5 - Добавить сервер вручную")
         print("  6 - Удалить дубликаты")
         print("  7 - Сортировка")
-        print("  8 - Фильтр (показать подходящие)")
-        print("  9 - Показать параметры сервера")
-        print("  0 - Готово")
-        ch = ask("Выбор: ", choices=[str(i) for i in range(0, 10)])
-        if ch == "0":
+        print("  8 - Переместить сервер")
+        print("  9 - Создать дубликаты")
+        print(" 10 - Поиск по ключевому слову")
+        print(" 11 - Показать параметры сервера")
+        print("  q - Готово")
+        ch = ask("Выбор: ", choices=[str(i) for i in range(1, 12)])
+        if ch == EXIT or ch == "0":
             break
         if ch == "1":
-            print("\n  1 - Все сразу (суффиксы -1, -2, ...)")
-            print("  2 - Выбрать группу (номера)")
-            print("  3 - По одному")
-            print("  4 - Добавить префикс")
-            sub = ask("Выбор [1]: ", default="1", choices=["1", "2", "3", "4"])
+            sub = ask("1-Все с суффиксами / 2-Группу / 3-По одному / 4-Добавить префикс / q-назад: ", choices=["1", "2", "3", "4"])
+            if sub == EXIT:
+                continue
             if sub == "1":
-                base = ask("Базовое имя: ")
-                if base:
-                    for i, s in enumerate(servers):
-                        s['name'] = f"{base}-{i + 1}"
-                    print("[+] Обновлено.")
+                base = ask("Базовое имя (q - отмена): ")
+                if base == EXIT or not base:
+                    continue
+                for i, s in enumerate(servers):
+                    s['name'] = f"{base}-{i + 1}"
+                print("[+] Обновлено.")
             elif sub == "2":
-                show_servers_list(servers)
-                sel = ask_multi("Номера: ", 1, len(servers))
-                if sel:
-                    base = ask("Базовое имя: ")
-                    if base:
-                        for idx in sel:
-                            servers[idx - 1]['name'] = f"{base}-{idx}"
-                        print("[+] Обновлено.")
+                sel = ask_multi("Номера (q - отмена): ", 1, len(servers))
+                if sel == EXIT or not sel:
+                    continue
+                base = ask("Базовое имя: ")
+                if base == EXIT or not base:
+                    continue
+                for idx in sel:
+                    servers[idx - 1]['name'] = f"{base}-{idx}"
+                print("[+] Обновлено.")
             elif sub == "3":
-                sel = ask_multi("Номера: ", 1, len(servers))
-                if sel:
-                    for idx in sel:
-                        if 1 <= idx <= len(servers):
-                            cur = servers[idx - 1].get('name', '')
-                            nn = ask(f"  {idx}. '{cur}' -> ")
-                            if nn:
-                                servers[idx - 1]['name'] = nn
-                    print("[+] Обновлено.")
-            else:
-                pre = ask("Префикс: ")
-                if pre:
-                    for s in servers:
-                        s['name'] = f"{pre}{s.get('name', '')}"
-                    print("[+] Обновлено.")
+                sel = ask_multi("Номера (q - отмена): ", 1, len(servers))
+                if sel == EXIT or not sel:
+                    continue
+                for idx in sel:
+                    cur = servers[idx - 1].get('name', '')
+                    nn = ask(f"  {idx}. '{cur}' -> (q-пропустить): ")
+                    if nn == EXIT or not nn:
+                        continue
+                    servers[idx - 1]['name'] = nn
+                print("[+] Обновлено.")
+            elif sub == "4":
+                pre = ask("Префикс (q - отмена): ")
+                if pre == EXIT or not pre:
+                    continue
+                for s in servers:
+                    s['name'] = f"{pre}{s.get('name', '')}"
+                print("[+] Обновлено.")
         elif ch == "2":
-            show_servers_list(servers)
-            sel = ask_multi("Номера серверов для редактирования (1,3-5,all): ", 1, len(servers))
-            if sel:
-                edit_params_for_group(servers, [i - 1 for i in sel])
+            sel = ask_multi("Номера серверов для редактирования (q - отмена): ", 1, len(servers))
+            if sel == EXIT or not sel:
+                continue
+            edit_params_for_group(servers, [i - 1 for i in sel])
         elif ch == "3":
-            show_servers_list(servers)
-            sel = ask_multi("Номера для удаления: ", 1, len(servers))
-            if sel:
-                ans = ask(f"Удалить {len(sel)} сервер(ов)? (y/n) [n]: ", default="n")
-                if ans.lower() == 'y':
-                    for i in sorted(sel, reverse=True):
-                        servers.pop(i - 1)
-                    print(f"[+] Удалено: {len(sel)}")
+            sel = ask_multi("Номера для удаления (q - отмена): ", 1, len(servers))
+            if sel == EXIT or not sel:
+                continue
+            ans = ask(f"Удалить {len(sel)} сервер(ов)? (y/n) [n]: ", default="n")
+            if ans.lower() == 'y':
+                for i in sorted(sel, reverse=True):
+                    servers.pop(i - 1)
+                print(f"[+] Удалено: {len(sel)}")
         elif ch == "4":
             servers = delete_by_keyword(servers)
         elif ch == "5":
-            uri = ask("Ссылка: ")
-            if uri:
-                p = parse_uri(uri)
-                if p:
-                    servers.append(p)
-                    print("[+] Добавлен.")
-                else:
-                    print("[!] Не удалось распарсить.")
+            uri = ask("Ссылка (q - отмена): ")
+            if uri == EXIT or not uri:
+                continue
+            p = parse_uri(uri)
+            if p:
+                servers.append(p)
+                print("[+] Добавлен.")
+            else:
+                print("[!] Не удалось распарсить.")
         elif ch == "6":
-            servers = dedupe_servers(servers)
+            servers = dedupe_menu(servers)
         elif ch == "7":
             servers = sort_servers(servers)
         elif ch == "8":
-            show_servers_list(servers)
-            kw = ask("Ключевое слово для поиска: ").lower()
-            found = [(i+1, s) for i, s in enumerate(servers) if kw in s.get('name', '').lower() or kw in s['host'].lower() or kw in s['scheme']]
+            servers = move_server(servers)
+        elif ch == "9":
+            servers = duplicate_servers(servers)
+        elif ch == "10":
+            kw = ask("Ключевое слово (q - отмена): ").lower()
+            if kw == EXIT:
+                continue
+            found = [(i + 1, s) for i, s in enumerate(servers)
+                     if kw in s.get('name', '').lower() or kw in s['host'].lower() or kw in s['scheme']]
             if found:
                 print(f"\n[+] Найдено: {len(found)}")
                 for n, s in found:
-                    print(f"   {n}. {s.get('name', '')} [{s['scheme']}://{s['host']}]")
+                    print(f"   {n}. {s.get('name', '')} [{s['scheme']}://{s['host']}:{s['port']}]")
             else:
                 print("[!] Ничего не найдено.")
             input("Enter...")
-        elif ch == "9":
-            show_servers_list(servers)
-            idx = ask_int("Номер: ", mn=1, mx=len(servers))
-            if idx:
-                s = servers[idx - 1]
-                print(f"\n  URI: {build_uri(s)}")
-                print(f"  Scheme: {s['scheme']}")
-                print(f"  Host: {s['host']}")
-                print(f"  Port: {s['port']}")
-                print(f"  ID/Pass/Method: {s.get('id') or s.get('password') or s.get('method')}")
-                print(f"  Params: {json.dumps(s['params'], ensure_ascii=False, indent=4)}")
-                input("Enter...")
+        elif ch == "11":
+            idx = ask_int("Номер сервера (q - отмена): ", mn=1, mx=len(servers))
+            if idx == EXIT or idx is None:
+                continue
+            s = servers[idx - 1]
+            print(f"\n  URI: {build_uri(s)}")
+            print(f"  Scheme: {s['scheme']}")
+            print(f"  Host: {s['host']}")
+            print(f"  Port: {s['port']}")
+            print(f"  ID/Pass/Method: {s.get('id') or s.get('password') or s.get('method')}")
+            print(f"  Params: {json.dumps(s['params'], ensure_ascii=False, indent=4)}")
+            input("Enter...")
     return servers
 
 
@@ -855,25 +1404,24 @@ def gen_outbound(s, tag, cfg):
     scheme = s['scheme']
     host = s['host']
     try:
-        port = int(s['port']) if s['port'].isdigit() else 443
+        port = int(s['port']) if str(s['port']).isdigit() else 443
     except Exception:
         port = 443
     out = {}
     if scheme == 'vless':
         out = {
             "protocol": "vless",
-            "settings": {"vnext": [{"address": host, "port": port, "users": [{"id": s.get('id', ''), "encryption": "none", "flow": s['params'].get('flow', '')}]}]},
+            "settings": {"vnext": [{"address": host, "port": port,
+                                    "users": [{"id": s.get('id', ''), "encryption": "none", "flow": s['params'].get('flow', '')}]}]},
             "streamSettings": {"network": s['params'].get('type', 'tcp'), "security": s['params'].get('security', 'none')},
             "tag": tag
         }
         sec = out["streamSettings"]["security"]
         if sec == 'reality':
-            rs = {
-                "serverName": s['params'].get('sni', ''),
-                "fingerprint": s['params'].get('fp', 'chrome'),
-                "publicKey": s['params'].get('pbk', ''),
-                "shortId": s['params'].get('sid', '')
-            }
+            rs = {"serverName": s['params'].get('sni', ''),
+                  "fingerprint": s['params'].get('fp', 'chrome'),
+                  "publicKey": s['params'].get('pbk', ''),
+                  "shortId": s['params'].get('sid', '')}
             if 'spiderX' in s['params']:
                 rs["spiderX"] = s['params']['spiderX']
             out["streamSettings"]["realitySettings"] = rs
@@ -894,19 +1442,17 @@ def gen_outbound(s, tag, cfg):
                     pass
             out["streamSettings"]["wsSettings"] = ws
         elif net == 'grpc':
-            gs = {"serviceName": s['params'].get('serviceName', ''), "multiMode": s['params'].get('mode', '') == 'multi'}
+            gs = {"serviceName": s['params'].get('serviceName', ''),
+                  "multiMode": s['params'].get('mode', '') == 'multi'}
             if 'authority' in s['params']:
                 gs["authority"] = s['params']['authority']
             out["streamSettings"]["grpcSettings"] = gs
         elif net == 'tcp':
-            ht = s['params'].get('headerType', 'none')
-            out["streamSettings"]["tcpSettings"] = {"header": {"type": ht}}
+            out["streamSettings"]["tcpSettings"] = {"header": {"type": s['params'].get('headerType', 'none')}}
         elif net in ('xhttp', 'splithttp'):
-            xh = {
-                "path": s['params'].get('path', '/'),
-                "host": s['params'].get('host', host),
-                "mode": s['params'].get('mode', 'auto')
-            }
+            xh = {"path": s['params'].get('path', '/'),
+                  "host": s['params'].get('host', host),
+                  "mode": s['params'].get('mode', 'auto')}
             if 'concurrency' in s['params']:
                 try:
                     xh["concurrency"] = int(s['params']['concurrency'])
@@ -916,14 +1462,40 @@ def gen_outbound(s, tag, cfg):
         elif net == 'httpupgrade':
             out["streamSettings"]["httpupgradeSettings"] = {
                 "path": s['params'].get('path', '/'),
-                "host": s['params'].get('host', host)
-            }
+                "host": s['params'].get('host', host)}
+    elif scheme == 'vmess':
+        out = {
+            "protocol": "vmess",
+            "settings": {"vnext": [{"address": host, "port": port,
+                                    "users": [{"id": s.get('id', ''), "alterId": int(s['params'].get('alterId', 0)) if str(s['params'].get('alterId', '0')).isdigit() else 0,
+                                               "security": s['params'].get('encryption', 'auto')}]}]},
+            "streamSettings": {"network": s['params'].get('type', 'tcp'), "security": s['params'].get('security', 'none')},
+            "tag": tag
+        }
+        sec = out["streamSettings"]["security"]
+        if sec == 'tls':
+            tls = {"serverName": s['params'].get('sni', host), "allowInsecure": True}
+            if 'alpn' in s['params']:
+                tls["alpn"] = [a.strip() for a in str(s['params']['alpn']).split(',') if a.strip()]
+            out["streamSettings"]["tlsSettings"] = tls
+        net = out["streamSettings"]["network"]
+        if net == 'ws':
+            out["streamSettings"]["wsSettings"] = {
+                "path": s['params'].get('path', '/'),
+                "headers": {"Host": s['params'].get('host', host)}}
+        elif net == 'grpc':
+            out["streamSettings"]["grpcSettings"] = {
+                "serviceName": s['params'].get('serviceName', ''),
+                "multiMode": s['params'].get('mode', '') == 'multi'}
+        elif net == 'tcp':
+            out["streamSettings"]["tcpSettings"] = {"header": {"type": s['params'].get('headerType', 'none')}}
     elif scheme in ('hysteria2', 'hy2'):
         out = {
             "protocol": "hysteria2",
             "settings": {"address": host, "port": port, "password": s.get('password', '')},
             "streamSettings": {"network": "hysteria2", "security": "tls",
-                               "tlsSettings": {"serverName": s['params'].get('sni', host), "allowInsecure": True,
+                               "tlsSettings": {"serverName": s['params'].get('sni', host),
+                                               "allowInsecure": True,
                                                "alpn": [a.strip() for a in str(s['params'].get('alpn', 'h3')).split(',') if a.strip()]}},
             "tag": tag
         }
@@ -931,19 +1503,83 @@ def gen_outbound(s, tag, cfg):
             out["settings"]["obfs"] = s['params']['obfs']
             if 'obfs-password' in s['params']:
                 out["settings"]["obfsPassword"] = s['params']['obfs-password']
+    elif scheme == 'hysteria':
+        out = {
+            "protocol": "hysteria",
+            "settings": {"address": host, "port": port, "auth": s.get('password', '')},
+            "streamSettings": {"network": "hysteria", "security": "tls",
+                               "tlsSettings": {"serverName": s['params'].get('sni', host),
+                                               "allowInsecure": True,
+                                               "alpn": [a.strip() for a in str(s['params'].get('alpn', 'h3')).split(',') if a.strip()]}},
+            "tag": tag
+        }
+        if 'up' in s['params']:
+            out["settings"]["up"] = s['params']['up']
+        if 'down' in s['params']:
+            out["settings"]["down"] = s['params']['down']
     elif scheme == 'ss':
         out = {
             "protocol": "shadowsocks",
-            "settings": {"servers": [{"address": host, "port": port, "method": s.get('method', 'aes-256-gcm'), "password": s.get('password', '')}]},
+            "settings": {"servers": [{"address": host, "port": port,
+                                      "method": s.get('method', 'aes-256-gcm'),
+                                      "password": s.get('password', '')}]},
             "tag": tag
         }
-        if s['params'].get('udp_over_tcp') == 'true':
-            out["settings"]["udpOverTcp"] = True
+    elif scheme == 'trojan':
+        out = {
+            "protocol": "trojan",
+            "settings": {"servers": [{"address": host, "port": port, "password": s.get('password', '')}]},
+            "streamSettings": {"network": s['params'].get('type', 'tcp'), "security": s['params'].get('security', 'tls')},
+            "tag": tag
+        }
+        ts = {"serverName": s['params'].get('sni', host), "allowInsecure": True}
+        if 'alpn' in s['params']:
+            ts["alpn"] = [a.strip() for a in str(s['params']['alpn']).split(',') if a.strip()]
+        out["streamSettings"]["tlsSettings"] = ts
+    elif scheme == 'socks5':
+        out = {
+            "protocol": "socks",
+            "settings": {"servers": [{"address": host, "port": port,
+                                      "user": s.get('id', ''), "pass": s.get('password', '')}]},
+            "tag": tag
+        }
+    elif scheme == 'http':
+        out = {
+            "protocol": "http",
+            "settings": {"servers": [{"address": host, "port": port,
+                                      "user": s.get('id', ''), "pass": s.get('password', '')}]},
+            "tag": tag
+        }
+    elif scheme == 'wireguard':
+        peer = {
+            "endpoint": f"{host}:{port}",
+            "publicKey": s.get('password', ''),
+            "allowedIPs": [x.strip() for x in str(s['params'].get('allowedIPs', '0.0.0.0/0')).split(',')],
+        }
+        if s['params'].get('presharedKey'):
+            peer["preSharedKey"] = s['params']['presharedKey']
+        if s['params'].get('keepalive'):
+            try:
+                peer["persistentKeepalive"] = int(s['params']['keepalive'])
+            except Exception:
+                pass
+        out = {
+            "protocol": "wireguard",
+            "settings": {
+                "secretKey": s.get('id', ''),
+                "dns": s['params'].get('dns', '1.1.1.1'),
+                "mtu": int(s['params'].get('mtu', 1420)) if str(s['params'].get('mtu', '1420')).isdigit() else 1420,
+                "peers": [peer]
+            },
+            "tag": tag
+        }
+    else:
+        return None
     if cfg.get('mux_enabled'):
         mux = {"enabled": True, "concurrency": cfg.get('mux_concurrency', 8)}
-        xudp = cfg.get('mux_xudp_concurrency', 0)
-        if xudp != 0:
-            mux["xudpConcurrency"] = xudp
+        xc = cfg.get('mux_xudp_concurrency', 0)
+        if xc != 0:
+            mux["xudpConcurrency"] = xc
             mux["xudpProxyUDP443"] = cfg.get('mux_xudp_proxy_udp443', 'reject')
         out["mux"] = mux
     return out
@@ -952,6 +1588,7 @@ def gen_outbound(s, tag, cfg):
 def gen_config(servers, cfg):
     outbounds = []
     tags = []
+    unsupported = []
     for i, s in enumerate(servers):
         base_tag = re.sub(r'[^a-zA-Z0-9_\-]', '_', s.get('name', f"proxy-{i + 1}")) or f"proxy-{i + 1}"
         tag = base_tag
@@ -959,34 +1596,49 @@ def gen_config(servers, cfg):
         while tag in tags:
             tag = f"{base_tag}_{c}"
             c += 1
-        tags.append(tag)
         out = gen_outbound(s, tag, cfg)
         if out:
+            tags.append(tag)
             outbounds.append(out)
+        else:
+            unsupported.append(s.get('name', s['scheme']))
+    if unsupported:
+        print(f"[!] Пропущены неподдерживаемые Xray протоколы: {', '.join(unsupported)}")
     outbounds.append({"protocol": "freedom", "tag": "direct"})
     outbounds.append({"protocol": "blackhole", "tag": "block"})
 
     rt = cfg.get('routing', {})
-    rules = []
+    order = cfg.get('routing_order', ["block", "direct", "proxy"])
+    groups = {'block': [], 'direct': [], 'proxy': []}
 
     if rt.get('block_protocols'):
-        rules.append({"type": "field", "protocol": rt['block_protocols'], "outboundTag": "block"})
-    if rt.get('block_networks'):
-        rules.append({"type": "field", "network": rt['block_networks'], "outboundTag": "block"})
+        groups['block'].append({"type": "field", "protocol": rt['block_protocols'], "outboundTag": "block"})
     if rt.get('block_ips'):
-        rules.append({"type": "field", "ip": rt['block_ips'], "outboundTag": "block"})
+        groups['block'].append({"type": "field", "ip": rt['block_ips'], "outboundTag": "block"})
     if rt.get('block_ports'):
-        rules.append({"type": "field", "port": rt['block_ports'], "outboundTag": "block"})
+        groups['block'].append({"type": "field", "port": rt['block_ports'], "outboundTag": "block"})
     if rt.get('block_domains'):
-        rules.append({"type": "field", "domain": rt['block_domains'], "outboundTag": "block"})
+        groups['block'].append({"type": "field", "domain": rt['block_domains'], "outboundTag": "block"})
+
     if rt.get('direct_ips'):
-        rules.append({"type": "field", "ip": rt['direct_ips'], "outboundTag": "direct"})
+        groups['direct'].append({"type": "field", "ip": rt['direct_ips'], "outboundTag": "direct"})
     if rt.get('direct_ports'):
-        rules.append({"type": "field", "port": rt['direct_ports'], "outboundTag": "direct"})
+        groups['direct'].append({"type": "field", "port": rt['direct_ports'], "outboundTag": "direct"})
     if rt.get('direct_domains'):
-        rules.append({"type": "field", "domain": rt['direct_domains'], "outboundTag": "direct"})
-    for r in rt.get('rules', []):
-        rules.append(r)
+        groups['direct'].append({"type": "field", "domain": rt['direct_domains'], "outboundTag": "direct"})
+
+    for r in rt.get('custom_rules', []):
+        tag = r.get('outboundTag') or r.get('balancerTag', '')
+        if tag == 'block':
+            groups['block'].append(r)
+        elif tag == 'direct':
+            groups['direct'].append(r)
+        else:
+            groups['proxy'].append(r)
+
+    rules = []
+    for name in order:
+        rules.extend(groups.get(name, []))
 
     gp = cfg.get('global_proxy', 'proxy')
     if gp == 'direct':
@@ -1016,7 +1668,8 @@ def gen_config(servers, cfg):
         "probeTimeout": cfg.get('observatory_timeout', '3s'),
         "enableConcurrency": True
     }
-    dns = {"servers": cfg.get('dns_servers', DNS_SERVERS), "queryStrategy": cfg.get('dns_query_strategy', 'UseIP')}
+    dns = {"servers": cfg.get('dns_servers', DNS_SERVERS),
+           "queryStrategy": cfg.get('dns_query_strategy', 'UseIP')}
     p_socks, p_http = cfg.get('proxy_ports', [10808, 10809])
     sniffing = {
         "enabled": cfg.get('sniffing_enabled', True),
@@ -1030,6 +1683,7 @@ def gen_config(servers, cfg):
          "settings": {"allowTransparent": False}, "sniffing": sniffing, "tag": "http"}
     ]
     return {
+        "remarks": cfg.get('json_remarks', 'SubManager Auto'),
         "log": {"loglevel": "warning"},
         "dns": dns,
         "inbounds": inbounds,
@@ -1039,155 +1693,384 @@ def gen_config(servers, cfg):
     }
 
 
-def save_json(config, cfg):
-    name = cfg.get('json_name', 'xray_config')
+def save_json(config, cfg, name_override=None, remarks_override=None):
+    name = name_override or cfg.get('json_name', 'xray_config')
     if not name.endswith('.json'):
         name += '.json'
+    if remarks_override is not None:
+        config['remarks'] = remarks_override
     p = OUTPUT_DIR / name
     with open(p, 'w', encoding='utf-8') as f:
         json.dump(config, f, ensure_ascii=False, indent=2)
     print(f"[+] JSON: {p}")
+    if 'remarks' in config:
+        print(f"    Примечание сервера: {config['remarks']}")
     return p
 
 
-def import_routing_rules(cfg):
-    hdr("ИМПОРТ ПРАВИЛ МАРШРУТИЗАЦИИ")
-    print("  1 - Из локального файла")
-    print("  2 - По ссылке")
-    print("  0 - Отмена")
-    ch = ask("Выбор: ", choices=["0", "1", "2"])
-    if ch == "0":
-        return cfg
-
-    raw = ""
-    if ch == "1":
-        files = sorted([p for p in ROUTING_DIR.glob("*") if p.is_file()])
-        if not files:
-            print(f"[!] Папка {ROUTING_DIR} пуста. Поместите туда файл с правилами.")
-            return cfg
-        for i, f in enumerate(files, 1):
-            print(f"  {i}. {f.name} ({fmt_size(f.stat().st_size)})")
-        idx = ask_int("Номер файла: ", mn=1, mx=len(files))
-        if idx is None:
-            return cfg
-        raw = files[idx - 1].read_text(encoding='utf-8', errors='ignore')
-    else:
-        url = ask("URL с правилами: ")
-        if not url:
-            return cfg
-        raw = dl_url(url)
-        if not raw:
-            print("[!] Не удалось загрузить.")
-            return cfg
-
-    rules_parsed, stats = parse_shadowrocket_rules(raw)
-    if not rules_parsed:
-        print("[!] Правила не найдены.")
-        print(f"    Пропущено строк: {stats.get('skipped', 0)}")
-        return cfg
-
-    print(f"\n[+] Найдено правил: {len(rules_parsed)}")
-    print(f"    Direct: {stats.get('direct', 0)}")
-    print(f"    Proxy: {stats.get('proxy', 0)}")
-    print(f"    Block: {stats.get('block', 0)}")
-    print(f"    Пропущено (комментарии): {stats.get('commented', 0)}")
-    print(f"    Пропущено (URL-REGEX/MITM): {stats.get('url_regex', 0)}")
-    print(f"    Пропущено (неизвестные): {stats.get('skipped', 0)}")
-
-    print("\n[?] Примеры (первые 15):")
-    for r in rules_parsed[:15]:
-        print(f"    {json.dumps(r, ensure_ascii=False)}")
-
-    ans = ask(f"\nДобавить {len(rules_parsed)} правил в routing? (y/n) [y]: ", default="y")
-    if ans.lower() == 'y':
-        rt = cfg.get('routing', {})
-        existing = rt.get('rules', [])
-        existing.extend(rules_parsed)
-        rt['rules'] = existing
-        cfg['routing'] = rt
+def ask_json_name_and_remarks(cfg, default_name=None):
+    default_name = default_name or cfg.get('json_name', 'xray_config')
+    default_remarks = cfg.get('json_remarks', 'SubManager Auto')
+    print("\n[?] Настройка имени JSON-сервера")
+    print(f"    Текущее имя файла:    {default_name}.json")
+    print(f"    Текущее примечание:   {default_remarks}")
+    print("    (Enter - оставить текущие, q - отмена)")
+    use = ask("Изменить имя/примечание? (y/n) [n]: ", default="n")
+    if use == EXIT:
+        return None, None
+    if use.lower() != 'y':
+        return default_name, default_remarks
+    remarks = ask(f"Примечание сервера в Happ/клиенте [{default_remarks}]: ", default=default_remarks)
+    if remarks == EXIT:
+        return None, None
+    cfg['json_remarks'] = remarks
+    auto = ask("Использовать примечание как имя файла (транслитом)? (y/n) [n]: ", default="n")
+    if auto == EXIT:
+        return None, None
+    if auto.lower() == 'y':
+        tr = transliterate(remarks)
+        fname = sanitize_filename(tr)
+        cfg['json_use_remarks_as_name'] = True
         cfg_save(cfg)
-        print(f"[+] Добавлено правил: {len(rules_parsed)}")
-        print(f"[+] Всего правил в routing: {len(existing)}")
-    return cfg
+        print(f"    Имя файла будет: {fname}.json")
+        return fname, remarks
+    else:
+        name = ask(f"Имя файла (без .json) [{default_name}]: ", default=default_name)
+        if name == EXIT:
+            return None, None
+        cfg['json_name'] = name
+        cfg_save(cfg)
+        return name, remarks
 
 
 def parse_shadowrocket_rules(text):
     rules = []
     stats = {"direct": 0, "proxy": 0, "block": 0, "commented": 0, "url_regex": 0, "skipped": 0}
-    proxy_keywords = ["PROXY", "SPEEDPROXY", "BESTPROXY", "AIPROXY", "METAPROXY", "TGPROXY", "SPOTIFYPROXY", "PROXY_GROUP"]
-    block_keywords = ["REJECT", "REJECT-DROP", "REJECT-200", "REJECT-DICT", "REJECT-TINYGIF", "REJECT-NO-DROP"]
+    proxy_kw = ["PROXY", "SPEEDPROXY", "BESTPROXY", "AIPROXY", "METAPROXY", "TGPROXY", "SPOTIFYPROXY"]
+    block_kw = ["REJECT", "REJECT-DROP", "REJECT-200", "REJECT-DICT", "REJECT-TINYGIF", "REJECT-NO-DROP"]
 
-    for raw_line in text.splitlines():
-        ln = raw_line.strip()
-        if not ln:
+    for raw in text.splitlines():
+        s = raw.strip()
+        if not s:
             continue
-        if ln.startswith('#') or ln.startswith(';') or ln.startswith('//'):
+        if s.startswith('#') or s.startswith(';') or s.startswith('//'):
             stats["commented"] += 1
             continue
-        if ln.startswith('[') and ln.endswith(']'):
+        if s.startswith('[') and s.endswith(']'):
             continue
-        if ln.startswith('!'):
+        if s.startswith('!'):
             continue
-        if 'URL-REGEX' in ln or 'URL-REGEX-JQ' in ln:
+        if 'URL-REGEX' in s:
             stats["url_regex"] += 1
             continue
-        if ln.startswith('RULE-SET') or ln.startswith('DOMAIN-WILDCARD'):
+        if s.startswith('RULE-SET') or s.startswith('DOMAIN-WILDCARD') or s.startswith('AND,') or s.startswith('OR,') or s.startswith('NOT,'):
             stats["skipped"] += 1
             continue
 
-        parts = [p.strip() for p in ln.split(',')]
+        parts = [p.strip() for p in s.split(',')]
         if len(parts) < 3:
             stats["skipped"] += 1
             continue
+        rule_type = parts[0].upper()
+        val = parts[1]
+        policy = parts[2].upper()
 
-        rule_type = parts[0].upper().strip()
-        rule_value = parts[1].strip()
-        policy = parts[2].strip().upper()
-
-        outbound = None
+        out = None
         if policy == 'DIRECT':
-            outbound = 'direct'
-        elif policy in block_keywords:
-            outbound = 'block'
-        elif any(p in policy for p in proxy_keywords):
-            outbound = 'proxy'
+            out = 'direct'
+        elif policy in block_kw:
+            out = 'block'
+        elif any(p in policy for p in proxy_kw):
+            out = 'proxy'
         else:
             stats["skipped"] += 1
             continue
 
         rule = None
         if rule_type == 'DOMAIN-SUFFIX':
-            rule = {"type": "field", "domain": [f"domain:{rule_value}"], "outboundTag": outbound}
+            rule = {"type": "field", "domain": [f"domain:{val}"], "outboundTag": out}
         elif rule_type == 'DOMAIN':
-            rule = {"type": "field", "domain": [rule_value], "outboundTag": outbound}
+            rule = {"type": "field", "domain": [val], "outboundTag": out}
         elif rule_type == 'DOMAIN-KEYWORD':
-            rule = {"type": "field", "domain": [f"keyword:{rule_value}"], "outboundTag": outbound}
+            rule = {"type": "field", "domain": [f"keyword:{val}"], "outboundTag": out}
         elif rule_type in ('IP-CIDR', 'IP-CIDR6'):
-            rule = {"type": "field", "ip": [rule_value], "outboundTag": outbound}
+            rule = {"type": "field", "ip": [val], "outboundTag": out}
         elif rule_type == 'GEOIP':
-            rule = {"type": "field", "ip": [f"geoip:{rule_value.lower()}"], "outboundTag": outbound}
+            rule = {"type": "field", "ip": [f"geoip:{val.lower()}"], "outboundTag": out}
         elif rule_type == 'DST-PORT':
-            rule = {"type": "field", "port": rule_value, "outboundTag": outbound}
+            rule = {"type": "field", "port": val, "outboundTag": out}
         elif rule_type == 'PROTOCOL':
-            rule = {"type": "field", "protocol": [rule_value.lower()], "outboundTag": outbound}
-        elif rule_type == 'PROCESS-NAME':
-            rule = {"type": "field", "process": [rule_value], "outboundTag": outbound}
-        elif rule_type == 'AND' or rule_type == 'OR' or rule_type == 'NOT':
-            stats["skipped"] += 1
-            continue
+            rule = {"type": "field", "protocol": [val.lower()], "outboundTag": out}
 
         if rule:
             rules.append(rule)
-            if outbound == 'direct':
-                stats["direct"] += 1
-            elif outbound == 'proxy':
-                stats["proxy"] += 1
-            elif outbound == 'block':
-                stats["block"] += 1
+            stats[out] += 1
         else:
             stats["skipped"] += 1
-
     return rules, stats
+
+
+def parse_adguard_rules(text):
+    rules = []
+    stats = {"direct": 0, "proxy": 0, "block": 0, "skipped": 0}
+    for raw in text.splitlines():
+        s = raw.strip()
+        if not s:
+            continue
+        if s.startswith('!') or s.startswith('#'):
+            continue
+        if s.startswith('@@'):
+            continue
+        if s.startswith('||') or s.startswith('|'):
+            domain = s.lstrip('|').rstrip('^').strip()
+            if domain:
+                rules.append({"type": "field", "domain": [f"domain:{domain}"], "outboundTag": "block"})
+                stats["block"] += 1
+    return rules, stats
+
+
+def import_routing_rules(cfg, target='xray'):
+    hdr("ИМПОРТ ПРАВИЛ МАРШРУТИЗАЦИИ")
+    print("  1 - Shadowrocket / Clash / Surge")
+    print("  2 - AdGuard")
+    print("  q - Отмена")
+    ch = ask("Выбор: ", choices=["1", "2"])
+    if ch == EXIT:
+        return cfg
+    parser = parse_shadowrocket_rules if ch == "1" else parse_adguard_rules
+
+    print("  1 - Из локального файла")
+    print("  2 - По ссылке")
+    ch2 = ask("Выбор: ", choices=["1", "2"])
+    if ch2 == EXIT:
+        return cfg
+    raw = ""
+    if ch2 == "1":
+        files = sorted([p for p in ROUTING_DIR.glob("*") if p.is_file()])
+        if not files:
+            print(f"[!] Папка {ROUTING_DIR} пуста.")
+            input("Enter...")
+            return cfg
+        for i, f in enumerate(files, 1):
+            print(f"  {i}. {f.name} ({fmt_size(f.stat().st_size)})")
+        idx = ask_int("Номер файла (q - отмена): ", mn=1, mx=len(files))
+        if idx == EXIT or idx is None:
+            return cfg
+        raw = files[idx - 1].read_text(encoding='utf-8', errors='ignore')
+    else:
+        url = ask("URL (q - отмена): ")
+        if url == EXIT or not url:
+            return cfg
+        raw = dl_url(url)
+        if not raw:
+            print("[!] Не удалось загрузить.")
+            input("Enter...")
+            return cfg
+
+    rules, stats = parser(raw)
+    if not rules:
+        print("[!] Правила не найдены.")
+        input("Enter...")
+        return cfg
+
+    print(f"\n[+] Найдено правил: {len(rules)}")
+    for k, v in stats.items():
+        if v:
+            print(f"    {k}: {v}")
+
+    ans = ask(f"\nДобавить {len(rules)} правил? (y/n) [y]: ", default="y")
+    if ans.lower() == 'y':
+        rt = cfg.get('routing', {})
+        existing = rt.get('custom_rules', [])
+        existing.extend(rules)
+        rt['custom_rules'] = existing
+        cfg['routing'] = rt
+        cfg_save(cfg)
+        print(f"[+] Добавлено: {len(rules)}. Всего: {len(existing)}")
+    input("Enter...")
+    return cfg
+
+
+def gen_happ_routing(cfg):
+    rt = cfg.get('routing', {})
+    profile = {
+        "Name": "SubManager Routing",
+        "GlobalProxy": cfg.get('global_proxy') == 'proxy',
+        "RemoteDNSDomain": "https://cloudflare-dns.com/dns-query",
+        "RemoteDNSType": "DoH",
+        "DomesticDNSDomain": "https://dns.comss.one/dns-query",
+        "DomesticDNSType": "DoH",
+        "GeositeUrl": "https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat",
+        "GeoipUrl": "https://github.com/v2fly/geoip/releases/download/202501090053/geoip.dat",
+        "ProxySites": ["geosite:google"],
+        "DirectSites": rt.get('direct_domains', []),
+        "BlockSites": rt.get('block_domains', []),
+        "DirectIp": rt.get('direct_ips', []),
+        "BlockIp": rt.get('block_ips', []),
+        "ProxyIp": [],
+        "DomainStrategy": cfg.get('dns_query_strategy', 'IPIfNonMatch'),
+        "RouteOrder": "-".join(cfg.get('routing_order', ['block', 'proxy', 'direct'])),
+        "DnsHosts": {},
+        "UseChunkFiles": False,
+        "LastUpdated": 0,
+        "RemoteDNSIp": "1.1.1.1",
+        "DomesticDNSIp": "83.220.169.155"
+    }
+    for r in rt.get('custom_rules', []):
+        tag = r.get('outboundTag', '')
+        domains = r.get('domain', [])
+        ips = r.get('ip', [])
+        if tag == 'proxy':
+            for d in domains:
+                profile["ProxySites"].append(d)
+        elif tag == 'direct':
+            for d in domains:
+                profile["DirectSites"].append(d)
+            for ip in ips:
+                profile["DirectIp"].append(ip)
+        elif tag == 'block':
+            for d in domains:
+                profile["BlockSites"].append(d)
+            for ip in ips:
+                profile["BlockIp"].append(ip)
+    return profile
+
+
+def gen_v2raytun_routing(cfg):
+    rt = cfg.get('routing', {})
+    rules = []
+    for r in rt.get('custom_rules', []):
+        rules.append(r)
+    if rt.get('block_domains'):
+        rules.append({"type": "field", "domain": rt['block_domains'], "outboundTag": "block"})
+    if rt.get('block_ips'):
+        rules.append({"type": "field", "ip": rt['block_ips'], "outboundTag": "block"})
+    if rt.get('direct_domains'):
+        rules.append({"type": "field", "domain": rt['direct_domains'], "outboundTag": "direct"})
+    if rt.get('direct_ips'):
+        rules.append({"type": "field", "ip": rt['direct_ips'], "outboundTag": "direct"})
+    return {
+        "name": "SubManager",
+        "domainStrategy": cfg.get('dns_query_strategy', 'AsIs'),
+        "domainMatcher": "hybrid",
+        "rules": rules
+    }
+
+
+def routing_menu(cfg):
+    while True:
+        clr()
+        hdr("РОУТИНГ ДЛЯ КЛИЕНТОВ")
+        rt = cfg.get('routing', {})
+        print(f"  Direct домены: {len(rt.get('direct_domains', []))}")
+        print(f"  Block домены:  {len(rt.get('block_domains', []))}")
+        print(f"  Direct IP:     {len(rt.get('direct_ips', []))}")
+        print(f"  Block IP:      {len(rt.get('block_ips', []))}")
+        print(f"  Custom rules:  {len(rt.get('custom_rules', []))}")
+        print(f"  Порядок:       {' -> '.join(cfg.get('routing_order', []))}")
+        print(f"  Глобальный:    {cfg.get('global_proxy')}")
+        ln()
+        print("  1 - Импорт правил (Shadowrocket/Clash/AdGuard)")
+        print("  2 - Просмотр/очистка custom rules")
+        print("  3 - Настроить DNS для роутинга")
+        print("  4 - Настроить порядок правил")
+        print("  5 - Настроить глобальный прокси")
+        print("  6 - Сгенерировать happ:// ссылку")
+        print("  7 - Сгенерировать v2raytun:// ссылку")
+        print("  8 - Сохранить JSON роутинга (raw)")
+        print("  q - Назад")
+        ch = ask("Выбор: ", choices=[str(i) for i in range(1, 9)])
+        if ch == EXIT:
+            break
+        if ch == "1":
+            cfg = import_routing_rules(cfg)
+        elif ch == "2":
+            cr = rt.get('custom_rules', [])
+            if not cr:
+                print("[!] Нет custom rules.")
+                input("Enter...")
+                continue
+            print(f"  Всего: {len(cr)}")
+            for i, r in enumerate(cr[:30], 1):
+                print(f"  {i:3}. {json.dumps(r, ensure_ascii=False)[:100]}")
+            if len(cr) > 30:
+                print(f"  ... и ещё {len(cr) - 30}")
+            ln()
+            print("  1 - Очистить все")
+            print("  2 - Удалить по номерам")
+            print("  q - Назад")
+            s = ask("Выбор: ", choices=["1", "2"])
+            if s == "1":
+                a = ask("Точно удалить все? (y/n): ", default="n")
+                if a.lower() == 'y':
+                    cfg['routing']['custom_rules'] = []
+                    cfg_save(cfg)
+                    print("[+] Очищено.")
+            elif s == "2":
+                sel = ask_multi("Номера для удаления: ", 1, len(cr))
+                if sel and sel != EXIT:
+                    for i in sorted(sel, reverse=True):
+                        cr.pop(i - 1)
+                    cfg['routing']['custom_rules'] = cr
+                    cfg_save(cfg)
+                    print(f"[+] Удалено: {len(sel)}")
+        elif ch == "3":
+            print("  DNS настройки для роутинга")
+            v = ask(f"Remote DNS domain [https://cloudflare-dns.com/dns-query]: ", default="")
+            if v != EXIT and v:
+                cfg['routing_remote_dns'] = v
+            v = ask(f"Domestic DNS domain [https://dns.comss.one/dns-query]: ", default="")
+            if v != EXIT and v:
+                cfg['routing_domestic_dns'] = v
+            cfg_save(cfg)
+        elif ch == "4":
+            print(f"  Текущий: {' -> '.join(cfg.get('routing_order', []))}")
+            v = ask("Порядок (block,direct,proxy): ")
+            if v == EXIT:
+                continue
+            parts = [p.strip().lower() for p in v.split(',') if p.strip()]
+            if all(p in ('block', 'direct', 'proxy') for p in parts) and len(set(parts)) == 3:
+                cfg['routing_order'] = parts
+                cfg_save(cfg)
+                print("[+] Сохранено.")
+            else:
+                print("[!] Нужно указать все три в любом порядке.")
+        elif ch == "5":
+            gp = ask(f"Глобальный прокси [{cfg.get('global_proxy')}]: ", choices=['proxy', 'direct', 'block'])
+            if gp != EXIT:
+                cfg['global_proxy'] = gp
+                cfg_save(cfg)
+        elif ch == "6":
+            profile = gen_happ_routing(cfg)
+            j = json.dumps(profile, ensure_ascii=False)
+            b = base64.b64encode(j.encode('utf-8')).decode('ascii')
+            link = f"happ://routing/add/{b}"
+            p = OUTPUT_DIR / "happ_routing.txt"
+            with open(p, 'w', encoding='utf-8') as f:
+                f.write(link)
+            print(f"[+] Happ routing: {p}")
+            print(f"    {link[:120]}...")
+            input("Enter...")
+        elif ch == "7":
+            profile = gen_v2raytun_routing(cfg)
+            j = json.dumps(profile, ensure_ascii=False)
+            b = base64.b64encode(j.encode('utf-8')).decode('ascii')
+            link = f"v2rayTun://import_route/{b}"
+            p = OUTPUT_DIR / "v2raytun_routing.txt"
+            with open(p, 'w', encoding='utf-8') as f:
+                f.write(link)
+            print(f"[+] v2rayTun routing: {p}")
+            print(f"    {link[:120]}...")
+            input("Enter...")
+        elif ch == "8":
+            profile = gen_happ_routing(cfg)
+            j = json.dumps(profile, ensure_ascii=False, indent=2)
+            p = OUTPUT_DIR / "routing_profile.json"
+            with open(p, 'w', encoding='utf-8') as f:
+                f.write(j)
+            print(f"[+] JSON роутинга: {p}")
+            input("Enter...")
+    return cfg
 
 
 def config_menu(servers, cfg):
@@ -1195,161 +2078,239 @@ def config_menu(servers, cfg):
         clr()
         hdr("НАСТРОЙКИ ГЕНЕРАЦИИ")
         rt = cfg.get('routing', {})
-        print(f"  JSON имя:       {cfg.get('json_name', 'xray_config')}")
+        print(f"  JSON имя файла:  {cfg.get('json_name')}.json")
+        print(f"  JSON примечание: {cfg.get('json_remarks')}")
         print(f"  DNS:            {', '.join(cfg.get('dns_servers', [])[:3])}...")
-        print(f"  DNS strategy:   {cfg.get('dns_query_strategy', 'UseIP')}")
+        print(f"  DNS стратегия:  {cfg.get('dns_query_strategy')}")
         print(f"  Probe URL:      {cfg.get('observatory_url')}")
         print(f"  Interval:       {cfg.get('observatory_interval')}")
         print(f"  Timeout:        {cfg.get('observatory_timeout')}")
-        print(f"  Strategy:       {cfg.get('balancer_strategy')}")
-        print(f"  Expected:       {cfg.get('balancer_expected')}")
-        print(f"  MaxRTT:         {cfg.get('balancer_max_rtt')}")
-        print(f"  Tolerance:      {cfg.get('balancer_tolerance')}")
-        print(f"  Ports:          SOCKS {cfg.get('proxy_ports', [10808, 10809])[0]}, HTTP {cfg.get('proxy_ports', [10808, 10809])[1]}")
-        print(f"  Mux:            {'ON' if cfg.get('mux_enabled') else 'OFF'} (conc={cfg.get('mux_concurrency')})")
-        print(f"  Global proxy:   {cfg.get('global_proxy')}")
+        print(f"  Balancer:       {cfg.get('balancer_strategy')} (expected={cfg.get('balancer_expected')}, maxRTT={cfg.get('balancer_max_rtt')})")
+        print(f"  Порты:          SOCKS {cfg.get('proxy_ports', [10808, 10809])[0]}, HTTP {cfg.get('proxy_ports', [10808, 10809])[1]}")
+        print(f"  Mux:            {'ON' if cfg.get('mux_enabled') else 'OFF'}")
+        print(f"  Глобальный:     {cfg.get('global_proxy')}")
         print(f"  Sniffing:       {'ON' if cfg.get('sniffing_enabled') else 'OFF'}")
-        print(f"  Direct домены:  {len(rt.get('direct_domains', []))}")
-        print(f"  Block домены:   {len(rt.get('block_domains', []))}")
-        print(f"  Direct IP:      {len(rt.get('direct_ips', []))}")
-        print(f"  Block IP:       {len(rt.get('block_ips', []))}")
-        print(f"  Block проток.:  {rt.get('block_protocols', [])}")
-        print(f"  Routing rules:  {len(rt.get('rules', []))}")
-        line()
+        print(f"  Порядок правил: {' -> '.join(cfg.get('routing_order', []))}")
+        print(f"  Custom rules:   {len(rt.get('custom_rules', []))}")
+        ln()
         print("  1 - DNS (серверы и стратегия)")
-        print("  2 - Обсерватория (URL, интервал, таймаут)")
-        print("  3 - Балансировщик (стратегия, expected, maxRTT)")
+        print("  2 - Обсерватория")
+        print("  3 - Балансировщик")
         print("  4 - Порты SOCKS/HTTP")
-        print("  5 - Routing: direct домены")
-        print("  6 - Routing: block домены")
-        print("  7 - Routing: direct/block IP")
-        print("  8 - Routing: block протоколы")
-        print("  9 - Импорт правил маршрутизации")
-        print(" 10 - Глобальный прокси (direct/proxy/block)")
-        print(" 11 - Mux / XUDP")
-        print(" 12 - Sniffing")
-        print(" 13 - Имя JSON файла")
-        print(" 14 - Сбросить к настройкам по умолчанию")
-        print("  0 - Назад")
-        ch = ask("Выбор: ", choices=[str(i) for i in range(0, 15)])
-        if ch == "0":
+        print("  5 - Direct домены")
+        print("  6 - Block домены")
+        print("  7 - Direct/Block IP")
+        print("  8 - Block протоколы")
+        print("  9 - Порядок применения правил")
+        print(" 10 - Импорт правил маршрутизации")
+        print(" 11 - Просмотр/очистка custom rules")
+        print(" 12 - Глобальный прокси")
+        print(" 13 - Mux / XUDP")
+        print(" 14 - Sniffing")
+        print(" 15 - Имя JSON файла")
+        print(" 16 - Примечание JSON-сервера (для Happ)")
+        print(" 17 - Сбросить к дефолту")
+        print("  q - Назад")
+        ch = ask("Выбор: ", choices=[str(i) for i in range(1, 18)])
+        if ch == EXIT:
             break
         if ch == "1":
-            v = ask(f"DNS через запятую [{','.join(cfg.get('dns_servers', []))}]: ")
+            v = ask(f"DNS через запятую [{','.join(cfg.get('dns_servers', []))}]: ", default="")
+            if v == EXIT:
+                continue
             if v:
                 cfg['dns_servers'] = [x.strip() for x in v.split(',') if x.strip()]
-            st = ask(f"Стратегия [{cfg.get('dns_query_strategy')}]: ", default=cfg.get('dns_query_strategy'), choices=['UseIP', 'UseIPv4', 'UseIPv6', 'UseIP4', 'AsIs'])
-            cfg['dns_query_strategy'] = st
+            st = ask(f"Стратегия [{cfg.get('dns_query_strategy')}]: ", choices=['UseIP', 'UseIPv4', 'UseIPv6', 'AsIs'])
+            if st != EXIT:
+                cfg['dns_query_strategy'] = st
             cfg_save(cfg)
         elif ch == "2":
-            u = ask(f"URL [{cfg.get('observatory_url')}]: ")
+            u = ask(f"URL [{cfg.get('observatory_url')}]: ", default="")
+            if u == EXIT:
+                continue
             if u:
                 cfg['observatory_url'] = u
-            i = ask(f"Интервал [{cfg.get('observatory_interval')}]: ")
-            if i:
+            i = ask(f"Интервал [{cfg.get('observatory_interval')}]: ", default="")
+            if i != EXIT and i:
                 cfg['observatory_interval'] = i
-            t = ask(f"Таймаут [{cfg.get('observatory_timeout')}]: ")
-            if t:
+            t = ask(f"Таймаут [{cfg.get('observatory_timeout')}]: ", default="")
+            if t != EXIT and t:
                 cfg['observatory_timeout'] = t
             cfg_save(cfg)
         elif ch == "3":
-            st = ask(f"Стратегия [{cfg.get('balancer_strategy')}]: ", default=cfg.get('balancer_strategy'), choices=['leastLoad', 'leastPing', 'random', 'roundRobin'])
-            cfg['balancer_strategy'] = st
+            st = ask(f"Стратегия [{cfg.get('balancer_strategy')}]: ", choices=['leastLoad', 'leastPing', 'random', 'roundRobin'])
+            if st != EXIT:
+                cfg['balancer_strategy'] = st
             e = ask_int(f"Expected [{cfg.get('balancer_expected')}]: ", default=cfg.get('balancer_expected'))
-            if e is not None:
+            if e != EXIT and e is not None:
                 cfg['balancer_expected'] = e
-            m = ask(f"MaxRTT [{cfg.get('balancer_max_rtt')}]: ", default=cfg.get('balancer_max_rtt'))
-            if m:
+            m = ask(f"MaxRTT [{cfg.get('balancer_max_rtt')}]: ", default="")
+            if m != EXIT and m:
                 cfg['balancer_max_rtt'] = m
-            t = ask(f"Tolerance [{cfg.get('balancer_tolerance')}]: ", default=str(cfg.get('balancer_tolerance')))
-            try:
-                cfg['balancer_tolerance'] = float(t)
-            except Exception:
-                pass
             cfg_save(cfg)
         elif ch == "4":
-            p_socks = ask_int(f"SOCKS [{cfg.get('proxy_ports', [10808, 10809])[0]}]: ", default=cfg.get('proxy_ports', [10808, 10809])[0])
-            p_http = ask_int(f"HTTP [{cfg.get('proxy_ports', [10808, 10809])[1]}]: ", default=cfg.get('proxy_ports', [10808, 10809])[1])
-            cfg['proxy_ports'] = [p_socks, p_http]
+            ps = ask_int(f"SOCKS [{cfg.get('proxy_ports', [10808, 10809])[0]}]: ", default=cfg.get('proxy_ports', [10808, 10809])[0])
+            if ps == EXIT:
+                continue
+            ph = ask_int(f"HTTP [{cfg.get('proxy_ports', [10808, 10809])[1]}]: ", default=cfg.get('proxy_ports', [10808, 10809])[1])
+            if ph == EXIT:
+                continue
+            cfg['proxy_ports'] = [ps, ph]
             cfg_save(cfg)
         elif ch == "5":
             print(f"  Текущие: {rt.get('direct_domains', [])}")
-            v = ask("Direct домены (через запятую, пусто=оставить): ")
+            v = ask("Direct домены (через запятую, пусто=оставить, q=отмена): ")
+            if v == EXIT:
+                continue
             if v:
                 cfg['routing']['direct_domains'] = [x.strip() for x in v.split(',') if x.strip()]
             cfg_save(cfg)
         elif ch == "6":
             print(f"  Текущие: {rt.get('block_domains', [])}")
-            v = ask("Block домены (через запятую, пусто=оставить): ")
+            v = ask("Block домены (через запятую, пусто=оставить, q=отмена): ")
+            if v == EXIT:
+                continue
             if v:
                 cfg['routing']['block_domains'] = [x.strip() for x in v.split(',') if x.strip()]
             cfg_save(cfg)
         elif ch == "7":
             print(f"  Direct IP: {rt.get('direct_ips', [])}")
-            v = ask("Direct IP (через запятую): ")
-            if v:
+            v = ask("Direct IP: ")
+            if v != EXIT and v:
                 cfg['routing']['direct_ips'] = [x.strip() for x in v.split(',') if x.strip()]
             print(f"  Block IP: {rt.get('block_ips', [])}")
-            v = ask("Block IP (через запятую): ")
-            if v:
+            v = ask("Block IP: ")
+            if v != EXIT and v:
                 cfg['routing']['block_ips'] = [x.strip() for x in v.split(',') if x.strip()]
             cfg_save(cfg)
         elif ch == "8":
             print(f"  Текущие: {rt.get('block_protocols', [])}")
-            v = ask("Протоколы (через запятую, пусто=очистить): ")
+            v = ask("Протоколы (через запятую, пусто=очистить, q=отмена): ")
+            if v == EXIT:
+                continue
             cfg['routing']['block_protocols'] = [x.strip() for x in v.split(',') if x.strip()] if v else []
             cfg_save(cfg)
         elif ch == "9":
-            cfg = import_routing_rules(cfg)
+            print(f"  Текущий: {' -> '.join(cfg.get('routing_order', []))}")
+            v = ask("Порядок (block,direct,proxy): ")
+            if v == EXIT:
+                continue
+            parts = [p.strip().lower() for p in v.split(',') if p.strip()]
+            if all(p in ('block', 'direct', 'proxy') for p in parts) and len(set(parts)) == 3:
+                cfg['routing_order'] = parts
+                cfg_save(cfg)
+                print("[+] Сохранено.")
+            else:
+                print("[!] Нужно указать все три в любом порядке.")
             input("Enter...")
         elif ch == "10":
-            gp = ask(f"Глобальный прокси [{cfg.get('global_proxy')}]: ", default=cfg.get('global_proxy'), choices=['proxy', 'direct', 'block'])
-            cfg['global_proxy'] = gp
-            cfg_save(cfg)
+            cfg = import_routing_rules(cfg)
         elif ch == "11":
+            cr = rt.get('custom_rules', [])
+            if not cr:
+                print("[!] Нет custom rules.")
+                input("Enter...")
+                continue
+            print(f"  Всего: {len(cr)}")
+            for i, r in enumerate(cr[:30], 1):
+                print(f"  {i:3}. {json.dumps(r, ensure_ascii=False)[:100]}")
+            if len(cr) > 30:
+                print(f"  ... и ещё {len(cr) - 30}")
+            ln()
+            print("  1 - Очистить все")
+            print("  2 - Удалить по номерам")
+            print("  q - Назад")
+            s = ask("Выбор: ", choices=["1", "2"])
+            if s == "1":
+                a = ask("Точно удалить все? (y/n): ", default="n")
+                if a.lower() == 'y':
+                    cfg['routing']['custom_rules'] = []
+                    cfg_save(cfg)
+                    print("[+] Очищено.")
+            elif s == "2":
+                sel = ask_multi("Номера для удаления: ", 1, len(cr))
+                if sel and sel != EXIT:
+                    for i in sorted(sel, reverse=True):
+                        cr.pop(i - 1)
+                    cfg['routing']['custom_rules'] = cr
+                    cfg_save(cfg)
+                    print(f"[+] Удалено: {len(sel)}")
+        elif ch == "12":
+            gp = ask(f"Глобальный прокси [{cfg.get('global_proxy')}]: ", choices=['proxy', 'direct', 'block'])
+            if gp != EXIT:
+                cfg['global_proxy'] = gp
+            cfg_save(cfg)
+        elif ch == "13":
             print(f"  Mux: {'ON' if cfg.get('mux_enabled') else 'OFF'}")
             print(f"  Concurrency: {cfg.get('mux_concurrency')}")
             print(f"  XUDP concurrency: {cfg.get('mux_xudp_concurrency')}")
             print(f"  XUDP proxyUDP443: {cfg.get('mux_xudp_proxy_udp443')}")
-            en = ask("Включить Mux? (y/n) [n]: ", default="n")
-            cfg['mux_enabled'] = en.lower() == 'y'
-            if cfg['mux_enabled']:
+            en = ask("Включить Mux? (y/n/q): ", default="")
+            if en == EXIT:
+                continue
+            if en:
+                cfg['mux_enabled'] = en.lower() == 'y'
+            if cfg.get('mux_enabled'):
                 c = ask_int(f"Concurrency [{cfg.get('mux_concurrency')}]: ", default=cfg.get('mux_concurrency'))
-                if c is not None:
+                if c != EXIT and c is not None:
                     cfg['mux_concurrency'] = c
                 xc = ask_int(f"XUDP concurrency [{cfg.get('mux_xudp_concurrency')}]: ", default=cfg.get('mux_xudp_concurrency'))
-                if xc is not None:
+                if xc != EXIT and xc is not None:
                     cfg['mux_xudp_concurrency'] = xc
-                xp = ask(f"XUDP proxyUDP443 [{cfg.get('mux_xudp_proxy_udp443')}]: ", default=cfg.get('mux_xudp_proxy_udp443'), choices=['reject', 'skip', 'allow'])
-                cfg['mux_xudp_proxy_udp443'] = xp
-            cfg_save(cfg)
-        elif ch == "12":
-            en = ask(f"Sniffing [{cfg.get('sniffing_enabled')}] (y/n): ", default="y" if cfg.get('sniffing_enabled') else "n")
-            cfg['sniffing_enabled'] = en.lower() == 'y'
-            if cfg['sniffing_enabled']:
-                v = ask(f"DestOverride через запятую [{','.join(cfg.get('sniffing_dest_override', []))}]: ")
-                if v:
-                    cfg['sniffing_dest_override'] = [x.strip() for x in v.split(',') if x.strip()]
-                ro = ask(f"RouteOnly [{cfg.get('sniffing_route_only')}] (y/n): ", default="y" if cfg.get('sniffing_route_only') else "n")
-                cfg['sniffing_route_only'] = ro.lower() == 'y'
-            cfg_save(cfg)
-        elif ch == "13":
-            n = ask(f"Имя JSON файла [{cfg.get('json_name')}]: ", default=cfg.get('json_name'))
-            cfg['json_name'] = n
+                xp = ask(f"XUDP proxyUDP443 [{cfg.get('mux_xudp_proxy_udp443')}]: ", choices=['reject', 'skip', 'allow'])
+                if xp != EXIT:
+                    cfg['mux_xudp_proxy_udp443'] = xp
             cfg_save(cfg)
         elif ch == "14":
-            cfg = cfg_default()
+            en = ask(f"Sniffing [{cfg.get('sniffing_enabled')}]: ", choices=['y', 'n'])
+            if en != EXIT:
+                cfg['sniffing_enabled'] = en.lower() == 'y'
+            if cfg.get('sniffing_enabled'):
+                v = ask(f"DestOverride [{','.join(cfg.get('sniffing_dest_override', []))}]: ", default="")
+                if v != EXIT and v:
+                    cfg['sniffing_dest_override'] = [x.strip() for x in v.split(',') if x.strip()]
+                ro = ask(f"RouteOnly [{cfg.get('sniffing_route_only')}]: ", choices=['y', 'n'])
+                if ro != EXIT:
+                    cfg['sniffing_route_only'] = ro.lower() == 'y'
             cfg_save(cfg)
-            print("[+] Сброшено.")
+        elif ch == "15":
+            n = ask(f"Имя JSON файла [{cfg.get('json_name')}]: ", default="")
+            if n != EXIT and n:
+                cfg['json_name'] = n
+                cfg_save(cfg)
+        elif ch == "16":
+            print(f"  Текущее: {cfg.get('json_remarks')}")
+            n = ask(f"Новое примечание [{cfg.get('json_remarks')}]: ", default="")
+            if n == EXIT:
+                continue
+            if n:
+                cfg['json_remarks'] = n
+                auto = ask("Использовать как имя файла (транслитом)? (y/n) [n]: ", default="n")
+                if auto == EXIT:
+                    continue
+                if auto.lower() == 'y':
+                    tr = transliterate(n)
+                    cfg['json_name'] = sanitize_filename(tr)
+                    cfg['json_use_remarks_as_name'] = True
+                    print(f"    Имя файла: {cfg['json_name']}.json")
+                else:
+                    cfg['json_use_remarks_as_name'] = False
+                cfg_save(cfg)
+        elif ch == "17":
+            a = ask("Сбросить все настройки? (y/n): ", default="n")
+            if a.lower() == 'y':
+                cfg = cfg_default()
+                cfg_save(cfg)
+                print("[+] Сброшено.")
     return cfg
 
 
-def save_base64(servers):
+def save_base64(servers, name="servers"):
     lines = [build_uri(s) for s in servers]
     raw = '\n'.join(lines)
     b64 = base64.b64encode(raw.encode('utf-8')).decode('ascii')
-    p1 = OUTPUT_DIR / "servers.txt"
-    p2 = OUTPUT_DIR / "servers_base64.txt"
+    p1 = OUTPUT_DIR / f"{name}.txt"
+    p2 = OUTPUT_DIR / f"{name}_base64.txt"
     with open(p1, 'w', encoding='utf-8') as f:
         f.write(raw)
     with open(p2, 'w', encoding='utf-8') as f:
@@ -1357,15 +2318,55 @@ def save_base64(servers):
     print(f"[+] Ссылки: {p1}")
     print(f"[+] Base64: {p2}")
     print(f"[+] Строк: {len(lines)}")
-    return p1, p2
 
 
-def save_yaml_clash(servers):
+def export_menu(servers, cfg):
+    while True:
+        clr()
+        hdr("ЭКСПОРТ ВЫБРАННЫХ СЕРВЕРОВ")
+        show_servers_list(servers)
+        print(f"\n  Всего: {len(servers)}")
+        ln()
+        print("  1 - Экспорт ссылок (txt + base64)")
+        print("  2 - Экспорт JSON Xray")
+        print("  3 - Экспорт Clash YAML")
+        print("  q - Назад")
+        ch = ask("Выбор: ", choices=["1", "2", "3"])
+        if ch == EXIT:
+            break
+        sel = ask_multi("Номера серверов для экспорта (1,3-5,all): ", 1, len(servers))
+        if sel == EXIT or not sel:
+            continue
+        subset = [servers[i - 1] for i in sel]
+        if ch == "1":
+            name = ask("Имя файла (без расширения) [servers]: ", default="servers")
+            if name == EXIT:
+                name = "servers"
+            save_base64(subset, name)
+        elif ch == "2":
+            name = ask("Имя JSON [selected_config]: ", default="selected_config")
+            if name == EXIT:
+                name = "selected_config"
+            remarks = ask(f"Примечание сервера [{cfg.get('json_remarks', 'SubManager')}]: ", default=cfg.get('json_remarks', 'SubManager'))
+            if remarks == EXIT:
+                remarks = cfg.get('json_remarks', 'SubManager')
+            cfg2 = copy.deepcopy(cfg)
+            cfg2['json_name'] = name
+            save_json(gen_config(subset, cfg2), cfg2, name, remarks)
+        elif ch == "3":
+            name = ask("Имя YAML [selected_clash.yaml]: ", default="selected_clash.yaml")
+            if name == EXIT:
+                name = "selected_clash.yaml"
+            save_yaml_clash(subset, name)
+        input("Enter...")
+
+
+def save_yaml_clash(servers, name="clash_proxies.yaml"):
     lines = ["proxies:"]
     for s in servers:
-        name = s.get('name', 'proxy')
+        n = s.get('name', 'proxy')
         if s['scheme'] == 'vless':
-            lines.append(f"  - name: \"{name}\"")
+            lines.append(f"  - name: \"{n}\"")
             lines.append(f"    type: vless")
             lines.append(f"    server: {s['host']}")
             lines.append(f"    port: {s['port']}")
@@ -1380,21 +2381,29 @@ def save_yaml_clash(servers):
             if s['params'].get('flow'):
                 lines.append(f"    flow: {s['params']['flow']}")
         elif s['scheme'] == 'ss':
-            lines.append(f"  - name: \"{name}\"")
+            lines.append(f"  - name: \"{n}\"")
             lines.append(f"    type: ss")
             lines.append(f"    server: {s['host']}")
             lines.append(f"    port: {s['port']}")
             lines.append(f"    cipher: {s.get('method', '')}")
             lines.append(f"    password: \"{s.get('password', '')}\"")
-        elif s['scheme'] in ('hysteria2', 'hy2'):
-            lines.append(f"  - name: \"{name}\"")
+        elif s['scheme'] in ('hysteria2', 'hy2', 'hysteria'):
+            lines.append(f"  - name: \"{n}\"")
             lines.append(f"    type: hysteria2")
             lines.append(f"    server: {s['host']}")
             lines.append(f"    port: {s['port']}")
             lines.append(f"    password: \"{s.get('password', '')}\"")
             if 'sni' in s['params']:
                 lines.append(f"    sni: {s['params']['sni']}")
-    p = OUTPUT_DIR / "clash_proxies.yaml"
+        elif s['scheme'] == 'trojan':
+            lines.append(f"  - name: \"{n}\"")
+            lines.append(f"    type: trojan")
+            lines.append(f"    server: {s['host']}")
+            lines.append(f"    port: {s['port']}")
+            lines.append(f"    password: \"{s.get('password', '')}\"")
+            if 'sni' in s['params']:
+                lines.append(f"    sni: {s['params']['sni']}")
+    p = OUTPUT_DIR / name
     with open(p, 'w', encoding='utf-8') as f:
         f.write('\n'.join(lines))
     print(f"[+] Clash YAML: {p}")
@@ -1407,16 +2416,17 @@ def backup_servers(servers, name="backup"):
     with open(p, 'w', encoding='utf-8') as f:
         f.write('\n'.join(lines))
     print(f"[+] Backup: {p}")
-    return p
 
 
 def stats(servers):
     clr()
     hdr("СТАТИСТИКА")
+    if not servers:
+        print("  Серверов нет.")
+        input("Enter...")
+        return
     print(f"  Всего серверов: {len(servers)}")
-    by_proto = {}
-    by_type = {}
-    by_sec = {}
+    by_proto, by_type, by_sec = {}, {}, {}
     for s in servers:
         by_proto[s['scheme']] = by_proto.get(s['scheme'], 0) + 1
         t = s['params'].get('type', 'tcp')
@@ -1425,13 +2435,13 @@ def stats(servers):
         by_sec[sec] = by_sec.get(sec, 0) + 1
     print("\n  По протоколу:")
     for k, v in sorted(by_proto.items()):
-        print(f"    {k}: {v}")
+        print(f"    {k:15} : {v}")
     print("\n  По транспорту:")
     for k, v in sorted(by_type.items()):
-        print(f"    {k}: {v}")
+        print(f"    {k:15} : {v}")
     print("\n  По security:")
     for k, v in sorted(by_sec.items()):
-        print(f"    {k}: {v}")
+        print(f"    {k:15} : {v}")
     input("\nEnter...")
 
 
@@ -1439,52 +2449,51 @@ def main():
     ensure_dirs()
     cfg = cfg_load()
     clr()
-    hdr("SubManager - Менеджер прокси-подписок для iSH")
-    print(f"  Input:  {INPUT_DIR}")
-    print(f"  Output: {OUTPUT_DIR}")
+    hdr("SubManager")
+    print(f"  Input:   {INPUT_DIR}")
+    print(f"  Output:  {OUTPUT_DIR}")
     print(f"  Routing: {ROUTING_DIR}")
     print("=" * W)
     servers = []
+    json_template = None
     while True:
         clr()
         hdr("ГЛАВНОЕ МЕНЮ")
         print(f"  Серверов: {len(servers)}")
-        line()
+        if json_template:
+            print(f"  Загружен JSON шаблон")
+        ln()
         print("  1 - Загрузить исходники")
         print("  2 - Редактировать серверы")
         print("  3 - Показать список серверов")
         print("  4 - Статистика")
         print("  5 - Сгенерировать JSON Xray")
         print("  6 - Настройки генерации")
-        print("  7 - Сохранить ссылки (txt + base64)")
-        print("  8 - Сохранить Clash YAML")
-        print("  9 - Сделать бэкап")
-        print("  0 - Выход")
-        ch = ask("Выбор: ", choices=[str(i) for i in range(0, 10)])
-        if ch == "0":
+        print("  7 - Роутинг для клиентов (happ/v2raytun)")
+        print("  8 - Экспорт выбранных серверов")
+        print("  9 - Сохранить ссылки (txt + base64)")
+        print(" 10 - Сохранить Clash YAML")
+        print(" 11 - Сделать бэкап")
+        print("  q - Выход")
+        ch = ask("Выбор: ", choices=[str(i) for i in range(1, 12)])
+        if ch == EXIT:
             if servers:
-                ans = ask("Сделать бэкап перед выходом? (y/n) [n]: ", default="n")
-                if ans.lower() == 'y':
+                a = ask("Сделать бэкап перед выходом? (y/n) [n]: ", default="n")
+                if a != EXIT and a.lower() == 'y':
                     backup_servers(servers)
             print("[+] Выход.")
             break
         if ch == "1":
             raw = load_source()
             if raw:
-                links = extract_links(raw)
-                if not links:
-                    print("[!] Ссылки не найдены.")
+                new_servers, json_data = parse_input(raw)
+                if new_servers:
+                    servers.extend(new_servers)
+                    if json_data:
+                        json_template = json_data
+                    print(f"[+] Загружено: {len(new_servers)}. Всего: {len(servers)}")
                 else:
-                    new = []
-                    for ln in links:
-                        p = parse_uri(ln)
-                        if p:
-                            new.append(p)
-                    if new:
-                        servers.extend(new)
-                        print(f"[+] Загружено: {len(new)}. Всего: {len(servers)}")
-                    else:
-                        print("[!] Парсинг не удался.")
+                    print("[!] Не удалось распарсить данные.")
             input("\nEnter...")
         elif ch == "2":
             if not servers:
@@ -1493,7 +2502,10 @@ def main():
                 continue
             servers = edit_servers(servers)
         elif ch == "3":
+            clr()
+            hdr("СПИСОК СЕРВЕРОВ")
             show_servers_list(servers, show_params=True)
+            print(f"\n  Всего: {len(servers)}")
             input("\nEnter...")
         elif ch == "4":
             stats(servers)
@@ -1502,26 +2514,38 @@ def main():
                 print("[!] Нет серверов.")
                 input("Enter...")
                 continue
+            nm, rem = ask_json_name_and_remarks(cfg)
+            if nm is None:
+                input("Enter...")
+                continue
             cfg_json = gen_config(servers, cfg)
-            save_json(cfg_json, cfg)
+            save_json(cfg_json, cfg, nm, rem)
             input("\nEnter...")
         elif ch == "6":
             cfg = config_menu(servers, cfg)
         elif ch == "7":
+            cfg = routing_menu(cfg)
+        elif ch == "8":
+            if not servers:
+                print("[!] Нет серверов.")
+                input("Enter...")
+                continue
+            export_menu(servers, cfg)
+        elif ch == "9":
             if not servers:
                 print("[!] Нет серверов.")
                 input("Enter...")
                 continue
             save_base64(servers)
             input("\nEnter...")
-        elif ch == "8":
+        elif ch == "10":
             if not servers:
                 print("[!] Нет серверов.")
                 input("Enter...")
                 continue
             save_yaml_clash(servers)
             input("\nEnter...")
-        elif ch == "9":
+        elif ch == "11":
             if not servers:
                 print("[!] Нет серверов.")
                 input("Enter...")
@@ -1550,8 +2574,7 @@ echo "nameserver 1.1.1.1" >> /etc/resolv.conf
 
 echo "[*] Повторная проверка интернета..."
 while ! ping -c 3 google.com > /dev/null 2>&1; do
-    echo "[!] ОШИБКА: Соединение потеряно."
-    echo "[*] Повторная проверка через 5 секунд..."
+    echo "[!] Соединение потеряно. Повтор через 5 сек..."
     sleep 5
 done
 
