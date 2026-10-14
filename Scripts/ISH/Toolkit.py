@@ -1,19 +1,34 @@
 #!/bin/sh
+
+# ============================================================
+#  Shadowrocket Toolkit (iSH)
+# ============================================================
+
+# --- Инициализация ---
 clear
 BASE="$HOME/Shadowrocket"
 LANG_FILE="$HOME/.sr_toolkit_lang"
+TK_VERSION="2"
+VERSION_FILE="$BASE/.toolkit_version"
 
-echo "===================================================="
-echo "  Language / Язык"
-echo "===================================================="
-echo "  1 - Русский [по умолчанию]"
-echo "  2 - English"
-printf "Выбор / Choice [1]: "
-read LC
-if [ "$LC" = "2" ]; then LANG_SEL="en"; else LANG_SEL="ru"; fi
-echo "$LANG_SEL" > "$LANG_FILE"
+# --- Выбор языка (только при первом запуске или если LANG_FILE отсутствует) ---
+if [ ! -f "$LANG_FILE" ]; then
+    echo "===================================================="
+    echo "  Language / Язык"
+    echo "===================================================="
+    echo "  1 - Русский [по умолчанию]"
+    echo "  2 - English"
+    printf '%s' "Выбор / Choice [1]: "
+    IFS= read -r LC
+    if [ "$LC" = "2" ]; then LANG_SEL="en"; else LANG_SEL="ru"; fi
+    echo "$LANG_SEL" > "$LANG_FILE"
+else
+    LANG_SEL="$(cat "$LANG_FILE" 2>/dev/null)"
+    if [ "$LANG_SEL" != "en" ] && [ "$LANG_SEL" != "ru" ]; then LANG_SEL="ru"; fi
+fi
 export LANG_SEL
 
+# --- Функция перевода ---
 T() {
     if [ "$LANG_SEL" = "en" ]; then
         case "$1" in
@@ -41,6 +56,9 @@ T() {
             bad) echo "Invalid choice." ;;
             press) echo "Press Enter to return to menu..." ;;
             fail) echo "Download failed." ;;
+            dl_try) echo "[*] Trying download method" ;;
+            dl_ok) echo "[+] Downloaded successfully" ;;
+            net_timeout) echo "[!] Network unavailable. Continuing offline." ;;
         esac
     else
         case "$1" in
@@ -68,86 +86,197 @@ T() {
             bad) echo "Неверный выбор." ;;
             press) echo "Нажмите Enter для возврата в меню..." ;;
             fail) echo "Не удалось скачать." ;;
+            dl_try) echo "[*] Попытка метода" ;;
+            dl_ok) echo "[+] Успешно скачано" ;;
+            net_timeout) echo "[!] Сеть недоступна. Продолжаем без сети." ;;
         esac
     fi
 }
 
+# --- Фоновая привязка геолокации iSH ---
 if [ -e /dev/location ]; then
     ( cat /dev/location > /dev/null 2>&1 ) &
 fi
+
+# ============================================================
+#  Утилиты: DNS, скачивание несколькими способами
+# ============================================================
+
+# --- Настройка DNS ---
+setup_dns() {
+    cat > /etc/resolv.conf << 'DNS_EOF'
+nameserver 8.8.8.8
+nameserver 8.8.4.4
+nameserver 94.140.14.14
+nameserver 94.140.15.15
+nameserver 1.1.1.1
+DNS_EOF
+}
+
+# --- Универсальное скачивание: curl -> wget -> aria2c -> python3 urllib ---
+try_download() {
+    _url="$1"
+    _out="$2"
+    rm -f "$_out"
+
+    if command -v curl >/dev/null 2>&1; then
+        echo "$(T dl_try): curl"
+        curl -fsSL --connect-timeout 15 --max-time 60 -A "Mozilla/5.0" "$_url" -o "$_out" 2>/dev/null
+        if [ -s "$_out" ]; then echo "$(T dl_ok): curl"; return 0; fi
+    fi
+
+    if command -v wget >/dev/null 2>&1; then
+        echo "$(T dl_try): wget"
+        wget -q --no-check-certificate -U "Mozilla/5.0" -O "$_out" "$_url" 2>/dev/null
+        if [ -s "$_out" ]; then echo "$(T dl_ok): wget"; return 0; fi
+    fi
+
+    if command -v aria2c >/dev/null 2>&1; then
+        echo "$(T dl_try): aria2c"
+        aria2c -q --check-certificate=false -U "Mozilla/5.0" \
+            -d "$(dirname "$_out")" -o "$(basename "$_out")" "$_url" 2>/dev/null
+        if [ -s "$_out" ]; then echo "$(T dl_ok): aria2c"; return 0; fi
+    fi
+
+    if command -v python3 >/dev/null 2>&1; then
+        echo "$(T dl_try): python3"
+        python3 - "$_url" "$_out" << 'PYEOF' 2>/dev/null
+import sys, urllib.request, ssl
+url, out = sys.argv[1], sys.argv[2]
+ctx = ssl.create_default_context()
+ctx.check_hostname = False
+ctx.verify_mode = ssl.CERT_NONE
+req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+with urllib.request.urlopen(req, context=ctx, timeout=30) as r, open(out, 'wb') as f:
+    f.write(r.read())
+PYEOF
+        if [ -s "$_out" ]; then echo "$(T dl_ok): python3"; return 0; fi
+    fi
+
+    return 1
+}
+
+# ============================================================
+#  Вопросы: обновление системы / скрипта
+# ============================================================
 
 echo ""
 echo "===================================================="
 echo "  $(T update_sys)"
 echo "===================================================="
-printf "[y/N]: "
-read U1
+printf '%s' "[y/N]: "
+IFS= read -r U1
 case "$U1" in y|Y|yes|Yes|YES) DO_UPDATE=1 ;; *) DO_UPDATE=0 ;; esac
 
 echo ""
 echo "===================================================="
 echo "  $(T update_script)"
 echo "===================================================="
-printf "[y/N]: "
-read U2
+printf '%s' "[y/N]: "
+IFS= read -r U2
 case "$U2" in y|Y|yes|Yes|YES) DO_SCRIPT=1 ;; *) DO_SCRIPT=0 ;; esac
+
+# ============================================================
+#  Обновление самого скрипта Toolkit
+# ============================================================
 
 if [ "$DO_SCRIPT" = "1" ]; then
     echo ""
     echo "===================================================="
     echo "  $(T delete_files)"
     echo "===================================================="
-    printf "[y/N]: "
-    read U3
+    printf '%s' "[y/N]: "
+    IFS= read -r U3
     case "$U3" in y|Y|yes|Yes|YES) rm -rf "$BASE" ;; esac
+
+    # --- Настройка DNS перед скачиванием (иначе iSH не резолвит github) ---
+    echo "$(T dns)"
+    setup_dns
+
+    # --- Скачивание новой версии скрипта несколькими способами ---
     echo "$(T dl_script)"
-    curl -sL "https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/ISH/Toolkit.py" -o "$HOME/Toolkit.sh"
-    if [ -s "$HOME/Toolkit.sh" ]; then
+    SCRIPT_URL="https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/ISH/Toolkit.py"
+    NEW_SCRIPT="$HOME/Toolkit.sh"
+    DL_OK=0
+    for attempt in 1 2 3; do
+        if try_download "$SCRIPT_URL" "$NEW_SCRIPT"; then
+            DL_OK=1
+            break
+        fi
+        echo "$(T net_retry) [$attempt/3]"
+        sleep 3
+    done
+
+    # --- Проверка содержимого: это shell-скрипт, не HTML-ошибка ---
+    if [ "$DL_OK" = "1" ] && head -c 20 "$NEW_SCRIPT" | grep -q '^#!'; then
         echo "$(T script_ok)"
-        exec sh "$HOME/Toolkit.sh"
+        exec sh "$NEW_SCRIPT"
     else
         echo "$(T fail)"
     fi
 fi
 
+# ============================================================
+#  Обновление системы и установка зависимостей
+# ============================================================
+
 if [ "$DO_UPDATE" = "1" ]; then
     echo "$(T dns)"
-    echo "nameserver 8.8.8.8" > /etc/resolv.conf
-    echo "nameserver 8.8.4.4" >> /etc/resolv.conf
-    echo "nameserver 94.140.14.14" >> /etc/resolv.conf
-    echo "nameserver 94.140.15.15" >> /etc/resolv.conf
-    echo "nameserver 1.1.1.1" >> /etc/resolv.conf
+    setup_dns
+
     echo "$(T net_check)"
-    while ! ping -c 3 google.com > /dev/null 2>&1; do
-        echo "$(T net_retry)"
+    tries=0
+    while ! ping -c 3 1.1.1.1 > /dev/null 2>&1; do
+        tries=$((tries + 1))
+        if [ "$tries" -ge 12 ]; then
+            echo "$(T net_timeout)"
+            break
+        fi
+        echo "$(T net_retry) [$tries/12]"
         sleep 5
     done
     echo "$(T net_ok)"
+
     echo "$(T sys_upd)"
     apk update
     apk upgrade
+
     echo "$(T deps)"
     apk add --no-cache \
         python3 py3-pip curl wget aria2 openssl ca-certificates \
-        bind-tools bash sqlite git py3-chardet
+        bind-tools bash sqlite git py3-chardet || echo "[!] Some dependencies failed"
 fi
 
+# ============================================================
+#  Создание структуры папок
+# ============================================================
+
 echo "$(T mkdirs)"
-[ -d "$BASE" ] || mkdir -p "$BASE"
-[ -d "$BASE/AdBlock" ] || mkdir -p "$BASE/AdBlock"
-[ -d "$BASE/SQLiteTXT/Input" ] || mkdir -p "$BASE/SQLiteTXT/Input"
-[ -d "$BASE/SQLiteTXT/Output" ] || mkdir -p "$BASE/SQLiteTXT/Output"
-[ -d "$BASE/SpyLog/Input" ] || mkdir -p "$BASE/SpyLog/Input"
-[ -d "$BASE/SpyLog/Output" ] || mkdir -p "$BASE/SpyLog/Output"
-[ -d "$BASE/SubManager/Input" ] || mkdir -p "$BASE/SubManager/Input"
-[ -d "$BASE/SubManager/Output" ] || mkdir -p "$BASE/SubManager/Output"
-[ -d "$BASE/SubManager/Backups" ] || mkdir -p "$BASE/SubManager/Backups"
-[ -d "$BASE/SubManager/Routing" ] || mkdir -p "$BASE/SubManager/Routing"
-[ -d "$BASE/Configurations" ] || mkdir -p "$BASE/Configurations"
+mkdir -p "$BASE" \
+    "$BASE/AdBlock" \
+    "$BASE/SQLiteTXT/Input" "$BASE/SQLiteTXT/Output" \
+    "$BASE/SpyLog/Input" "$BASE/SpyLog/Output" \
+    "$BASE/SubManager/Input" "$BASE/SubManager/Output" \
+    "$BASE/SubManager/Backups" "$BASE/SubManager/Routing" \
+    "$BASE/Configurations"
+
+# --- Проверка версии для перегенерации python-скриптов ---
+REGEN_PY=0
+if [ ! -f "$VERSION_FILE" ] || [ "$(cat "$VERSION_FILE" 2>/dev/null)" != "$TK_VERSION" ]; then
+    REGEN_PY=1
+fi
 
 echo "$(T mk_scripts)"
 
+# ============================================================
+#  Скрипт 1/4: AdBlock.py
+# ============================================================
+if [ "$REGEN_PY" = "1" ] || [ ! -s "$BASE/AdBlock.py" ]; then
 cat << 'ADBLOCK_END' > "$BASE/AdBlock.py"
+# ============================================================
+#  AdBlock: генератор блок-листов
+# ============================================================
+
 import urllib.request
 import subprocess
 import re
@@ -159,6 +288,9 @@ import math
 import shutil
 import ipaddress
 
+os.umask(0o077)
+
+# --- Загрузка языка ---
 LANG = os.environ.get("LANG_SEL", "").strip()
 if not LANG:
     try:
@@ -169,6 +301,7 @@ if not LANG:
 if LANG not in ("ru", "en"):
     LANG = "ru"
 
+# --- Словарь переводов ---
 _T = {
 "ru": {
  "exit": "Выход.",
@@ -342,6 +475,7 @@ _T = {
 def tr(k):
     return _T.get(LANG, _T["ru"]).get(k, _T["ru"].get(k, k))
 
+# --- Безопасный ввод с поддержкой q/exit ---
 def _input(prompt=""):
     try:
         v = input(prompt)
@@ -364,6 +498,7 @@ def _inp_allow_empty(prompt=""):
         sys.exit(0)
     return v
 
+# --- Выбор режима ---
 def choose_mode():
     print("\n" + "="*50)
     print(tr("mode_hdr"))
@@ -374,6 +509,7 @@ def choose_mode():
 
 MODE = choose_mode()
 
+# --- Выбор OISD ---
 oisd_choice = '3'
 if MODE == "default":
     while True:
@@ -390,6 +526,7 @@ if MODE == "default":
         if c in ('y', 'yes', ''):
             break
 
+# --- URL-ы списков ---
 oisd_main_url = "https://dl.oisd.nl/oisd_big_surge.list"
 oisd_nsfw_url = "https://dl.oisd.nl/oisd_nsfw_surge.list"
 oisd_small_url = "https://dl.oisd.nl/oisd_small_surge.list"
@@ -407,6 +544,7 @@ protected_domains = set()
 forced_block_suffixes = set()
 forced_block_domains = set()
 
+# --- Настройка: режим по умолчанию ---
 if MODE == "default":
     urls = {
         "1) Loyalsoldier": [
@@ -510,6 +648,7 @@ if MODE == "default":
     for name in urls:
         whitelist_clean[name] = not ("OISD" in name)
 else:
+    # --- Настройка: custom-режим ---
     def ask_csv(key):
         print("\n=== " + tr(key) + " ===")
         print(tr("custom_list_hint"))
@@ -569,6 +708,7 @@ else:
         print("\n[!] " + tr("custom_no_bl"))
         sys.exit(1)
 
+# --- Опция разбиения ---
 print("\n" + "="*45)
 print(tr("split_hdr"))
 print("  " + tr("split_1"))
@@ -578,6 +718,7 @@ SPLIT_LISTS = (_v == "1")
 print(" -> " + (tr("split_on") if SPLIT_LISTS else tr("split_off")))
 print("="*45)
 
+# --- Константы-фильтры ---
 exclude_keywords = [
     "ads","analytics","tracker","tracking","tracer","metrics","metrica","metrika","telemetry","pixel","beacon",
     "adserver","doubleclick","adjust","appsflyer","app-measurement","log-upload","crash-report","messenger.yandex","vetmanager"
@@ -599,6 +740,7 @@ AGGREGATE_THRESHOLD = 0
 headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'}
 errors_output_file = "LogsAdBlockScript"
 
+# --- Состояние ---
 download_report = {}
 failed_lists = []
 white_download_report = {}
@@ -631,10 +773,15 @@ errors = []
 DNS_SERVERS = ["8.8.8.8","8.8.4.4","94.140.14.14","94.140.15.15","1.1.1.1"]
 _progress_state = {}
 
+# --- Хелпер: определять, чистить ли список белыми ---
 def should_filter_with_whitelist(name):
     if MODE == "default":
         return not ("OISD" in name)
     return whitelist_clean.get(name, True)
+
+# ============================================================
+#  Блок: сетевые функции
+# ============================================================
 
 def setup_dns_and_test():
     while True:
@@ -668,6 +815,10 @@ def full_network_diagnostics():
     except Exception:
         pass
 
+# ============================================================
+#  Блок: прогресс-бар
+# ============================================================
+
 def print_progress(prefix, current, total, bar_len=5, start_time=None):
     if total <= 0:
         return
@@ -690,6 +841,10 @@ def print_progress(prefix, current, total, bar_len=5, start_time=None):
         sys.stdout.flush()
     if "[dl]" in prefix:
         _progress_state[prefix] = {"time": now, "current": current}
+
+# ============================================================
+#  Блок: скачивание списков (несколькими методами)
+# ============================================================
 
 def download_with_urllib(url, headers, timeout=30):
     req = urllib.request.Request(url, headers=headers)
@@ -821,6 +976,10 @@ def download_data(name, url_or_urls):
     print(f"\r  [!] {tr('dl_err')}: {name} {tr('dl_err_any')}.\033[K")
     return [], None
 
+# ============================================================
+#  Блок: валидация домена / IP / защиты
+# ============================================================
+
 def is_protected_full(domain):
     if domain in protected_domains:
         return True, "exact"
@@ -870,6 +1029,10 @@ def normalize_line_for_parser(raw_line):
         return "#__PIHOLE_REGEX_SKIP__"
     return raw_line
 
+# ============================================================
+#  Блок: логи
+# ============================================================
+
 def save_logs(total_time_val=None):
     try:
         with open(errors_output_file, 'w', encoding='utf-8') as ef:
@@ -884,6 +1047,10 @@ def save_logs(total_time_val=None):
             ef.write(f"\nTotal errors/exclusions: {len(errors)}\n")
     except Exception as e:
         sys.stdout.write(f"\n[!] Log write failed: {e}\n")
+
+# ============================================================
+#  Блок: оптимизация доменов (убираем поддомены, если есть родитель)
+# ============================================================
 
 def optimize_domain_set(source_domains, log_prefix):
     sorted_raw = sorted(list(source_domains), key=lambda x: x.count('.'))
@@ -902,6 +1069,10 @@ def optimize_domain_set(source_domains, log_prefix):
         if not redundant:
             opt_set.add(d)
     return opt_set
+
+# ============================================================
+#  Блок: запись итоговых списков
+# ============================================================
 
 def build_and_write():
     global optimized_domains, optimized_domains_plus, optimized_domains_sm, optimized_domains_plus_sm
@@ -959,6 +1130,10 @@ def build_and_write():
         total_rules += final_list_sm_len + final_list_plus_sm_len
     return total_rules
 
+# ============================================================
+#  ЭТАП 1: загрузка белых списков
+# ============================================================
+
 print("\n=== " + tr("e1w") + " ===")
 for name, url in white_urls.items():
     lines, method = download_data(name, url)
@@ -969,6 +1144,10 @@ for name, url in white_urls.items():
         white_download_report[name] = {"status": "failed", "method": None, "lines": 0}
         failed_white_lists.append(name)
 
+# ============================================================
+#  ЭТАП 1: загрузка чёрных списков
+# ============================================================
+
 print("\n=== " + tr("e1b") + " ===")
 for name, url in urls.items():
     lines, method = download_data(name, url)
@@ -978,6 +1157,10 @@ for name, url in urls.items():
     else:
         download_report[name] = {"status": "failed", "method": None, "lines": 0}
         failed_lists.append(name)
+
+# ============================================================
+#  ЭТАП 2: повторная загрузка ошибок
+# ============================================================
 
 print("\n=== " + tr("e2") + " ===")
 while failed_lists or failed_white_lists:
@@ -1012,6 +1195,10 @@ while failed_lists or failed_white_lists:
         else:
             black_raw_data[target] = {"lines": lines, "method": method, "url": url_to_try}
             failed_lists.remove(target)
+
+# ============================================================
+#  ЭТАП 3: обработка белых списков
+# ============================================================
 
 print("\n=== " + tr("e3") + " ===")
 for name, data_dict in white_raw_data.items():
@@ -1049,6 +1236,10 @@ for d in list(protected_domains):
         protected_domains.discard(d)
         protected_suffixes.add(d)
 
+# ============================================================
+#  ЭТАП 4: обработка чёрных списков
+# ============================================================
+
 print("\n=== " + tr("e4") + " ===")
 for name, data_dict in black_raw_data.items():
     lines = data_dict["lines"]
@@ -1075,7 +1266,8 @@ for name, data_dict in black_raw_data.items():
             continue
         if exclude_pattern.search(line):
             stats["excluded"] += 1
-            errors.append(("excluded_keyword", name, raw_line))
+            if len(errors) < 500:
+                errors.append(("excluded_keyword", name, raw_line))
             continue
 
         if "," in line and not line.startswith("||"):
@@ -1168,10 +1360,18 @@ for ip in forced_block_ips:
     if v:
         all_ips.add(v)
 
+# ============================================================
+#  ЭТАП 5: формирование и запись файлов
+# ============================================================
+
 print("\n=== " + tr("e5") + " ===")
 build_and_write()
 
 TOTAL_TIME = round(time.time() - SCRIPT_START_TIME, 2)
+
+# ============================================================
+#  Итоговая сводка
+# ============================================================
 
 print("\n" + "=" * 45)
 print(tr("done"))
@@ -1192,7 +1392,7 @@ if MODE == "custom" or oisd_choice in ('1', '3'):
 if MODE == "default" and oisd_choice in ('2', '3'):
     print(f"{tr('r_sm')}: {final_list_sm_len}")
     print(f"{tr('r_plus_sm')}: {final_list_plus_sm_len}")
-print(f"{tr('total_drop')}: {len(errors)}")
+print(f"{tr('total_drop')}: {stats['excluded']}")
 print(f"{tr('total_time')}: {TOTAL_TIME} {tr('sec')}.")
 print("-" * 45)
 print(tr("sum_bl") + ":")
@@ -1205,8 +1405,17 @@ save_logs(TOTAL_TIME)
 print("\n" + (tr("all_ok") if not (failed_lists or failed_white_lists) else tr("skipped")))
 print("=" * 45)
 ADBLOCK_END
-    
+fi
+
+# ============================================================
+#  Скрипт 2/4: SQLiteTXT.py
+# ============================================================
+if [ "$REGEN_PY" = "1" ] || [ ! -s "$BASE/SQLiteTXT.py" ]; then
 cat << 'SQLITE_END' > "$BASE/SQLiteTXT.py"
+# ============================================================
+#  SQLiteTXT: конвертер SQLite баз в текстовый вид
+# ============================================================
+
 import os
 import sys
 import re
@@ -1216,6 +1425,9 @@ from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
 
+os.umask(0o077)
+
+# --- Загрузка языка ---
 LANG = os.environ.get("LANG_SEL", "").strip()
 if not LANG:
     try:
@@ -1226,6 +1438,7 @@ if not LANG:
 if LANG not in ("ru", "en"):
     LANG = "ru"
 
+# --- Словарь переводов ---
 _T = {
 "ru": {
  "exit": "Выход.",
@@ -1395,6 +1608,7 @@ _T = {
 def tr(k):
     return _T.get(LANG, _T["ru"]).get(k, _T["ru"].get(k, k))
 
+# --- Безопасный ввод ---
 def _input(prompt=""):
     try:
         v = input(prompt)
@@ -1428,6 +1642,7 @@ def _inp_allow_back(prompt=""):
         sys.exit(0)
     return v
 
+# --- Пути ---
 ROOT = Path.home()
 INPUT_DIR = ROOT / "Shadowrocket" / "SQLiteTXT" / "Input"
 OUTPUT_DIR = ROOT / "Shadowrocket" / "SQLiteTXT" / "Output"
@@ -1435,6 +1650,7 @@ CONFIG_FILE = ROOT / ".sqlitetxt_config"
 SEPARATOR = "\t"
 SEP_NAME = "tab"
 
+# --- Конфиг разделителя ---
 def load_config():
     global SEPARATOR, SEP_NAME
     if CONFIG_FILE.exists():
@@ -1453,6 +1669,7 @@ def save_config():
 
 load_config()
 
+# --- Хелперы ---
 def sanitize_filename(name):
     if not name:
         return name
@@ -1470,6 +1687,10 @@ def now_stamp():
 def die(message):
     print(f"[!] {message}")
     sys.exit(1)
+
+# ============================================================
+#  Блок: работа со списком файлов
+# ============================================================
 
 def list_input_files():
     if not INPUT_DIR.exists():
@@ -1532,6 +1753,10 @@ def select_files(files, allow_multiple=True, prompt=None):
             return [files[i - 1] for i in indices]
         except Exception:
             print(f"[!] {tr('bad')}")
+
+# ============================================================
+#  Блок: работа с SQLite
+# ============================================================
 
 def get_user_tables(conn):
     cursor = conn.cursor()
@@ -1631,6 +1856,10 @@ def export_table_human(conn, table, out_file, dedupe=False, sort_by_policy=False
                 out_file.write(f"{col}: {val if val is not None else '(null)'}\n")
         return len(rows)
 
+# ============================================================
+#  Блок: режим экспорта
+# ============================================================
+
 def extract_mode(selected_files, show_schema, show_stats, keywords, dedupe, sort_by_policy):
     total_files = len(selected_files)
     created = []
@@ -1677,6 +1906,7 @@ def extract_mode(selected_files, show_schema, show_stats, keywords, dedupe, sort
             print(f"\r[!] {tr('err_proc')} {db_path.name}: {e}          ")
     return created
 
+# --- Настройки экспорта ---
 def ask_options_extract():
     print(f"\n=== {tr('exp_settings')} (5 bits, Enter = 11000) ===")
     print(tr("opt_schema"))
@@ -1700,6 +1930,10 @@ def ask_options_extract():
             if kw:
                 keywords = [x.strip() for x in kw.split(",") if x.strip()]
         return bits, keywords
+
+# ============================================================
+#  Блок: переименование
+# ============================================================
 
 def rename_mode(files):
     while True:
@@ -1763,6 +1997,10 @@ def rename_single_output_file(file_path):
     print(f"[+] {tr('renamed')} {new_name}")
     return new_path
 
+# ============================================================
+#  Блок: разделитель
+# ============================================================
+
 def change_separator():
     global SEPARATOR, SEP_NAME
     print(f"\n[+] {tr('cur_sep')}: '{SEP_NAME}'")
@@ -1777,6 +2015,10 @@ def change_separator():
         print(f"[+] {tr('sep_changed')} '{SEP_NAME}'")
     else:
         print(f"[!] {tr('bad')}")
+
+# ============================================================
+#  Блок: очистка
+# ============================================================
 
 def clean_broken_files():
     print(f"\n=== {tr('clean_hdr')} ===")
@@ -1829,6 +2071,10 @@ def clean_broken_files():
             print(f"[+] {tr('folder_ok')}: {d}")
         else:
             print(f"[!] {tr('skipped')}: {d}")
+
+# ============================================================
+#  Блок: главное меню
+# ============================================================
 
 def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -1885,8 +2131,17 @@ if __name__ == "__main__":
         print("\n[+] " + tr("exit"))
         sys.exit(0)
 SQLITE_END
+fi
 
+# ============================================================
+#  Скрипт 3/4: SpyLog.py
+# ============================================================
+if [ "$REGEN_PY" = "1" ] || [ ! -s "$BASE/SpyLog.py" ]; then
 cat << 'SPYLOG_END' > "$BASE/SpyLog.py"
+# ============================================================
+#  SpyLog: анализатор логов Shadowrocket
+# ============================================================
+
 import json
 import re
 import sys
@@ -1902,6 +2157,9 @@ import html
 import codecs
 import chardet
 
+os.umask(0o077)
+
+# --- Загрузка языка ---
 LANG = os.environ.get("LANG_SEL", "").strip()
 if not LANG:
     try:
@@ -1912,6 +2170,7 @@ if not LANG:
 if LANG not in ("ru", "en"):
     LANG = "ru"
 
+# --- Словарь переводов ---
 _T = {
 "ru": {
  "exit": "Выход.",
@@ -2135,6 +2394,7 @@ _T = {
 def tr(k):
     return _T.get(LANG, _T["ru"]).get(k, _T["ru"].get(k, k))
 
+# --- Безопасный ввод ---
 def _input(prompt=""):
     try:
         v = input(prompt)
@@ -2157,6 +2417,7 @@ def _inp_allow_back(prompt=""):
         sys.exit(0)
     return v
 
+# --- Пути и константы ---
 ROOT = Path.home()
 INPUT_DIR = ROOT / "Shadowrocket" / "SpyLog" / "Input"
 OUTPUT_DIR = ROOT / "Shadowrocket" / "SpyLog" / "Output"
@@ -2176,6 +2437,7 @@ METHODS = {"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "TRACE", 
 CONFIG_FILE = ROOT / ".spylog_config"
 SPY_MODULE_URL = "https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/main/Configurations/Spy.module"
 
+# --- Конфиг паттерна ---
 def load_config():
     global SPY_PATTERN
     if CONFIG_FILE.exists():
@@ -2190,6 +2452,10 @@ def save_config():
         f.write(SPY_PATTERN.decode('utf-8', errors='ignore'))
 
 load_config()
+
+# ============================================================
+#  Блок: загрузка Spy.module
+# ============================================================
 
 def fetch_spy_module():
     print(f"[*] {tr('module_dl')}...")
@@ -2209,6 +2475,10 @@ def fetch_spy_module():
         f.write(data)
     print(f"[+] {tr('module_saved')}: {out}")
     return data
+
+# ============================================================
+#  Блок: хелперы
+# ============================================================
 
 def sanitize_filename(name):
     if not name:
@@ -2230,6 +2500,10 @@ def die(message):
 
 def strip_ansi_bytes(data):
     return ANSI_RE.sub(b"", data)
+
+# ============================================================
+#  Блок: декодирование
+# ============================================================
 
 def detect_and_decode(data):
     try:
@@ -2280,6 +2554,10 @@ def universal_decode_text(text):
     except Exception:
         pass
     return text
+
+# ============================================================
+#  Блок: извлечение и парсинг блоков
+# ============================================================
 
 def extract_spy_blocks_bytes(raw):
     lines = raw.split(b'\n')
@@ -2373,6 +2651,10 @@ def load_log_and_extract_blocks(path):
         blocks_text.append(text)
     return blocks_text
 
+# ============================================================
+#  Блок: список файлов и выбор
+# ============================================================
+
 def list_input_files():
     if not INPUT_DIR.exists():
         return []
@@ -2463,6 +2745,10 @@ def ask_groups(files):
         groups.append(selected)
     return groups
 
+# ============================================================
+#  Блок: утилиты обработки блоков
+# ============================================================
+
 def dedupe_exact(blocks, keep_duplicates):
     if keep_duplicates:
         return blocks
@@ -2496,6 +2782,10 @@ def move_keyword_blocks(blocks, keywords):
         else:
             other.append(block)
     return matched + other
+
+# ============================================================
+#  Блок: диалоги настроек
+# ============================================================
 
 def ask_options(mode):
     if mode == "extract":
@@ -2561,6 +2851,10 @@ def build_records_from_blocks(blocks, source_name, decode=False, sig_level=1):
         records.append(rec)
     return records
 
+# ============================================================
+#  Блок: режим Extract
+# ============================================================
+
 def extract_mode(selected_files, show_urls, decode, show_stats, keywords, keep_duplicates):
     all_blocks = []
     per_file_counts = []
@@ -2611,6 +2905,10 @@ def extract_mode(selected_files, show_urls, decode, show_stats, keywords, keep_d
     print(f"[+] {tr('extract_done')}: {out_path}")
     print(f"[+] {tr('blocks')}: {len(all_blocks)}")
     return out_path
+
+# ============================================================
+#  Блок: режим Compare (файлы)
+# ============================================================
 
 def group_by_signature(records):
     grouped = defaultdict(list)
@@ -2753,6 +3051,10 @@ def compare_mode(selected_files, show_urls, decode, show_diffs, include_blocks, 
     print(f"[+] {tr('extract_done')}: {out_path}")
     return out_path
 
+# ============================================================
+#  Блок: режим Compare (группы)
+# ============================================================
+
 def build_group_records(group_files, group_name, decode, keep_duplicates, sig_level):
     all_blocks = []
     for path in group_files:
@@ -2879,6 +3181,10 @@ def compare_groups(groups, show_urls, decode, show_diffs, include_blocks, keywor
     print(f"[+] {tr('extract_done')}: {out_path}")
     return out_path
 
+# ============================================================
+#  Блок: переименование выходного файла
+# ============================================================
+
 def rename_output_file(path):
     while True:
         ans = _input(f"\n[?] {tr('rename_out')} {path.name}? (y/n) [n]: ").strip().lower() or "n"
@@ -2908,6 +3214,10 @@ def rename_output_file(path):
             return path
         else:
             print(f"[!] y/n")
+
+# ============================================================
+#  Блок: переименование входных файлов
+# ============================================================
 
 def rename_mode(files):
     while True:
@@ -2988,6 +3298,10 @@ def rename_mode(files):
         if _input(f"[?] {tr('cont_rename')} [n]: ").strip().lower() != "y":
             break
 
+# ============================================================
+#  Блок: смена паттерна
+# ============================================================
+
 def change_pattern():
     global SPY_PATTERN
     print(f"\n[+] {tr('pattern_cur')}: '{SPY_PATTERN.decode('utf-8', errors='ignore')}'")
@@ -2998,6 +3312,10 @@ def change_pattern():
         print(f"[+] {tr('pattern_ok')} '{new}'")
     else:
         print(f"[!] {tr('pattern_cancel')}")
+
+# ============================================================
+#  Блок: очистка папок
+# ============================================================
 
 def clean_broken_files():
     print(f"\n=== {tr('clean_hdr')} ===")
@@ -3063,6 +3381,10 @@ def clean_broken_files():
         return
     print(f"[!] {tr('bad')}")
 
+# ============================================================
+#  Блок: обработка пустой папки
+# ============================================================
+
 def handle_empty_input():
     print(f"\n[!] {tr('empty_hdr')}.")
     print(f"[*] {tr('how_get_logs')} {INPUT_DIR}")
@@ -3079,6 +3401,10 @@ def handle_empty_input():
         print("[+] " + tr("exit"))
         sys.exit(0)
     return "retry"
+
+# ============================================================
+#  Блок: главное меню
+# ============================================================
 
 def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -3156,12 +3482,24 @@ if __name__ == "__main__":
         print("\n[+] " + tr("exit"))
         sys.exit(0)
 SPYLOG_END
-    
+fi
+
+# ============================================================
+#  Скрипт 4/4: SubManager.py
+# ============================================================
+if [ "$REGEN_PY" = "1" ] || [ ! -s "$BASE/SubManager.py" ]; then
 cat << 'SUBMGR_END' > "$BASE/SubManager.py"
+# ============================================================
+#  SubManager: подписки + генерация Xray JSON
+# ============================================================
+
 import os, sys, re, json, base64, urllib.request, ssl, subprocess, shutil, time, random, copy, ipaddress
 from urllib.parse import urlparse, parse_qs, urlencode, unquote, quote
 from pathlib import Path
 
+os.umask(0o077)
+
+# --- Загрузка языка ---
 LANG = os.environ.get("LANG_SEL", "").strip()
 if not LANG:
     try:
@@ -3172,6 +3510,7 @@ if not LANG:
 if LANG not in ("ru", "en"):
     LANG = "ru"
 
+# --- Словарь переводов ---
 _T = {
 "ru": {
 "exit":"Выход.",
@@ -3448,6 +3787,8 @@ def tr(k):
     return _T.get(LANG, _T["ru"]).get(k, _T["ru"].get(k, k))
 
 EXIT = "__EXIT__"
+
+# --- Безопасный ввод ---
 def _in(prompt="", default=None, allow_exit=True):
     while True:
         try:
@@ -3512,6 +3853,7 @@ def _in_choice(prompt, choices):
             return v
         print(f"[!] {tr('allowed')}: {', '.join(choices)}")
 
+# --- Пути ---
 HOME = Path.home()
 BASE = HOME / "Shadowrocket" / "SubManager"
 INPUT_DIR = BASE / "Input"
@@ -3524,6 +3866,7 @@ UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.1
 W = 52
 DNS_SERVERS = ["8.8.8.8","8.8.4.4","1.1.1.1","94.140.14.14","94.140.15.15"]
 
+# --- Утилиты нормализации ---
 DURATION_RE = re.compile(r'^(\d+(?:\.\d+)?)(ms|s|m|h|d)?$')
 DURATION_UNITS = {'ms','s','m','h','d'}
 BALANCER_TYPES = {"leastload":"leastLoad","leastping":"leastPing","random":"random","roundrobin":"roundRobin"}
@@ -3542,6 +3885,10 @@ GEOSITE_SUGG = ["geosite:private","geosite:category-ads-all","geosite:category-r
 "geosite:cn","geosite:apple","geosite:icloud","geosite:microsoft","geosite:github","geosite:netflix","geosite:spotify","geosite:discord",
 "geosite:tiktok","geosite:category-games","geosite:category-media-ru","geosite:category-communication"]
 GEOIP_SUGG = ["geoip:private","geoip:ru","geoip:by","geoip:kz","geoip:cn","geoip:us","geoip:eu","geoip:telegram"]
+
+# ============================================================
+#  Блок: нормализация
+# ============================================================
 
 def norm_dur(val, default_unit='s'):
     if val is None: return f"1{default_unit}"
@@ -3594,13 +3941,19 @@ def process_domain_list(domains):
     result.extend(sorted(kw_set)); result.extend(sorted(re_set)); result.extend(sorted(set(other)))
     return result
 
+# --- Утилиты UI ---
 def clr(): os.system('clear')
 def hdr(t): print("=" * W); print(f" {t}"); print("=" * W)
 def ln(): print("-" * W)
+
 def fmt_size(b):
     if b < 1024: return f"{b} B"
     if b < 1024 * 1024: return f"{b/1024:.1f} KB"
     return f"{b/1024/1024:.2f} MB"
+
+# ============================================================
+#  Блок: скачивание URL (несколькими способами)
+# ============================================================
 
 def progress_bar(current, total, prefix="", width=25, elapsed=None):
     if total and total > 0:
@@ -3693,6 +4046,10 @@ def dl_url(url, method='auto', show=True):
             print(f"[!] {m}: {e}"); continue
     return None
 
+# ============================================================
+#  Блок: парсинг ссылок / JSON
+# ============================================================
+
 def try_b64(raw):
     s = raw.strip().replace('\n','').replace('\r','').replace(' ','')
     if len(s) < 16 or not re.fullmatch(r'[A-Za-z0-9+/=_\-]+', s): return None
@@ -3713,6 +4070,12 @@ def auto_decode(raw):
     dec = try_b64(raw)
     if dec: print("[+] Base64 decoded."); return dec
     return raw
+
+def _safe_parsed_port(p):
+    try:
+        return p.port
+    except ValueError:
+        return None
 
 def parse_uri(uri):
     uri = uri.strip()
@@ -3736,12 +4099,14 @@ def parse_uri(uri):
                             cand = dec.split(':', 1)[1].strip()
                             if len(cand) >= 8: r['id'] = cand
                 except Exception: pass
-            r['host'] = p.hostname or ''; r['port'] = str(p.port) if p.port else ''
+            pport = _safe_parsed_port(p)
+            r['host'] = p.hostname or ''; r['port'] = str(pport) if pport else ''
             for k,v in parse_qs(p.query).items(): r['params'][k] = v[0] if len(v) == 1 else v
         elif scheme in ('hysteria2','hy2','hysteria','hy'):
             p = urlparse(uri)
             r['password'] = unquote(p.username or '')
-            r['host'] = p.hostname or ''; r['port'] = str(p.port) if p.port else ''
+            pport = _safe_parsed_port(p)
+            r['host'] = p.hostname or ''; r['port'] = str(pport) if pport else ''
             for k,v in parse_qs(p.query).items(): r['params'][k] = v[0] if len(v) == 1 else v
         elif scheme == 'ss':
             body = uri[5:]
@@ -3774,7 +4139,8 @@ def parse_uri(uri):
             p = urlparse(uri)
             r['id'] = unquote(p.username or '')
             r['password'] = unquote(p.password or '')
-            r['host'] = p.hostname or ''; r['port'] = str(p.port) if p.port else ''
+            pport = _safe_parsed_port(p)
+            r['host'] = p.hostname or ''; r['port'] = str(pport) if pport else ''
             for k,v in parse_qs(p.query).items(): r['params'][k] = v[0] if len(v) == 1 else v
         else: return None
     except Exception: return None
@@ -3987,6 +4353,10 @@ def parse_singbox_multi(text):
         if srv: servers.append(srv)
     return servers
 
+# ============================================================
+#  Блок: построение URI
+# ============================================================
+
 def build_uri(s):
     scheme = s['scheme']; host = s['host']; port = s['port']
     params = dict(s['params']); name = s.get('name','')
@@ -4013,6 +4383,10 @@ def build_uri(s):
     if name: uri += '#' + quote(name)
     return uri
 
+# ============================================================
+#  Блок: список серверов
+# ============================================================
+
 def show_servers_list(servers, show_params=False):
     if not servers:
         print(f"[!] {tr('list_empty')}"); return
@@ -4032,6 +4406,10 @@ def show_servers_list(servers, show_params=False):
                     if len(val) > 40: val = val[:37] + "..."
                     extra.append(f"{k}={val}")
             if extra: print(f"      {', '.join(extra)}")
+
+# ============================================================
+#  Блок: конфиг (дефолт / загрузка / сохранение)
+# ============================================================
 
 def cfg_default():
     return {"dns_servers":DNS_SERVERS,"dns_query_strategy":"UseIP","observatory_url":"https://www.google.com/generate_204",
@@ -4090,6 +4468,10 @@ def cfg_save(cfg):
     CFG_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(CFG_FILE, 'w', encoding='utf-8') as f: json.dump(cfg, f, ensure_ascii=False, indent=2)
 
+# ============================================================
+#  Блок: утилиты файлов и имён
+# ============================================================
+
 def ensure_dirs():
     for d in [INPUT_DIR, OUTPUT_DIR, BACKUP_DIR, ROUTING_DIR]:
         if not d.exists(): d.mkdir(parents=True, exist_ok=True)
@@ -4112,6 +4494,10 @@ def autoload():
     try: raw = AUTOSAVE_FILE.read_text(encoding='utf-8', errors='ignore')
     except Exception: return []
     srv, _ = parse_input(raw); return srv
+
+# ============================================================
+#  Блок: парсинг входных данных
+# ============================================================
 
 def parse_input(raw):
     if not raw: return [], None
@@ -4136,6 +4522,10 @@ def parse_input(raw):
     if servers: return servers, None
     print(f"[!] {tr('parse_data')}")
     return [], None
+
+# ============================================================
+#  Блок: загрузка источников
+# ============================================================
 
 def load_source():
     hdr(tr("load_src"))
@@ -4180,6 +4570,10 @@ def load_source():
         return raw
     return auto_decode(raw)
 
+# ============================================================
+#  Блок: дедупликация
+# ============================================================
+
 def dedupe_servers(servers, mode='full'):
     seen = set(); out = []
     for s in servers:
@@ -4201,6 +4595,10 @@ def dedupe_menu(servers):
     if ch == EXIT: return servers
     mm = {"1":"full","2":"name","3":"addr","4":"user","5":"proto"}
     return dedupe_servers(servers, mm[ch])
+
+# ============================================================
+#  Блок: удаление серверов
+# ============================================================
 
 def delete_by_keyword(servers):
     hdr(tr("del_hdr"))
@@ -4254,6 +4652,10 @@ def delete_by_keyword(servers):
         print(f"[+] {tr('deleted_n')}: {len(idxs)}")
     return servers
 
+# ============================================================
+#  Блок: сортировка / перемещение / дубликаты
+# ============================================================
+
 def sort_servers(servers):
     hdr(tr("sort_hdr"))
     print("  " + tr("s_az")); print("  " + tr("s_za")); print("  " + tr("s_proto")); print("  " + tr("s_host"))
@@ -4295,6 +4697,10 @@ def duplicate_servers(servers):
     if ans and ans.lower() == 'y':
         edit_params_for_group(servers, list(range(len(servers)-len(new), len(servers))))
     return servers
+
+# ============================================================
+#  Блок: параметры серверов (редактирование группы)
+# ============================================================
 
 PARAM_LIST = [
 ("scheme","Protocol"),("type","Transport"),("security","Security"),("flow","Flow"),("path","Path"),("host","Host"),
@@ -4420,6 +4826,10 @@ def edit_params_for_group(servers, indices):
                 else: s['params'][pkey] = nv
         print(f"\n[+] {tr('updated')}: {len(compatible)}")
 
+# ============================================================
+#  Блок: редактирование серверов
+# ============================================================
+
 def edit_servers(servers):
     while True:
         clr(); hdr(tr("edit_hdr"))
@@ -4504,6 +4914,10 @@ def edit_servers(servers):
             print(f"  {tr('u_params')}: {json.dumps(s['params'], ensure_ascii=False, indent=4)}")
             _in("\n" + tr("q_back") + ": ", allow_exit=False)
     return servers
+
+# ============================================================
+#  Блок: генерация outbound / config
+# ============================================================
 
 def gen_outbound(s, tag, cfg):
     scheme = s['scheme']; host = s['host']
@@ -4718,6 +5132,10 @@ def gen_config(servers, cfg):
             "routing":{"domainStrategy":"IPIfNonMatch","rules":rules,"balancers":[balancer]},
             "observatory":observatory}
 
+# ============================================================
+#  Блок: нормализация существующего конфига
+# ============================================================
+
 def normalize_existing_config_file(path):
     hdr(tr("norm_hdr"))
     if not path.exists():
@@ -4875,6 +5293,10 @@ def normalize_existing_servers_menu():
             print(f"[+] {tr('norm_saved')}: {out}")
         _in("\n" + tr("q_back") + ": ", allow_exit=False)
 
+# ============================================================
+#  Блок: импорт правил маршрутизации
+# ============================================================
+
 def parse_shadowrocket_rules(text):
     rules = []
     proxy_kw = ["PROXY","SPEEDPROXY","BESTPROXY","AIPROXY","METAPROXY","TGPROXY","SPOTIFYPROXY"]
@@ -4970,6 +5392,10 @@ def import_routing_rules(cfg):
         print(f"[+] {tr('imp_added')}: {len(ex)}")
     _in("\n" + tr("q_back") + ": ", allow_exit=False)
     return cfg
+
+# ============================================================
+#  Блок: роутинг для клиентов
+# ============================================================
 
 def gen_happ_routing(cfg):
     rt = cfg.get('routing', {})
@@ -5080,6 +5506,10 @@ def routing_menu(cfg):
             print(f"[+] {tr('rt_json')}: {p}")
             _in("\n" + tr("q_back") + ": ", allow_exit=False)
     return cfg
+
+# ============================================================
+#  Блок: меню настроек генерации
+# ============================================================
 
 def config_menu(servers, cfg):
     while True:
@@ -5244,6 +5674,10 @@ def config_menu(servers, cfg):
                 cfg = cfg_default(); cfg_save(cfg); print(f"[+] {tr('reset_done')}")
     return cfg
 
+# ============================================================
+#  Блок: экспорт / сохранение
+# ============================================================
+
 def save_base64(servers, name="servers"):
     lines = [build_uri(s) for s in servers]
     raw = '\n'.join(lines)
@@ -5367,6 +5801,10 @@ def save_yaml_clash(servers, name="clash_proxies.yaml"):
     p = OUTPUT_DIR / name
     with open(p, 'w', encoding='utf-8') as f: f.write('\n'.join(lines))
     print(f"[+] Clash YAML: {p}")
+
+# ============================================================
+#  Блок: универсальный редактор JSON
+# ============================================================
 
 FIELD_HINTS = {"Name":"Name","GlobalProxy":"GlobalProxy true/false","UseChunkFiles":"UseChunkFiles true/false",
 "RemoteDns":"RemoteDns IP","DomesticDns":"DomesticDns IP","RemoteDNSType":"RemoteDNSType","RemoteDNSDomain":"RemoteDNSDomain URL",
@@ -5677,6 +6115,10 @@ def json_menu(servers, cfg):
                 print(f"[!] {tr('no_files')}"); _in("\n" + tr("q_back") + ": ", allow_exit=False)
     return cfg
 
+# ============================================================
+#  Блок: главное меню
+# ============================================================
+
 def main():
     ensure_dirs()
     cfg = cfg_load(); cfg_save(cfg)
@@ -5770,9 +6212,17 @@ if __name__ == "__main__":
         print("\n[+] " + tr("exit"))
         sys.exit(0)
 SUBMGR_END
+fi
+
+# --- Обновление маркера версии ---
+echo "$TK_VERSION" > "$VERSION_FILE"
 
 echo "[+] All scripts created."
 sleep 1
+
+# ============================================================
+#  Главное меню
+# ============================================================
 
 while true; do
     clear
@@ -5786,8 +6236,8 @@ while true; do
     echo "$(T m_def)"
     echo "$(T m_q)"
     echo "===================================================="
-    printf "$(T choice): "
-    read CH
+    printf '%s: ' "$(T choice)"
+    IFS= read -r CH
     case "$CH" in
         1) cd "$BASE/AdBlock"; python3 "$BASE/AdBlock.py"; cd "$HOME" ;;
         2) python3 "$BASE/SQLiteTXT.py" ;;
@@ -5795,8 +6245,7 @@ while true; do
         4) python3 "$BASE/SubManager.py" ;;
         5)
             OUT="$BASE/Configurations/Default_configuration_by_Krest-Neva.module"
-            curl -sL "https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Configurations/Default_configuration_by_Krest-Neva.module" -o "$OUT"
-            if [ -s "$OUT" ]; then
+            if try_download "https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Configurations/Default_configuration_by_Krest-Neva.module" "$OUT"; then
                 echo "[+] $OUT"
                 echo "----"
                 cat "$OUT"
@@ -5809,6 +6258,6 @@ while true; do
         *) echo "$(T bad)"; sleep 1; continue ;;
     esac
     echo ""
-    printf "$(T press)"
-    read DUMMY
+    printf '%s' "$(T press)"
+    IFS= read -r DUMMY
 done
