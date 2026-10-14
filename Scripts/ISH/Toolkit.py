@@ -1,21 +1,21 @@
 #!/bin/sh
 
-# ============================================================
+# ========================================
 #  Shadowrocket Toolkit (iSH)
-# ============================================================
+# ========================================
 
 # --- Инициализация ---
 clear
 BASE="$HOME/Shadowrocket"
 LANG_FILE="$HOME/.sr_toolkit_lang"
-TK_VERSION="2"
+TK_VERSION="3"
 VERSION_FILE="$BASE/.toolkit_version"
 
 # --- Выбор языка (только при первом запуске или если LANG_FILE отсутствует) ---
 if [ ! -f "$LANG_FILE" ]; then
-    echo "===================================================="
+    echo "========================================"
     echo "  Language / Язык"
-    echo "===================================================="
+    echo "========================================"
     echo "  1 - Русский [по умолчанию]"
     echo "  2 - English"
     printf '%s' "Выбор / Choice [1]: "
@@ -50,7 +50,8 @@ T() {
             m_sql) echo "  2 - SQLiteTXT         SQLite to text viewer" ;;
             m_spy) echo "  3 - SpyLog            Shadowrocket log analyzer" ;;
             m_sub) echo "  4 - SubManager        Subscriptions and JSON Xray" ;;
-            m_def) echo "  5 - GetDefaultConfig  Download default configuration" ;;
+            m_rx)  echo "  5 - RegexBuilder      Interactive regex constructor" ;;
+            m_def) echo "  6 - GetDefaultConfig  Download default configuration" ;;
             m_q) echo "  q - Quit" ;;
             choice) echo "Choice" ;;
             bad) echo "Invalid choice." ;;
@@ -80,7 +81,8 @@ T() {
             m_sql) echo "  2 - SQLiteTXT         Просмотр SQLite в тексте" ;;
             m_spy) echo "  3 - SpyLog            Анализ журналов Shadowrocket" ;;
             m_sub) echo "  4 - SubManager        Подписки и JSON Xray" ;;
-            m_def) echo "  5 - GetDefaultConfig  Скачать дефолтную конфигурацию" ;;
+            m_rx)  echo "  5 - RegexBuilder      Конструктор регулярных выражений" ;;
+            m_def) echo "  6 - GetDefaultConfig  Скачать дефолтную конфигурацию" ;;
             m_q) echo "  q - Выход" ;;
             choice) echo "Ваш выбор" ;;
             bad) echo "Неверный выбор." ;;
@@ -98,9 +100,9 @@ if [ -e /dev/location ]; then
     ( cat /dev/location > /dev/null 2>&1 ) &
 fi
 
-# ============================================================
+# ========================================
 #  Утилиты: DNS, скачивание несколькими способами
-# ============================================================
+# ========================================
 
 # --- Настройка DNS ---
 setup_dns() {
@@ -156,35 +158,35 @@ PYEOF
     return 1
 }
 
-# ============================================================
+# ========================================
 #  Вопросы: обновление системы / скрипта
-# ============================================================
+# ========================================
 
 echo ""
-echo "===================================================="
+echo "========================================"
 echo "  $(T update_sys)"
-echo "===================================================="
+echo "========================================"
 printf '%s' "[y/N]: "
 IFS= read -r U1
 case "$U1" in y|Y|yes|Yes|YES) DO_UPDATE=1 ;; *) DO_UPDATE=0 ;; esac
 
 echo ""
-echo "===================================================="
+echo "========================================"
 echo "  $(T update_script)"
-echo "===================================================="
+echo "========================================"
 printf '%s' "[y/N]: "
 IFS= read -r U2
 case "$U2" in y|Y|yes|Yes|YES) DO_SCRIPT=1 ;; *) DO_SCRIPT=0 ;; esac
 
-# ============================================================
+# ========================================
 #  Обновление самого скрипта Toolkit
-# ============================================================
+# ========================================
 
 if [ "$DO_SCRIPT" = "1" ]; then
     echo ""
-    echo "===================================================="
+    echo "========================================"
     echo "  $(T delete_files)"
-    echo "===================================================="
+    echo "========================================"
     printf '%s' "[y/N]: "
     IFS= read -r U3
     case "$U3" in y|Y|yes|Yes|YES) rm -rf "$BASE" ;; esac
@@ -216,9 +218,9 @@ if [ "$DO_SCRIPT" = "1" ]; then
     fi
 fi
 
-# ============================================================
+# ========================================
 #  Обновление системы и установка зависимостей
-# ============================================================
+# ========================================
 
 if [ "$DO_UPDATE" = "1" ]; then
     echo "$(T dns)"
@@ -247,9 +249,9 @@ if [ "$DO_UPDATE" = "1" ]; then
         bind-tools bash sqlite git py3-chardet || echo "[!] Some dependencies failed"
 fi
 
-# ============================================================
+# ========================================
 #  Создание структуры папок
-# ============================================================
+# ========================================
 
 echo "$(T mkdirs)"
 mkdir -p "$BASE" \
@@ -258,6 +260,7 @@ mkdir -p "$BASE" \
     "$BASE/SpyLog/Input" "$BASE/SpyLog/Output" \
     "$BASE/SubManager/Input" "$BASE/SubManager/Output" \
     "$BASE/SubManager/Backups" "$BASE/SubManager/Routing" \
+    "$BASE/RegexBuilder/Output" "$BASE/RegexBuilder/Backups" \
     "$BASE/Configurations"
 
 # --- Проверка версии для перегенерации python-скриптов ---
@@ -268,14 +271,14 @@ fi
 
 echo "$(T mk_scripts)"
 
-# ============================================================
-#  Скрипт 1/4: AdBlock.py
-# ============================================================
+# ========================================
+#  Скрипт 1/5: AdBlock.py
+# ========================================
 if [ "$REGEN_PY" = "1" ] || [ ! -s "$BASE/AdBlock.py" ]; then
 cat << 'ADBLOCK_END' > "$BASE/AdBlock.py"
-# ============================================================
+# ========================================
 #  AdBlock: генератор блок-листов
-# ============================================================
+# ========================================
 
 import urllib.request
 import subprocess
@@ -500,7 +503,7 @@ def _inp_allow_empty(prompt=""):
 
 # --- Выбор режима ---
 def choose_mode():
-    print("\n" + "="*50)
+    print("\n" + "="*40)
     print(tr("mode_hdr"))
     print("  " + tr("mode_1"))
     print("  " + tr("mode_2"))
@@ -513,7 +516,7 @@ MODE = choose_mode()
 oisd_choice = '3'
 if MODE == "default":
     while True:
-        print("\n" + "="*45)
+        print("\n" + "="*40)
         print(tr("oid_hdr"))
         print(tr("oid_1"))
         print(tr("oid_2"))
@@ -531,7 +534,7 @@ oisd_main_url = "https://dl.oisd.nl/oisd_big_surge.list"
 oisd_nsfw_url = "https://dl.oisd.nl/oisd_nsfw_surge.list"
 oisd_small_url = "https://dl.oisd.nl/oisd_small_surge.list"
 oisd_nsfw_small_url = "https://dl.oisd.nl/oisd_nsfw_small_surge.list"
-print("="*45 + "\n")
+print("="*40 + "\n")
 
 SCRIPT_START_TIME = time.time()
 
@@ -709,14 +712,14 @@ else:
         sys.exit(1)
 
 # --- Опция разбиения ---
-print("\n" + "="*45)
+print("\n" + "="*40)
 print(tr("split_hdr"))
 print("  " + tr("split_1"))
 print("  " + tr("split_2"))
 _v = _input(f"{tr('choice')} [2]: ").strip()
 SPLIT_LISTS = (_v == "1")
 print(" -> " + (tr("split_on") if SPLIT_LISTS else tr("split_off")))
-print("="*45)
+print("="*40)
 
 # --- Константы-фильтры ---
 exclude_keywords = [
@@ -779,9 +782,9 @@ def should_filter_with_whitelist(name):
         return not ("OISD" in name)
     return whitelist_clean.get(name, True)
 
-# ============================================================
+# ========================================
 #  Блок: сетевые функции
-# ============================================================
+# ========================================
 
 def setup_dns_and_test():
     while True:
@@ -815,9 +818,9 @@ def full_network_diagnostics():
     except Exception:
         pass
 
-# ============================================================
+# ========================================
 #  Блок: прогресс-бар
-# ============================================================
+# ========================================
 
 def print_progress(prefix, current, total, bar_len=5, start_time=None):
     if total <= 0:
@@ -842,9 +845,9 @@ def print_progress(prefix, current, total, bar_len=5, start_time=None):
     if "[dl]" in prefix:
         _progress_state[prefix] = {"time": now, "current": current}
 
-# ============================================================
+# ========================================
 #  Блок: скачивание списков (несколькими методами)
-# ============================================================
+# ========================================
 
 def download_with_urllib(url, headers, timeout=30):
     req = urllib.request.Request(url, headers=headers)
@@ -976,9 +979,9 @@ def download_data(name, url_or_urls):
     print(f"\r  [!] {tr('dl_err')}: {name} {tr('dl_err_any')}.\033[K")
     return [], None
 
-# ============================================================
+# ========================================
 #  Блок: валидация домена / IP / защиты
-# ============================================================
+# ========================================
 
 def is_protected_full(domain):
     if domain in protected_domains:
@@ -1029,15 +1032,15 @@ def normalize_line_for_parser(raw_line):
         return "#__PIHOLE_REGEX_SKIP__"
     return raw_line
 
-# ============================================================
+# ========================================
 #  Блок: логи
-# ============================================================
+# ========================================
 
 def save_logs(total_time_val=None):
     try:
         with open(errors_output_file, 'w', encoding='utf-8') as ef:
             ef.write(f"Log generated at: {time.ctime()}\n")
-            ef.write("=" * 60 + "\n")
+            ef.write("=" * 40 + "\n")
             ef.write("DOWNLOAD REPORT (blacklists)\n")
             for name, info in download_report.items():
                 ef.write(f"{name}\t{info['status']}\t{info.get('method','N/A')}\t{info.get('lines',0)}\n")
@@ -1048,9 +1051,9 @@ def save_logs(total_time_val=None):
     except Exception as e:
         sys.stdout.write(f"\n[!] Log write failed: {e}\n")
 
-# ============================================================
+# ========================================
 #  Блок: оптимизация доменов (убираем поддомены, если есть родитель)
-# ============================================================
+# ========================================
 
 def optimize_domain_set(source_domains, log_prefix):
     sorted_raw = sorted(list(source_domains), key=lambda x: x.count('.'))
@@ -1070,9 +1073,9 @@ def optimize_domain_set(source_domains, log_prefix):
             opt_set.add(d)
     return opt_set
 
-# ============================================================
+# ========================================
 #  Блок: запись итоговых списков
-# ============================================================
+# ========================================
 
 def build_and_write():
     global optimized_domains, optimized_domains_plus, optimized_domains_sm, optimized_domains_plus_sm
@@ -1130,9 +1133,9 @@ def build_and_write():
         total_rules += final_list_sm_len + final_list_plus_sm_len
     return total_rules
 
-# ============================================================
+# ========================================
 #  ЭТАП 1: загрузка белых списков
-# ============================================================
+# ========================================
 
 print("\n=== " + tr("e1w") + " ===")
 for name, url in white_urls.items():
@@ -1144,9 +1147,9 @@ for name, url in white_urls.items():
         white_download_report[name] = {"status": "failed", "method": None, "lines": 0}
         failed_white_lists.append(name)
 
-# ============================================================
+# ========================================
 #  ЭТАП 1: загрузка чёрных списков
-# ============================================================
+# ========================================
 
 print("\n=== " + tr("e1b") + " ===")
 for name, url in urls.items():
@@ -1158,19 +1161,19 @@ for name, url in urls.items():
         download_report[name] = {"status": "failed", "method": None, "lines": 0}
         failed_lists.append(name)
 
-# ============================================================
+# ========================================
 #  ЭТАП 2: повторная загрузка ошибок
-# ============================================================
+# ========================================
 
 print("\n=== " + tr("e2") + " ===")
 while failed_lists or failed_white_lists:
-    print("\n" + "=" * 45)
+    print("\n" + "=" * 40)
     print(tr("need_retry") + ":")
     for w in failed_white_lists:
         print(f"  [{tr('wlist')}]  - {w}")
     for b in failed_lists:
         print(f"  [{tr('blist')}] - {b}")
-    print("=" * 45)
+    print("=" * 40)
     target = failed_white_lists[0] if failed_white_lists else failed_lists[0]
     is_white = target in failed_white_lists
     print(f"\n[?] {tr('retry_q')} '{target}'")
@@ -1196,9 +1199,9 @@ while failed_lists or failed_white_lists:
             black_raw_data[target] = {"lines": lines, "method": method, "url": url_to_try}
             failed_lists.remove(target)
 
-# ============================================================
+# ========================================
 #  ЭТАП 3: обработка белых списков
-# ============================================================
+# ========================================
 
 print("\n=== " + tr("e3") + " ===")
 for name, data_dict in white_raw_data.items():
@@ -1236,9 +1239,9 @@ for d in list(protected_domains):
         protected_domains.discard(d)
         protected_suffixes.add(d)
 
-# ============================================================
+# ========================================
 #  ЭТАП 4: обработка чёрных списков
-# ============================================================
+# ========================================
 
 print("\n=== " + tr("e4") + " ===")
 for name, data_dict in black_raw_data.items():
@@ -1360,22 +1363,22 @@ for ip in forced_block_ips:
     if v:
         all_ips.add(v)
 
-# ============================================================
+# ========================================
 #  ЭТАП 5: формирование и запись файлов
-# ============================================================
+# ========================================
 
 print("\n=== " + tr("e5") + " ===")
 build_and_write()
 
 TOTAL_TIME = round(time.time() - SCRIPT_START_TIME, 2)
 
-# ============================================================
+# ========================================
 #  Итоговая сводка
-# ============================================================
+# ========================================
 
-print("\n" + "=" * 45)
+print("\n" + "=" * 40)
 print(tr("done"))
-print("-" * 45)
+print("-" * 40)
 if MODE == "custom" or oisd_choice in ('1', '3'):
     print(f"{tr('u_std')}: {len(optimized_domains)} / {len(optimized_domains_plus)}")
 if MODE == "default" and oisd_choice in ('2', '3'):
@@ -1385,7 +1388,7 @@ print(f"{tr('rm_kw')}: {stats['excluded']}")
 print(f"{tr('junk')}: {stats['junk']}")
 print(f"{tr('prot_e')}: {stats['protected_exact']}")
 print(f"{tr('prot_s')}: {stats['protected_suffix']}")
-print("-" * 45)
+print("-" * 40)
 if MODE == "custom" or oisd_choice in ('1', '3'):
     print(f"{tr('r_std')}: {final_list_len}")
     print(f"{tr('r_plus')}: {final_list_plus_len}")
@@ -1394,7 +1397,7 @@ if MODE == "default" and oisd_choice in ('2', '3'):
     print(f"{tr('r_plus_sm')}: {final_list_plus_sm_len}")
 print(f"{tr('total_drop')}: {stats['excluded']}")
 print(f"{tr('total_time')}: {TOTAL_TIME} {tr('sec')}.")
-print("-" * 45)
+print("-" * 40)
 print(tr("sum_bl") + ":")
 for name, info in download_report.items():
     print(f"  - {name}: {info['status']} ({info.get('method','N/A')}, {info.get('lines',0)})")
@@ -1403,18 +1406,18 @@ for name, info in white_download_report.items():
     print(f"  - {name}: {info['status']} ({info.get('method','N/A')}, {info.get('lines',0)})")
 save_logs(TOTAL_TIME)
 print("\n" + (tr("all_ok") if not (failed_lists or failed_white_lists) else tr("skipped")))
-print("=" * 45)
+print("=" * 40)
 ADBLOCK_END
 fi
 
-# ============================================================
-#  Скрипт 2/4: SQLiteTXT.py
-# ============================================================
+# ========================================
+#  Скрипт 2/5: SQLiteTXT.py
+# ========================================
 if [ "$REGEN_PY" = "1" ] || [ ! -s "$BASE/SQLiteTXT.py" ]; then
 cat << 'SQLITE_END' > "$BASE/SQLiteTXT.py"
-# ============================================================
+# ========================================
 #  SQLiteTXT: конвертер SQLite баз в текстовый вид
-# ============================================================
+# ========================================
 
 import os
 import sys
@@ -1688,9 +1691,9 @@ def die(message):
     print(f"[!] {message}")
     sys.exit(1)
 
-# ============================================================
+# ========================================
 #  Блок: работа со списком файлов
-# ============================================================
+# ========================================
 
 def list_input_files():
     if not INPUT_DIR.exists():
@@ -1754,9 +1757,9 @@ def select_files(files, allow_multiple=True, prompt=None):
         except Exception:
             print(f"[!] {tr('bad')}")
 
-# ============================================================
+# ========================================
 #  Блок: работа с SQLite
-# ============================================================
+# ========================================
 
 def get_user_tables(conn):
     cursor = conn.cursor()
@@ -1856,9 +1859,9 @@ def export_table_human(conn, table, out_file, dedupe=False, sort_by_policy=False
                 out_file.write(f"{col}: {val if val is not None else '(null)'}\n")
         return len(rows)
 
-# ============================================================
+# ========================================
 #  Блок: режим экспорта
-# ============================================================
+# ========================================
 
 def extract_mode(selected_files, show_schema, show_stats, keywords, dedupe, sort_by_policy):
     total_files = len(selected_files)
@@ -1931,9 +1934,9 @@ def ask_options_extract():
                 keywords = [x.strip() for x in kw.split(",") if x.strip()]
         return bits, keywords
 
-# ============================================================
+# ========================================
 #  Блок: переименование
-# ============================================================
+# ========================================
 
 def rename_mode(files):
     while True:
@@ -1997,9 +2000,9 @@ def rename_single_output_file(file_path):
     print(f"[+] {tr('renamed')} {new_name}")
     return new_path
 
-# ============================================================
+# ========================================
 #  Блок: разделитель
-# ============================================================
+# ========================================
 
 def change_separator():
     global SEPARATOR, SEP_NAME
@@ -2016,9 +2019,9 @@ def change_separator():
     else:
         print(f"[!] {tr('bad')}")
 
-# ============================================================
+# ========================================
 #  Блок: очистка
-# ============================================================
+# ========================================
 
 def clean_broken_files():
     print(f"\n=== {tr('clean_hdr')} ===")
@@ -2072,9 +2075,9 @@ def clean_broken_files():
         else:
             print(f"[!] {tr('skipped')}: {d}")
 
-# ============================================================
+# ========================================
 #  Блок: главное меню
-# ============================================================
+# ========================================
 
 def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -2133,14 +2136,14 @@ if __name__ == "__main__":
 SQLITE_END
 fi
 
-# ============================================================
-#  Скрипт 3/4: SpyLog.py
-# ============================================================
+# ========================================
+#  Скрипт 3/5: SpyLog.py
+# ========================================
 if [ "$REGEN_PY" = "1" ] || [ ! -s "$BASE/SpyLog.py" ]; then
 cat << 'SPYLOG_END' > "$BASE/SpyLog.py"
-# ============================================================
+# ========================================
 #  SpyLog: анализатор логов Shadowrocket
-# ============================================================
+# ========================================
 
 import json
 import re
@@ -2453,9 +2456,9 @@ def save_config():
 
 load_config()
 
-# ============================================================
+# ========================================
 #  Блок: загрузка Spy.module
-# ============================================================
+# ========================================
 
 def fetch_spy_module():
     print(f"[*] {tr('module_dl')}...")
@@ -2466,9 +2469,9 @@ def fetch_spy_module():
     except Exception as e:
         print(f"[!] {tr('module_err')}: {e}")
         return None
-    print("\n" + "=" * 70)
+    print("\n" + "=" * 40)
     print(data)
-    print("=" * 70)
+    print("=" * 40)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     out = OUTPUT_DIR / "Spy.module"
     with open(out, 'w', encoding='utf-8') as f:
@@ -2476,9 +2479,9 @@ def fetch_spy_module():
     print(f"[+] {tr('module_saved')}: {out}")
     return data
 
-# ============================================================
+# ========================================
 #  Блок: хелперы
-# ============================================================
+# ========================================
 
 def sanitize_filename(name):
     if not name:
@@ -2501,9 +2504,9 @@ def die(message):
 def strip_ansi_bytes(data):
     return ANSI_RE.sub(b"", data)
 
-# ============================================================
+# ========================================
 #  Блок: декодирование
-# ============================================================
+# ========================================
 
 def detect_and_decode(data):
     try:
@@ -2555,9 +2558,9 @@ def universal_decode_text(text):
         pass
     return text
 
-# ============================================================
+# ========================================
 #  Блок: извлечение и парсинг блоков
-# ============================================================
+# ========================================
 
 def extract_spy_blocks_bytes(raw):
     lines = raw.split(b'\n')
@@ -2651,9 +2654,9 @@ def load_log_and_extract_blocks(path):
         blocks_text.append(text)
     return blocks_text
 
-# ============================================================
+# ========================================
 #  Блок: список файлов и выбор
-# ============================================================
+# ========================================
 
 def list_input_files():
     if not INPUT_DIR.exists():
@@ -2745,9 +2748,9 @@ def ask_groups(files):
         groups.append(selected)
     return groups
 
-# ============================================================
+# ========================================
 #  Блок: утилиты обработки блоков
-# ============================================================
+# ========================================
 
 def dedupe_exact(blocks, keep_duplicates):
     if keep_duplicates:
@@ -2783,9 +2786,9 @@ def move_keyword_blocks(blocks, keywords):
             other.append(block)
     return matched + other
 
-# ============================================================
+# ========================================
 #  Блок: диалоги настроек
-# ============================================================
+# ========================================
 
 def ask_options(mode):
     if mode == "extract":
@@ -2851,9 +2854,9 @@ def build_records_from_blocks(blocks, source_name, decode=False, sig_level=1):
         records.append(rec)
     return records
 
-# ============================================================
+# ========================================
 #  Блок: режим Extract
-# ============================================================
+# ========================================
 
 def extract_mode(selected_files, show_urls, decode, show_stats, keywords, keep_duplicates):
     all_blocks = []
@@ -2906,9 +2909,9 @@ def extract_mode(selected_files, show_urls, decode, show_stats, keywords, keep_d
     print(f"[+] {tr('blocks')}: {len(all_blocks)}")
     return out_path
 
-# ============================================================
+# ========================================
 #  Блок: режим Compare (файлы)
-# ============================================================
+# ========================================
 
 def group_by_signature(records):
     grouped = defaultdict(list)
@@ -3051,9 +3054,9 @@ def compare_mode(selected_files, show_urls, decode, show_diffs, include_blocks, 
     print(f"[+] {tr('extract_done')}: {out_path}")
     return out_path
 
-# ============================================================
+# ========================================
 #  Блок: режим Compare (группы)
-# ============================================================
+# ========================================
 
 def build_group_records(group_files, group_name, decode, keep_duplicates, sig_level):
     all_blocks = []
@@ -3181,9 +3184,9 @@ def compare_groups(groups, show_urls, decode, show_diffs, include_blocks, keywor
     print(f"[+] {tr('extract_done')}: {out_path}")
     return out_path
 
-# ============================================================
+# ========================================
 #  Блок: переименование выходного файла
-# ============================================================
+# ========================================
 
 def rename_output_file(path):
     while True:
@@ -3215,9 +3218,9 @@ def rename_output_file(path):
         else:
             print(f"[!] y/n")
 
-# ============================================================
+# ========================================
 #  Блок: переименование входных файлов
-# ============================================================
+# ========================================
 
 def rename_mode(files):
     while True:
@@ -3298,9 +3301,9 @@ def rename_mode(files):
         if _input(f"[?] {tr('cont_rename')} [n]: ").strip().lower() != "y":
             break
 
-# ============================================================
+# ========================================
 #  Блок: смена паттерна
-# ============================================================
+# ========================================
 
 def change_pattern():
     global SPY_PATTERN
@@ -3313,9 +3316,9 @@ def change_pattern():
     else:
         print(f"[!] {tr('pattern_cancel')}")
 
-# ============================================================
+# ========================================
 #  Блок: очистка папок
-# ============================================================
+# ========================================
 
 def clean_broken_files():
     print(f"\n=== {tr('clean_hdr')} ===")
@@ -3381,9 +3384,9 @@ def clean_broken_files():
         return
     print(f"[!] {tr('bad')}")
 
-# ============================================================
+# ========================================
 #  Блок: обработка пустой папки
-# ============================================================
+# ========================================
 
 def handle_empty_input():
     print(f"\n[!] {tr('empty_hdr')}.")
@@ -3402,9 +3405,9 @@ def handle_empty_input():
         sys.exit(0)
     return "retry"
 
-# ============================================================
+# ========================================
 #  Блок: главное меню
-# ============================================================
+# ========================================
 
 def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -3484,14 +3487,14 @@ if __name__ == "__main__":
 SPYLOG_END
 fi
 
-# ============================================================
-#  Скрипт 4/4: SubManager.py
-# ============================================================
+# ========================================
+#  Скрипт 4/5: SubManager.py
+# ========================================
 if [ "$REGEN_PY" = "1" ] || [ ! -s "$BASE/SubManager.py" ]; then
 cat << 'SUBMGR_END' > "$BASE/SubManager.py"
-# ============================================================
+# ========================================
 #  SubManager: подписки + генерация Xray JSON
-# ============================================================
+# ========================================
 
 import os, sys, re, json, base64, urllib.request, ssl, subprocess, shutil, time, random, copy, ipaddress
 from urllib.parse import urlparse, parse_qs, urlencode, unquote, quote
@@ -3863,7 +3866,7 @@ ROUTING_DIR = BASE / "Routing"
 CFG_FILE = BASE / "config.json"
 AUTOSAVE_FILE = BACKUP_DIR / "autosave_servers.txt"
 UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
-W = 52
+W = 40
 DNS_SERVERS = ["8.8.8.8","8.8.4.4","1.1.1.1","94.140.14.14","94.140.15.15"]
 
 # --- Утилиты нормализации ---
@@ -3886,9 +3889,9 @@ GEOSITE_SUGG = ["geosite:private","geosite:category-ads-all","geosite:category-r
 "geosite:tiktok","geosite:category-games","geosite:category-media-ru","geosite:category-communication"]
 GEOIP_SUGG = ["geoip:private","geoip:ru","geoip:by","geoip:kz","geoip:cn","geoip:us","geoip:eu","geoip:telegram"]
 
-# ============================================================
+# ========================================
 #  Блок: нормализация
-# ============================================================
+# ========================================
 
 def norm_dur(val, default_unit='s'):
     if val is None: return f"1{default_unit}"
@@ -3951,9 +3954,9 @@ def fmt_size(b):
     if b < 1024 * 1024: return f"{b/1024:.1f} KB"
     return f"{b/1024/1024:.2f} MB"
 
-# ============================================================
+# ========================================
 #  Блок: скачивание URL (несколькими способами)
-# ============================================================
+# ========================================
 
 def progress_bar(current, total, prefix="", width=25, elapsed=None):
     if total and total > 0:
@@ -4046,9 +4049,9 @@ def dl_url(url, method='auto', show=True):
             print(f"[!] {m}: {e}"); continue
     return None
 
-# ============================================================
+# ========================================
 #  Блок: парсинг ссылок / JSON
-# ============================================================
+# ========================================
 
 def try_b64(raw):
     s = raw.strip().replace('\n','').replace('\r','').replace(' ','')
@@ -4353,9 +4356,9 @@ def parse_singbox_multi(text):
         if srv: servers.append(srv)
     return servers
 
-# ============================================================
+# ========================================
 #  Блок: построение URI
-# ============================================================
+# ========================================
 
 def build_uri(s):
     scheme = s['scheme']; host = s['host']; port = s['port']
@@ -4383,9 +4386,9 @@ def build_uri(s):
     if name: uri += '#' + quote(name)
     return uri
 
-# ============================================================
+# ========================================
 #  Блок: список серверов
-# ============================================================
+# ========================================
 
 def show_servers_list(servers, show_params=False):
     if not servers:
@@ -4407,9 +4410,9 @@ def show_servers_list(servers, show_params=False):
                     extra.append(f"{k}={val}")
             if extra: print(f"      {', '.join(extra)}")
 
-# ============================================================
+# ========================================
 #  Блок: конфиг (дефолт / загрузка / сохранение)
-# ============================================================
+# ========================================
 
 def cfg_default():
     return {"dns_servers":DNS_SERVERS,"dns_query_strategy":"UseIP","observatory_url":"https://www.google.com/generate_204",
@@ -4468,9 +4471,9 @@ def cfg_save(cfg):
     CFG_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(CFG_FILE, 'w', encoding='utf-8') as f: json.dump(cfg, f, ensure_ascii=False, indent=2)
 
-# ============================================================
+# ========================================
 #  Блок: утилиты файлов и имён
-# ============================================================
+# ========================================
 
 def ensure_dirs():
     for d in [INPUT_DIR, OUTPUT_DIR, BACKUP_DIR, ROUTING_DIR]:
@@ -4495,9 +4498,9 @@ def autoload():
     except Exception: return []
     srv, _ = parse_input(raw); return srv
 
-# ============================================================
+# ========================================
 #  Блок: парсинг входных данных
-# ============================================================
+# ========================================
 
 def parse_input(raw):
     if not raw: return [], None
@@ -4523,9 +4526,9 @@ def parse_input(raw):
     print(f"[!] {tr('parse_data')}")
     return [], None
 
-# ============================================================
+# ========================================
 #  Блок: загрузка источников
-# ============================================================
+# ========================================
 
 def load_source():
     hdr(tr("load_src"))
@@ -4570,9 +4573,9 @@ def load_source():
         return raw
     return auto_decode(raw)
 
-# ============================================================
+# ========================================
 #  Блок: дедупликация
-# ============================================================
+# ========================================
 
 def dedupe_servers(servers, mode='full'):
     seen = set(); out = []
@@ -4596,9 +4599,9 @@ def dedupe_menu(servers):
     mm = {"1":"full","2":"name","3":"addr","4":"user","5":"proto"}
     return dedupe_servers(servers, mm[ch])
 
-# ============================================================
+# ========================================
 #  Блок: удаление серверов
-# ============================================================
+# ========================================
 
 def delete_by_keyword(servers):
     hdr(tr("del_hdr"))
@@ -4652,9 +4655,9 @@ def delete_by_keyword(servers):
         print(f"[+] {tr('deleted_n')}: {len(idxs)}")
     return servers
 
-# ============================================================
+# ========================================
 #  Блок: сортировка / перемещение / дубликаты
-# ============================================================
+# ========================================
 
 def sort_servers(servers):
     hdr(tr("sort_hdr"))
@@ -4698,9 +4701,9 @@ def duplicate_servers(servers):
         edit_params_for_group(servers, list(range(len(servers)-len(new), len(servers))))
     return servers
 
-# ============================================================
+# ========================================
 #  Блок: параметры серверов (редактирование группы)
-# ============================================================
+# ========================================
 
 PARAM_LIST = [
 ("scheme","Protocol"),("type","Transport"),("security","Security"),("flow","Flow"),("path","Path"),("host","Host"),
@@ -4826,9 +4829,9 @@ def edit_params_for_group(servers, indices):
                 else: s['params'][pkey] = nv
         print(f"\n[+] {tr('updated')}: {len(compatible)}")
 
-# ============================================================
+# ========================================
 #  Блок: редактирование серверов
-# ============================================================
+# ========================================
 
 def edit_servers(servers):
     while True:
@@ -4915,9 +4918,9 @@ def edit_servers(servers):
             _in("\n" + tr("q_back") + ": ", allow_exit=False)
     return servers
 
-# ============================================================
+# ========================================
 #  Блок: генерация outbound / config
-# ============================================================
+# ========================================
 
 def gen_outbound(s, tag, cfg):
     scheme = s['scheme']; host = s['host']
@@ -5132,9 +5135,9 @@ def gen_config(servers, cfg):
             "routing":{"domainStrategy":"IPIfNonMatch","rules":rules,"balancers":[balancer]},
             "observatory":observatory}
 
-# ============================================================
+# ========================================
 #  Блок: нормализация существующего конфига
-# ============================================================
+# ========================================
 
 def normalize_existing_config_file(path):
     hdr(tr("norm_hdr"))
@@ -5293,9 +5296,9 @@ def normalize_existing_servers_menu():
             print(f"[+] {tr('norm_saved')}: {out}")
         _in("\n" + tr("q_back") + ": ", allow_exit=False)
 
-# ============================================================
+# ========================================
 #  Блок: импорт правил маршрутизации
-# ============================================================
+# ========================================
 
 def parse_shadowrocket_rules(text):
     rules = []
@@ -5393,9 +5396,9 @@ def import_routing_rules(cfg):
     _in("\n" + tr("q_back") + ": ", allow_exit=False)
     return cfg
 
-# ============================================================
+# ========================================
 #  Блок: роутинг для клиентов
-# ============================================================
+# ========================================
 
 def gen_happ_routing(cfg):
     rt = cfg.get('routing', {})
@@ -5507,9 +5510,9 @@ def routing_menu(cfg):
             _in("\n" + tr("q_back") + ": ", allow_exit=False)
     return cfg
 
-# ============================================================
+# ========================================
 #  Блок: меню настроек генерации
-# ============================================================
+# ========================================
 
 def config_menu(servers, cfg):
     while True:
@@ -5674,9 +5677,9 @@ def config_menu(servers, cfg):
                 cfg = cfg_default(); cfg_save(cfg); print(f"[+] {tr('reset_done')}")
     return cfg
 
-# ============================================================
+# ========================================
 #  Блок: экспорт / сохранение
-# ============================================================
+# ========================================
 
 def save_base64(servers, name="servers"):
     lines = [build_uri(s) for s in servers]
@@ -5802,9 +5805,9 @@ def save_yaml_clash(servers, name="clash_proxies.yaml"):
     with open(p, 'w', encoding='utf-8') as f: f.write('\n'.join(lines))
     print(f"[+] Clash YAML: {p}")
 
-# ============================================================
+# ========================================
 #  Блок: универсальный редактор JSON
-# ============================================================
+# ========================================
 
 FIELD_HINTS = {"Name":"Name","GlobalProxy":"GlobalProxy true/false","UseChunkFiles":"UseChunkFiles true/false",
 "RemoteDns":"RemoteDns IP","DomesticDns":"DomesticDns IP","RemoteDNSType":"RemoteDNSType","RemoteDNSDomain":"RemoteDNSDomain URL",
@@ -6115,9 +6118,9 @@ def json_menu(servers, cfg):
                 print(f"[!] {tr('no_files')}"); _in("\n" + tr("q_back") + ": ", allow_exit=False)
     return cfg
 
-# ============================================================
+# ========================================
 #  Блок: главное меню
-# ============================================================
+# ========================================
 
 def main():
     ensure_dirs()
@@ -6214,28 +6217,1041 @@ if __name__ == "__main__":
 SUBMGR_END
 fi
 
+# ========================================
+#  Скрипт 5/5: RegexBuilder.py
+# ========================================
+if [ "$REGEN_PY" = "1" ] || [ ! -s "$BASE/RegexBuilder.py" ]; then
+cat << 'REGEX_END' > "$BASE/RegexBuilder.py"
+# ========================================
+#  RegexBuilder: конструктор регулярных выражений
+# ========================================
+
+import os
+import sys
+import re
+import time
+import json
+from pathlib import Path
+from datetime import datetime
+
+os.umask(0o077)
+
+# --- Загрузка языка ---
+LANG = os.environ.get("LANG_SEL", "").strip()
+if not LANG:
+    try:
+        with open(os.path.expanduser("~/.sr_toolkit_lang")) as _f:
+            LANG = _f.read().strip()
+    except Exception:
+        LANG = "ru"
+if LANG not in ("ru", "en"):
+    LANG = "ru"
+
+# --- Словарь переводов ---
+_T = {
+"ru": {
+"exit": "Выход.",
+"menu_hdr": "REGEXBUILDER: ГЛАВНОЕ МЕНЮ",
+"m1": "1 - Создать regex (мастер)",
+"m2": "2 - Объяснить regex",
+"m3": "3 - Протестировать regex",
+"m4": "4 - Быстрые шаблоны",
+"m5": "5 - Расширенный конструктор",
+"m6": "6 - История",
+"m_q": "q - Выход",
+"choice": "Ваш выбор",
+"bad": "Неверный выбор",
+"press": "Нажмите Enter для продолжения",
+"step1_hdr": "ШАГ 1: Что ДОЛЖНО совпадать?",
+"step1_hint": "Введите примеры по одному. Пустая строка — конец ввода.",
+"example_n": "Пример",
+"added_n": "Добавлено. Всего",
+"need_one": "Нужен хотя бы 1 пример.",
+"step2_hdr": "ШАГ 2: Что НЕ ДОЛЖНО совпадать?",
+"step2_hint": "Введите примеры по одному. Пустая строка — конец ввода.",
+"step3_hdr": "ШАГ 3: Где искать?",
+"step3_1": "1 - Везде по тексту",
+"step3_2": "2 - Только целое слово",
+"step3_3": "3 - Только начало строки",
+"step3_4": "4 - Только конец строки",
+"step3_5": "5 - Только вся строка целиком",
+"step4_hdr": "ШАГ 4: Флаги",
+"step4_case": "Учитывать регистр?",
+"step4_multiline": "Многострочный режим?",
+"step4_dotall": "Точка захватывает перевод строки?",
+"step5_hdr": "ШАГ 5: Группа захвата",
+"step5_q": "Добавить группу захвата? (y/n)",
+"step5_name": "Имя группы (латиница)",
+"step6_hdr": "ШАГ 6: Фильтры",
+"step6_q": "Добавить фильтры включения/исключения? (y/n)",
+"step6_include": "ВКЛЮЧИТЬ если содержит",
+"step6_exclude": "ИСКЛЮЧИТЬ если содержит",
+"step6_kw": "Ключевое слово",
+"building": "Сборка...",
+"result_hdr": "РЕЗУЛЬТАТ",
+"regex_lbl": "Регулярное выражение",
+"flags_lbl": "Флаги",
+"testing": "Проверка на примерах",
+"match_ok": "СОВПАДАЕТ",
+"match_no": "НЕ СОВПАДАЕТ",
+"all_ok": "Все примеры проверены.",
+"some_fail": "Некоторые примеры не прошли.",
+"save_q": "Сохранить? (y/n)",
+"save_name": "Имя файла (без расширения)",
+"save_ok": "Сохранено",
+"explain_hdr": "ОБЪЯСНЕНИЕ REGEX",
+"explain_q": "Введите регулярное выражение",
+"empty": "Пустое выражение.",
+"err_lbl": "Ошибка",
+"test_hdr": "ТЕСТИРОВАНИЕ",
+"test_hint": "Введите текст. Пустая строка — конец.",
+"matches": "Найдено совпадений",
+"groups_lbl": "Группы",
+"preset_hdr": "БЫСТРЫЕ ШАБЛОНЫ",
+"preset_1": "1 - Email",
+"preset_2": "2 - URL",
+"preset_3": "3 - IPv4",
+"preset_4": "4 - Дата YYYY-MM-DD",
+"preset_5": "5 - Время HH:MM:SS",
+"preset_6": "6 - Телефон +7...",
+"preset_7": "7 - HEX-цвет #RRGGBB",
+"preset_8": "8 - UUID",
+"preset_9": "9 - MAC-адрес",
+"preset_back": "b - Назад",
+"preset_applied": "Шаблон применён",
+"adv_hdr": "РАСШИРЕННЫЙ КОНСТРУКТОР",
+"adv_1": "1 - Добавить ПОЗИТИВНЫЙ LOOKAHEAD  (?=...)",
+"adv_2": "2 - Добавить НЕГАТИВНЫЙ LOOKAHEAD  (?!...)",
+"adv_3": "3 - Добавить ПОЗИТИВНЫЙ LOOKBEHIND (?<=...)",
+"adv_4": "4 - Добавить НЕГАТИВНЫЙ LOOKBEHIND (?<!...)",
+"adv_5": "5 - Добавить УСЛОВНЫЙ БЛОК  (?(N)yes|no)",
+"adv_6": "6 - Добавить BACKREFERENCE \\1 \\2",
+"adv_7": "7 - Добавить АТОМАРНУЮ ГРУППУ (?>...)",
+"adv_8": "8 - Добавить ИМЕНОВАННУЮ ГРУППУ (?P<name>...)",
+"adv_9": "9 - Показать текущий шаблон",
+"adv_10": "10 - Протестировать и сохранить",
+"adv_11": "11 - Очистить",
+"adv_q": "q - Выход",
+"adv_current": "Текущий шаблон",
+"adv_insert": "Куда вставить?",
+"adv_pos_1": "1 - В начало",
+"adv_pos_2": "2 - В конец",
+"adv_pos_3": "3 - Заменить всё",
+"adv_inner": "Содержимое",
+"adv_group_n": "Номер группы (1-9)",
+"adv_group_name": "Имя группы (латиница)",
+"adv_added": "Добавлено",
+"adv_empty": "Пустой шаблон.",
+"adv_cleared": "Очищено.",
+"hist_hdr": "ИСТОРИЯ",
+"hist_empty": "История пуста.",
+"back": "b - Назад",
+"q_back": "q - Назад",
+"path_q": "Путь к файлу",
+"file_n": "Номер файла"
+},
+"en": {
+"exit": "Exit.",
+"menu_hdr": "REGEXBUILDER: MAIN MENU",
+"m1": "1 - Build a regex (wizard)",
+"m2": "2 - Explain regex",
+"m3": "3 - Test a regex",
+"m4": "4 - Quick templates",
+"m5": "5 - Advanced builder",
+"m6": "6 - History",
+"m_q": "q - Quit",
+"choice": "Your choice",
+"bad": "Invalid choice",
+"press": "Press Enter to continue",
+"step1_hdr": "STEP 1: What SHOULD match?",
+"step1_hint": "Enter examples one per line. Empty line — end.",
+"example_n": "Example",
+"added_n": "Added. Total",
+"need_one": "At least 1 example needed.",
+"step2_hdr": "STEP 2: What should NOT match?",
+"step2_hint": "Enter examples one per line. Empty line — end.",
+"step3_hdr": "STEP 3: Where to search?",
+"step3_1": "1 - Anywhere in text",
+"step3_2": "2 - Whole word only",
+"step3_3": "3 - Start of line",
+"step3_4": "4 - End of line",
+"step3_5": "5 - Whole line only",
+"step4_hdr": "STEP 4: Flags",
+"step4_case": "Case sensitive?",
+"step4_multiline": "Multiline mode?",
+"step4_dotall": "Dot matches newlines?",
+"step5_hdr": "STEP 5: Capture group",
+"step5_q": "Add capture group? (y/n)",
+"step5_name": "Group name (latin)",
+"step6_hdr": "STEP 6: Filters",
+"step6_q": "Add include/exclude filters? (y/n)",
+"step6_include": "INCLUDE if contains",
+"step6_exclude": "EXCLUDE if contains",
+"step6_kw": "Keyword",
+"building": "Building...",
+"result_hdr": "RESULT",
+"regex_lbl": "Regular expression",
+"flags_lbl": "Flags",
+"testing": "Testing examples",
+"match_ok": "MATCH",
+"match_no": "NO MATCH",
+"all_ok": "All examples passed.",
+"some_fail": "Some examples failed.",
+"save_q": "Save? (y/n)",
+"save_name": "File name (without extension)",
+"save_ok": "Saved",
+"explain_hdr": "REGEX EXPLANATION",
+"explain_q": "Enter regular expression",
+"empty": "Empty expression.",
+"err_lbl": "Error",
+"test_hdr": "TESTING",
+"test_hint": "Enter text. Empty line — end.",
+"matches": "Matches found",
+"groups_lbl": "Groups",
+"preset_hdr": "QUICK TEMPLATES",
+"preset_1": "1 - Email",
+"preset_2": "2 - URL",
+"preset_3": "3 - IPv4",
+"preset_4": "4 - Date YYYY-MM-DD",
+"preset_5": "5 - Time HH:MM:SS",
+"preset_6": "6 - Phone +7...",
+"preset_7": "7 - HEX color #RRGGBB",
+"preset_8": "8 - UUID",
+"preset_9": "9 - MAC address",
+"preset_back": "b - Back",
+"preset_applied": "Template applied",
+"adv_hdr": "ADVANCED BUILDER",
+"adv_1": "1 - Add POSITIVE LOOKAHEAD  (?=...)",
+"adv_2": "2 - Add NEGATIVE LOOKAHEAD  (?!...)",
+"adv_3": "3 - Add POSITIVE LOOKBEHIND (?<=...)",
+"adv_4": "4 - Add NEGATIVE LOOKBEHIND (?<!...)",
+"adv_5": "5 - Add CONDITIONAL BLOCK  (?(N)yes|no)",
+"adv_6": "6 - Add BACKREFERENCE \\1 \\2",
+"adv_7": "7 - Add ATOMIC GROUP (?>...)",
+"adv_8": "8 - Add NAMED GROUP (?P<name>...)",
+"adv_9": "9 - Show current pattern",
+"adv_10": "10 - Test and save",
+"adv_11": "11 - Clear",
+"adv_q": "q - Exit",
+"adv_current": "Current pattern",
+"adv_insert": "Where to insert?",
+"adv_pos_1": "1 - At start",
+"adv_pos_2": "2 - At end",
+"adv_pos_3": "3 - Replace all",
+"adv_inner": "Content",
+"adv_group_n": "Group number (1-9)",
+"adv_group_name": "Group name (latin)",
+"adv_added": "Added",
+"adv_empty": "Empty pattern.",
+"adv_cleared": "Cleared.",
+"hist_hdr": "HISTORY",
+"hist_empty": "History is empty.",
+"back": "b - Back",
+"q_back": "q - Back",
+"path_q": "Path to file",
+"file_n": "File number"
+}}
+
+def tr(k):
+    return _T.get(LANG, _T["ru"]).get(k, _T["ru"].get(k, k))
+
+# --- Очистка ввода от ANSI-последовательностей и управляющих символов ---
+def _clean(s):
+    if s is None:
+        return ""
+    s = re.sub(r'\x1b\[[0-9;?]*[A-Za-z]', '', s)
+    s = ''.join(ch for ch in s if ch == '\t' or ord(ch) >= 32)
+    return s
+
+# --- Безопасный ввод. Возвращает None если пользователь ввёл q ---
+def _input(prompt="", allow_empty=False):
+    try:
+        v = input(prompt)
+    except (EOFError, KeyboardInterrupt):
+        print()
+        return None
+    v = _clean(v)
+    stripped = v.strip()
+    if stripped.lower() in ("q", "quit", "exit"):
+        return None
+    if not allow_empty and not stripped:
+        return ""
+    return v
+
+# --- Утилиты UI ---
+def clr():
+    os.system('clear')
+
+def hdr(t):
+    print("=" * 40)
+    print(f" {t}")
+    print("=" * 40)
+
+def ln():
+    print("-" * 40)
+
+# --- Пути ---
+ROOT = Path.home()
+BASE = ROOT / "Shadowrocket" / "RegexBuilder"
+OUTPUT_DIR = BASE / "Output"
+BACKUP_DIR = BASE / "Backups"
+HISTORY_FILE = BASE / "history.json"
+
+def ensure_dirs():
+    for d in [BASE, OUTPUT_DIR, BACKUP_DIR]:
+        if not d.exists():
+            d.mkdir(parents=True, exist_ok=True)
+
+# ========================================
+#  Блок: классификация строк и генерация pattern
+# ========================================
+
+def classify(s):
+    if re.fullmatch(r'\d{1,3}(\.\d{1,3}){3}', s): return 'ipv4'
+    if re.fullmatch(r'[\w.+-]+@[\w-]+\.[\w.]+', s): return 'email'
+    if re.fullmatch(r'https?://\S+', s): return 'url'
+    if re.fullmatch(r'\d{4}-\d{2}-\d{2}', s): return 'date'
+    if re.fullmatch(r'\d{2}:\d{2}:\d{2}', s): return 'time'
+    if re.fullmatch(r'#[0-9a-fA-F]{6}', s): return 'hexcolor'
+    if re.fullmatch(r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}', s): return 'uuid'
+    if re.fullmatch(r'\+?\d[\d\s\-()]{6,}', s): return 'phone'
+    if re.fullmatch(r'([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}', s): return 'mac'
+    if re.fullmatch(r'\d+', s): return 'number'
+    if re.fullmatch(r'[a-zA-Z]+', s): return 'word'
+    if re.fullmatch(r'[a-zA-Z][a-zA-Z0-9_]*', s): return 'identifier'
+    return 'literal'
+
+def build_pattern_from_examples(examples):
+    if not examples:
+        return None
+    tokens = []
+    for ex in examples:
+        t = classify(ex)
+        if t == 'ipv4': tokens.append(r'\d{1,3}(?:\.\d{1,3}){3}')
+        elif t == 'email': tokens.append(r'[\w.+-]+@[\w-]+\.[\w.]+')
+        elif t == 'url': tokens.append(r'https?://[^\s]+')
+        elif t == 'date': tokens.append(r'\d{4}-\d{2}-\d{2}')
+        elif t == 'time': tokens.append(r'\d{2}:\d{2}:\d{2}')
+        elif t == 'hexcolor': tokens.append(r'#[0-9a-fA-F]{6}')
+        elif t == 'uuid': tokens.append(r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}')
+        elif t == 'phone': tokens.append(r'\+?\d[\d\s\-()]{6,}')
+        elif t == 'mac': tokens.append(r'(?:[0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}')
+        elif t == 'number': tokens.append(r'\d+')
+        elif t == 'word': tokens.append(r'[a-zA-Z]+')
+        elif t == 'identifier': tokens.append(r'[a-zA-Z][a-zA-Z0-9_]*')
+        else: tokens.append(re.escape(ex))
+    unique = []
+    for t in tokens:
+        if t not in unique:
+            unique.append(t)
+    if len(unique) == 1:
+        return unique[0]
+    return '(?:' + '|'.join(unique) + ')'
+
+# ========================================
+#  Блок: объяснение regex по токенам
+# ========================================
+
+def explain_regex(pattern):
+    out = []
+    i = 0
+    n = len(pattern)
+    while i < n:
+        c = pattern[i]
+        if c == '^':
+            out.append(("^", "Начало строки" if LANG == "ru" else "Start of line"))
+        elif c == '$':
+            out.append(("$", "Конец строки" if LANG == "ru" else "End of line"))
+        elif c == '.':
+            out.append((".", "Любой символ" if LANG == "ru" else "Any character"))
+        elif c == '*':
+            out.append(("*", "0 или более раз" if LANG == "ru" else "0 or more"))
+        elif c == '+':
+            out.append(("+", "1 или более раз" if LANG == "ru" else "1 or more"))
+        elif c == '?':
+            out.append(("?", "0 или 1 раз" if LANG == "ru" else "0 or 1"))
+        elif c == '\\' and i + 1 < n:
+            nxt = pattern[i + 1]
+            d = {'d': 'Цифра', 'D': 'Не цифра', 'w': 'Слово', 'W': 'Не слово',
+                 's': 'Пробел', 'S': 'Не пробел', 'b': 'Граница слова', 'B': 'Не граница слова'}
+            if nxt.isdigit():
+                out.append((f"\\{nxt}", f"Backreference на группу {nxt}"))
+            else:
+                out.append((f"\\{nxt}", d.get(nxt, f"Спецсимвол \\{nxt}")))
+            i += 1
+        elif c == '(':
+            if i + 2 < n and pattern[i + 1] == '?':
+                if pattern[i + 2] == ':':
+                    out.append(("(?:", "Незахватывающая группа"))
+                elif pattern[i + 2] == '=':
+                    out.append(("(?=", "Позитивный lookahead"))
+                elif pattern[i + 2] == '!':
+                    out.append(("(?!", "Негативный lookahead"))
+                elif pattern[i + 2] == '<':
+                    if i + 3 < n and pattern[i + 3] in ('=', '!'):
+                        sign = pattern[i + 3]
+                        out.append((f"(?<{sign}", "Позитивный lookbehind" if sign == '=' else "Негативный lookbehind"))
+                    else:
+                        out.append(("(?<", "Именованная группа (old-style)"))
+                elif pattern[i + 2] == 'P':
+                    out.append(("(?P", "Именованная группа / backreference"))
+                elif pattern[i + 2] == '>':
+                    out.append(("(?>", "Атомарная группа"))
+                elif pattern[i + 2] == '(':
+                    out.append(("(?(", "Условный блок"))
+                else:
+                    out.append(("(?", "Inline-модификатор"))
+            else:
+                out.append(("(", "Начало группы"))
+        elif c == ')':
+            out.append((")", "Конец группы"))
+        elif c == '|':
+            out.append(("|", "ИЛИ" if LANG == "ru" else "OR"))
+        elif c == '[':
+            j = pattern.find(']', i)
+            if j > i:
+                content = pattern[i:j + 1]
+                out.append((content, f"Набор символов: {content[1:-1]}"))
+                i = j
+            else:
+                out.append(("[", "Набор символов"))
+        elif c == '{':
+            j = pattern.find('}', i)
+            if j > i:
+                content = pattern[i:j + 1]
+                out.append((content, f"Количество: {content[1:-1]}"))
+                i = j
+            else:
+                out.append(("{", "Квантор"))
+        else:
+            out.append((c, f"Литерал '{c}'"))
+        i += 1
+    return out
+
+# ========================================
+#  Блок: пресеты
+# ========================================
+
+PRESETS = {
+    "1": ("Email", r'[\w.+-]+@[\w-]+\.[\w.]+', "test@example.com"),
+    "2": ("URL", r'https?://[^\s]+', "https://example.com/path?x=1"),
+    "3": ("IPv4", r'\d{1,3}(?:\.\d{1,3}){3}', "192.168.1.1"),
+    "4": ("Date", r'\d{4}-\d{2}-\d{2}', "2025-01-15"),
+    "5": ("Time", r'\d{2}:\d{2}:\d{2}', "14:30:00"),
+    "6": ("Phone", r'\+?\d[\d\s\-()]{6,}', "+7 999 123-45-67"),
+    "7": ("HEX", r'#[0-9a-fA-F]{6}', "#FF5733"),
+    "8": ("UUID", r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}', "550e8400-e29b-41d4-a716-446655440000"),
+    "9": ("MAC", r'(?:[0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}', "AA:BB:CC:DD:EE:FF"),
+}
+
+# ========================================
+#  Блок: история
+# ========================================
+
+def load_history():
+    if not HISTORY_FILE.exists():
+        return []
+    try:
+        data = json.loads(HISTORY_FILE.read_text(encoding='utf-8'))
+        return data if isinstance(data, list) else []
+    except Exception:
+        return []
+
+def save_history(pattern, flags_desc, examples):
+    try:
+        hist = load_history()
+        hist.append({
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "pattern": pattern,
+            "flags": flags_desc,
+            "examples": examples[:5],
+        })
+        hist = hist[-50:]
+        HISTORY_FILE.write_text(json.dumps(hist, ensure_ascii=False, indent=2), encoding='utf-8')
+    except Exception:
+        pass
+
+# ========================================
+#  Блок: тестирование
+# ========================================
+
+def test_pattern(pattern, flags, match_examples, no_match_examples):
+    try:
+        compiled = re.compile(pattern, flags)
+    except re.error as e:
+        print(f"[!] {tr('err_lbl')}: {e}")
+        return None, None
+    results = {"ok": True, "missed": [], "unexpected": []}
+    print(f"\n  {tr('testing')}:")
+    ln()
+    for ex in match_examples:
+        m = compiled.search(ex)
+        if m:
+            print(f"    [+] {tr('match_ok')}:  {ex}")
+            print(f"        -> '{m.group()}' @ {m.start()}-{m.end()}")
+        else:
+            print(f"    [-] {tr('match_no')}: {ex}")
+            results["missed"].append(ex)
+            results["ok"] = False
+    for ex in no_match_examples:
+        m = compiled.search(ex)
+        if not m:
+            print(f"    [+] {tr('match_no')}: {ex}")
+        else:
+            print(f"    [!] {tr('match_ok')}:  {ex}")
+            results["unexpected"].append(ex)
+            results["ok"] = False
+    return compiled, results
+
+# ========================================
+#  Блок: сохранение результата
+# ========================================
+
+def save_result(pattern, flags, flag_names, match_examples, no_match_examples):
+    if _input(f"\n  {tr('save_q')} [y]: ", allow_empty=True) is None:
+        return
+    v = input(f"  {tr('save_name')} [regex_output]: ").strip()
+    v = _clean(v)
+    if not v:
+        v = "regex_output"
+    out = OUTPUT_DIR / f"{v}.py"
+    with open(out, 'w', encoding='utf-8') as f:
+        f.write("# Auto-generated by RegexBuilder\n")
+        f.write(f"# Generated: {datetime.now().isoformat()}\n")
+        f.write(f"# Flags: {', '.join(flag_names) if flag_names else 'none'}\n\n")
+        f.write("import re\n\n")
+        f.write(f"pattern = r'''{pattern}'''\n")
+        if flag_names:
+            f.write("flags = " + " | ".join(f"re.{fn}" for fn in flag_names) + "\n")
+        else:
+            f.write("flags = 0\n")
+        f.write("\nregex = re.compile(pattern, flags)\n\n")
+        if match_examples:
+            f.write("# Test examples (SHOULD match):\n")
+            for ex in match_examples:
+                f.write(f"#   {ex}\n")
+        if no_match_examples:
+            f.write("\n# Test examples (SHOULD NOT match):\n")
+            for ex in no_match_examples:
+                f.write(f"#   {ex}\n")
+    print(f"  [+] {tr('save_ok')}: {out}")
+
+# ========================================
+#  Блок: режим "Мастер"
+# ========================================
+
+def mode_wizard():
+    clr()
+    hdr(tr("step1_hdr"))
+    print(tr("step1_hint"))
+
+    match_examples = []
+    idx = 1
+    while True:
+        s = _input(f"  {tr('example_n')} #{idx}: ", allow_empty=True)
+        if s is None:
+            return
+        if not s:
+            break
+        match_examples.append(s)
+        idx += 1
+        print(f"  [+] {tr('added_n')}: {len(match_examples)}")
+
+    if not match_examples:
+        print(f"[!] {tr('need_one')}")
+        input(f"\n{tr('press')}: ")
+        return
+
+    print("\n" + "=" * 40)
+    print(f"  {tr('step2_hdr')}")
+    print("=" * 40)
+    print(tr("step2_hint"))
+    no_match_examples = []
+    idx = 1
+    while True:
+        s = _input(f"  {tr('example_n')} #{idx}: ", allow_empty=True)
+        if s is None:
+            return
+        if not s:
+            break
+        no_match_examples.append(s)
+        idx += 1
+
+    print("\n" + "=" * 40)
+    print(f"  {tr('step3_hdr')}")
+    print("=" * 40)
+    print("  " + tr("step3_1"))
+    print("  " + tr("step3_2"))
+    print("  " + tr("step3_3"))
+    print("  " + tr("step3_4"))
+    print("  " + tr("step3_5"))
+    sc = _input(f"{tr('choice')} [1]: ", allow_empty=True)
+    if sc is None: return
+    sc = sc.strip() or "1"
+    if sc not in ("1", "2", "3", "4", "5"):
+        sc = "1"
+
+    print("\n" + "=" * 40)
+    print(f"  {tr('step4_hdr')}")
+    print("=" * 40)
+    v = _input(f"  {tr('step4_case')} (y/n) [n]: ", allow_empty=True)
+    if v is None: return
+    case_sensitive = v.strip().lower() == "y"
+    v = _input(f"  {tr('step4_multiline')} (y/n) [n]: ", allow_empty=True)
+    if v is None: return
+    multiline = v.strip().lower() == "y"
+    v = _input(f"  {tr('step4_dotall')} (y/n) [n]: ", allow_empty=True)
+    if v is None: return
+    dotall = v.strip().lower() == "y"
+
+    print("\n" + "=" * 40)
+    print(f"  {tr('step5_hdr')}")
+    print("=" * 40)
+    v = _input(f"  {tr('step5_q')} [n]: ", allow_empty=True)
+    if v is None: return
+    use_group = v.strip().lower() == "y"
+    group_name = ""
+    if use_group:
+        v = _input(f"  {tr('step5_name')} (Enter — без имени): ", allow_empty=True)
+        if v is None: return
+        group_name = v.strip()
+
+    print("\n" + "=" * 40)
+    print(f"  {tr('step6_hdr')}")
+    print("=" * 40)
+    v = _input(f"  {tr('step6_q')} [n]: ", allow_empty=True)
+    if v is None: return
+    use_filters = v.strip().lower() == "y"
+    include_kw = []
+    exclude_kw = []
+    if use_filters:
+        print(f"\n  {tr('step6_include')}:")
+        while True:
+            kw = _input(f"    {tr('step6_kw')} (Enter — конец): ", allow_empty=True)
+            if kw is None: return
+            if not kw.strip(): break
+            include_kw.append(kw.strip())
+        print(f"\n  {tr('step6_exclude')}:")
+        while True:
+            kw = _input(f"    {tr('step6_kw')} (Enter — конец): ", allow_empty=True)
+            if kw is None: return
+            if not kw.strip(): break
+            exclude_kw.append(kw.strip())
+
+    print("\n" + tr("building"))
+    time.sleep(0.2)
+
+    pattern = build_pattern_from_examples(match_examples) or re.escape(match_examples[0])
+
+    if use_group:
+        if group_name and re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', group_name):
+            pattern = f"(?P<{group_name}>{pattern})"
+        else:
+            pattern = f"({pattern})"
+
+    if sc == "2":
+        pattern = r'\b' + pattern + r'\b'
+    elif sc == "3":
+        pattern = '^' + pattern
+    elif sc == "4":
+        pattern = pattern + '$'
+    elif sc == "5":
+        pattern = '^' + pattern + '$'
+
+    for kw in exclude_kw:
+        pattern = f"(?!.*{re.escape(kw)})" + pattern
+    for kw in include_kw:
+        pattern = f"(?=.*{re.escape(kw)})" + pattern
+
+    flags = 0
+    flag_names = []
+    if not case_sensitive:
+        flags |= re.IGNORECASE
+        flag_names.append("IGNORECASE")
+    if multiline:
+        flags |= re.MULTILINE
+        flag_names.append("MULTILINE")
+    if dotall:
+        flags |= re.DOTALL
+        flag_names.append("DOTALL")
+
+    clr()
+    hdr(tr("result_hdr"))
+    print(f"  {tr('regex_lbl')}:")
+    print(f"    {pattern}")
+    if flag_names:
+        print(f"  {tr('flags_lbl')}: {', '.join(flag_names)}")
+
+    compiled, results = test_pattern(pattern, flags, match_examples, no_match_examples)
+    if compiled is None:
+        input(f"\n{tr('press')}: ")
+        return
+
+    ln()
+    if results["ok"]:
+        print(f"  [+] {tr('all_ok')}")
+    else:
+        print(f"  [!] {tr('some_fail')}")
+
+    save_history(pattern, "|".join(flag_names), match_examples)
+    save_result(pattern, flags, flag_names, match_examples, no_match_examples)
+    input(f"\n{tr('press')}: ")
+
+# ========================================
+#  Блок: режим "Объяснить"
+# ========================================
+
+def mode_explain():
+    clr()
+    hdr(tr("explain_hdr"))
+    pattern = _input(f"\n{tr('explain_q')}: ", allow_empty=True)
+    if pattern is None: return
+    pattern = pattern.strip()
+    if not pattern:
+        print(f"[!] {tr('empty')}")
+        input(f"\n{tr('press')}: ")
+        return
+    try:
+        re.compile(pattern)
+    except re.error as e:
+        print(f"[!] {tr('err_lbl')}: {e}")
+        input(f"\n{tr('press')}: ")
+        return
+    print(f"\n  {tr('regex_lbl')}: {pattern}\n")
+    ln()
+    for tok, desc in explain_regex(pattern):
+        print(f"    {tok:<22} {desc}")
+    ln()
+    input(f"\n{tr('press')}: ")
+
+# ========================================
+#  Блок: режим "Тест"
+# ========================================
+
+def mode_test():
+    clr()
+    hdr(tr("test_hdr"))
+    pattern = _input(f"\n{tr('explain_q')}: ", allow_empty=True)
+    if pattern is None: return
+    pattern = pattern.strip()
+    if not pattern:
+        print(f"[!] {tr('empty')}")
+        input(f"\n{tr('press')}: ")
+        return
+    try:
+        compiled = re.compile(pattern)
+    except re.error as e:
+        print(f"[!] {tr('err_lbl')}: {e}")
+        input(f"\n{tr('press')}: ")
+        return
+    print(f"\n{tr('test_hint')}")
+    lines = []
+    while True:
+        s = input("  > ")
+        s = _clean(s)
+        if not s: break
+        lines.append(s)
+    if not lines:
+        input(f"\n{tr('press')}: ")
+        return
+    text = "\n".join(lines)
+    matches = list(compiled.finditer(text))
+    print(f"\n  {tr('matches')}: {len(matches)}")
+    ln()
+    for i, m in enumerate(matches, 1):
+        print(f"  [{i}] '{m.group()}' @ {m.start()}-{m.end()}")
+        for gi, g in enumerate(m.groups(), 1):
+            print(f"       {tr('groups_lbl')} #{gi}: {g!r}")
+        for ng, val in (m.groupdict() or {}).items():
+            print(f"       {tr('groups_lbl')} '{ng}': {val!r}")
+    input(f"\n{tr('press')}: ")
+
+# ========================================
+#  Блок: режим "Пресеты"
+# ========================================
+
+def mode_presets():
+    while True:
+        clr()
+        hdr(tr("preset_hdr"))
+        for k, (name, pat, example) in PRESETS.items():
+            print(f"  {k:>2}. {name:<16} {pat}")
+        ln()
+        print(f"  {tr('preset_back')}")
+        ch = _input(f"{tr('choice')} [1]: ", allow_empty=True)
+        if ch is None: return
+        ch = ch.strip()
+        if ch.lower() in ("b", "back"):
+            return
+        if ch not in PRESETS:
+            continue
+        name, pat, example = PRESETS[ch]
+        print(f"\n  {name}: {pat}")
+        print(f"  Пример: {example}")
+        try:
+            compiled = re.compile(pat)
+        except re.error as e:
+            print(f"[!] {tr('err_lbl')}: {e}")
+            input(f"\n{tr('press')}: ")
+            continue
+        m = compiled.search(example)
+        if m:
+            print(f"  [+] {tr('match_ok')}: '{m.group()}'")
+        else:
+            print(f"  [!] {tr('match_no')}")
+        if _input(f"\n  {tr('save_q')} [y]: ", allow_empty=True) is not None:
+            fname = _input(f"  {tr('save_name')} [{name.lower().replace(' ', '_')}]: ", allow_empty=True)
+            if fname is None:
+                continue
+            fname = fname.strip() or name.lower().replace(' ', '_')
+            out = OUTPUT_DIR / f"{fname}.py"
+            with open(out, 'w', encoding='utf-8') as f:
+                f.write(f"# {name}\nimport re\n\npattern = r'''{pat}'''\nflags = 0\nregex = re.compile(pattern, flags)\n")
+            print(f"  [+] {tr('save_ok')}: {out}")
+        input(f"\n{tr('press')}: ")
+
+# ========================================
+#  Блок: режим "Расширенный"
+# ========================================
+
+def mode_advanced():
+    pattern = ""
+
+    def insert_component(comp):
+        nonlocal pattern
+        print(f"\n  {tr('adv_current')}: {pattern if pattern else '(пусто)'}")
+        print(f"\n  {tr('adv_insert')}:")
+        print("    " + tr("adv_pos_1"))
+        print("    " + tr("adv_pos_2"))
+        print("    " + tr("adv_pos_3"))
+        pos = _input(f"  {tr('choice')} [1]: ", allow_empty=True)
+        if pos is None: return
+        pos = pos.strip() or "1"
+        if pos == "1":
+            pattern = comp + pattern
+        elif pos == "2":
+            pattern = pattern + comp
+        elif pos == "3":
+            pattern = comp
+        print(f"  [+] {tr('adv_added')}: {comp}")
+
+    while True:
+        clr()
+        hdr(tr("adv_hdr"))
+        print("  " + tr("adv_1"))
+        print("  " + tr("adv_2"))
+        print("  " + tr("adv_3"))
+        print("  " + tr("adv_4"))
+        print("  " + tr("adv_5"))
+        print("  " + tr("adv_6"))
+        print("  " + tr("adv_7"))
+        print("  " + tr("adv_8"))
+        print("  " + tr("adv_9"))
+        print("  " + tr("adv_10"))
+        print("  " + tr("adv_11"))
+        print("  " + tr("adv_q"))
+        ln()
+        print(f"  {tr('adv_current')}: {pattern if pattern else '(пусто)'}")
+        ln()
+
+        ch = _input(f"{tr('choice')}: ", allow_empty=True)
+        if ch is None:
+            return
+        ch = ch.strip().lower()
+
+        if ch == "1":
+            inner = _input(f"  {tr('adv_inner')} (?= ... ): ", allow_empty=True)
+            if inner is None: continue
+            inner = inner.strip()
+            if inner: insert_component(f"(?={inner})")
+
+        elif ch == "2":
+            inner = _input(f"  {tr('adv_inner')} (?! ... ): ", allow_empty=True)
+            if inner is None: continue
+            inner = inner.strip()
+            if inner: insert_component(f"(?!{inner})")
+
+        elif ch == "3":
+            inner = _input(f"  {tr('adv_inner')} (?<= ... ): ", allow_empty=True)
+            if inner is None: continue
+            inner = inner.strip()
+            if inner: insert_component(f"(?<={inner})")
+
+        elif ch == "4":
+            inner = _input(f"  {tr('adv_inner')} (?<! ... ): ", allow_empty=True)
+            if inner is None: continue
+            inner = inner.strip()
+            if inner: insert_component(f"(?<!{inner})")
+
+        elif ch == "5":
+            v = _input(f"  {tr('adv_group_n')} [1]: ", allow_empty=True)
+            if v is None: continue
+            n = v.strip() or "1"
+            if not n.isdigit(): n = "1"
+            yes_pat = _input("  Паттерн если сработала (yes): ", allow_empty=True)
+            if yes_pat is None: continue
+            no_pat = _input("  Паттерн если НЕ сработала (no): ", allow_empty=True)
+            if no_pat is None: continue
+            insert_component(f"(?({n}){yes_pat.strip()}|{no_pat.strip()})")
+
+        elif ch == "6":
+            v = _input(f"  {tr('adv_group_n')} [1]: ", allow_empty=True)
+            if v is None: continue
+            n = v.strip() or "1"
+            if not n.isdigit(): n = "1"
+            insert_component(f"\\{n}")
+
+        elif ch == "7":
+            inner = _input(f"  {tr('adv_inner')} (?> ... ): ", allow_empty=True)
+            if inner is None: continue
+            inner = inner.strip()
+            if inner: insert_component(f"(?>{inner})")
+
+        elif ch == "8":
+            name_g = _input(f"  {tr('adv_group_name')}: ", allow_empty=True)
+            if name_g is None: continue
+            name_g = name_g.strip()
+            if not name_g or not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', name_g):
+                print("[!] Имя должно начинаться с буквы или подчёркивания")
+                continue
+            inner = _input(f"  {tr('adv_inner')}: ", allow_empty=True)
+            if inner is None: continue
+            inner = inner.strip() or ".*?"
+            insert_component(f"(?P<{name_g}>{inner})")
+
+        elif ch == "9":
+            print(f"\n  {tr('adv_current')}: {pattern if pattern else '(пусто)'}")
+            input(f"\n{tr('press')}: ")
+
+        elif ch == "10":
+            if not pattern:
+                print(f"[!] {tr('adv_empty')}")
+                input(f"\n{tr('press')}: ")
+                continue
+            try:
+                compiled = re.compile(pattern)
+            except re.error as e:
+                print(f"[!] {tr('err_lbl')}: {e}")
+                input(f"\n{tr('press')}: ")
+                continue
+            print(f"\n  {tr('regex_lbl')}: {pattern}")
+            print(f"\n  {tr('test_hint')}")
+            lines = []
+            while True:
+                s = input("  > ")
+                s = _clean(s)
+                if not s: break
+                lines.append(s)
+            text = "\n".join(lines)
+            matches = list(compiled.finditer(text)) if text else []
+            print(f"\n  {tr('matches')}: {len(matches)}")
+            for i, m in enumerate(matches[:20], 1):
+                print(f"  [{i}] '{m.group()}' @ {m.start()}-{m.end()}")
+            if len(matches) > 20:
+                print(f"  ... ещё {len(matches)-20}")
+            if _input(f"\n  {tr('save_q')} [y]: ", allow_empty=True) is not None:
+                fname = _input(f"  {tr('save_name')} [advanced]: ", allow_empty=True)
+                if fname is None: continue
+                fname = fname.strip() or "advanced"
+                out = OUTPUT_DIR / f"{fname}.py"
+                with open(out, 'w', encoding='utf-8') as f:
+                    f.write(f"import re\n\npattern = r'''{pattern}'''\nflags = 0\nregex = re.compile(pattern, flags)\n")
+                print(f"  [+] {tr('save_ok')}: {out}")
+                save_history(pattern, "advanced", lines or [pattern])
+            input(f"\n{tr('press')}: ")
+
+        elif ch == "11":
+            pattern = ""
+            print(f"[+] {tr('adv_cleared')}")
+            time.sleep(0.5)
+
+# ========================================
+#  Блок: режим "История"
+# ========================================
+
+def mode_history():
+    clr()
+    hdr(tr("hist_hdr"))
+    hist = load_history()
+    if not hist:
+        print(f"  [!] {tr('hist_empty')}")
+        input(f"\n{tr('press')}: ")
+        return
+    for i, item in enumerate(reversed(hist[-20:]), 1):
+        print(f"  {i:3}. [{item.get('time','')}] {item.get('pattern','')}")
+        if item.get('flags'):
+            print(f"       flags: {item.get('flags')}")
+    input(f"\n{tr('press')}: ")
+
+# ========================================
+#  Блок: главное меню
+# ========================================
+
+def main():
+    ensure_dirs()
+    while True:
+        clr()
+        hdr(tr("menu_hdr"))
+        print("  " + tr("m1"))
+        print("  " + tr("m2"))
+        print("  " + tr("m3"))
+        print("  " + tr("m4"))
+        print("  " + tr("m5"))
+        print("  " + tr("m6"))
+        print("  " + tr("m_q"))
+        ln()
+        ch = _input(f"{tr('choice')} [1]: ", allow_empty=True)
+        if ch is None:
+            return
+        ch = ch.strip() or "1"
+        if ch == "1":
+            mode_wizard()
+        elif ch == "2":
+            mode_explain()
+        elif ch == "3":
+            mode_test()
+        elif ch == "4":
+            mode_presets()
+        elif ch == "5":
+            mode_advanced()
+        elif ch == "6":
+            mode_history()
+        else:
+            print(f"[!] {tr('bad')}")
+            time.sleep(1)
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n[+] " + tr("exit"))
+        sys.exit(0)
+REGEX_END
+fi
+
 # --- Обновление маркера версии ---
 echo "$TK_VERSION" > "$VERSION_FILE"
 
 echo "[+] All scripts created."
 sleep 1
 
-# ============================================================
+# ========================================
 #  Главное меню
-# ============================================================
+# ========================================
 
 while true; do
     clear
-    echo "===================================================="
+    echo "========================================"
     echo "        $(T m_title)"
-    echo "===================================================="
+    echo "========================================"
     echo "$(T m_ad)"
     echo "$(T m_sql)"
     echo "$(T m_spy)"
     echo "$(T m_sub)"
+    echo "$(T m_rx)"
     echo "$(T m_def)"
     echo "$(T m_q)"
-    echo "===================================================="
+    echo "========================================"
     printf '%s: ' "$(T choice)"
     IFS= read -r CH
     case "$CH" in
@@ -6243,7 +7259,8 @@ while true; do
         2) python3 "$BASE/SQLiteTXT.py" ;;
         3) python3 "$BASE/SpyLog.py" ;;
         4) python3 "$BASE/SubManager.py" ;;
-        5)
+        5) python3 "$BASE/RegexBuilder.py" ;;
+        6)
             OUT="$BASE/Configurations/Default_configuration_by_Krest-Neva.module"
             if try_download "https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Configurations/Default_configuration_by_Krest-Neva.module" "$OUT"; then
                 echo "[+] $OUT"
