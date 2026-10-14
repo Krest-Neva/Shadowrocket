@@ -260,11 +260,11 @@ _T = {
  "mode_1": "1 - Default",
  "mode_2": "2 - Custom",
  "choice": "Your choice",
- "oid_hdr": "OISD WH list configuration",
- "IToid_1": "1 - Normal",
- "oid_2EL": "2 - Small",
- "ISToid_3": "3 - Download all",
- DOWN "chosen": "Chosen",
+ "oid_hdr": "OISD list configuration",
+ "oid_1": "1 - Normal",
+ "oid_2": "2 - Small",
+ "oid_3": "3 - Download all",
+ "chosen": "Chosen",
  "confirm": "Confirm? (y/n)",
  "custom_wd": "CUSTOM: white domains",
  "custom_ws": "CUSTOM: white suffixes",
@@ -285,7 +285,7 @@ _T = {
  "split_2": "2 - No (whole lists)",
  "split_on": "Splitting enabled",
  "split_off": "Whole lists",
- "e1w": "STAGE 1LOAD",
+ "e1w": "STAGE 1: WHITELIST DOWNLOAD",
  "e1b": "STAGE 1: BLACKLIST DOWNLOAD",
  "e2": "STAGE 2: RETRY FAILED DOWNLOADS",
  "e3": "STAGE 3: PROCESSING WHITELISTS",
@@ -403,7 +403,8 @@ white_urls = {}
 whitelist_clean = {}
 
 protected_suffixes = set()
-protected_domains = set_suffixes = set()
+protected_domains = set()
+forced_block_suffixes = set()
 forced_block_domains = set()
 
 if MODE == "default":
