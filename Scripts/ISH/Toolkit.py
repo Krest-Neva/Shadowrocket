@@ -1205,6 +1205,7 @@ save_logs(TOTAL_TIME)
 print("\n" + (tr("all_ok") if not (failed_lists or failed_white_lists) else tr("skipped")))
 print("=" * 45)
 ADBLOCK_END
+    
 cat << 'SQLITE_END' > "$BASE/SQLiteTXT.py"
 import os
 import sys
@@ -3155,6 +3156,7 @@ if __name__ == "__main__":
         print("\n[+] " + tr("exit"))
         sys.exit(0)
 SPYLOG_END
+    
 cat << 'SUBMGR_END' > "$BASE/SubManager.py"
 import os, sys, re, json, base64, urllib.request, ssl, subprocess, shutil, time, random, copy, ipaddress
 from urllib.parse import urlparse, parse_qs, urlencode, unquote, quote
