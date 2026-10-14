@@ -1,68 +1,153 @@
 #!/bin/sh
-# ============================================================
-# SHADOWROCKET TOOLKIT
-# Единый скрипт для iSH: AdBlock, SQLiteTXT, SpyLog, SubManager
-# ============================================================
-
 clear
+BASE="$HOME/Shadowrocket"
+LANG_FILE="$HOME/.sr_toolkit_lang"
 
-# ============================================================
-# Настройка DNS
-# ============================================================
-echo "[*] Настройка DNS..."
-echo "nameserver 8.8.8.8" > /etc/resolv.conf
-echo "nameserver 8.8.4.4" >> /etc/resolv.conf
-echo "nameserver 94.140.14.14" >> /etc/resolv.conf
-echo "nameserver 94.140.15.15" >> /etc/resolv.conf
-echo "nameserver 1.1.1.1" >> /etc/resolv.conf
+echo "===================================================="
+echo "  Language / Язык"
+echo "===================================================="
+echo "  1 - Русский [по умолчанию]"
+echo "  2 - English"
+printf "Выбор / Choice [1]: "
+read LC
+if [ "$LC" = "2" ]; then LANG_SEL="en"; else LANG_SEL="ru"; fi
+echo "$LANG_SEL" > "$LANG_FILE"
+export LANG_SEL
 
-# ============================================================
-# Проверка соединения
-# ============================================================
-echo "[*] Проверка соединения..."
-while ! ping -c 3 google.com > /dev/null 2>&1; do
-    echo "[!] Нет подключения. Повтор через 5 сек..."
-    sleep 5
-done
-echo "[+] Интернет доступен."
+T() {
+    if [ "$LANG_SEL" = "en" ]; then
+        case "$1" in
+            update_sys) echo "Update system and install dependencies?" ;;
+            update_script) echo "Update Toolkit script from GitHub?" ;;
+            delete_files) echo "Delete all Toolkit data folders?" ;;
+            dl_script) echo "[*] Downloading script..." ;;
+            script_ok) echo "[+] Script updated. Re-running..." ;;
+            dns) echo "[*] Setting DNS..." ;;
+            net_check) echo "[*] Checking connection..." ;;
+            net_retry) echo "[!] No connection. Retry in 5 sec..." ;;
+            net_ok) echo "[+] Internet available." ;;
+            sys_upd) echo "[*] Updating system..." ;;
+            deps) echo "[*] Installing dependencies..." ;;
+            mkdirs) echo "[*] Preparing folders..." ;;
+            mk_scripts) echo "[*] Creating scripts..." ;;
+            m_title) echo "Shadowrocket Toolkit (iSH)" ;;
+            m_ad) echo "  1 - AdBlock           Ad/tracker blocklist generator" ;;
+            m_sql) echo "  2 - SQLiteTXT         SQLite to text viewer" ;;
+            m_spy) echo "  3 - SpyLog            Shadowrocket log analyzer" ;;
+            m_sub) echo "  4 - SubManager        Subscriptions and JSON Xray" ;;
+            m_def) echo "  5 - GetDefaultConfig  Download default configuration" ;;
+            m_q) echo "  q - Quit" ;;
+            choice) echo "Choice" ;;
+            bad) echo "Invalid choice." ;;
+            press) echo "Press Enter to return to menu..." ;;
+            fail) echo "Download failed." ;;
+        esac
+    else
+        case "$1" in
+            update_sys) echo "Обновить систему и установить зависимости?" ;;
+            update_script) echo "Обновить сам скрипт Toolkit из GitHub?" ;;
+            delete_files) echo "Удалить все папки с данными Toolkit?" ;;
+            dl_script) echo "[*] Скачивание скрипта..." ;;
+            script_ok) echo "[+] Скрипт обновлён. Перезапуск..." ;;
+            dns) echo "[*] Настройка DNS..." ;;
+            net_check) echo "[*] Проверка соединения..." ;;
+            net_retry) echo "[!] Нет подключения. Повтор через 5 сек..." ;;
+            net_ok) echo "[+] Интернет доступен." ;;
+            sys_upd) echo "[*] Обновление системы..." ;;
+            deps) echo "[*] Установка зависимостей..." ;;
+            mkdirs) echo "[*] Подготовка папок..." ;;
+            mk_scripts) echo "[*] Создание скриптов..." ;;
+            m_title) echo "Shadowrocket Toolkit (iSH)" ;;
+            m_ad) echo "  1 - AdBlock           Генератор блок-листов" ;;
+            m_sql) echo "  2 - SQLiteTXT         Просмотр SQLite в тексте" ;;
+            m_spy) echo "  3 - SpyLog            Анализ журналов Shadowrocket" ;;
+            m_sub) echo "  4 - SubManager        Подписки и JSON Xray" ;;
+            m_def) echo "  5 - GetDefaultConfig  Скачать дефолтную конфигурацию" ;;
+            m_q) echo "  q - Выход" ;;
+            choice) echo "Ваш выбор" ;;
+            bad) echo "Неверный выбор." ;;
+            press) echo "Нажмите Enter для возврата в меню..." ;;
+            fail) echo "Не удалось скачать." ;;
+        esac
+    fi
+}
 
-# ============================================================
-# Обновление системы
-# ============================================================
-echo "[*] Обновление системы..."
-apk update
-apk upgrade
+if [ -e /dev/location ]; then
+    ( cat /dev/location > /dev/null 2>&1 ) &
+fi
 
-# ============================================================
-# Установка всех зависимостей одним блоком
-# ============================================================
-echo "[*] Установка всех зависимостей..."
-apk add --no-cache \
-    python3 py3-pip curl wget aria2 openssl ca-certificates \
-    bind-tools bash sqlite git py3-chardet
+echo ""
+echo "===================================================="
+echo "  $(T update_sys)"
+echo "===================================================="
+printf "[y/N]: "
+read U1
+case "$U1" in y|Y|yes|Yes|YES) DO_UPDATE=1 ;; *) DO_UPDATE=0 ;; esac
 
-# ============================================================
-# Создание структуры папок
-# ============================================================
-echo "[*] Настройка папок..."
-BASE=$HOME/Shadowrocket
-mkdir -p $BASE/AdBlock
-mkdir -p $BASE/SQLiteTXT/Input $BASE/SQLiteTXT/Output
-mkdir -p $BASE/SpyLog/Input $BASE/SpyLog/Output
-mkdir -p $BASE/SubManager/Input $BASE/SubManager/Output $BASE/SubManager/Backups $BASE/SubManager/Routing
+echo ""
+echo "===================================================="
+echo "  $(T update_script)"
+echo "===================================================="
+printf "[y/N]: "
+read U2
+case "$U2" in y|Y|yes|Yes|YES) DO_SCRIPT=1 ;; *) DO_SCRIPT=0 ;; esac
 
-# ============================================================
-# Создание AdBlock.py
-# ============================================================
-cat << 'ADBLOCK_END' > $BASE/AdBlock.py
-# ============================================================
-# ADBLOCK SCRIPT
-# Формирует REJECT_RULES для Shadowrocket.
-# Поддерживает режимы default и custom.
-# Нормализатор понимает Adblock Plus, hosts, dnsmasq, unbound,
-# Pi-hole, domain-only, Surge.
-# ============================================================
+if [ "$DO_SCRIPT" = "1" ]; then
+    echo ""
+    echo "===================================================="
+    echo "  $(T delete_files)"
+    echo "===================================================="
+    printf "[y/N]: "
+    read U3
+    case "$U3" in y|Y|yes|Yes|YES) rm -rf "$BASE" ;; esac
+    echo "$(T dl_script)"
+    curl -sL "https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/ISH/Toolkit.py" -o "$HOME/Toolkit.sh"
+    if [ -s "$HOME/Toolkit.sh" ]; then
+        echo "$(T script_ok)"
+        exec sh "$HOME/Toolkit.sh"
+    else
+        echo "$(T fail)"
+    fi
+fi
 
+if [ "$DO_UPDATE" = "1" ]; then
+    echo "$(T dns)"
+    echo "nameserver 8.8.8.8" > /etc/resolv.conf
+    echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+    echo "nameserver 94.140.14.14" >> /etc/resolv.conf
+    echo "nameserver 94.140.15.15" >> /etc/resolv.conf
+    echo "nameserver 1.1.1.1" >> /etc/resolv.conf
+    echo "$(T net_check)"
+    while ! ping -c 3 google.com > /dev/null 2>&1; do
+        echo "$(T net_retry)"
+        sleep 5
+    done
+    echo "$(T net_ok)"
+    echo "$(T sys_upd)"
+    apk update
+    apk upgrade
+    echo "$(T deps)"
+    apk add --no-cache \
+        python3 py3-pip curl wget aria2 openssl ca-certificates \
+        bind-tools bash sqlite git py3-chardet
+fi
+
+echo "$(T mkdirs)"
+[ -d "$BASE" ] || mkdir -p "$BASE"
+[ -d "$BASE/AdBlock" ] || mkdir -p "$BASE/AdBlock"
+[ -d "$BASE/SQLiteTXT/Input" ] || mkdir -p "$BASE/SQLiteTXT/Input"
+[ -d "$BASE/SQLiteTXT/Output" ] || mkdir -p "$BASE/SQLiteTXT/Output"
+[ -d "$BASE/SpyLog/Input" ] || mkdir -p "$BASE/SpyLog/Input"
+[ -d "$BASE/SpyLog/Output" ] || mkdir -p "$BASE/SpyLog/Output"
+[ -d "$BASE/SubManager/Input" ] || mkdir -p "$BASE/SubManager/Input"
+[ -d "$BASE/SubManager/Output" ] || mkdir -p "$BASE/SubManager/Output"
+[ -d "$BASE/SubManager/Backups" ] || mkdir -p "$BASE/SubManager/Backups"
+[ -d "$BASE/SubManager/Routing" ] || mkdir -p "$BASE/SubManager/Routing"
+[ -d "$BASE/Configurations" ] || mkdir -p "$BASE/Configurations"
+
+echo "$(T mk_scripts)"
+
+cat << 'ADBLOCK_END' > "$BASE/AdBlock.py"
 import urllib.request
 import subprocess
 import re
@@ -74,35 +159,238 @@ import math
 import shutil
 import ipaddress
 
-# Блок выбора режима
+LANG = os.environ.get("LANG_SEL", "").strip()
+if not LANG:
+    try:
+        with open(os.path.expanduser("~/.sr_toolkit_lang")) as _f:
+            LANG = _f.read().strip()
+    except Exception:
+        LANG = "ru"
+if LANG not in ("ru", "en"):
+    LANG = "ru"
+
+_T = {
+"ru": {
+ "exit": "Выход.",
+ "mode_hdr": "ADBLOCK: выбор режима",
+ "mode_1": "1 - По умолчанию",
+ "mode_2": "2 - Custom",
+ "choice": "Ваш выбор",
+ "oid_hdr": "Настройка списков OISD",
+ "oid_1": "1 - Обычные",
+ "oid_2": "2 - Короткие",
+ "oid_3": "3 - Скачать все",
+ "chosen": "Выбрано",
+ "confirm": "Подтвердить? (y/n)",
+ "custom_wd": "CUSTOM: белые домены",
+ "custom_ws": "CUSTOM: белые суффиксы",
+ "custom_bd": "CUSTOM: чёрные домены",
+ "custom_bs": "CUSTOM: чёрные суффиксы",
+ "custom_list_hint": "Введите значения через запятую (Enter — пропустить):",
+ "custom_val": "Значение",
+ "custom_black_urls": "CUSTOM: чёрные списки (URL)",
+ "custom_white_urls": "CUSTOM: белые списки (URL)",
+ "custom_name": "Имя списка",
+ "custom_name_end": "пустое имя — конец ввода",
+ "custom_url": "URL",
+ "custom_url_end": "пустой ввод — конец списка URL",
+ "custom_clean": "Очищать белыми списками? (y/n)",
+ "custom_no_bl": "Ни одного чёрного списка не задано.",
+ "split_hdr": "Разбивать итоговые списки по 100000 строк?",
+ "split_1": "1 - Да",
+ "split_2": "2 - Нет (целые списки)",
+ "split_on": "Разбиение включено",
+ "split_off": "Целые списки",
+ "e1w": "ЭТАП 1: ЗАГРУЗКА БЕЛЫХ СПИСКОВ",
+ "e1b": "ЭТАП 1: ЗАГРУЗКА ЧЁРНЫХ СПИСКОВ",
+ "e2": "ЭТАП 2: ПОВТОРНАЯ ЗАГРУЗКА ОШИБОК",
+ "e3": "ЭТАП 3: ОБРАБОТКА БЕЛЫХ СПИСКОВ",
+ "e4": "ЭТАП 4: ОБРАБОТКА ЧЁРНЫХ СПИСКОВ",
+ "e5": "ЭТАП 5: ОЧИСТКА И ФОРМИРОВАНИЕ RULE-SET",
+ "dl": "Скачивание",
+ "dl_ok": "Успешно загружено строк",
+ "dl_attempt": "попытка не удалась, повтор через",
+ "dl_err": "Ошибка: не удалось скачать",
+ "dl_err_any": "ни одним из способов",
+ "net_setup": "Настройка DNS",
+ "net_ok": "Интернет доступен",
+ "net_fail": "Ping не прошёл",
+ "net_err": "Ошибка проверки сети",
+ "need_retry": "ВНИМАНИЕ: некоторые списки не удалось скачать",
+ "wlist": "Белый",
+ "blist": "Черный",
+ "retry_q": "Хотите попытаться скачать снова?",
+ "retry_1": "1 - Да",
+ "retry_2": "2 - Нет",
+ "retry_3": "3 - Вручную",
+ "retry_manual": "Введите полную ссылку",
+ "retry_ok": "Успешно скачано. Файл добавлен в очередь",
+ "retry_fail": "Загрузка снова не удалась",
+ "parsing": "Парсинг",
+ "extracted": "Извлечено доменов",
+ "opt_std": "Оптимизация стандартного списка",
+ "opt_plus": "Оптимизация расширенного списка",
+ "opt_sm": "Оптимизация малого списка",
+ "opt_plus_sm": "Оптимизация малого расширенного списка",
+ "writing": "Формирование и запись файлов",
+ "done": "ГОТОВО! Файлы успешно сохранены",
+ "u_std": "Уникальных доменов (Std/Plus)",
+ "u_sm": "Уникальных доменов (Sm/PlusSm)",
+ "u_ip": "Уникальных IP-адресов",
+ "rm_kw": "Удалено по ключевым словам",
+ "junk": "Отсеяно ошибочно добавленных",
+ "prot_e": "Защищено (exact)",
+ "prot_s": "Защищено (suffix)",
+ "r_std": "ПРАВИЛ В ФАЙЛАХ STD",
+ "r_plus": "ПРАВИЛ В ФАЙЛАХ PLUS",
+ "r_sm": "ПРАВИЛ В ФАЙЛАХ STD SMALL",
+ "r_plus_sm": "ПРАВИЛ В ФАЙЛАХ PLUS SMALL",
+ "total_drop": "ВСЕГО ОТБРОШЕНО СТРОК",
+ "total_time": "ОБЩЕЕ ВРЕМЯ ВЫПОЛНЕНИЯ",
+ "sec": "сек",
+ "sum_bl": "Download summary (blacklists)",
+ "sum_wl": "Download summary (whitelists)",
+ "skipped": "Some lists were skipped intentionally.",
+ "all_ok": "All lists processed successfully.",
+ "y_or_n": "y/n"
+},
+"en": {
+ "exit": "Exit.",
+ "mode_hdr": "ADBLOCK: choose mode",
+ "mode_1": "1 - Default",
+ "mode_2": "2 - Custom",
+ "choice": "Your choice",
+ "oid_hdr": "OISD list configuration",
+ "oid_1": "1 - Normal",
+ "oid_2": "2 - Small",
+ "oid_3": "3 - Download all",
+ "chosen": "Chosen",
+ "confirm": "Confirm? (y/n)",
+ "custom_wd": "CUSTOM: white domains",
+ "custom_ws": "CUSTOM: white suffixes",
+ "custom_bd": "CUSTOM: black domains",
+ "custom_bs": "CUSTOM: black suffixes",
+ "custom_list_hint": "Enter comma-separated (Enter — skip):",
+ "custom_val": "Value",
+ "custom_black_urls": "CUSTOM: black lists (URLs)",
+ "custom_white_urls": "CUSTOM: white lists (URLs)",
+ "custom_name": "List name",
+ "custom_name_end": "empty name — finish",
+ "custom_url": "URL",
+ "custom_url_end": "empty input — finish URL list",
+ "custom_clean": "Clean with whitelists? (y/n)",
+ "custom_no_bl": "No black lists provided.",
+ "split_hdr": "Split output lists by 100000 lines?",
+ "split_1": "1 - Yes",
+ "split_2": "2 - No (whole lists)",
+ "split_on": "Splitting enabled",
+ "split_off": "Whole lists",
+ "e1w": "STAGE 1: WHITELIST DOWNLOAD",
+ "e1b": "STAGE 1: BLACKLIST DOWNLOAD",
+ "e2": "STAGE 2: RETRY FAILED DOWNLOADS",
+ "e3": "STAGE 3: PROCESSING WHITELISTS",
+ "e4": "STAGE 4: PROCESSING BLACKLISTS",
+ "e5": "STAGE 5: SUBDOMAIN CLEANUP AND RULE-SET BUILD",
+ "dl": "Downloading",
+ "dl_ok": "Successfully downloaded lines",
+ "dl_attempt": "attempt failed, retry in",
+ "dl_err": "Error: failed to download",
+ "dl_err_any": "by any method",
+ "net_setup": "Setting DNS",
+ "net_ok": "Internet available",
+ "net_fail": "Ping failed",
+ "net_err": "Network check error",
+ "need_retry": "WARNING: some lists failed to download",
+ "wlist": "White",
+ "blist": "Black",
+ "retry_q": "Try to download again?",
+ "retry_1": "1 - Yes",
+ "retry_2": "2 - No",
+ "retry_3": "3 - Manually",
+ "retry_manual": "Enter full URL",
+ "retry_ok": "Successfully downloaded. Added to queue",
+ "retry_fail": "Download failed again",
+ "parsing": "Parsing",
+ "extracted": "Extracted domains",
+ "opt_std": "Optimizing standard list",
+ "opt_plus": "Optimizing extended list",
+ "opt_sm": "Optimizing small list",
+ "opt_plus_sm": "Optimizing small extended list",
+ "writing": "Building and writing files",
+ "done": "DONE! Files successfully saved",
+ "u_std": "Unique domains (Std/Plus)",
+ "u_sm": "Unique domains (Sm/PlusSm)",
+ "u_ip": "Unique IP addresses",
+ "rm_kw": "Removed by keywords",
+ "junk": "Filtered invalid entries",
+ "prot_e": "Protected (exact)",
+ "prot_s": "Protected (suffix)",
+ "r_std": "RULES IN STD FILES",
+ "r_plus": "RULES IN PLUS FILES",
+ "r_sm": "RULES IN STD SMALL FILES",
+ "r_plus_sm": "RULES IN PLUS SMALL FILES",
+ "total_drop": "TOTAL DROPPED LINES",
+ "total_time": "TOTAL EXECUTION TIME",
+ "sec": "sec",
+ "sum_bl": "Download summary (blacklists)",
+ "sum_wl": "Download summary (whitelists)",
+ "skipped": "Some lists were skipped intentionally.",
+ "all_ok": "All lists processed successfully.",
+ "y_or_n": "y/n"
+}}
+
+def tr(k):
+    return _T.get(LANG, _T["ru"]).get(k, _T["ru"].get(k, k))
+
+def _input(prompt=""):
+    try:
+        v = input(prompt)
+    except (EOFError, KeyboardInterrupt):
+        print()
+        sys.exit(0)
+    if v.strip().lower() in ("q", "quit", "exit"):
+        print("[+] " + tr("exit"))
+        sys.exit(0)
+    return v
+
+def _inp_allow_empty(prompt=""):
+   ()
+ try:
+        v = inputforced(prompt)
+_block    except (EOFError, KeyboardInterrupt):
+        print()
+        sys.exit(0)
+    if v.strip().lower() in ("q", "quit", "exit"):
+        print("[+] " + tr("exit"))
+        sys.exit(0)
+    return v
+
 def choose_mode():
     print("\n" + "="*50)
-    print("ADBLOCK: выбор режима")
-    print("  1 - По умолчанию")
-    print("  2 - Custom")
-    ch = input("Ваш выбор [1]: ").strip()
-    return "custom" if ch == "2" else "default"
+    print(tr("mode_hdr"))
+    print("  " + tr("mode_1"))
+    print("  " + tr("mode_2"))
+    v = _input(f"{tr('choice')} [1]: ").strip()
+    return "custom" if v == "2" else "default"
 
 MODE = choose_mode()
 
-# Блок выбора списков OISD
 oisd_choice = '3'
 if MODE == "default":
     while True:
         print("\n" + "="*45)
-        print("Настройка списков OISD")
-        print("1 - Обычные")
-        print("2 - Короткие")
-        print("3 - Скачать все")
-        raw_oisd = input("Ваш выбор [3]: ").strip()
-        oisd_choice = raw_oisd if raw_oisd in ('1', '2', '3') else '3'
-        mapping = {'1': 'Обычные', '2': 'Короткие', '3': 'Скачать все'}
-        print(f" -> Выбрано: {mapping[oisd_choice]}")
-        confirm = input("Подтвердить? (y/n) [y]: ").strip().lower()
-        if confirm in ('y', 'yes', ''):
+        print(tr("oid_hdr"))
+        print(tr("oid_1"))
+        print(tr("oid_2"))
+        print(tr("oid_3"))
+        v = _input(f"{tr('choice')} [3]: ").strip()
+        oisd_choice = v if v in ('1', '2', '3') else '3'
+        label = {'1': tr("oid_1")[4:], '2': tr("oid_2")[4:], '3': tr("oid_3")[4:]}[oisd_choice]
+        print(f" -> {tr('chosen')}: {label}")
+        c = _input(f"{tr('confirm')} [y]: ").strip().lower()
+        if c in ('y', 'yes', ''):
             break
 
-# Блок URL списков
 oisd_main_url = "https://dl.oisd.nl/oisd_big_surge.list"
 oisd_nsfw_url = "https://dl.oisd.nl/oisd_nsfw_surge.list"
 oisd_small_url = "https://dl.oisd.nl/oisd_small_surge.list"
@@ -111,10 +399,13 @@ print("="*45 + "\n")
 
 SCRIPT_START_TIME = time.time()
 
-# Стандартные чёрные списки
 urls = {}
 white_urls = {}
 whitelist_clean = {}
+
+protected_suffixes = set()
+protected_domains = set_suffixes = set()
+forced_block_domains = set()
 
 if MODE == "default":
     urls = {
@@ -125,25 +416,23 @@ if MODE == "default":
             "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/reject.txt"
         ],
         "2) AdGuard (Base)": "https://filters.adtidy.org/ios/filters/15_optimized.txt",
-        "3) Дополнение к AdGuard 1": "https://filters.adtidy.org/ios/filters/2_optimized.txt",
-        "4) Дополнение к AdGuard 2": "https://filters.adtidy.org/ios/filters/3_optimized.txt",
-        "5) Дополнение к AdGuard 3.1": "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=adblockplus&showintro=0&mimetype=plaintext",
-        "6) Фильтр мобильной рекламы": "https://filters.adtidy.org/ios/filters/11_optimized.txt",
-        "7) Дополнительный фильтр (RU)": "https://filters.adtidy.org/ios/filters/1_optimized.txt",
-        "8) Дополнительный фильтр для блокировки трекеров": [
+        "3) AdGuard 1": "https://filters.adtidy.org/ios/filters/2_optimized.txt",
+        "4) AdGuard 2": "https://filters.adtidy.org/ios/filters/3_optimized.txt",
+        "5) AdGuard 3.1": "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=adblockplus&showintro=0&mimetype=plaintext",
+        "6) Mobile ads": "https://filters.adtidy.org/ios/filters/11_optimized.txt",
+        "7) RU filter": "https://filters.adtidy.org/ios/filters/1_optimized.txt",
+        "8) Trackers": [
             "https://easylist-downloads.adblockplus.org/cntblock.txt",
             "https://raw.githubusercontent.com/easylist/easylist/master/easyprivacy/easyprivacy_trackers.txt"
         ],
-        "9) Анти фишинг": "https://malware-filter.gitlab.io/malware-filter/phishing-filter-ag.txt"
+        "9) Anti-phishing": "https://malware-filter.gitlab.io/malware-filter/phishing-filter-ag.txt"
     }
-
     if oisd_choice in ('1', '3'):
         urls["10.1) OISD"] = [oisd_main_url]
         urls["10.2) OISD NSFW"] = [oisd_nsfw_url]
     if oisd_choice in ('2', '3'):
         urls["10.3) OISD Small"] = [oisd_small_url]
         urls["10.4) OISD NSFW Small"] = [oisd_nsfw_small_url]
-
     urls["11) HaGeZi Pro"] = [
         "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/pro.txt",
         "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@main/adblock/pro.txt"
@@ -152,131 +441,168 @@ if MODE == "default":
         "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",
         "https://cdn.jsdelivr.net/gh/StevenBlack/hosts@master/hosts"
     ]
-
     white_urls = {
-        "Белый список 1 (Direct)": [
+        "Direct": [
             "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/direct.txt",
-            "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/ruleset/direct.txt",
-            "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/direct.txt",
-            "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/direct.txt"
+            "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/ruleset/direct.txt"
         ],
-        "Белый список 2 (Proxy)": [
+        "Proxy": [
             "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/proxy.txt",
-            "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/ruleset/proxy.txt",
-            "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/proxy.txt",
-            "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/proxy.txt"
+            "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/ruleset/proxy.txt"
         ],
-        "Белый список Apple": [
+        "Apple": [
             "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/apple.txt",
-            "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/ruleset/apple.txt",
-            "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/apple.txt",
-            "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/apple.txt"
+            "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/ruleset/apple.txt"
         ],
-        "Белый список iCloud": [
+        "iCloud": [
             "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/ruleset/icloud.txt",
-            "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/ruleset/icloud.txt",
-            "https://raw.githubusercontent.com/Loyalsoldier/surge-rules/release/icloud.txt",
-            "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/icloud.txt"
+            "https://cdn.jsdelivr.net/gh/Loyalsoldier/surge-rules@release/ruleset/icloud.txt"
         ],
-        "Белый список AnudeepND (Global)": [
+        "AnudeepND": [
             "https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt",
             "https://cdn.jsdelivr.net/gh/anudeepND/whitelist@master/domains/whitelist.txt"
         ],
-        "РФ БС для моб.": [
+        "RU mobile": [
             "https://cdn.jsdelivr.net/gh/hxehex/russia-mobile-internet-whitelist@main/whitelist.txt",
             "https://raw.githubusercontent.com/hxehex/russia-mobile-internet-whitelist/main/whitelist.txt"
         ],
-        "Прочие 1": "https://raw.githubusercontent.com/chebur-net/russia-mobile-whitelist/refs/heads/main/moscow-tele2/domains.txt",
-        "Прочие 2": "https://raw.githubusercontent.com/chebur-net/russia-mobile-whitelist/refs/heads/main/spb-tele2/domains.txt"
+        "Other 1": "https://raw.githubusercontent.com/chebur-net/russia-mobile-whitelist/refs/heads/main/moscow-tele2/domains.txt",
+        "Other 2": "https://raw.githubusercontent.com/chebur-net/russia-mobile-whitelist/refs/heads/main/spb-tele2/domains.txt"
     }
-
-    # OISD по умолчанию не фильтруется белыми списками
+    protected_suffixes = {
+        "apple-pki.com","icloud.com","icloud-content.com","mzstatic.com","push.apple.com","appleid.apple.com",
+        "simplex.im","simplexonflux.com","telegram.org","t.me","telegram.me","telegra.ph","tg.dev","cdn.telegram-cdn.org",
+        "whatsapp.com","whatsapp.net","wa.me","youtube.com","youtu.be","ytimg.com","googlevideo.com",
+        "youtube.googleapis.com","ls-apple.com.akadns.net","ess-apple.com.akadns.net"
+    }
+    protected_domains = {
+        "raw.githubusercontent.com","cdn-apple.com","apple-dns.net","ls.apple.com","facetime.apple.com","stun.apple.com",
+        "apple.com","aaplimg.com","github.com","githubusercontent.com","githubassets.com","google.com","gstatic.com",
+        "ggpht.com","firebase.google.com","googleapis.com","firebaseio.com","openai.com","chatgpt.com","oaistatic.com",
+        "oaiusercontent.com","microsoft.com","windows.com","windowsupdate.com","msftconnecttest.com","msftncsi.com",
+        "azure.com","azureedge.net","azurefd.net","amazon.com","amazonaws.com","aws.amazon.com","cloudfront.net",
+        "cloudflare.com","fastly.net","cdn.jsdelivr.net","unpkg.com","akamaiedge.net","akamaized.net","akamai.net",
+        "auth0.com","okta.com","login.microsoftonline.com","accounts.google.com","hcaptcha.com","challenges.cloudflare.com",
+        "recaptcha.net","facebook.com","fb.com","fbcdn.net","graph.instagram.com","graph.facebook.com","instagram.com",
+        "cdninstagram.com","discord.com","discordapp.com","duckduckgo.com","ddg.co","giphy.com","habr.com","yandex.ru",
+        "yandex.com","yandex.by","yandex.kz","mail.yandex.ru","passport.yandex.ru","api.yandex.ru","mail.ru","e.mail.ru",
+        "vk.com","api.vk.com","ozon.ru","wildberries.ru","avito.ru","avito.st","hh.ru","sberbank.ru","online.sberbank.ru",
+        "alfabank.ru","alfa.ru","tbank.ru","tinkoff.ru","vtb.ru","finam.ru","63.ru","aif.ru","amic.ru","angliya.com",
+        "ap22.ru","asiaplustj.info","avesta.tj","azerisport.com","belta.by","championat.com","chita.ru","citilink.ru",
+        "civil.ge","click-or-die.ru","dni.ru","e1.ru","echo.az","echo.msk.ru","fedpress.ru","f1news.ru","fontanka.ru",
+        "gazeta.ru","gazetanovgorod.ru","golosarmenii.am","government.ru","gundogar-news.com","hronikatm.com",
+        "infoabad.com","inosmi.ru","interfax.ru","itogi.ru","izvestia.ru","kp.ru","kremlin.ru","lenta.ru","matchtv.ru",
+        "meduza.io","mn.ru","ng.ru","novayagazeta.ru","newsvl.ru","og.ru","ok.ru","politikus.info","ppt.ru",
+        "pressball.by","progorodsamara.ru","radiomayak.ru","rbc.ru","rg.ru","ria.ru","rskrf.ru","rutube.ru","sovsport.ru",
+        "sport-express.ru","sport24.ru","sportbox.ru","sports.ru","tass.ru","trud.ru","utro.ru","ytro.ru","zr.ru",
+        "one.one.one.one","dns.google","quad9.net","npmjs.org","pypi.org","gitlab.com","bitbucket.org","android.com",
+        "yastatic.net","dft.ru","afisha.ru","gosuslugi.ru","yandex.ru","aviasales.ru","kinopoisk.ru"
+    }
+    forced_block_suffixes = {
+        "bit.ly","tinyurl.com","t.co","reurl.cc","is.gd","ow.ly","linktr.ee","about.me","campaign-archive.com",
+        "vk.link","app.link","mradx.net","adjust.com","static.rutubelist.ru","static.kuper.ru","static-origin.kuper.ru",
+        "max.ru","zztfly.com","sub.scroogethebest.com","apmplus.volces.com","googleadservices.com","doubleclick.net",
+        "googlesyndication.com","google-analytics.com","googletagmanager.com","app-measurement.com","crashlytics.com",
+        "branch.io","amplitude.com","mixpanel.com","hotjar.com","yandexmetrica.ru","mc.yandex.ru","metrika.yandex.ru",
+        "top.mail.ru","adriver.ru","adfox.ru","pixel.facebook.com","analytics.facebook.com","connect.facebook.net",
+        "tr.facebook.com","firebaselogging-pa.googleapis.com"
+    }
     for name in urls:
         whitelist_clean[name] = not ("OISD" in name)
-
 else:
-    # Режим custom: пользователь вводит свои списки
-    print("\n=== CUSTOM: ввод чёрных списков ===")
-    print("Вводите по одному. Пустое имя — конец ввода.")
+    def ask_csv(key):
+        print("\n=== " + tr(key) + " ===")
+        print(tr("custom_list_hint"))
+        v = _inp_allow_empty(f"{tr('custom_val')}: ").strip()
+        if not v:
+            return []
+        return [x.strip() for x in v.split(",") if x.strip()]
+
+    for d in ask_csv("custom_wd"):
+        protected_domains.add(d.lower().strip("."))
+    for d in ask_csv("custom_ws"):
+        protected_suffixes.add(d.lower().lstrip(".").strip("."))
+    for d in ask_csv("custom_bd"):
+        forced_block_domains.add(d.lower().strip("."))
+    for d in ask_csv("custom_bs"):
+        forced_block_suffixes.add(d.lower().lstrip(".").strip("."))
+
+    print("\n=== " + tr("custom_black_urls") + " ===")
     idx = 1
     while True:
-        name = input(f"  Имя чёрного списка #{idx} (Enter — конец): ").strip()
+        name = _inp_allow_empty(f"  {tr('custom_name')} #{idx} ({tr('custom_name_end')}): ").strip()
         if not name:
             break
-        link = input("    URL(ы) через ';': ").strip()
-        if not link:
+        lst = []
+        print(f"    {tr('custom_url')}: ({tr('custom_url_end')})")
+        while True:
+            u = _inp_allow_empty(f"    {tr('custom_url')} #{len(lst)+1}: ").strip()
+            if not u:
+                break
+            lst.append(u)
+        if not lst:
             continue
-        parts = [p.strip() for p in link.split(';') if p.strip()]
-        urls[name] = parts
-        cl = input("    Очищать белыми списками? (y/n) [n]: ").strip().lower()
-        whitelist_clean[name] = cl in ('y', 'yes')
+        urls[name] = lst
+        cl = _input(f"    {tr('custom_clean')} [n]: ").strip().lower()
+        whitelist_clean[name] = cl in ("y", "yes")
         idx += 1
 
-    print("\n=== CUSTOM: ввод белых списков ===")
+    print("\n=== " + tr("custom_white_urls") + " ===")
     idx = 1
     while True:
-        name = input(f"  Имя белого списка #{idx} (Enter — конец): ").strip()
+        name = _inp_allow_empty(f"  {tr('custom_name')} #{idx} ({tr('custom_name_end')}): ").strip()
         if not name:
             break
-        link = input("    URL(ы) через ';': ").strip()
-        if not link:
+        lst = []
+        print(f"    {tr('custom_url')}: ({tr('custom_url_end')})")
+        while True:
+            u = _inp_allow_empty(f"    {tr('custom_url')} #{len(lst)+1}: ").strip()
+            if not u:
+                break
+            lst.append(u)
+        if not lst:
             continue
-        parts = [p.strip() for p in link.split(';') if p.strip()]
-        white_urls[name] = parts
+        white_urls[name] = lst
         idx += 1
 
-# Блок ключевых слов-исключений
+    if not urls:
+        print("\n[!] " + tr("custom_no_bl"))
+        sys.exit(1)
+
+print("\n" + "="*45)
+print(tr("split_hdr"))
+print("  " + tr("split_1"))
+print("  " + tr("split_2"))
+_v = _input(f"{tr('choice')} [2]: ").strip()
+SPLIT_LISTS = (_v == "1")
+print(" -> " + (tr("split_on") if SPLIT_LISTS else tr("split_off")))
+print("="*45)
+
 exclude_keywords = [
-    "ads", "analytics", "tracker", "tracking", "tracer", "metrics", "metrica", "metrika", "telemetry", "pixel", "beacon", "adserver", "doubleclick", "adjust", "appsflyer", "app-measurement", "log-upload", "crash-report", "messenger.yandex", "vetmanager"
+    "ads","analytics","tracker","tracking","tracer","metrics","metrica","metrika","telemetry","pixel","beacon",
+    "adserver","doubleclick","adjust","appsflyer","app-measurement","log-upload","crash-report","messenger.yandex","vetmanager"
 ]
 exclude_pattern = re.compile('|'.join(re.escape(kw) for kw in exclude_keywords))
-
 INVALID_CHARS = set('?|=*(),&:[]/\\%#_')
 
-# Блок защищённых суффиксов
-protected_suffixes = {
-   "apple-pki.com", "icloud.com", "icloud-content.com", "mzstatic.com", "push.apple.com", "appleid.apple.com",
-    "simplex.im", "simplexonflux.com", "telegram.org", "t.me", "telegram.me", "telegra.ph", "tg.dev", "cdn.telegram-cdn.org",
-    "whatsapp.com", "whatsapp.net", "wa.me", "youtube.com", "youtu.be", "ytimg.com", "googlevideo.com", "youtube.googleapis.com", "ls-apple.com.akadns.net", "ess-apple.com.akadns.net"
-}
-
-# Блок защищённых доменов
-protected_domains = {
-    "raw.githubusercontent.com", "cdn-apple.com", "apple-dns.net", "ls.apple.com", "facetime.apple.com", "stun.apple.com", "apple.com", "aaplimg.com", "github.com", "githubusercontent.com", "githubassets.com", "google.com", "gstatic.com", "ggpht.com", "firebase.google.com", "googleapis.com", "firebaseio.com", "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com", "microsoft.com", "windows.com", "windowsupdate.com", "msftconnecttest.com", "msftncsi.com", "azure.com", "azureedge.net", "azurefd.net", "amazon.com", "amazonaws.com", "aws.amazon.com", "cloudfront.net", "cloudflare.com", "fastly.net", "cdn.jsdelivr.net", "unpkg.com", "akamaiedge.net", "akamaized.net", "akamai.net", "auth0.com", "okta.com", "login.microsoftonline.com", "accounts.google.com", "hcaptcha.com", "challenges.cloudflare.com", "recaptcha.net", "facebook.com", "fb.com", "fbcdn.net", "graph.instagram.com", "graph.facebook.com", "instagram.com", "cdninstagram.com", "discord.com", "discordapp.com", "duckduckgo.com", "ddg.co", "giphy.com", "habr.com", "yandex.ru", "yandex.com", "yandex.by", "yandex.kz", "mail.yandex.ru", "passport.yandex.ru", "api.yandex.ru", "mail.ru", "e.mail.ru", "vk.com", "api.vk.com", "ozon.ru", "wildberries.ru", "avito.ru", "avito.st", "hh.ru", "sberbank.ru", "online.sberbank.ru", "alfabank.ru", "alfa.ru", "tbank.ru", "tinkoff.ru", "vtb.ru", "finam.ru", "63.ru", "aif.ru", "amic.ru", "angliya.com", "ap22.ru", "asiaplustj.info", "avesta.tj", "azerisport.com", "belta.by", "championat.com", "chita.ru", "citilink.ru", "civil.ge", "click-or-die.ru", "dni.ru", "e1.ru", "echo.az", "echo.msk.ru", "fedpress.ru", "f1news.ru", "fontanka.ru", "gazeta.ru", "gazetanovgorod.ru", "golosarmenii.am", "government.ru", "gundogar-news.com", "hronikatm.com", "infoabad.com", "inosmi.ru", "interfax.ru", "itogi.ru", "izvestia.ru", "kp.ru", "kremlin.ru", "lenta.ru", "matchtv.ru", "meduza.io", "mn.ru", "ng.ru", "novayagazeta.ru", "newsvl.ru", "og.ru", "ok.ru", "politikus.info", "ppt.ru", "pressball.by", "progorodsamara.ru", "radiomayak.ru", "rbc.ru", "rg.ru", "ria.ru", "rskrf.ru", "rutube.ru", "sovsport.ru", "sport-express.ru", "sport24.ru", "sportbox.ru", "sports.ru", "tass.ru", "trud.ru", "utro.ru", "ytro.ru", "zr.ru", "one.one.one.one", "dns.google", "quad9.net", "npmjs.org", "pypi.org", "gitlab.com", "bitbucket.org", "android.com", "yastatic.net", "dft.ru", "afisha.ru", "gosuslugi.ru", "yandex.ru", "aviasales.ru", "kinopoisk.ru",
-}
-
-manual_protected_domains = protected_domains.copy()
-manual_protected_suffixes = protected_suffixes.copy()
-
-# Блок принудительно блокируемых суффиксов
-forced_block_suffixes = {
-    "bit.ly", "tinyurl.com", "t.co", "reurl.cc", "is.gd", "ow.ly", "linktr.ee", "about.me", "campaign-archive.com", "vk.link", "app.link", "mradx.net", "adjust.com", "static.rutubelist.ru", "static.kuper.ru", "static-origin.kuper.ru", "max.ru", "zztfly.com", "sub.scroogethebest.com", "apmplus.volces.com", "googleadservices.com", "doubleclick.net", "googlesyndication.com", "google-analytics.com", "googletagmanager.com", "app-measurement.com", "crashlytics.com", "branch.io", "amplitude.com", "mixpanel.com", "hotjar.com", "yandexmetrica.ru", "mc.yandex.ru", "metrika.yandex.ru", "top.mail.ru", "adriver.ru", "adfox.ru", "pixel.facebook.com", "analytics.facebook.com", "connect.facebook.net", "tr.facebook.com", "firebaselogging-pa.googleapis.com"
-}
-forced_block_domains = set()
-
-plus_forced_block_suffixes = {"yabuchka.net", "xcelebs.ru"}
-
 protected_ips = {
-    "1.1.1.1", "1.0.0.1", "8.8.8.8", "8.8.4.4", "9.9.9.9", "149.112.112.112", "94.140.14.14", "94.140.15.15", "94.140.14.15", "94.140.14.1", "76.76.2.0", "76.76.10.0", "208.67.222.222", "208.67.220.220", "212.13.114.252", "212.111.75.55", "195.230.90.26", "194.247.146.200", "195.2.83.118", "195.133.107.200", "195.146.64.44", "195.230.90.32", "194.67.20.14"
+    "1.1.1.1","1.0.0.1","8.8.8.8","8.8.4.4","9.9.9.9","149.112.112.112","94.140.14.14","94.140.15.15",
+    "94.140.14.15","94.140.14.1","76.76.2.0","76.76.10.0","208.67.222.222","208.67.220.220",
+    "212.13.114.252","212.111.75.55","195.230.90.26","194.247.146.200","195.2.83.118",
+    "195.133.107.200","195.146.64.44","195.230.90.32","194.67.20.14"
 }
-
-forced_block_ips = {
-    "178.248.232.0/21", "82.148.11.0/24", "185.15.56.0/22", "91.223.116.0/22"
-}
-
-dangerous_tlds = {"com", "net", "org", "ru", "site", "info", "xyz", "bid", "club", "shop", "html", "xml", "gif", "js", "php", "top"}
-
+forced_block_ips = {"178.248.232.0/21","82.148.11.0/24","185.15.56.0/22","91.223.116.0/22"}
+plus_forced_block_suffixes = {"yabuchka.net","xcelebs.ru"}
+dangerous_tlds = {"com","net","org","ru","site","info","xyz","bid","club","shop","html","xml","gif","js","php","top"}
 AGGREGATE_THRESHOLD = 0
 
 headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'}
-ip_regex = re.compile(r'^(\d{1,3}(?:\.\d{1,3}){3})(?:/\d{1,2})?$')
-
 errors_output_file = "LogsAdBlockScript"
+
 download_report = {}
 failed_lists = []
 white_download_report = {}
 failed_white_lists = []
-
 white_raw_data = {}
 black_raw_data = {}
 
@@ -302,27 +628,17 @@ final_list_plus_sm_len = 0
 
 stats = {"excluded": 0, "junk": 0, "protected_exact": 0, "protected_suffix": 0}
 errors = []
-
-DNS_SERVERS = [
-    "8.8.8.8",
-    "8.8.4.4",
-    "94.140.14.14",
-    "94.140.15.15",
-    "1.1.1.1"
-]
-
+DNS_SERVERS = ["8.8.8.8","8.8.4.4","94.140.14.14","94.140.15.15","1.1.1.1"]
 _progress_state = {}
 
-# Блок определения режима фильтрации белыми
 def should_filter_with_whitelist(name):
     if MODE == "default":
         return not ("OISD" in name)
     return whitelist_clean.get(name, True)
 
-# Блок настройки DNS и проверки сети
 def setup_dns_and_test():
     while True:
-        sys.stdout.write("\r    [net] Настройка DNS...\033[K")
+        sys.stdout.write(f"\r    [net] {tr('net_setup')}...\033[K")
         sys.stdout.flush()
         try:
             with open("/etc/resolv.conf", "w") as f:
@@ -330,35 +646,28 @@ def setup_dns_and_test():
                     f.write(f"nameserver {dns}\n")
             result = subprocess.run(
                 ["ping", "-c", "3", "google.com"],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                timeout=5
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5
             )
             if result.returncode == 0:
-                sys.stdout.write("\r    [net] Интернет доступен\033[K")
+                sys.stdout.write(f"\r    [net] {tr('net_ok')}\033[K")
                 sys.stdout.flush()
                 return True
-            sys.stdout.write("\r    [net] Ping не прошёл\033[K")
+            sys.stdout.write(f"\r    [net] {tr('net_fail')}\033[K")
             sys.stdout.flush()
         except Exception as e:
-            sys.stdout.write(f"\r    [net] Ошибка проверки сети: {e}\033[K")
+            sys.stdout.write(f"\r    [net] {tr('net_err')}: {e}\033[K")
             sys.stdout.flush()
         time.sleep(5)
 
-# Блок полной диагностики сети
 def full_network_diagnostics():
-    print("    [diag] Выполняется полная диагностика сети...")
+    print("    [diag] network diagnostics...")
     try:
-        print("      - Ping 8.8.8.8:")
         subprocess.run(["ping", "-c", "3", "8.8.8.8"])
-        print("      - Ping google.com:")
         subprocess.run(["ping", "-c", "3", "google.com"])
-        print("      - Текущий resolv.conf:")
         subprocess.run(["cat", "/etc/resolv.conf"])
-    except Exception as e:
-        print(f"      [!] Ошибка при диагностике: {e}")
+    except Exception:
+        pass
 
-# Блок отрисовки прогресс-бара
 def print_progress(prefix, current, total, bar_len=5, start_time=None):
     if total <= 0:
         return
@@ -373,8 +682,7 @@ def print_progress(prefix, current, total, bar_len=5, start_time=None):
     pct = frac * 100.0
     elapsed = ''
     if start_time:
-        sec = time.time() - start_time
-        elapsed = f" | {int(sec)}s"
+        elapsed = f" | {int(time.time() - start_time)}s"
     sys.stdout.write(f"\r\033[2K{prefix} [{bar}] {current}/{total} ({pct:.1f}%){elapsed}")
     sys.stdout.flush()
     if current == total:
@@ -383,22 +691,20 @@ def print_progress(prefix, current, total, bar_len=5, start_time=None):
     if "[dl]" in prefix:
         _progress_state[prefix] = {"time": now, "current": current}
 
-# Блок скачивания через urllib
 def download_with_urllib(url, headers, timeout=30):
     req = urllib.request.Request(url, headers=headers)
     with urllib.request.urlopen(req, timeout=timeout) as resp:
-        content_length = resp.getheader('Content-Length')
+        cl = resp.getheader('Content-Length')
         try:
-            total = int(content_length) if content_length else None
+            total = int(cl) if cl else None
         except Exception:
             total = None
         out = bytearray()
-        chunk_size = 8192
         read = 0
         start = time.time()
-        last_unknown_report = 0.0
+        last_unk = 0.0
         while True:
-            chunk = resp.read(chunk_size)
+            chunk = resp.read(8192)
             if not chunk:
                 break
             out.extend(chunk)
@@ -407,36 +713,28 @@ def download_with_urllib(url, headers, timeout=30):
                 print_progress("  [dl] urllib", min(read, total), total, start_time=start)
             else:
                 now = time.time()
-                if now - last_unknown_report >= 0.25:
-                    kb = read // 1024
-                    sys.stdout.write(f"\r\033[2K  [dl] urllib {kb} KB")
+                if now - last_unk >= 0.25:
+                    sys.stdout.write(f"\r\033[2K  [dl] urllib {read // 1024} KB")
                     sys.stdout.flush()
-                    last_unknown_report = now
+                    last_unk = now
         if total and read < total * 0.95:
-            raise Exception(f"Incomplete download: {read}/{total} bytes")
+            raise Exception("Incomplete download")
         if not total:
             sys.stdout.write("\n")
         return out.decode('utf-8', errors='ignore').splitlines(), "urllib"
 
-# Блок скачивания через curl в файл
 def download_with_curl_to_file(url, headers, timeout=15, curl_args=None):
     tmp = tempfile.NamedTemporaryFile(delete=False)
     tmp.close()
     base = ['curl', '-s', '-L', '--fail', '--show-error', '-A', headers['User-Agent']]
-    if curl_args:
-        cmd = base + curl_args + ['-o', tmp.name, url]
-    else:
-        cmd = base + ['-o', tmp.name, url]
-    sys.stdout.write(f"\r    [dl] curl: {url[:50]}...\033[K")
-    sys.stdout.flush()
+    cmd = base + (curl_args or []) + ['-o', tmp.name, url]
     try:
         proc = subprocess.run(cmd, timeout=timeout)
         if proc.returncode == 0:
             with open(tmp.name, 'rb') as f:
                 data = f.read().decode('utf-8', errors='ignore').splitlines()
-            return data, "curl " + (" ".join(curl_args) if curl_args else "default")
-        else:
-            return [], None
+            return data, "curl"
+        return [], None
     except Exception:
         return [], None
     finally:
@@ -445,32 +743,21 @@ def download_with_curl_to_file(url, headers, timeout=15, curl_args=None):
         except Exception:
             pass
 
-# Блок перебора вариантов команд скачивания
 def try_command_variants(url):
     ua = headers['User-Agent']
     variants = []
     curl_common = ['curl', '-s', '-L', '-k', '-A', ua]
-    variants.append((curl_common + [url], False, "curl default"))
-    variants.append((curl_common + ['--http1.1', url], False, "curl http1.1"))
-    variants.append((curl_common + ['--http2', url], False, "curl http2"))
-    variants.append((curl_common + ['--compressed', url], False, "curl compressed"))
-    variants.append((curl_common + ['--ipv4', url], False, "curl ipv4"))
-    variants.append((curl_common + ['--ipv6', url], False, "curl ipv6"))
-    variants.append((['curl', '-s', '-L', '-k', '-A', 'Wget/1.20', url], False, "curl ua=Wget"))
-
+    variants.append((curl_common + [url], False, "curl"))
+    variants.append((curl_common + ['--http1.1', url], False, "curl-h1"))
+    variants.append((curl_common + ['--compressed', url], False, "curl-gz"))
     if shutil.which('wget'):
-        variants.append((['wget', '-q', '--show-progress', '-O', '-', url], False, "wget stdout"))
-        variants.append((['wget', '--no-check-certificate', '-q', '--show-progress', '-O', '-', url], False, "wget no-check"))
-
+        variants.append((['wget', '--no-check-certificate', '-q', '-O', '-', url], False, "wget"))
     if shutil.which('aria2c'):
-        variants.append((['aria2c', '-q', '--summary-interval=1', '-x', '4', '-o', 'aria_tmp_dl', url], True, "aria2c"))
-
+        variants.append((['aria2c', '-q', '-x', '4', '-o', 'aria_tmp_dl', url], True, "aria2c"))
     for cmd, is_file_writer, descr in variants:
         if not shutil.which(cmd[0]):
             continue
         try:
-            sys.stdout.write(f"\r    [attempt] running: {cmd[0]}... ({descr})\033[K")
-            sys.stdout.flush()
             if not is_file_writer:
                 tmp = tempfile.NamedTemporaryFile(delete=False)
                 tmp.close()
@@ -478,8 +765,7 @@ def try_command_variants(url):
                     proc = subprocess.run(cmd, stdout=open(tmp.name, 'wb'), stderr=subprocess.DEVNULL, timeout=15)
                     if proc.returncode == 0:
                         with open(tmp.name, 'rb') as f:
-                            data = f.read().decode('utf-8', errors='ignore').splitlines()
-                        return data, descr
+                            return f.read().decode('utf-8', errors='ignore').splitlines(), descr
                 except Exception:
                     pass
                 finally:
@@ -489,66 +775,74 @@ def try_command_variants(url):
                         pass
             else:
                 proc = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15)
-                if proc.returncode == 0:
-                    if cmd[0] == 'aria2c':
+                if proc.returncode == 0 and cmd[0] == 'aria2c':
+                    try:
+                        with open('aria_tmp_dl', 'rb') as f:
+                            return f.read().decode('utf-8', errors='ignore').splitlines(), "aria2c"
+                    except Exception:
+                        pass
+                    finally:
                         try:
-                            with open('aria_tmp_dl', 'rb') as f:
-                                data = f.read().decode('utf-8', errors='ignore').splitlines()
-                            return data, descr
+                            os.unlink('aria_tmp_dl')
                         except Exception:
                             pass
-                        finally:
-                            try:
-                                os.unlink('aria_tmp_dl')
-                            except Exception:
-                                pass
         except Exception:
             continue
     return [], None
 
-# Блок проверки защищённости
+def download_data(name, url_or_urls):
+    print(f"\n  [*] {tr('dl')}: {name}...")
+    setup_dns_and_test()
+    urls_to_try = url_or_urls if isinstance(url_or_urls, list) else [url_or_urls]
+    for url in urls_to_try:
+        for attempt in range(1, 4):
+            for fn in (download_with_urllib, download_with_curl_to_file):
+                try:
+                    if fn is download_with_urllib:
+                        lines, method = fn(url, headers, timeout=30)
+                    else:
+                        lines, method = fn(url, headers, timeout=15)
+                    if lines and len(lines) > 10 and not any("<html" in str(l).lower() for l in lines[:15]):
+                        print(f"\r  [+] {tr('dl_ok')}: {len(lines)} ({method})\033[K")
+                        return lines, method
+                except Exception:
+                    pass
+            try:
+                lines, method = try_command_variants(url)
+                if lines and len(lines) > 10 and not any("<html" in str(l).lower() for l in lines[:15]):
+                    print(f"\r  [+] {tr('dl_ok')}: {len(lines)} ({method})\033[K")
+                    return lines, method
+            except Exception:
+                pass
+            sys.stdout.write(f"\r    [!] {tr('dl_attempt')} {int(1 + attempt * 0.5)}s...\033[K")
+            sys.stdout.flush()
+            time.sleep(1 + attempt * 0.5)
+        full_network_diagnostics()
+    print(f"\r  [!] {tr('dl_err')}: {name} {tr('dl_err_any')}.\033[K")
+    return [], None
+
 def is_protected_full(domain):
     if domain in protected_domains:
         return True, "exact"
     parts = domain.split('.')
     for i in range(len(parts)):
-        suffix = '.'.join(parts[i:])
-        if suffix in protected_suffixes:
+        if '.'.join(parts[i:]) in protected_suffixes:
             return True, "suffix"
     return False, None
 
-def is_protected_manual(domain):
-    if domain in manual_protected_domains:
-        return True, "exact"
-    parts = domain.split('.')
-    for i in range(len(parts)):
-        suffix = '.'.join(parts[i:])
-        if suffix in manual_protected_suffixes:
-            return True, "suffix"
-    return False, None
-
-# Блок валидации домена
 def is_valid_domain(d):
     if not d or len(d) < 4:
         return False
     if not d.isascii():
         return False
-    if d.startswith('.') or d.startswith('-'):
-        return False
-    if d.endswith('.') or d.endswith('-'):
+    if d.startswith('.') or d.startswith('-') or d.endswith('.') or d.endswith('-'):
         return False
     if '.' not in d:
         return False
     if not INVALID_CHARS.isdisjoint(d):
         return False
-    parts = d.split('.')
-    if len(parts) == 1:
-        return False
-    if parts[-1].lower() in dangerous_tlds and len(parts) == 1:
-        return False
     return True
 
-# Блок валидации IP
 def validate_ip(ip_str):
     try:
         net = ipaddress.ip_network(ip_str, strict=False)
@@ -559,186 +853,56 @@ def validate_ip(ip_str):
     except ValueError:
         return None
 
-# Блок нормализации строк из разных форматов блокировщиков
 def normalize_line_for_parser(raw_line):
     s = raw_line.strip()
     if not s:
         return raw_line
-
-    # dnsmasq address=/domain/0.0.0.0
     m = re.match(r'^address=/([^/]+)/', s, re.IGNORECASE)
     if m:
-        d = m.group(1).lower().strip('.')
-        return d
-
-    # dnsmasq server=/domain/x.x.x.x
+        return m.group(1).lower().strip('.')
     m = re.match(r'^server=/([^/]+)/', s, re.IGNORECASE)
     if m:
-        d = m.group(1).lower().strip('.')
-        return d
-
-    # unbound local-zone: "domain" always_null
+        return m.group(1).lower().strip('.')
     m = re.match(r'^local-zone:\s*"([^"]+)"', s, re.IGNORECASE)
     if m:
-        d = m.group(1).lower().strip('.')
-        return d
-
-    # Pi-hole regex /regex/ — пропускаем
+        return m.group(1).lower().strip('.')
     if s.startswith('/') and s.endswith('/') and len(s) > 2:
         return "#__PIHOLE_REGEX_SKIP__"
-
     return raw_line
 
-# Блок скачивания списка
-def download_data(name, url_or_urls):
-    print(f"\n  [*] Скачивание: {name}...")
-    setup_dns_and_test()
-    urls_to_try = url_or_urls if isinstance(url_or_urls, list) else [url_or_urls]
-
-    for url in urls_to_try:
-        for attempt in range(1, 4):
-            try:
-                lines, method = download_with_urllib(url, headers, timeout=30)
-                if lines and len(lines) > 10 and not any("<html" in str(l).lower() for l in lines[:15]):
-                    print(f"\r  [+] Успешно загружено строк: {len(lines)} (method: {method})\033[K")
-                    return lines, method
-            except Exception:
-                pass
-
-            try:
-                lines, method = download_with_curl_to_file(url, headers, timeout=15)
-                if lines and len(lines) > 10 and not any("<html" in str(l).lower() for l in lines[:15]):
-                    print(f"\r  [+] Успешно загружено строк: {len(lines)} (method: {method})\033[K")
-                    return lines, method
-            except Exception:
-                pass
-
-            try:
-                lines, method = try_command_variants(url)
-                if lines and len(lines) > 10 and not any("<html" in str(l).lower() for l in lines[:15]):
-                    print(f"\r  [+] Успешно загружено строк: {len(lines)} (method: {method})\033[K")
-                    return lines, method
-            except Exception:
-                pass
-
-            sys.stdout.write(f"\r    [!] попытка {attempt} не удалась, повтор через {int(1 + attempt*0.5)}s...\033[K")
-            sys.stdout.flush()
-            time.sleep(1 + attempt * 0.5)
-
-        full_network_diagnostics()
-
-    print(f"\r  [!] Ошибка: Не удалось скачать {name} ни одним из способов.\033[K")
-    return [], None
-
-# Блок записи логов
 def save_logs(total_time_val=None):
     try:
         with open(errors_output_file, 'w', encoding='utf-8') as ef:
             ef.write(f"Log generated at: {time.ctime()}\n")
-            ef.write("="*60 + "\n")
-            ef.write("DOWNLOAD & PARSE REPORT (blacklists)\n")
-            ef.write("Source\tStatus\tMethod\tDL Lines\tExtracted (D/IP)\n")
+            ef.write("=" * 60 + "\n")
+            ef.write("DOWNLOAD REPORT (blacklists)\n")
             for name, info in download_report.items():
-                ext = f"{info.get('extracted_domains',0)}/{info.get('extracted_ips',0)}"
-                ef.write(f"{name}\t{info['status']}\t{info.get('method','N/A')}\t{info.get('lines',0)}\t{ext}\n")
-
-            ef.write("\nDOWNLOAD & PARSE REPORT (whitelists)\n")
-            ef.write("Source\tStatus\tMethod\tDL Lines\tExtracted\n")
+                ef.write(f"{name}\t{info['status']}\t{info.get('method','N/A')}\t{info.get('lines',0)}\n")
+            ef.write("\nDOWNLOAD REPORT (whitelists)\n")
             for name, info in white_download_report.items():
-                ef.write(f"{name}\t{info['status']}\t{info.get('method','N/A')}\t{info.get('lines',0)}\t{info.get('extracted', 0)}\n")
-
-            ef.write("\n" + "="*60 + "\n")
-            ef.write("PROTECTED SUFFIXES\n")
-            for s in sorted(protected_suffixes):
-                ef.write(f"{s}\n")
-            ef.write("\nPROTECTED DOMAINS\n")
-            for d in sorted(protected_domains):
-                ef.write(f"{d}\n")
-
-            ef.write("\n" + "="*60 + "\n")
-            ef.write("EXCLUDED BY KEYWORDS\n")
-            excluded = [(r,s,o) for r,s,o in errors if r == "excluded_keyword"]
-            for reason, src, orig in excluded:
-                ef.write(f"{src}\t{orig}\n")
-
-            ef.write("\nJUNK / INVALID LINES\n")
-            junk = [(r,s,o) for r,s,o in errors if r.startswith("junk") or r == "skipped_path_rule"]
-            for reason, src, orig in junk:
-                ef.write(f"{reason}\t{src}\t{orig}\n")
-
-            ef.write("\nPROTECTED ENTRIES\n")
-            prot = [(r,s,o) for r,s,o in errors if r.startswith("protected")]
-            for reason, src, orig in prot:
-                ef.write(f"{reason}\t{src}\t{orig}\n")
-
-            if total_time_val is not None:
-                ef.write("\n" + "="*60 + "\n")
-                ef.write("ФИНАЛЬНАЯ СТАТИСТИКА\n")
-                ef.write("-" * 45 + "\n")
-                if oisd_choice in ('1', '3'):
-                    ef.write(f"Уникальных доменов (Std/Plus): {len(optimized_domains)} / {len(optimized_domains_plus)}\n")
-                if oisd_choice in ('2', '3'):
-                    ef.write(f"Уникальных доменов (Sm/PlusSm):{len(optimized_domains_sm)} / {len(optimized_domains_plus_sm)}\n")
-                ef.write(f"Уникальных IP-адресов:         {len(all_ips)}\n")
-                ef.write(f"Удалено по ключевым словам:    {stats['excluded']}\n")
-                ef.write(f"Отсеяно ошибочно добавленных:  {stats['junk']}\n")
-                ef.write(f"Защищено (exact):              {stats['protected_exact']}\n")
-                ef.write(f"Защищено (suffix):             {stats['protected_suffix']}\n")
-                ef.write("-" * 45 + "\n")
-                if oisd_choice in ('1', '3'):
-                    ef.write(f"ПРАВИЛ В ФАЙЛАХ STD:       {final_list_len}\n")
-                    ef.write(f"ПРАВИЛ В ФАЙЛАХ PLUS:      {final_list_plus_len}\n")
-                if oisd_choice in ('2', '3'):
-                    ef.write(f"ПРАВИЛ В ФАЙЛАХ STD SMALL: {final_list_sm_len}\n")
-                    ef.write(f"ПРАВИЛ В ФАЙЛАХ PLUS SMALL:{final_list_plus_sm_len}\n")
-                ef.write(f"ВСЕГО ОТБРОШЕНО СТРОК:     {len(errors)}\n")
-                ef.write(f"ОБЩЕЕ ВРЕМЯ ВЫПОЛНЕНИЯ:    {total_time_val} сек.\n")
-                ef.write("-" * 45 + "\n")
-
+                ef.write(f"{name}\t{info['status']}\t{info.get('method','N/A')}\t{info.get('lines',0)}\n")
             ef.write(f"\nTotal errors/exclusions: {len(errors)}\n")
     except Exception as e:
-        sys.stdout.write(f"\n[!] Не удалось записать {errors_output_file}: {e}\n")
+        sys.stdout.write(f"\n[!] Log write failed: {e}\n")
 
-# Блок оптимизации набора доменов
 def optimize_domain_set(source_domains, log_prefix):
     sorted_raw = sorted(list(source_domains), key=lambda x: x.count('.'))
     opt_set = set()
-    total_to_check = len(sorted_raw)
-    start_opt = time.time()
-
-    if AGGREGATE_THRESHOLD and AGGREGATE_THRESHOLD > 1:
-        parent_groups = {}
-        for idx, d in enumerate(sorted_raw, start=1):
-            if idx % 1000 == 0 or idx == total_to_check:
-                print_progress(f"  [{log_prefix} group]", idx, total_to_check, start_time=start_opt)
-            p = '.'.join(d.split('.')[-2:])
-            parent_groups.setdefault(p, []).append(d)
-        pg_items = list(parent_groups.items())
-        total_pg = len(pg_items)
-        start_replace = time.time()
-        for i, (parent, members) in enumerate(pg_items, start=1):
-            if i % 1000 == 0 or i == total_pg:
-                print_progress(f"  [{log_prefix} aggr]", i, total_pg, start_time=start_replace)
-            if len(members) >= AGGREGATE_THRESHOLD and not is_protected_full(parent)[0]:
-                opt_set.add(parent)
-            else:
-                for m in members:
-                    opt_set.add(m)
-    else:
-        for idx, d in enumerate(sorted_raw, start=1):
-            if idx % 1000 == 0 or idx == total_to_check:
-                print_progress(f"  [{log_prefix}]", idx, total_to_check, start_time=start_opt)
-            parts = d.split('.')
-            is_redundant = False
-            for i in range(1, len(parts) - 1):
-                if ".".join(parts[i:]) in opt_set:
-                    is_redundant = True
-                    break
-            if not is_redundant:
-                opt_set.add(d)
+    total = len(sorted_raw)
+    start = time.time()
+    for idx, d in enumerate(sorted_raw, start=1):
+        if idx % 1000 == 0 or idx == total:
+            print_progress(f"  [{log_prefix}]", idx, total, start_time=start)
+        parts = d.split('.')
+        redundant = False
+        for i in range(1, len(parts) - 1):
+            if ".".join(parts[i:]) in opt_set:
+                redundant = True
+                break
+        if not redundant:
+            opt_set.add(d)
     return opt_set
 
-# Блок сборки и записи файлов
 def build_and_write():
     global optimized_domains, optimized_domains_plus, optimized_domains_sm, optimized_domains_plus_sm
     global final_list_len, final_list_plus_len, final_list_sm_len, final_list_plus_sm_len
@@ -750,59 +914,52 @@ def build_and_write():
                 if f"DOMAIN-SUFFIX,{sfx}" not in final_list:
                     final_list.append(f"DOMAIN-SUFFIX,{sfx}")
             final_list.sort()
-
         final_ips = sorted([f"IP-CIDR,{ip}" for ip in ips_set])
         combined = final_list + final_ips
         total = len(combined)
         if total == 0:
             return 0
-
-        with open(f"{base_name}.list", 'w', encoding='utf-8') as full_f:
+        with open(f"{base_name}.list", 'w', encoding='utf-8') as f:
             for line in combined:
-                full_f.write(line + "\n")
-
+                f.write(line + "\n")
+        if not SPLIT_LISTS:
+            return total
         chunk_size = 100000
         chunks = math.ceil(total / chunk_size)
         for i in range(chunks):
-            chunk_data = combined[i*chunk_size : (i+1)*chunk_size]
+            chunk_data = combined[i * chunk_size : (i + 1) * chunk_size]
             out_name = f"{base_name}_{i+1}.list"
-            start_write = time.time()
             with open(out_name, 'w', encoding='utf-8') as f:
                 written = 0
                 for line in chunk_data:
                     f.write(line + "\n")
                     written += 1
                     if written % 1000 == 0 or written == len(chunk_data):
-                        print_progress(f"  [{log_prefix} {i+1}/{chunks}]", written, len(chunk_data), start_time=start_write)
+                        print_progress(f"  [{log_prefix} {i+1}/{chunks}]", written, len(chunk_data), start_time=time.time())
         return total
 
     total_rules = 0
-    if oisd_choice in ('1', '3'):
-        print("[*] Оптимизация стандартного списка...")
+    if MODE == "custom" or oisd_choice in ('1', '3'):
+        print("[*] " + tr("opt_std"))
         optimized_domains = optimize_domain_set(all_domains | oisd_domains, "opt std")
-        print("[*] Оптимизация расширенного списка...")
+        print("[*] " + tr("opt_plus"))
         optimized_domains_plus = optimize_domain_set(all_domains | oisd_domains | nsfw_domains, "opt plus")
-
-        print("[*] Формирование и запись файлов STD и PLUS...")
+        print("[*] " + tr("writing"))
         final_list_len = write_chunks("REJECT_RULES", optimized_domains, all_ips | oisd_ips, "write std")
         final_list_plus_len = write_chunks("REJECT_RULES_PLUS", optimized_domains_plus, all_ips | oisd_ips | nsfw_ips, "write plus", is_plus=True)
         total_rules += final_list_len + final_list_plus_len
-
-    if oisd_choice in ('2', '3'):
-        print("[*] Оптимизация малого списка...")
+    if MODE == "default" and oisd_choice in ('2', '3'):
+        print("[*] " + tr("opt_sm"))
         optimized_domains_sm = optimize_domain_set(all_domains | oisd_small_domains, "opt sm")
-        print("[*] Оптимизация малого расширенного списка...")
+        print("[*] " + tr("opt_plus_sm"))
         optimized_domains_plus_sm = optimize_domain_set(all_domains | oisd_small_domains | nsfw_small_domains, "opt plus sm")
-
-        print("[*] Формирование и запись файлов SMALL и PLUS SMALL...")
+        print("[*] " + tr("writing"))
         final_list_sm_len = write_chunks("REJECT_RULES_SMALL", optimized_domains_sm, all_ips | oisd_small_ips, "write sm")
         final_list_plus_sm_len = write_chunks("REJECT_RULES_PLUS_SMALL", optimized_domains_plus_sm, all_ips | oisd_small_ips | nsfw_small_ips, "write plus sm", is_plus=True)
         total_rules += final_list_sm_len + final_list_plus_sm_len
-
     return total_rules
 
-# Этап загрузки белых списков
-print("\n=== ЭТАП 1: ЗАГРУЗКА БЕЛЫХ СПИСКОВ ===")
+print("\n=== " + tr("e1w") + " ===")
 for name, url in white_urls.items():
     lines, method = download_data(name, url)
     if lines and method:
@@ -811,11 +968,8 @@ for name, url in white_urls.items():
     else:
         white_download_report[name] = {"status": "failed", "method": None, "lines": 0}
         failed_white_lists.append(name)
-        sys.stdout.write(f"\r[!] Не удалось скачать белый список: {name}\033[K\n")
-        sys.stdout.flush()
 
-# Этап загрузки чёрных списков
-print("\n=== ЭТАП 1: ЗАГРУЗКА ЧЁРНЫХ СПИСКОВ ===")
+print("\n=== " + tr("e1b") + " ===")
 for name, url in urls.items():
     lines, method = download_data(name, url)
     if lines and method:
@@ -824,85 +978,57 @@ for name, url in urls.items():
     else:
         download_report[name] = {"status": "failed", "method": None, "lines": 0}
         failed_lists.append(name)
-        sys.stdout.write(f"\r[!] Не удалось скачать список: {name}\033[K\n")
-        sys.stdout.flush()
 
-# Этап повторной загрузки ошибок
-print("\n=== ЭТАП 2: ПОВТОРНАЯ ЗАГРУЗКА ОШИБОК ===")
+print("\n=== " + tr("e2") + " ===")
 while failed_lists or failed_white_lists:
-    print("\n" + "="*45)
-    print("ВНИМАНИЕ: Некоторые списки не удалось скачать:")
+    print("\n" + "=" * 45)
+    print(tr("need_retry") + ":")
     for w in failed_white_lists:
-        print(f"  [Белый]  - {w}")
+        print(f"  [{tr('wlist')}]  - {w}")
     for b in failed_lists:
-        print(f"  [Черный] - {b}")
-    print("="*45)
-
+        print(f"  [{tr('blist')}] - {b}")
+    print("=" * 45)
     target = failed_white_lists[0] if failed_white_lists else failed_lists[0]
     is_white = target in failed_white_lists
-
-    print(f"\n[?] Хотите попытаться скачать '{target}' ещё раз?")
-    print("  1 - Да")
-    print("  2 - Нет")
-    print("  3 - Вручную")
-    ans = input("Ваш выбор (1/2/3): ").strip()
-
+    print(f"\n[?] {tr('retry_q')} '{target}'")
+    print("  " + tr("retry_1"))
+    print("  " + tr("retry_2"))
+    print("  " + tr("retry_3"))
+    ans = _input(f"{tr('choice')} (1/2/3): ").strip()
     if ans == '2':
-        if is_white:
-            failed_white_lists.remove(target)
-        else:
-            failed_lists.remove(target)
+        (failed_white_lists if is_white else failed_lists).remove(target)
         continue
-    elif ans in ('1', '3'):
+    if ans in ('1', '3'):
         setup_dns_and_test()
-        url_to_try = ""
-        if ans == '3':
-            url_to_try = input("Введите полную ссылку: ").strip()
-        else:
-            url_to_try = white_urls[target] if is_white else urls[target]
-
+        url_to_try = _input(tr("retry_manual") + ": ").strip() if ans == '3' else (white_urls[target] if is_white else urls[target])
         lines, method = download_data(target, url_to_try)
-
         if not lines:
-            print("  [!] Загрузка снова не удалась.")
+            print("  [!] " + tr("retry_fail"))
             continue
-
-        print(f"  [+] Успешно скачано ({method}). Файл добавлен в очередь.")
+        print(f"  [+] {tr('retry_ok')}")
         if is_white:
             white_raw_data[target] = {"lines": lines, "method": method, "url": url_to_try}
             failed_white_lists.remove(target)
-            white_download_report[target] = {"status": "ok (retry)", "method": method, "lines": len(lines)}
         else:
             black_raw_data[target] = {"lines": lines, "method": method, "url": url_to_try}
             failed_lists.remove(target)
-            download_report[target] = {"status": "ok (retry)", "method": method, "lines": len(lines)}
-    else:
-        print("  [!] Неверный ввод.")
 
-# Этап обработки белых списков
-print("\n=== ЭТАП 3: ОБРАБОТКА БЕЛЫХ СПИСКОВ ===")
+print("\n=== " + tr("e3") + " ===")
 for name, data_dict in white_raw_data.items():
     lines = data_dict["lines"]
     total_lines = len(lines)
-    local_white_count = 0
-    start_parse = time.time()
-    print(f"\n  [*] Парсинг: {name}...")
-
+    print(f"\n  [*] {tr('parsing')}: {name}...")
     for idx, raw_line in enumerate(lines, start=1):
-        if idx % 100 == 0 or idx == total_lines:
-            print_progress("  [w-parse]", idx, total_lines, start_time=start_parse)
-
+        if idx % 200 == 0 or idx == total_lines:
+            print_progress("  [w-parse]", idx, total_lines)
         line = raw_line.strip()
         if not line or line.startswith(('#', '!')):
             continue
-
         if line.startswith('.'):
-            domain = line.lstrip('.').lower()
-            if is_valid_domain(domain):
-                protected_suffixes.add(domain)
-                local_white_count += 1
+            d = line.lstrip('.').lower()
+            if is_valid_domain(d):
+                protected_suffixes.add(d)
             continue
-
         if ',' in line:
             parts = line.split(',', 1)
             if len(parts) == 2:
@@ -911,63 +1037,42 @@ for name, data_dict in white_raw_data.items():
                 if key.startswith('domain-suffix'):
                     if is_valid_domain(val):
                         protected_suffixes.add(val)
-                        local_white_count += 1
                 elif key.startswith('domain'):
                     if is_valid_domain(val):
                         protected_domains.add(val)
-                        local_white_count += 1
-                else:
-                    if is_valid_domain(val):
-                        protected_domains.add(val)
-                        local_white_count += 1
             continue
-
         if is_valid_domain(line.lower()):
             protected_domains.add(line.lower())
-            local_white_count += 1
 
-    white_download_report[name]["extracted"] = local_white_count
-    print(f"  -> Извлечено доменов: {local_white_count}")
+for d in list(protected_domains):
+    if (d.endswith(".apple.com") or d.startswith("apple-") or d.startswith("icloud")) and d != "apple.com":
+        protected_domains.discard(d)
+        protected_suffixes.add(d)
 
-apple_keys = [d for d in list(protected_domains) if (d.endswith(".apple.com") or d.startswith("apple-") or d.startswith("icloud")) and d != "apple.com"]
-for a in apple_keys:
-    protected_domains.discard(a)
-    protected_suffixes.add(a)
-
-# Этап обработки чёрных списков
-print("\n=== ЭТАП 4: ОБРАБОТКА ЧЁРНЫХ СПИСКОВ ===")
+print("\n=== " + tr("e4") + " ===")
 for name, data_dict in black_raw_data.items():
     lines = data_dict["lines"]
     total_lines = len(lines)
     local_domain_count = 0
     local_ip_count = 0
-    start_parse = time.time()
-    print(f"\n  [*] Парсинг: {name}...")
-
-    is_oisd_nsfw = "10.2) OISD NSFW" in name
-    is_oisd_main = "10.1) OISD" in name
-    is_oisd_nsfw_sm = "10.4) OISD NSFW Small" in name
-    is_oisd_sm = "10.3) OISD Small" in name
-    is_any_oisd = "OISD" in name
+    print(f"\n  [*] {tr('parsing')}: {name}...")
+    is_oisd_nsfw = MODE == "default" and "10.2) OISD NSFW" in name
+    is_oisd_main = MODE == "default" and "10.1) OISD" in name
+    is_oisd_nsfw_sm = MODE == "default" and "10.4) OISD NSFW Small" in name
+    is_oisd_sm = MODE == "default" and "10.3) OISD Small" in name
     use_whitelist = should_filter_with_whitelist(name)
 
     for idx, raw_line in enumerate(lines, start=1):
-        if idx % 100 == 0 or idx == total_lines:
-            print_progress("  [b-parse]", idx, total_lines, start_time=start_parse)
-
-        # Предобработка для новых форматов
+        if idx % 200 == 0 or idx == total_lines:
+            print_progress("  [b-parse]", idx, total_lines)
         normalized = normalize_line_for_parser(raw_line)
         if normalized == "#__PIHOLE_REGEX_SKIP__":
             stats["junk"] += 1
-            errors.append(("junk_pihole_regex", name, raw_line))
             continue
         raw_line = normalized
-
         line = raw_line.strip().lower()
-
         if not line or line.startswith(('!', '[', '@@')) or '##' in line or '#@#' in line or line.startswith('#'):
             continue
-
         if exclude_pattern.search(line):
             stats["excluded"] += 1
             errors.append(("excluded_keyword", name, raw_line))
@@ -979,128 +1084,78 @@ for name, data_dict in black_raw_data.items():
                 rule_type = parts[0]
                 val = parts[1].split('#')[0].strip()
                 if "ip-cidr" in rule_type:
-                    validated = validate_ip(val)
-                    if validated:
-                        pure_ip = validated.split('/')[0]
-                        is_protected_ip = (pure_ip in protected_ips) if use_whitelist else False
-                        if is_protected_ip:
+                    v = validate_ip(val)
+                    if v:
+                        pure_ip = v.split('/')[0]
+                        if use_whitelist and pure_ip in protected_ips:
                             stats["protected_exact"] += 1
-                            errors.append(("protected_ip", name, val))
                         else:
-                            if is_oisd_nsfw:
-                                nsfw_ips.add(validated)
-                            elif is_oisd_main:
-                                oisd_ips.add(validated)
-                            elif is_oisd_nsfw_sm:
-                                nsfw_small_ips.add(validated)
-                            elif is_oisd_sm:
-                                oisd_small_ips.add(validated)
-                            else:
-                                all_ips.add(validated)
+                            (nsfw_ips if is_oisd_nsfw else oisd_ips if is_oisd_main else
+                             nsfw_small_ips if is_oisd_nsfw_sm else oisd_small_ips if is_oisd_sm
+                             else all_ips).add(v)
                             local_ip_count += 1
                     else:
                         stats["junk"] += 1
-                        errors.append(("junk_invalid_ip", name, val))
                 elif "domain" in rule_type:
                     if is_valid_domain(val):
-                        if use_whitelist:
-                            protected, reason = is_protected_full(val)
-                        else:
-                            protected, reason = False, None
+                        protected, reason = is_protected_full(val) if use_whitelist else (False, None)
                         if protected:
                             if reason == "exact":
                                 stats["protected_exact"] += 1
                             else:
                                 stats["protected_suffix"] += 1
-                            errors.append((f"protected_{reason}", name, val))
                         else:
-                            if is_oisd_nsfw:
-                                nsfw_domains.add(val)
-                            elif is_oisd_main:
-                                oisd_domains.add(val)
-                            elif is_oisd_nsfw_sm:
-                                nsfw_small_domains.add(val)
-                            elif is_oisd_sm:
-                                oisd_small_domains.add(val)
-                            else:
-                                all_domains.add(val)
+                            (nsfw_domains if is_oisd_nsfw else oisd_domains if is_oisd_main else
+                             nsfw_small_domains if is_oisd_nsfw_sm else oisd_small_domains if is_oisd_sm
+                             else all_domains).add(val)
                             local_domain_count += 1
                     else:
                         stats["junk"] += 1
-                        errors.append(("junk_invalid_domain", name, val))
             continue
 
         clean = line.split('#')[0].strip()
         if clean.startswith(('0.0.0.0 ', '127.0.0.1 ')):
             clean = clean.split(' ', 1)[1].strip()
-
         clean = re.sub(r'^[|\s]*\|\|', '', clean)
         clean = re.sub(r'^\|', '', clean)
         clean = re.sub(r'^https?://', '', clean)
         clean = re.sub(r'^www\.', '', clean)
-
         if '/' in clean.split('^')[0].split('$')[0]:
             stats["junk"] += 1
-            errors.append(("skipped_path_rule", name, raw_line))
             continue
-
-        clean = clean.split('^')[0].split('$')[0].split(':')[0].split('*')[0].strip()
-        clean = clean.strip('.').strip()
-
+        clean = clean.split('^')[0].split('$')[0].split(':')[0].split('*')[0].strip().strip('.')
         if not clean:
             stats["junk"] += 1
-            errors.append(("junk_empty_after_clean", name, raw_line))
             continue
 
         validated_ip = validate_ip(clean)
         if validated_ip:
             pure_ip = validated_ip.split('/')[0]
-            is_protected_ip = (pure_ip in protected_ips) if use_whitelist else False
-            if is_protected_ip:
+            if use_whitelist and pure_ip in protected_ips:
                 stats["protected_exact"] += 1
-                errors.append(("protected_ip", name, clean))
             else:
-                if is_oisd_nsfw:
-                    nsfw_ips.add(validated_ip)
-                elif is_oisd_main:
-                    oisd_ips.add(validated_ip)
-                elif is_oisd_nsfw_sm:
-                    nsfw_small_ips.add(validated_ip)
-                elif is_oisd_sm:
-                    oisd_small_ips.add(validated_ip)
-                else:
-                    all_ips.add(validated_ip)
+                (nsfw_ips if is_oisd_nsfw else oisd_ips if is_oisd_main else
+                 nsfw_small_ips if is_oisd_nsfw_sm else oisd_small_ips if is_oisd_sm
+                 else all_ips).add(validated_ip)
                 local_ip_count += 1
         elif is_valid_domain(clean):
-            if use_whitelist:
-                protected, reason = is_protected_full(clean)
-            else:
-                protected, reason = False, None
+            protected, reason = is_protected_full(clean) if use_whitelist else (False, None)
             if protected:
                 if reason == "exact":
                     stats["protected_exact"] += 1
                 else:
                     stats["protected_suffix"] += 1
-                errors.append((f"protected_{reason}", name, clean))
             else:
-                if is_oisd_nsfw:
-                    nsfw_domains.add(clean)
-                elif is_oisd_main:
-                    oisd_domains.add(clean)
-                elif is_oisd_nsfw_sm:
-                    nsfw_small_domains.add(clean)
-                elif is_oisd_sm:
-                    oisd_small_domains.add(clean)
-                else:
-                    all_domains.add(clean)
+                (nsfw_domains if is_oisd_nsfw else oisd_domains if is_oisd_main else
+                 nsfw_small_domains if is_oisd_nsfw_sm else oisd_small_domains if is_oisd_sm
+                 else all_domains).add(clean)
                 local_domain_count += 1
         else:
             stats["junk"] += 1
-            errors.append(("junk_invalid_line", name, raw_line))
 
     download_report[name]["extracted_domains"] = local_domain_count
     download_report[name]["extracted_ips"] = local_ip_count
-    print(f"  -> Извлечено доменов: {local_domain_count} | IP: {local_ip_count}")
+    print(f"  -> {tr('extracted')}: {local_domain_count} | IP: {local_ip_count}")
 
 for suffix in forced_block_suffixes:
     if is_valid_domain(suffix):
@@ -1108,75 +1163,269 @@ for suffix in forced_block_suffixes:
 for domain in forced_block_domains:
     if is_valid_domain(domain):
         all_domains.add(domain)
-
 for ip in forced_block_ips:
-    validated = validate_ip(ip)
-    if validated:
-        all_ips.add(validated)
+    v = validate_ip(ip)
+    if v:
+        all_ips.add(v)
 
-# Этап формирования Rule-Set
-print("\n=== ЭТАП 5: ОЧИСТКА ПОДДОМЕНОВ И ФОРМИРОВАНИЕ RULE-SET ===")
+print("\n=== " + tr("e5") + " ===")
 build_and_write()
 
 TOTAL_TIME = round(time.time() - SCRIPT_START_TIME, 2)
 
-print("\n" + "="*45)
-print("ГОТОВО! Файлы успешно разделены и сохранены.")
+print("\n" + "=" * 45)
+print(tr("done"))
 print("-" * 45)
-if oisd_choice in ('1', '3'):
-    print(f"Уникальных доменов (Std/Plus): {len(optimized_domains)} / {len(optimized_domains_plus)}")
-if oisd_choice in ('2', '3'):
-    print(f"Уникальных доменов (Sm/PlusSm):{len(optimized_domains_sm)} / {len(optimized_domains_plus_sm)}")
-print(f"Уникальных IP-адресов:         {len(all_ips)}")
-print(f"Удалено по ключевым словам:    {stats['excluded']}")
-print(f"Отсеяно ошибочно добавленных:  {stats['junk']}")
-print(f"Защищено (exact):              {stats['protected_exact']}")
-print(f"Защищено (suffix):             {stats['protected_suffix']}")
+if MODE == "custom" or oisd_choice in ('1', '3'):
+    print(f"{tr('u_std')}: {len(optimized_domains)} / {len(optimized_domains_plus)}")
+if MODE == "default" and oisd_choice in ('2', '3'):
+    print(f"{tr('u_sm')}: {len(optimized_domains_sm)} / {len(optimized_domains_plus_sm)}")
+print(f"{tr('u_ip')}: {len(all_ips)}")
+print(f"{tr('rm_kw')}: {stats['excluded']}")
+print(f"{tr('junk')}: {stats['junk']}")
+print(f"{tr('prot_e')}: {stats['protected_exact']}")
+print(f"{tr('prot_s')}: {stats['protected_suffix']}")
 print("-" * 45)
-if oisd_choice in ('1', '3'):
-    print(f"ПРАВИЛ В ФАЙЛАХ STD:       {final_list_len}")
-    print(f"ПРАВИЛ В ФАЙЛАХ PLUS:      {final_list_plus_len}")
-if oisd_choice in ('2', '3'):
-    print(f"ПРАВИЛ В ФАЙЛАХ STD SMALL: {final_list_sm_len}")
-    print(f"ПРАВИЛ В ФАЙЛАХ PLUS SMALL:{final_list_plus_sm_len}")
-print(f"ВСЕГО ОТБРОШЕНО СТРОК:     {len(errors)}")
-print(f"ОБЩЕЕ ВРЕМЯ ВЫПОЛНЕНИЯ:    {TOTAL_TIME} сек.")
+if MODE == "custom" or oisd_choice in ('1', '3'):
+    print(f"{tr('r_std')}: {final_list_len}")
+    print(f"{tr('r_plus')}: {final_list_plus_len}")
+if MODE == "default" and oisd_choice in ('2', '3'):
+    print(f"{tr('r_sm')}: {final_list_sm_len}")
+    print(f"{tr('r_plus_sm')}: {final_list_plus_sm_len}")
+print(f"{tr('total_drop')}: {len(errors)}")
+print(f"{tr('total_time')}: {TOTAL_TIME} {tr('sec')}.")
 print("-" * 45)
-
-print("Download summary (blacklists):")
+print(tr("sum_bl") + ":")
 for name, info in download_report.items():
-    print(f"  - {name}: {info['status']} (method: {info.get('method','N/A')}, lines: {info.get('lines',0)})")
-print("\nDownload summary (whitelists):")
+    print(f"  - {name}: {info['status']} ({info.get('method','N/A')}, {info.get('lines',0)})")
+print("\n" + tr("sum_wl") + ":")
 for name, info in white_download_report.items():
-    print(f"  - {name}: {info['status']} (method: {info.get('method','N/A')}, lines: {info.get('lines',0)})")
-
+    print(f"  - {name}: {info['status']} ({info.get('method','N/A')}, {info.get('lines',0)})")
 save_logs(TOTAL_TIME)
-
-if failed_lists or failed_white_lists:
-    print("\nSome lists were skipped intentionally.")
-else:
-    print("\nAll lists processed successfully.")
-print("="*45)
+print("\n" + (tr("all_ok") if not (failed_lists or failed_white_lists) else tr("skipped")))
+print("=" * 45)
 ADBLOCK_END
-
-# ============================================================
-# Создание SQLiteTXT.py
-# ============================================================
-cat << 'SQLITE_END' > $BASE/SQLiteTXT.py
-# ============================================================
-# SQLITETXT SCRIPT
-# Просмотр SQLite баз Shadowrocket в текстовом виде.
-# ============================================================
-
+cat << 'SQLITE_END' > "$BASE/SQLiteTXT.py"
 import os
 import sys
 import re
 import sqlite3
-import csv
 import shutil
 from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
+
+LANG = os.environ.get("LANG_SEL", "").strip()
+if not LANG:
+    try:
+        with open(os.path.expanduser("~/.sr_toolkit_lang")) as _f:
+            LANG = _f.read().strip()
+    except Exception:
+        LANG = "ru"
+if LANG not in ("ru", "en"):
+    LANG = "ru"
+
+_T = {
+"ru": {
+ "exit": "Выход.",
+ "folder_missing": "Папка не найдена",
+ "found_files": "Найденные .db файлы",
+ "choose_files": "Выберите файлы",
+ "choose_file": "Выберите файл",
+ "multi_hint": "можно несколько, например 1,3-4 или all",
+ "enter_number": "введите номер",
+ "choice": "Ваш выбор",
+ "bad": "Неверный выбор",
+ "one_file": "Выберите ровно один файл",
+ "m_export": "1 - Экспорт",
+ "m_rename": "2 - Переименование входных файлов",
+ "m_sep": "3 - Разделитель вывода",
+ "m_clean": "4 - Очистка повреждённых файлов",
+ "m_q": "q - Выход",
+ "menu": "Выберите режим",
+ "no_db": "В папке Input нет .db файлов",
+ "place": "Поместите файлы в",
+ "press": "и нажмите Enter для продолжения",
+ "type_q": "Или введите q для выхода",
+ "export_done": "Экспорт завершён. Файлы сохранены в Output",
+ "rename_created": "Переименовать созданный файл? (y/n)",
+ "done": "Готово! Можете продолжить или выйти.",
+ "processing": "Обработка",
+ "processed": "Обработана",
+ "tables": "таблиц",
+ "err_proc": "Ошибка при обработке",
+ "exp_settings": "Настройки экспорта",
+ "opt_schema": "1. Показывать схему таблиц",
+ "opt_stats": "2. Показывать количество записей",
+ "opt_kw": "3. Фильтровать записи по ключевым словам",
+ "opt_dedupe": "4. Удалять дубликаты по URL",
+ "opt_sort": "5. Сортировать по политике",
+ "enter_kw": "Введите ключевые слова для фильтрации",
+ "exp_len": "Ожидается символов",
+ "use_01": "Используйте только 0 и 1",
+ "new_name": "Новое имя для",
+ "new_prefix": "Введите префикс для группы",
+ "apply_all": "Применить ко всем файлам? (y/n)",
+ "no_files": "Нет файлов для переименования",
+ "will_over": "Следующие файлы будут перезаписаны",
+ "cont_q": "Продолжить? (y/n)",
+ "cancel": "Отменено",
+ "renamed": "Переименован в",
+ "cont_rename": "Продолжить переименование? (y/n)",
+ "rename_q": "Переименовать один файл (1) или группу (2)?",
+ "name_empty": "Имя не может быть пустым",
+ "file_exists": "Файл с таким именем уже существует",
+ "prefix_empty": "Префикс не может быть пустым",
+ "cur_sep": "Текущий разделитель",
+ "sep_1": "1 - tab",
+ "sep_2": "2 - comma (,)",
+ "sep_3": "3 - semicolon (;)",
+ "choose_num": "Выберите номер",
+ "sep_changed": "Разделитель изменён на",
+ "clean_hdr": "Очистка повреждённых файлов",
+ "clean_1": "1 - Проверить все .db и удалить повреждённые",
+ "clean_2": "2 - Очистить папку Input",
+ "clean_3": "3 - Очистить папку Output",
+ "clean_4": "4 - Очистить обе папки",
+ "clean_5": "5 - Назад",
+ "no_db_check": "Нет .db файлов для проверки",
+ "checking": "Проверка целостности баз данных",
+ "corrupted": "повреждён, удаляем",
+ "del_all": "Удалить всё содержимое",
+ "folder_ok": "Папка очищена",
+ "skipped": "Пропущено",
+ "no_tables": "не содержит таблиц",
+ "schema": "Схема базы данных",
+ "table": "Таблица",
+ "columns": "Колонки",
+ "records": "Общее количество записей",
+ "kw_filter": "Фильтр по ключевым словам",
+ "dedupe_on": "Дедупликация по URL включена",
+ "sort_on": "Сортировка по политике",
+ "filter_empty": "нет записей, соответствующих фильтру",
+ "total_after": "Итого записей после фильтрации/дедупликации",
+ "y_or_n": "y/n",
+ "back_hint": "b - назад",
+ "back": "Назад"
+},
+"en": {
+ "exit": "Exit.",
+ "folder_missing": "Folder not found",
+ "found_files": "Found .db files",
+ "choose_files": "Choose files",
+ "choose_file": "Choose a file",
+ "multi_hint": "you can choose several, e.g. 1,3-4 or all",
+ "enter_number": "enter number",
+ "choice": "Your choice",
+ "bad": "Invalid choice",
+ "one_file": "Choose exactly one file",
+ "m_export": "1 - Export",
+ "m_rename": "2 - Rename input files",
+ "m_sep": "3 - Output separator",
+ "m_clean": "4 - Clean corrupted files",
+ "m_q": "q - Quit",
+ "menu": "Choose mode",
+ "no_db": "No .db files in Input folder",
+ "place": "Put files into",
+ "press": "and press Enter to continue",
+ "type_q": "Or type q to exit",
+ "export_done": "Export complete. Files saved to Output",
+ "rename_created": "Rename created file? (y/n)",
+ "done": "Done! You can continue or exit.",
+ "processing": "Processing",
+ "processed": "Processed",
+ "tables": "tables",
+ "err_proc": "Error processing",
+ "exp_settings": "Export settings",
+ "opt_schema": "1. Show table schema",
+ "opt_stats": "2. Show record count",
+ "opt_kw": "3. Filter by keywords",
+ "opt_dedupe": "4. Deduplicate by URL",
+ "opt_sort": "5. Sort by policy",
+ "enter_kw": "Enter comma-separated keywords",
+ "exp_len": "Expected length",
+ "use_01": "Use only 0 and 1",
+ "new_name": "New name for",
+ "new_prefix": "Enter group prefix",
+ "apply_all": "Apply to all files? (y/n)",
+ "no_files": "No files to rename",
+ "will_over": "The following files will be overwritten",
+ "cont_q": "Continue? (y/n)",
+ "cancel": "Cancelled",
+ "renamed": "Renamed to",
+ "cont_rename": "Continue renaming? (y/n)",
+ "rename_q": "Rename one file (1) or group (2)?",
+ "name_empty": "Name cannot be empty",
+ "file_exists": "File with this name already exists",
+ "prefix_empty": "Prefix cannot be empty",
+ "cur_sep": "Current separator",
+ "sep_1": "1 - tab",
+ "sep_2": "2 - comma (,)",
+ "sep_3": "3 - semicolon (;)",
+ "choose_num": "Choose number",
+ "sep_changed": "Separator changed to",
+ "clean_hdr": "Clean corrupted files",
+ "clean_1": "1 - Check all .db and delete corrupted",
+ "clean_2": "2 - Clean Input folder",
+ "clean_3": "3 - Clean Output folder",
+ "clean_4": "4 - Clean both folders",
+ "clean_5": "5 - Back",
+ "no_db_check": "No .db files to check",
+ "checking": "Checking databases integrity",
+ "corrupted": "corrupted, deleting",
+ "del_all": "Delete all contents of",
+ "folder_ok": "Folder cleaned",
+ "skipped": "Skipped",
+ "no_tables": "contains no tables",
+ "schema": "Database schema",
+ "table": "Table",
+ "columns": "Columns",
+ "records": "Total records",
+ "kw_filter": "Keyword filter",
+ "dedupe_on": "URL deduplication enabled",
+ "sort_on": "Sort by policy",
+ "filter_empty": "no matching records",
+ "total_after": "Total after filter/dedupe",
+ "y_or_n": "y/n",
+ "back_hint": "b - back",
+ "back": "Back"
+}}
+
+def tr(k):
+    return _T.get(LANG, _T["ru"]).get(k, _T["ru"].get(k, k))
+
+def _input(prompt=""):
+    try:
+        v = input(prompt)
+    except (EOFError, KeyboardInterrupt):
+        print()
+        sys.exit(0)
+    if v.strip().lower() in ("q", "quit", "exit"):
+        print("[+] " + tr("exit"))
+        sys.exit(0)
+    return v
+
+def _inp_allow_empty(prompt=""):
+    try:
+        v = input(prompt)
+    except (EOFError, KeyboardInterrupt):
+        print()
+        sys.exit(0)
+    if v.strip().lower() in ("q", "quit", "exit"):
+        print("[+] " + tr("exit"))
+        sys.exit(0)
+    return v
+
+def _inp_allow_back(prompt=""):
+    try:
+        v = input(prompt)
+    except (EOFError, KeyboardInterrupt):
+        print()
+        sys.exit(0)
+    if v.strip().lower() in ("q", "quit", "exit"):
+        print("[+] " + tr("exit"))
+        sys.exit(0)
+    return v
 
 ROOT = Path.home()
 INPUT_DIR = ROOT / "Shadowrocket" / "SQLiteTXT" / "Input"
@@ -1185,40 +1434,29 @@ CONFIG_FILE = ROOT / ".sqlitetxt_config"
 SEPARATOR = "\t"
 SEP_NAME = "tab"
 
-# Блок загрузки конфигурации
 def load_config():
     global SEPARATOR, SEP_NAME
     if CONFIG_FILE.exists():
         try:
-            with open(CONFIG_FILE, 'r') as f:
+            with open(CONFIG_FILE, "r") as f:
                 data = f.read().strip()
                 if data in ("tab", "comma", "semicolon"):
                     SEP_NAME = data
-                    if data == "tab":
-                        SEPARATOR = "\t"
-                    elif data == "comma":
-                        SEPARATOR = ","
-                    elif data == "semicolon":
-                        SEPARATOR = ";"
-        except:
+                    SEPARATOR = {"tab": "\t", "comma": ",", "semicolon": ";"}[data]
+        except Exception:
             pass
 
 def save_config():
-    with open(CONFIG_FILE, 'w') as f:
+    with open(CONFIG_FILE, "w") as f:
         f.write(SEP_NAME)
 
 load_config()
 
-# Блок утилит
 def sanitize_filename(name):
     if not name:
         return name
-    allowed = re.compile(r'[^a-zA-Z0-9_.\-]')
-    clean = allowed.sub('_', name)
-    clean = clean.strip('_')
-    if not clean:
-        clean = 'file'
-    return clean
+    clean = re.sub(r'[^a-zA-Z0-9_.\-]', '_', name).strip('_')
+    return clean or 'file'
 
 def clean_str(s):
     if not s:
@@ -1232,34 +1470,32 @@ def die(message):
     print(f"[!] {message}")
     sys.exit(1)
 
-# Блок работы с файлами
 def list_input_files():
     if not INPUT_DIR.exists():
-        die(f"Папка {INPUT_DIR} не найдена")
+        die(f"{tr('folder_missing')}: {INPUT_DIR}")
     files = [p for p in INPUT_DIR.iterdir() if p.is_file() and not p.name.startswith(".") and p.suffix.lower() == ".db"]
     files.sort(key=lambda p: p.name.lower())
     return files
 
-def print_files(files, title="[+] Найденные .db файлы:"):
+def print_files(files, title=None):
+    if title is None:
+        title = f"[+] {tr('found_files')}:"
     print(f"\n{title}")
     for i, path in enumerate(files, 1):
         size_mb = path.stat().st_size / 1024 / 1024
         print(f"{i}. {path.name} ({size_mb:.2f} MB)")
 
-# Блок парсинга выбора
 def parse_selection(text, max_index):
     text = text.strip().lower()
     if text in {"all", "a"}:
         return list(range(1, max_index + 1))
     result = []
-    parts = [p.strip() for p in text.split(",") if p.strip()]
-    for part in parts:
+    for part in [p.strip() for p in text.split(",") if p.strip()]:
         if "-" in part:
             left, right = part.split("-", 1)
             if not left.isdigit() or not right.isdigit():
                 raise ValueError
-            a = int(left)
-            b = int(right)
+            a, b = int(left), int(right)
             if a > b:
                 a, b = b, a
             for n in range(a, b + 1):
@@ -1275,42 +1511,39 @@ def parse_selection(text, max_index):
         raise ValueError
     return result
 
-def select_files(files, allow_multiple=True, prompt="Выберите файлы"):
+def select_files(files, allow_multiple=True, prompt=None):
+    if prompt is None:
+        prompt = tr("choose_files")
     while True:
         print_files(files)
         if allow_multiple:
-            print(f"\n[?] {prompt} (можно несколько, например 1,3-4 или all)")
+            print(f"\n[?] {prompt} ({tr('multi_hint')})")
         else:
-            print(f"\n[?] {prompt} (введите номер)")
-        choice = input("[?] Ваш выбор: ").strip()
+            print(f"\n[?] {prompt} ({tr('enter_number')})")
+        choice = _inp_allow_back(f"[?] {tr('choice')}: ").strip()
         if choice.lower() in ("b", "back"):
             return None
         try:
             indices = parse_selection(choice, len(files))
             if not allow_multiple and len(indices) != 1:
-                print("[!] Выберите ровно один файл")
+                print(f"[!] {tr('one_file')}")
                 continue
-            selected = [files[i-1] for i in indices]
-            return selected
-        except:
-            print("[!] Неверный выбор")
+            return [files[i - 1] for i in indices]
+        except Exception:
+            print(f"[!] {tr('bad')}")
 
-# Блок работы с таблицами
 def get_user_tables(conn):
     cursor = conn.cursor()
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
-    all_tables = [row[0] for row in cursor.fetchall()]
     skip = ('logging_segments', 'logging_segdir', 'logging_content')
-    tables = [t for t in all_tables if t not in skip]
-    return tables
+    return [row[0] for row in cursor.fetchall() if row[0] not in skip]
 
 def get_table_info(conn, table):
     cursor = conn.cursor()
     cursor.execute(f"PRAGMA table_info({table})")
     columns = [row[1] for row in cursor.fetchall()]
     cursor.execute(f"SELECT COUNT(*) FROM {table}")
-    count = cursor.fetchone()[0]
-    return columns, count
+    return columns, cursor.fetchone()[0]
 
 def row_matches_filter(row, columns, keywords):
     if not keywords:
@@ -1318,20 +1551,14 @@ def row_matches_filter(row, columns, keywords):
     url_idx = columns.index('url') if 'url' in columns else None
     if url_idx is not None:
         val = str(row[url_idx]) if row[url_idx] is not None else ""
-        for kw in keywords:
-            if kw.lower() in val.lower():
+        return any(kw.lower() in val.lower() for kw in keywords)
+    for col, val in zip(columns, row):
+        if val is not None:
+            s = str(val)
+            if any(kw.lower() in s.lower() for kw in keywords):
                 return True
-        return False
-    else:
-        for col, val in zip(columns, row):
-            if val is not None:
-                s = str(val)
-                for kw in keywords:
-                    if kw.lower() in s.lower():
-                        return True
-        return False
+    return False
 
-# Блок экспорта таблицы
 def export_table_human(conn, table, out_file, dedupe=False, sort_by_policy=False, keywords=None):
     if keywords is None:
         keywords = []
@@ -1342,20 +1569,16 @@ def export_table_human(conn, table, out_file, dedupe=False, sort_by_policy=False
         return 0
     cursor.execute(f"SELECT * FROM {table}")
     rows = cursor.fetchall()
-
     if keywords:
         rows = [r for r in rows if row_matches_filter(r, columns, keywords)]
-
     if not rows:
-        out_file.write("\n(нет записей, соответствующих фильтру)\n")
+        out_file.write(f"\n({tr('filter_empty')})\n")
         return 0
-
     if sort_by_policy and table == "logging":
         type_idx = columns.index('type') if 'type' in columns else None
         if type_idx is not None:
             policy_order = {'DIRECT': 0, 'PROXY': 1, 'REJECT': 2}
             rows.sort(key=lambda r: policy_order.get(r[type_idx] if type_idx < len(r) else '', 3))
-
     if dedupe and table == "logging":
         url_idx = columns.index('url') if 'url' in columns else None
         if url_idx is not None:
@@ -1373,7 +1596,6 @@ def export_table_human(conn, table, out_file, dedupe=False, sort_by_policy=False
             rows = grouped_rows
         else:
             dedupe = False
-
     if sort_by_policy and table == "logging" and 'type' in columns:
         type_idx = columns.index('type')
         policy_groups = {'DIRECT': [], 'PROXY': [], 'REJECT': []}
@@ -1391,284 +1613,199 @@ def export_table_human(conn, table, out_file, dedupe=False, sort_by_policy=False
                 for row in policy_groups[policy]:
                     out_file.write("\n")
                     for col, val in zip(columns, row):
-                        if val is not None:
-                            out_file.write(f"{col}: {val}\n")
-                        else:
-                            out_file.write(f"{col}: (null)\n")
+                        out_file.write(f"{col}: {val if val is not None else '(null)'}\n")
                     total_written += 1
         if other:
             out_file.write("\n--- OTHER ---\n")
             for row in other:
                 out_file.write("\n")
                 for col, val in zip(columns, row):
-                    if val is not None:
-                        out_file.write(f"{col}: {val}\n")
-                    else:
-                        out_file.write(f"{col}: (null)\n")
+                    out_file.write(f"{col}: {val if val is not None else '(null)'}\n")
                 total_written += 1
         return total_written
     else:
         for row in rows:
             out_file.write("\n")
             for col, val in zip(columns, row):
-                if val is not None:
-                    out_file.write(f"{col}: {val}\n")
-                else:
-                    out_file.write(f"{col}: (null)\n")
+                out_file.write(f"{col}: {val if val is not None else '(null)'}\n")
         return len(rows)
 
-# Блок режима экспорта
 def extract_mode(selected_files, show_schema, show_stats, keywords, dedupe, sort_by_policy):
     total_files = len(selected_files)
     created = []
     for idx, db_path in enumerate(selected_files, 1):
-        print(f"\r[*] Обработка {idx}/{total_files}: {db_path.name}          ", end="")
+        print(f"\r[*] {tr('processing')} {idx}/{total_files}: {db_path.name}          ", end="")
         base_name = db_path.stem
-        timestamp = now_stamp()
-        out_path = OUTPUT_DIR / f"{base_name}_{timestamp}.txt"
+        out_path = OUTPUT_DIR / f"{base_name}_{now_stamp()}.txt"
         try:
             conn = sqlite3.connect(str(db_path))
             tables = get_user_tables(conn)
             if not tables:
                 with open(out_path, 'w', encoding='utf-8') as f:
-                    f.write(f"База данных {db_path.name} не содержит таблиц.\n")
+                    f.write(f"{db_path.name} {tr('no_tables')}.\n")
                 conn.close()
                 created.append(out_path)
                 continue
             with open(out_path, 'w', encoding='utf-8') as f:
                 if show_schema:
-                    f.write(f"=== Схема базы данных: {db_path.name} ===\n")
+                    f.write(f"=== {tr('schema')}: {db_path.name} ===\n")
                     for table in tables:
                         columns, total_count = get_table_info(conn, table)
-                        f.write(f"\nТаблица: {table}\n")
-                        f.write(f"Колонки: {', '.join(columns)}\n")
+                        f.write(f"\n{tr('table')}: {table}\n")
+                        f.write(f"{tr('columns')}: {', '.join(columns)}\n")
                         if show_stats:
-                            f.write(f"Общее количество записей: {total_count}\n")
-                    f.write("\n" + "="*40 + "\n\n")
+                            f.write(f"{tr('records')}: {total_count}\n")
+                    f.write("\n" + "=" * 40 + "\n\n")
                 total_exported = 0
                 for table in tables:
-                    f.write(f"\n=== Таблица: {table} ===\n")
+                    f.write(f"\n=== {tr('table')}: {table} ===\n")
                     if keywords:
-                        f.write(f"Фильтр по ключевым словам: {', '.join(keywords)}\n")
+                        f.write(f"{tr('kw_filter')}: {', '.join(keywords)}\n")
                     if dedupe:
-                        f.write("Дедупликация по URL включена\n")
+                        f.write(tr("dedupe_on") + "\n")
                     if sort_by_policy:
-                        f.write("Сортировка по политике: DIRECT, PROXY, REJECT\n")
+                        f.write(tr("sort_on") + ": DIRECT -> PROXY -> REJECT\n")
                     count = export_table_human(conn, table, f, dedupe, sort_by_policy, keywords)
                     total_exported += count
                 if show_stats:
-                    f.write(f"\n--- Итого записей после фильтрации/дедупликации: {total_exported} ---\n")
+                    f.write(f"\n--- {tr('total_after')}: {total_exported} ---\n")
             conn.close()
             created.append(out_path)
-            print(f"\r[+] Обработана {db_path.name} -> {out_path.name} (таблиц: {len(tables)})          ")
+            print(f"\r[+] {tr('processed')} {db_path.name} -> {out_path.name} ({tr('tables')}: {len(tables)})          ")
         except sqlite3.Error as e:
-            print(f"\r[!] Ошибка при обработке {db_path.name}: {e}          ")
+            print(f"\r[!] {tr('err_proc')} {db_path.name}: {e}          ")
     return created
 
-# Блок настроек экспорта
 def ask_options_extract():
-    print("\n=== Настройки экспорта (строка из 0/1 длиной 5, Enter = 11000) ===")
-    print("1. Показывать схему таблиц")
-    print("2. Показывать количество записей")
-    print("3. Фильтровать записи по ключевым словам в поле URL")
-    print("4. Удалять дубликаты по URL")
-    print("5. Сортировать по политике DIRECT PROXY REJECT")
+    print(f"\n=== {tr('exp_settings')} (5 bits, Enter = 11000) ===")
+    print(tr("opt_schema"))
+    print(tr("opt_stats"))
+    print(tr("opt_kw"))
+    print(tr("opt_dedupe"))
+    print(tr("opt_sort"))
     default = "11000"
     while True:
-        s = input("[?] Ваш выбор: ").strip()
-        if s == "":
-            s = default
+        s = _input(f"[?] {tr('choice')}: ").strip() or default
         if len(s) != len(default):
-            print(f"[!] Ожидается {len(default)} символов")
+            print(f"[!] {tr('exp_len')} {len(default)}")
             continue
         if not all(c in "01" for c in s):
-            print("[!] Используйте только 0 и 1")
+            print(f"[!] {tr('use_01')}")
             continue
         bits = [c == "1" for c in s]
         keywords = []
         if bits[2]:
-            kw = input("[?] Введите ключевые слова для фильтрации: ").strip()
+            kw = _inp_allow_empty(f"[?] {tr('enter_kw')}: ").strip()
             if kw:
                 keywords = [x.strip() for x in kw.split(",") if x.strip()]
         return bits, keywords
 
-# Блок переименования
 def rename_mode(files):
     while True:
         print_files(files)
-        print("\n[?] Переименовать один файл (1) или группу (2)? [1]: ", end="")
-        choice = input().strip()
-        if choice == "":
-            choice = "1"
+        print(f"\n[?] {tr('rename_q')} [1]: ", end="")
+        choice = _inp_allow_back().strip() or "1"
+        if choice.lower() in ("b", "back"):
+            return
         if choice == "1":
-            selected = select_files(files, allow_multiple=False, prompt="Выберите файл для переименования")
+            selected = select_files(files, allow_multiple=False, prompt=tr("choose_file"))
             if selected is None:
                 continue
             path = selected[0]
-            while True:
-                new_name = input(f"[?] Новое имя для {path.name}: ").strip()
-                new_name = clean_str(new_name)
-                new_name = sanitize_filename(new_name)
-                if not new_name:
-                    print("[!] Имя не может быть пустым")
-                    continue
-                if new_name.lower() in ("b", "back"):
-                    break
-                if not new_name.endswith(".db"):
-                    new_name += ".db"
-                new_path = path.parent / new_name
-                if new_path.exists():
-                    print("[!] Файл с таким именем уже существует")
-                    continue
-                confirm = input(f"[?] Переименовать {path.name} в {new_name}? (y/n/back) [n]: ").strip().lower()
-                if confirm == "":
-                    confirm = "n"
-                if confirm == "y":
-                    path.rename(new_path)
-                    print(f"[+] Переименован в {new_name}")
-                    files = list_input_files()
-                    print_files(files)
-                    break
-                elif confirm == "back":
-                    break
-                else:
-                    print("[!] Введите y, n или back")
-        elif choice == "2":
-            prefix = input("[?] Введите префикс для группы: ").strip()
-            prefix = clean_str(prefix)
-            prefix = sanitize_filename(prefix)
-            if not prefix:
-                print("[!] Префикс не может быть пустым")
+            new_name = _inp_allow_back(f"[?] {tr('new_name')} {path.name}: ").strip()
+            if new_name.lower() in ("b", "back"):
                 continue
-            apply_all = input("[?] Применить ко всем файлам? (y/n) [y]: ").strip().lower()
-            if apply_all == "":
-                apply_all = "y"
-            if apply_all == "y":
-                selected_files = files
-            else:
-                selected_files = select_files(files, allow_multiple=True, prompt="Выберите файлы для переименования")
-                if selected_files is None:
-                    continue
-            if not selected_files:
-                print("[!] Нет файлов для переименования")
+            new_name = sanitize_filename(clean_str(new_name))
+            if not new_name:
+                print(f"[!] {tr('name_empty')}")
                 continue
-            selected_files_sorted = sorted(selected_files, key=lambda p: p.name)
-            conflicts = []
-            for i, path in enumerate(selected_files_sorted, 1):
-                ext = path.suffix
-                new_name = f"{prefix}-{i}{ext}"
-                new_path = path.parent / new_name
-                if new_path.exists() and new_path != path:
-                    conflicts.append((path, new_path))
-            if conflicts:
-                print("[!] Следующие файлы будут перезаписаны:")
-                for old, new in conflicts:
-                    print(f"  {old.name} -> {new.name}")
-                confirm = input("[?] Продолжить? (y/n) [n]: ").strip().lower()
-                if confirm != "y":
-                    print("[!] Отменено")
-                    continue
-            for i, path in enumerate(selected_files_sorted, 1):
-                ext = path.suffix
-                new_name = f"{prefix}-{i}{ext}"
-                new_path = path.parent / new_name
+            if not new_name.endswith(".db"):
+                new_name += ".db"
+            new_path = path.parent / new_name
+            if new_path.exists():
+                print(f"[!] {tr('file_exists')}")
+                continue
+            if _input(f"[?] {tr('cont_q')} [n]: ").strip().lower() == "y":
                 path.rename(new_path)
-                print(f"[+] {path.name} -> {new_name}")
+                print(f"[+] {tr('renamed')} {new_name}")
+                files = list_input_files()
+        elif choice == "2":
+            prefix = sanitize_filename(clean_str(_inp_allow_back(f"[?] {tr('new_prefix')}: ").strip()))
+            if not prefix:
+                print(f"[!] {tr('prefix_empty')}")
+                continue
+            for i, path in enumerate(sorted(files, key=lambda p: p.name), 1):
+                new_path = path.parent / f"{prefix}-{i}{path.suffix}"
+                path.rename(new_path)
             files = list_input_files()
-            print_files(files)
         else:
-            print("[!] Неверный выбор")
+            print(f"[!] {tr('bad')}")
             continue
-        cont = input("[?] Продолжить переименование? (y/n) [n]: ").strip().lower()
-        if cont != "y":
+        if _input(f"[?] {tr('cont_rename')} [n]: ").strip().lower() != "y":
             break
 
 def rename_single_output_file(file_path):
-    while True:
-        new_name = input(f"[?] Новое имя для {file_path.name}: ").strip()
-        new_name = clean_str(new_name)
-        new_name = sanitize_filename(new_name)
-        if not new_name:
-            print("[!] Имя не может быть пустым")
-            continue
-        if new_name.lower() in ("b", "back"):
-            return None
-        if not new_name.endswith(".txt"):
-            new_name += ".txt"
-        new_path = file_path.parent / new_name
-        if new_path.exists():
-            print("[!] Файл с таким именем уже существует")
-            continue
-        confirm = input(f"[?] Переименовать {file_path.name} в {new_name}? (y/n) [n]: ").strip().lower()
-        if confirm == "":
-            confirm = "n"
-        if confirm == "y":
-            file_path.rename(new_path)
-            print(f"[+] Переименован в {new_name}")
-            return new_path
-        elif confirm == "back":
-            return None
-        else:
-            print("[!] Введите y, n или back")
+    new_name = _inp_allow_back(f"[?] {tr('new_name')} {file_path.name}: ").strip()
+    if new_name.lower() in ("b", "back"):
+        return None
+    new_name = sanitize_filename(clean_str(new_name))
+    if not new_name:
+        print(f"[!] {tr('name_empty')}")
+        return None
+    if not new_name.endswith(".txt"):
+        new_name += ".txt"
+    new_path = file_path.parent / new_name
+    if new_path.exists():
+        print(f"[!] {tr('file_exists')}")
+        return None
+    file_path.rename(new_path)
+    print(f"[+] {tr('renamed')} {new_name}")
+    return new_path
 
-# Блок смены разделителя
 def change_separator():
     global SEPARATOR, SEP_NAME
-    print(f"\n[+] Текущий разделитель: '{SEP_NAME}'")
-    print("[1] tab")
-    print("[2] comma")
-    print("[3] semicolon")
-    choice = input("[?] Выберите номер [1]: ").strip()
-    if choice == "":
-        choice = "1"
-    if choice == "1":
-        SEP_NAME = "tab"
-        SEPARATOR = "\t"
-    elif choice == "2":
-        SEP_NAME = "comma"
-        SEPARATOR = ","
-    elif choice == "3":
-        SEP_NAME = "semicolon"
-        SEPARATOR = ";"
+    print(f"\n[+] {tr('cur_sep')}: '{SEP_NAME}'")
+    print(tr("sep_1"))
+    print(tr("sep_2"))
+    print(tr("sep_3"))
+    choice = _input(f"[?] {tr('choose_num')} [1]: ").strip() or "1"
+    mapping = {"1": ("tab", "\t"), "2": ("comma", ","), "3": ("semicolon", ";")}
+    if choice in mapping:
+        SEP_NAME, SEPARATOR = mapping[choice]
+        save_config()
+        print(f"[+] {tr('sep_changed')} '{SEP_NAME}'")
     else:
-        print("[!] Неверный выбор")
-        return
-    save_config()
-    print(f"[+] Разделитель изменён на '{SEP_NAME}'")
+        print(f"[!] {tr('bad')}")
 
-# Блок очистки
 def clean_broken_files():
-    print("\n=== Очистка повреждённых файлов ===")
-    print("[1] Проверить все .db файлы и удалить битые")
-    print("[2] Очистить папку Input")
-    print("[3] Очистить папку Output")
-    print("[4] Очистить обе папки")
-    print("[5] Назад")
-    choice = input("[?] Ваш выбор [5]: ").strip()
-    if choice == "":
-        choice = "5"
+    print(f"\n=== {tr('clean_hdr')} ===")
+    print(tr("clean_1"))
+    print(tr("clean_2"))
+    print(tr("clean_3"))
+    print(tr("clean_4"))
+    print(tr("clean_5"))
+    choice = _input(f"[?] {tr('choice')} [5]: ").strip() or "5"
     if choice == "5":
         return
     if choice == "1":
         files = list_input_files()
         if not files:
-            print("[!] Нет .db файлов для проверки")
+            print(f"[!] {tr('no_db_check')}")
             return
-        print("[*] Проверка целостности баз данных...")
+        print(f"[*] {tr('checking')}...")
         for path in files:
             try:
                 conn = sqlite3.connect(str(path))
-                cursor = conn.cursor()
-                cursor.execute("SELECT 1")
+                conn.cursor().execute("SELECT 1")
                 conn.close()
                 print(f"[+] {path.name} - OK")
             except sqlite3.Error:
-                print(f"[!] {path.name} - повреждён, удаляем...")
+                print(f"[!] {path.name} - {tr('corrupted')}...")
                 try:
                     path.unlink()
                 except Exception as e:
-                    print(f"[!] Не удалось удалить {path.name}: {e}")
-        print("[+] Проверка завершена")
+                    print(f"[!] {path.name}: {e}")
+        print("[+] " + tr("folder_ok"))
         return
     dirs = []
     if choice in ("2", "4"):
@@ -1677,13 +1814,9 @@ def clean_broken_files():
         dirs.append(OUTPUT_DIR)
     for d in dirs:
         if not d.exists():
-            print(f"[!] Папка {d} не существует")
+            print(f"[!] {tr('folder_missing')}: {d}")
             continue
-        print(f"[?] Удалить всё содержимое {d}? (y/n) [n]: ", end="")
-        ans = input().strip().lower()
-        if ans == "":
-            ans = "n"
-        if ans == "y":
+        if _input(f"[?] {tr('del_all')} {d}? ({tr('y_or_n')}) [n]: ").strip().lower() == "y":
             for item in d.iterdir():
                 try:
                     if item.is_dir():
@@ -1691,35 +1824,32 @@ def clean_broken_files():
                     else:
                         item.unlink()
                 except Exception as e:
-                    print(f"[!] Ошибка удаления {item}: {e}")
-            print(f"[+] Папка {d} очищена")
+                    print(f"[!] {item}: {e}")
+            print(f"[+] {tr('folder_ok')}: {d}")
         else:
-            print(f"[!] Пропущено {d}")
+            print(f"[!] {tr('skipped')}: {d}")
 
-# Главное меню
 def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     while True:
         files = list_input_files()
         while not files:
-            print("\n[!] В папке Input нет .db файлов.")
-            print(f"[*] Поместите файлы в {INPUT_DIR} и нажмите Enter для продолжения")
-            print("[*] Или введите 'exit' для выхода")
-            cmd = input().strip().lower()
-            if cmd == "exit":
-                print("[+] Выход.")
+            print(f"\n[!] {tr('no_db')}.")
+            print(f"[*] {tr('place')} {INPUT_DIR} {tr('press')}")
+            print(f"[*] {tr('type_q')}")
+            cmd = _inp_allow_empty().strip().lower()
+            if cmd in ("q", "quit", "exit"):
+                print("[+] " + tr("exit"))
                 return
             files = list_input_files()
-        print("\n[1] Export")
-        print("[2] Rename input files")
-        print("[3] Change output separator")
-        print("[4] Clean broken files")
-        print("[5] Exit")
-        mode = input("\n[?] Выберите режим (1/2/3/4/5) [1]: ").strip()
-        if mode == "":
-            mode = "1"
-        if mode == "5":
-            print("[+] Выход.")
+        print(f"\n{tr('m_export')}")
+        print(tr("m_rename"))
+        print(tr("m_sep"))
+        print(tr("m_clean"))
+        print(tr("m_q"))
+        mode = _input(f"\n[?] {tr('menu')} (1/2/3/4/q) [1]: ").strip() or "1"
+        if mode in ("q", "quit", "exit"):
+            print("[+] " + tr("exit"))
             break
         if mode == "4":
             clean_broken_files()
@@ -1731,36 +1861,31 @@ def main():
             rename_mode(files)
             continue
         if mode == "1":
-            selected = select_files(files, allow_multiple=True, prompt="Выберите файлы для экспорта")
+            selected = select_files(files, allow_multiple=True, prompt=tr("choose_files"))
             if selected is None:
                 continue
             opts, keywords = ask_options_extract()
             show_schema, show_stats, _, dedupe, sort_by_policy = opts
             created = extract_mode(selected, show_schema, show_stats, keywords, dedupe, sort_by_policy)
-            print("\n[+] Экспорт завершён. Файлы сохранены в Output")
+            print(f"\n[+] {tr('export_done')}")
             if len(created) == 1:
-                ans = input("[?] Переименовать созданный файл? (y/n) [n]: ").strip().lower()
-                if ans == "y":
+                if _input(f"[?] {tr('rename_created')} [n]: ").strip().lower() == "y":
                     rename_single_output_file(created[0])
         else:
-            print("[!] Неверный выбор")
+            print(f"[!] {tr('bad')}")
             continue
-        print("\n[+] Готово! Можете продолжить или выйти.")
-        input("[*] Нажмите Enter для продолжения...")
+        print(f"\n[+] {tr('done')}")
+        _inp_allow_empty(f"[*] {tr('press')}")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n[+] " + tr("exit"))
+        sys.exit(0)
 SQLITE_END
 
-# ============================================================
-# Создание SpyLog.py
-# ============================================================
-cat << 'SPYLOG_END' > $BASE/SpyLog.py
-# ============================================================
-# SPYLOG SCRIPT
-# Анализ журналов Shadowrocket и получение Spy.module.
-# ============================================================
-
+cat << 'SPYLOG_END' > "$BASE/SpyLog.py"
 import json
 import re
 import sys
@@ -1775,6 +1900,261 @@ import base64
 import html
 import codecs
 import chardet
+
+LANG = os.environ.get("LANG_SEL", "").strip()
+if not LANG:
+    try:
+        with open(os.path.expanduser("~/.sr_toolkit_lang")) as _f:
+            LANG = _f.read().strip()
+    except Exception:
+        LANG = "ru"
+if LANG not in ("ru", "en"):
+    LANG = "ru"
+
+_T = {
+"ru": {
+ "exit": "Выход.",
+ "found_files": "Найденные файлы",
+ "empty_hdr": "В папке Input нет файлов",
+ "empty_hint": "Поместите файлы в",
+ "empty_enter": "и нажмите Enter для продолжения",
+ "empty_or": "Или введите q для выхода",
+ "empty_or_module": "Или введите m — получить Spy.module",
+ "m_1": "1 - Extract (извлечение блоков)",
+ "m_2": "2 - Compare (сравнение)",
+ "m_3": "3 - Rename (переименование входных файлов)",
+ "m_4": "4 - Change search pattern",
+ "m_5": "5 - Clean broken files",
+ "m_6": "6 - Get Spy.module",
+ "m_q": "q - Выход",
+ "menu": "Выберите режим",
+ "choice": "Ваш выбор",
+ "bad": "Неверный выбор",
+ "multi_hint": "можно несколько, например 1,3-4 или all",
+ "enter_number": "введите номер",
+ "one_file": "Выберите ровно один файл",
+ "choose_files": "Выберите файлы",
+ "choose_one": "Выберите файл",
+ "cmp_min": "минимум 2 файла",
+ "opts_extract": "Настройки вывода (5 бит, Enter = 11110)",
+ "opts_compare": "Настройки вывода (6 бит, Enter = 111100)",
+ "o_urls": "1. Показывать список уникальных URL",
+ "o_decode": "2. Декодировать закодированные строки в телах",
+ "o_counts": "3. Показывать количество блоков по каждому файлу",
+ "o_kw": "4. Отделить логи с ключевыми словами",
+ "o_dup": "5. Показывать дубликаты (0 - удалять, 1 - оставлять)",
+ "oc_stats": "1. Показывать статистику URL",
+ "oc_decode": "2. Декодировать строки в телах перед сравнением",
+ "oc_diffs": "3. Показывать детальные различия полей",
+ "oc_blocks": "4. Включать полные блоки в отчёт",
+ "oc_kw": "5. Отделить логи с ключевыми словами",
+ "oc_dup": "6. Показывать дубликаты (0 - удалять, 1 - оставлять)",
+ "sig_hdr": "Как сравнивать сигнатуры (метод + URL)?",
+ "sig_1": "1 - полный URL",
+ "sig_2": "2 - путь без параметров",
+ "sig_3": "3 - только метод + путь",
+ "sig_4": "4 - только метод",
+ "enter_kw": "Введите ключевые слова (через запятую)",
+ "exp_len": "Ожидается символов",
+ "use_01": "Используйте только 0 и 1",
+ "groups_q": "Сколько групп создать? (минимум 2)",
+ "group": "Группа",
+ "group_files": "Выберите файлы для группы",
+ "cmp_type": "Сравнивать файлы (1) или группы (2)?",
+ "extract_done": "Готово",
+ "blocks": "Блоков",
+ "processing": "Обработка файла",
+ "reading": "Чтение файла",
+ "reading_grp": "Обработка группы",
+ "dedupe": "Дедупликация",
+ "saving": "Сохранение",
+ "kw_blocks": "Блоки с ключевыми словами (перемещены вверх)",
+ "unique_urls": "Уникальные URL",
+ "per_file": "Количество блоков по файлам",
+ "extracted_hdr": "Извлечённые блоки",
+ "rename_q": "Переименовать один файл (1) или группу (2)?",
+ "new_name": "Новое имя для",
+ "new_prefix": "Введите префикс для группы",
+ "apply_all": "Применить ко всем файлам? (y/n)",
+ "no_files_rename": "Нет файлов для переименования",
+ "will_over": "Следующие файлы будут перезаписаны",
+ "cont_q": "Продолжить? (y/n)",
+ "cancel": "Отменено",
+ "renamed": "Переименован в",
+ "cont_rename": "Продолжить переименование? (y/n)",
+ "name_empty": "Имя не может быть пустым",
+ "file_exists": "Файл с таким именем уже существует",
+ "prefix_empty": "Префикс не может быть пустым",
+ "pattern_cur": "Текущий паттерн",
+ "pattern_new": "Введите новый паттерн (пусто — отмена)",
+ "pattern_ok": "Паттерн изменён на",
+ "pattern_cancel": "Отмена",
+ "clean_hdr": "Очистка",
+ "clean_1": "1 - Очистить папку Input",
+ "clean_2": "2 - Очистить папку Output",
+ "clean_3": "3 - Очистить обе папки",
+ "clean_4": "4 - Найти файлы с проблемными именами",
+ "clean_5": "5 - Назад",
+ "del_all": "Удалить всё содержимое",
+ "folder_ok": "Папка очищена",
+ "skipped": "Пропущено",
+ "folder_missing": "Папка не существует",
+ "no_bad": "Подозрительных файлов не найдено",
+ "bad_found": "Найдено файлов с проблемными именами",
+ "del_all_bad": "Удалить все проблемные файлы? (y/n)",
+ "delete_one": "Удалять по одному? (y/n)",
+ "delete_q": "Удалить",
+ "deleted": "Удалён",
+ "deleted_all": "Все проблемные файлы удалены",
+ "rename_out": "Переименовать выходной файл",
+ "new_name_short": "Новое имя",
+ "module_hdr": "Получение Spy.module",
+ "module_dl": "Загрузка Spy.module",
+ "module_err": "Не удалось загрузить",
+ "module_saved": "Сохранено",
+ "rename_created": "Переименовать созданный файл? (y/n)",
+ "done_continue": "Готово! Можете продолжить или выйти.",
+ "press": "Нажмите Enter для продолжения",
+ "y_or_n": "y/n",
+ "no_input": "нет файлов",
+ "no_input_after_module": "После получения модуля добавьте файлы логов в папку Input",
+ "how_get_logs": "Как собрать логи: включите Spy.module в Shadowrocket, поработайте, затем выгрузите лог в папку",
+ "ask_get_module": "Получить Spy.module сейчас?"
+},
+"en": {
+ "exit": "Exit.",
+ "found_files": "Found files",
+ "empty_hdr": "No files in Input folder",
+ "empty_hint": "Put files into",
+ "empty_enter": "and press Enter to continue",
+ "empty_or": "Or type q to exit",
+ "empty_or_module": "Or type m to fetch Spy.module",
+ "m_1": "1 - Extract (extract blocks)",
+ "m_2": "2 - Compare",
+ "m_3": "3 - Rename (input files)",
+ "m_4": "4 - Change search pattern",
+ "m_5": "5 - Clean broken files",
+ "m_6": "6 - Get Spy.module",
+ "m_q": "q - Quit",
+ "menu": "Choose mode",
+ "choice": "Your choice",
+ "bad": "Invalid choice",
+ "multi_hint": "you can choose several, e.g. 1,3-4 or all",
+ "enter_number": "enter number",
+ "one_file": "Choose exactly one file",
+ "choose_files": "Choose files",
+ "choose_one": "Choose a file",
+ "cmp_min": "at least 2 files",
+ "opts_extract": "Output options (5 bits, Enter = 11110)",
+ "opts_compare": "Output options (6 bits, Enter = 111100)",
+ "o_urls": "1. Show unique URLs",
+ "o_decode": "2. Decode encoded strings in bodies",
+ "o_counts": "3. Show per-file block counts",
+ "o_kw": "4. Separate blocks with keywords",
+ "o_dup": "5. Show duplicates (0 - drop, 1 - keep)",
+ "oc_stats": "1. Show URL statistics",
+ "oc_decode": "2. Decode bodies before comparison",
+ "oc_diffs": "3. Show detailed field differences",
+ "oc_blocks": "4. Include full blocks in report",
+ "oc_kw": "5. Separate blocks with keywords",
+ "oc_dup": "6. Show duplicates (0 - drop, 1 - keep)",
+ "sig_hdr": "How to compare signatures (method + URL)?",
+ "sig_1": "1 - full URL",
+ "sig_2": "2 - path without params",
+ "sig_3": "3 - method + path only",
+ "sig_4": "4 - method only",
+ "enter_kw": "Enter comma-separated keywords",
+ "exp_len": "Expected length",
+ "use_01": "Use only 0 and 1",
+ "groups_q": "How many groups? (min 2)",
+ "group": "Group",
+ "group_files": "Choose files for group",
+ "cmp_type": "Compare files (1) or groups (2)?",
+ "extract_done": "Done",
+ "blocks": "Blocks",
+ "processing": "Processing file",
+ "reading": "Reading file",
+ "reading_grp": "Processing group",
+ "dedupe": "Deduplicating",
+ "saving": "Saving",
+ "kw_blocks": "Blocks with keywords (moved to top)",
+ "unique_urls": "Unique URLs",
+ "per_file": "Per-file block counts",
+ "extracted_hdr": "Extracted blocks",
+ "rename_q": "Rename one file (1) or group (2)?",
+ "new_name": "New name for",
+ "new_prefix": "Enter group prefix",
+ "apply_all": "Apply to all files? (y/n)",
+ "no_files_rename": "No files to rename",
+ "will_over": "The following files will be overwritten",
+ "cont_q": "Continue? (y/n)",
+ "cancel": "Cancelled",
+ "renamed": "Renamed to",
+ "cont_rename": "Continue renaming? (y/n)",
+ "name_empty": "Name cannot be empty",
+ "file_exists": "File with this name already exists",
+ "prefix_empty": "Prefix cannot be empty",
+ "pattern_cur": "Current pattern",
+ "pattern_new": "Enter new pattern (empty — cancel)",
+ "pattern_ok": "Pattern changed to",
+ "pattern_cancel": "Cancelled",
+ "clean_hdr": "Cleanup",
+ "clean_1": "1 - Clean Input folder",
+ "clean_2": "2 - Clean Output folder",
+ "clean_3": "3 - Clean both folders",
+ "clean_4": "4 - Find files with bad names",
+ "clean_5": "5 - Back",
+ "del_all": "Delete all contents of",
+ "folder_ok": "Folder cleaned",
+ "skipped": "Skipped",
+ "folder_missing": "Folder does not exist",
+ "no_bad": "No suspicious files found",
+ "bad_found": "Found files with bad names",
+ "del_all_bad": "Delete all bad files? (y/n)",
+ "delete_one": "Delete one by one? (y/n)",
+ "delete_q": "Delete",
+ "deleted": "Deleted",
+ "deleted_all": "All bad files deleted",
+ "rename_out": "Rename output file",
+ "new_name_short": "New name",
+ "module_hdr": "Fetching Spy.module",
+ "module_dl": "Downloading Spy.module",
+ "module_err": "Failed to load",
+ "module_saved": "Saved",
+ "rename_created": "Rename created file? (y/n)",
+ "done_continue": "Done! You can continue or exit.",
+ "press": "Press Enter to continue",
+ "y_or_n": "y/n",
+ "no_input": "no files",
+ "no_input_after_module": "After fetching module, put log files into Input folder",
+ "how_get_logs": "How to collect logs: enable Spy.module in Shadowrocket, use the app, then export the log into folder",
+ "ask_get_module": "Fetch Spy.module now?"
+}}
+
+def tr(k):
+    return _T.get(LANG, _T["ru"]).get(k, _T["ru"].get(k, k))
+
+def _input(prompt=""):
+    try:
+        v = input(prompt)
+    except (EOFError, KeyboardInterrupt):
+        print()
+        sys.exit(0)
+    if v.strip().lower() in ("q", "quit", "exit"):
+        print("[+] " + tr("exit"))
+        sys.exit(0)
+    return v
+
+def _inp_allow_back(prompt=""):
+    try:
+        v = input(prompt)
+    except (EOFError, KeyboardInterrupt):
+        print()
+        sys.exit(0)
+    if v.strip().lower() in ("q", "quit", "exit"):
+        print("[+] " + tr("exit"))
+        sys.exit(0)
+    return v
 
 ROOT = Path.home()
 INPUT_DIR = ROOT / "Shadowrocket" / "SpyLog" / "Input"
@@ -1795,14 +2175,13 @@ METHODS = {"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "TRACE", 
 CONFIG_FILE = ROOT / ".spylog_config"
 SPY_MODULE_URL = "https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/main/Configurations/Spy.module"
 
-# Блок загрузки конфигурации
 def load_config():
     global SPY_PATTERN
     if CONFIG_FILE.exists():
         try:
             with open(CONFIG_FILE, 'rb') as f:
                 SPY_PATTERN = f.read().strip()
-        except:
+        except Exception:
             pass
 
 def save_config():
@@ -1811,36 +2190,30 @@ def save_config():
 
 load_config()
 
-# Блок получения модуля
 def fetch_spy_module():
-    print("[*] Загрузка Spy.module...")
+    print(f"[*] {tr('module_dl')}...")
     try:
         req = urllib.request.Request(SPY_MODULE_URL, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=30) as r:
             data = r.read().decode('utf-8', errors='ignore')
     except Exception as e:
-        print(f"[!] Не удалось загрузить: {e}")
+        print(f"[!] {tr('module_err')}: {e}")
         return None
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print(data)
-    print("="*70)
+    print("=" * 70)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     out = OUTPUT_DIR / "Spy.module"
     with open(out, 'w', encoding='utf-8') as f:
         f.write(data)
-    print(f"[+] Сохранено: {out}")
+    print(f"[+] {tr('module_saved')}: {out}")
     return data
 
-# Блок утилит
 def sanitize_filename(name):
     if not name:
         return name
-    allowed = re.compile(r'[^a-zA-Z0-9_.\-]')
-    clean = allowed.sub('_', name)
-    clean = clean.strip('_')
-    if not clean:
-        clean = 'file'
-    return clean
+    clean = re.sub(r'[^a-zA-Z0-9_.\-]', '_', name).strip('_')
+    return clean or 'file'
 
 def clean_str(s):
     if not s:
@@ -1854,7 +2227,6 @@ def die(message):
     print(f"[!] {message}")
     sys.exit(1)
 
-# Блок декодирования
 def strip_ansi_bytes(data):
     return ANSI_RE.sub(b"", data)
 
@@ -1863,7 +2235,7 @@ def detect_and_decode(data):
         detected = chardet.detect(data)
         if detected and detected['encoding'] and detected['confidence'] > 0.5:
             return data.decode(detected['encoding'], errors='replace')
-    except:
+    except Exception:
         pass
     encodings = ['utf-8', 'cp1251', 'koi8-r', 'cp866', 'mac-cyrillic', 'iso-8859-5', 'latin-1']
     best_text = None
@@ -1871,7 +2243,7 @@ def detect_and_decode(data):
     for enc in encodings:
         try:
             text = data.decode(enc)
-        except:
+        except Exception:
             continue
         score = 0
         cyrillic = sum(1 for c in text if 0x0400 <= ord(c) <= 0x04FF)
@@ -1893,7 +2265,7 @@ def decode_unicode_escapes(text):
 def decode_percent(text):
     try:
         return unquote(text, encoding='utf-8', errors='replace')
-    except:
+    except Exception:
         return text
 
 def universal_decode_text(text):
@@ -1904,11 +2276,10 @@ def universal_decode_text(text):
     text = decode_unicode_escapes(text)
     try:
         text = codecs.decode(text, 'quopri')
-    except:
+    except Exception:
         pass
     return text
 
-# Блок извлечения блоков
 def extract_spy_blocks_bytes(raw):
     lines = raw.split(b'\n')
     blocks = []
@@ -2001,16 +2372,15 @@ def load_log_and_extract_blocks(path):
         blocks_text.append(text)
     return blocks_text
 
-# Блок работы с файлами
 def list_input_files():
     if not INPUT_DIR.exists():
-        die(f"Папка {INPUT_DIR} не найдена")
+        return []
     files = [p for p in INPUT_DIR.iterdir() if p.is_file() and not p.name.startswith(".")]
     files.sort(key=lambda p: p.name.lower())
     return files
 
 def print_files(files):
-    print("\n[+] Найденные файлы:")
+    print(f"\n[+] {tr('found_files')}:")
     for i, path in enumerate(files, 1):
         size_mb = path.stat().st_size / 1024 / 1024
         print(f"{i}. {path.name} ({size_mb:.2f} MB)")
@@ -2020,14 +2390,12 @@ def parse_selection(text, max_index):
     if text in {"all", "a"}:
         return list(range(1, max_index + 1))
     result = []
-    parts = [p.strip() for p in text.split(",") if p.strip()]
-    for part in parts:
+    for part in [p.strip() for p in text.split(",") if p.strip()]:
         if "-" in part:
             left, right = part.split("-", 1)
             if not left.isdigit() or not right.isdigit():
                 raise ValueError
-            a = int(left)
-            b = int(right)
+            a, b = int(left), int(right)
             if a > b:
                 a, b = b, a
             for n in range(a, b + 1):
@@ -2043,57 +2411,57 @@ def parse_selection(text, max_index):
         raise ValueError
     return result
 
-def select_files(files, allow_multiple=True, prompt="Выберите файлы"):
+def select_files(files, allow_multiple=True, prompt=None):
+    if prompt is None:
+        prompt = tr("choose_files")
     while True:
         if allow_multiple:
-            print(f"\n[?] {prompt} (можно несколько, например 1,3-4 или all)")
+            print(f"\n[?] {prompt} ({tr('multi_hint')})")
         else:
-            print(f"\n[?] {prompt} (введите номер)")
-        choice = input("[?] Ваш выбор: ").strip()
+            print(f"\n[?] {prompt} ({tr('enter_number')})")
+        choice = _inp_allow_back(f"[?] {tr('choice')}: ").strip()
         if choice.lower() in ("b", "back"):
             return None
         try:
             indices = parse_selection(choice, len(files))
             if not allow_multiple and len(indices) != 1:
-                print("[!] Выберите ровно один файл")
+                print(f"[!] {tr('one_file')}")
                 continue
-            selected = [files[i-1] for i in indices]
-            return selected
-        except:
-            print("[!] Неверный выбор")
+            return [files[i - 1] for i in indices]
+        except Exception:
+            print(f"[!] {tr('bad')}")
 
 def ask_files(files, compare=False):
     while True:
         print_files(files)
         if compare:
-            selected = select_files(files, allow_multiple=True, prompt="Выберите файлы для сравнения (минимум 2)")
+            selected = select_files(files, allow_multiple=True, prompt=f"{tr('choose_files')} ({tr('cmp_min')})")
         else:
-            selected = select_files(files, allow_multiple=True, prompt="Выберите один или несколько файлов")
+            selected = select_files(files, allow_multiple=True, prompt=tr("choose_files"))
         if selected is None:
             return None
         return selected
 
 def ask_groups(files):
     while True:
-        print("\n[?] Сколько групп создать? (минимум 2): ", end="")
         try:
-            num = int(input().strip())
-            if num >= 2:
+            n_str = _input(f"\n[?] {tr('groups_q')}: ").strip()
+            n = int(n_str)
+            if n >= 2:
                 break
-            print("[!] Должно быть не меньше 2")
-        except:
-            print("[!] Введите число")
+            print(f"[!] >= 2")
+        except Exception:
+            print(f"[!] {tr('enter_number')}")
     groups = []
-    for g in range(1, num+1):
-        print(f"\n=== Группа {g} ===")
+    for g in range(1, n + 1):
+        print(f"\n=== {tr('group')} {g} ===")
         print_files(files)
-        selected = select_files(files, allow_multiple=True, prompt=f"Выберите файлы для группы {g}")
+        selected = select_files(files, allow_multiple=True, prompt=f"{tr('group_files')} {g}")
         if selected is None:
             return None
         groups.append(selected)
     return groups
 
-# Блок дедупликации и сохранения
 def dedupe_exact(blocks, keep_duplicates):
     if keep_duplicates:
         return blocks
@@ -2128,65 +2496,60 @@ def move_keyword_blocks(blocks, keywords):
             other.append(block)
     return matched + other
 
-# Блок настроек
 def ask_options(mode):
     if mode == "extract":
-        print("\n=== Настройки вывода (строка из 0/1 длиной 5, Enter = 11110) ===")
-        print("1. Показывать список уникальных URL")
-        print("2. Декодировать закодированные строки в телах")
-        print("3. Показывать количество блоков по каждому файлу")
-        print("4. Отделить логи с ключевыми словами")
-        print("5. Показывать дубликаты (0 удалять, 1 оставлять)")
+        print(f"\n=== {tr('opts_extract')} ===")
+        print(tr("o_urls"))
+        print(tr("o_decode"))
+        print(tr("o_counts"))
+        print(tr("o_kw"))
+        print(tr("o_dup"))
         default = "11110"
         while True:
-            s = input("[?] Ваш выбор: ").strip()
-            if s == "":
-                s = default
+            s = _input(f"[?] {tr('choice')}: ").strip() or default
             if len(s) != len(default):
-                print(f"[!] Ожидается {len(default)} символов")
+                print(f"[!] {tr('exp_len')} {len(default)}")
                 continue
             if not all(c in "01" for c in s):
-                print("[!] Используйте только 0 и 1")
+                print(f"[!] {tr('use_01')}")
                 continue
             bits = [c == "1" for c in s]
             keywords = []
             if bits[3]:
-                kw = input("[?] Введите ключевые слова: ").strip()
+                kw = _inp_allow_back(f"[?] {tr('enter_kw')}: ").strip()
                 if kw:
                     keywords = [x.strip() for x in kw.split(",") if x.strip()]
             return bits, keywords
     else:
-        print("\n=== Настройки вывода (строка из 0/1 длиной 6, Enter = 111100) ===")
-        print("1. Показывать статистику URL")
-        print("2. Декодировать строки в телах перед сравнением")
-        print("3. Показывать детальные различия полей")
-        print("4. Включать полные блоки в отчёт")
-        print("5. Отделить логи с ключевыми словами")
-        print("6. Показывать дубликаты (0 удалять, 1 оставлять)")
+        print(f"\n=== {tr('opts_compare')} ===")
+        print(tr("oc_stats"))
+        print(tr("oc_decode"))
+        print(tr("oc_diffs"))
+        print(tr("oc_blocks"))
+        print(tr("oc_kw"))
+        print(tr("oc_dup"))
         default = "111100"
         while True:
-            s = input("[?] Ваш выбор: ").strip()
-            if s == "":
-                s = default
+            s = _input(f"[?] {tr('choice')}: ").strip() or default
             if len(s) != len(default):
-                print(f"[!] Ожидается {len(default)} символов")
+                print(f"[!] {tr('exp_len')} {len(default)}")
                 continue
             if not all(c in "01" for c in s):
-                print("[!] Используйте только 0 и 1")
+                print(f"[!] {tr('use_01')}")
                 continue
             bits = [c == "1" for c in s]
             keywords = []
             if bits[4]:
-                kw = input("[?] Введите ключевые слова: ").strip()
+                kw = _inp_allow_back(f"[?] {tr('enter_kw')}: ").strip()
                 if kw:
                     keywords = [x.strip() for x in kw.split(",") if x.strip()]
-            print("\n[?] Как сравнивать сигнатуры?")
-            print("1 - полный URL")
-            print("2 - путь без параметров")
-            print("3 - только метод и путь")
-            print("4 - только метод")
-            sig_choice = input("[?] Ваш выбор [1]: ").strip()
-            if sig_choice not in ("1","2","3","4"):
+            print("\n[?] " + tr("sig_hdr"))
+            print(tr("sig_1"))
+            print(tr("sig_2"))
+            print(tr("sig_3"))
+            print(tr("sig_4"))
+            sig_choice = _input(f"[?] {tr('choice')} [1]: ").strip()
+            if sig_choice not in ("1", "2", "3", "4"):
                 sig_choice = "1"
             return bits, keywords, int(sig_choice)
 
@@ -2197,24 +2560,23 @@ def build_records_from_blocks(blocks, source_name, decode=False, sig_level=1):
         records.append(rec)
     return records
 
-# Блок режима Extract
 def extract_mode(selected_files, show_urls, decode, show_stats, keywords, keep_duplicates):
     all_blocks = []
     per_file_counts = []
     total_found = 0
     total_files = len(selected_files)
     for idx, path in enumerate(selected_files, 1):
-        print(f"\r[*] Обработка файла {idx}/{total_files}: {path.name}          ", end="")
+        print(f"\r[*] {tr('processing')} {idx}/{total_files}: {path.name}          ", end="")
         blocks = load_log_and_extract_blocks(path)
         if decode:
             blocks = [universal_decode_text(b) for b in blocks]
         total_found += len(blocks)
         per_file_counts.append((path.name, len(blocks)))
         all_blocks.extend(blocks)
-    print("\r[*] Дедупликация...          ", end="")
+    print(f"\r[*] {tr('dedupe')}...          ", end="")
     all_blocks = dedupe_exact(all_blocks, keep_duplicates)
     all_blocks = move_keyword_blocks(all_blocks, keywords)
-    print("\r[+] Готово, сохраняем...          ")
+    print(f"\r[+] {tr('saving')}...          ")
     stamp = now_stamp()
     out_path = OUTPUT_DIR / f"Spylog_extract_{stamp}.txt"
     lines = []
@@ -2228,25 +2590,25 @@ def extract_mode(selected_files, show_urls, decode, show_stats, keywords, keep_d
             method, url = parse_header(block)
             if url:
                 urls.add(url)
-        lines.append("=== Unique URLs found ===")
+        lines.append(f"=== {tr('unique_urls')} ===")
         lines.extend(sorted(urls))
         lines.append("")
     if show_stats:
-        lines.append("=== Per-file block counts ===")
+        lines.append(f"=== {tr('per_file')} ===")
         for name, count in per_file_counts:
             lines.append(f"{name}: {count}")
         lines.append("")
     if keywords:
-        lines.append("=== Blocks with keywords ===")
+        lines.append(f"=== {tr('kw_blocks')} ===")
         lines.append(f"Keywords: {', '.join(keywords)}")
         lines.append("")
-    lines.append("=== Extracted blocks ===")
+    lines.append(f"=== {tr('extracted_hdr')} ===")
     lines.append("")
     content = "\n\n".join(all_blocks)
     full_text = "\n".join(lines) + "\n" + content + "\n"
     save_text(out_path, full_text)
-    print(f"[+] Готово: {out_path}")
-    print(f"[+] Блоков: {len(all_blocks)}")
+    print(f"[+] {tr('extract_done')}: {out_path}")
+    print(f"[+] {tr('blocks')}: {len(all_blocks)}")
     return out_path
 
 def group_by_signature(records):
@@ -2275,20 +2637,19 @@ def compare_record(a, b):
         return f"Signature: {a['signature']}\n" + "\n".join(lines)
     return ""
 
-# Блок режима Compare
 def compare_mode(selected_files, show_urls, decode, show_diffs, include_blocks, keywords, keep_duplicates, sig_level):
     base = selected_files[0]
     others = selected_files[1:]
     recs = []
     total = len(selected_files)
     for idx, path in enumerate(selected_files, 1):
-        print(f"\r[*] Чтение файла {idx}/{total}: {path.name}          ", end="")
+        print(f"\r[*] {tr('reading')} {idx}/{total}: {path.name}          ", end="")
         blocks = load_log_and_extract_blocks(path)
         if decode:
             blocks = [universal_decode_text(b) for b in blocks]
         records = build_records_from_blocks(blocks, path.name, decode, sig_level)
         recs.append((path.name, records))
-    print("\r[+] Чтение завершено          ")
+    print(f"\r[+] {tr('reading')} OK          ")
     base_name, base_recs = recs[0]
     lines = []
     lines.append("=== COMPARE REPORT ===")
@@ -2388,7 +2749,7 @@ def compare_mode(selected_files, show_urls, decode, show_diffs, include_blocks, 
     stamp = now_stamp()
     out_path = OUTPUT_DIR / f"Spylog_compare_{base_name}_VS_{len(others)}files_{stamp}.txt"
     save_text(out_path, "\n".join(lines).rstrip() + "\n")
-    print(f"[+] Готово: {out_path}")
+    print(f"[+] {tr('extract_done')}: {out_path}")
     return out_path
 
 def build_group_records(group_files, group_name, decode, keep_duplicates, sig_level):
@@ -2402,17 +2763,16 @@ def build_group_records(group_files, group_name, decode, keep_duplicates, sig_le
     records = build_records_from_blocks(all_blocks, group_name, decode, sig_level)
     return records, all_blocks
 
-# Блок группового сравнения
 def compare_groups(groups, show_urls, decode, show_diffs, include_blocks, keywords, keep_duplicates, sig_level):
     group_names = []
     group_records = []
     for idx, group in enumerate(groups, 1):
         name = f"Group_{idx}"
-        print(f"\r[*] Обработка группы {idx} из {len(groups)}...          ", end="")
+        print(f"\r[*] {tr('reading_grp')} {idx}/{len(groups)}...          ", end="")
         rec, _ = build_group_records(group, name, decode, keep_duplicates, sig_level)
         group_names.append(name)
         group_records.append(rec)
-    print("\r[+] Все группы обработаны          ")
+    print(f"\r[+] {tr('reading_grp')} OK          ")
     base_name = group_names[0]
     base_recs = group_records[0]
     lines = []
@@ -2515,126 +2875,103 @@ def compare_groups(groups, show_urls, decode, show_diffs, include_blocks, keywor
     stamp = now_stamp()
     out_path = OUTPUT_DIR / f"Spylog_compare_groups_{stamp}.txt"
     save_text(out_path, "\n".join(lines).rstrip() + "\n")
-    print(f"[+] Готово: {out_path}")
+    print(f"[+] {tr('extract_done')}: {out_path}")
     return out_path
 
-# Блок переименования выходных файлов
 def rename_output_file(path):
     while True:
-        print(f"\n[?] Переименовать выходной файл {path.name}? (y/n/back) [n]: ", end="")
-        ans = input().strip().lower()
-        if ans == "":
-            ans = "n"
+        ans = _input(f"\n[?] {tr('rename_out')} {path.name}? (y/n) [n]: ").strip().lower() or "n"
         if ans in ("n", "no"):
-            return path
-        if ans in ("b", "back"):
             return path
         if ans in ("y", "yes"):
             break
-        print("[!] Введите y, n или back")
+        print(f"[!] y/n")
     while True:
-        new_name = input("[?] Новое имя: ").strip()
-        new_name = clean_str(new_name)
-        new_name = sanitize_filename(new_name)
+        new_name = _inp_allow_back(f"[?] {tr('new_name_short')}: ").strip()
+        new_name = sanitize_filename(clean_str(new_name))
         if not new_name:
-            print("[!] Имя не может быть пустым")
+            print(f"[!] {tr('name_empty')}")
             continue
-        if new_name.lower() in ("b", "back"):
-            return path
         new_path = path.parent / new_name
         if new_path.exists():
-            print("[!] Файл уже существует")
+            print(f"[!] {tr('file_exists')}")
             continue
         break
     while True:
-        confirm = input(f"[?] Переименовать {path.name} в {new_name}? (y/n/back) [n]: ").strip().lower()
-        if confirm == "":
-            confirm = "n"
+        confirm = _input(f"[?] {tr('rename_out')} {path.name} -> {new_name}? (y/n) [n]: ").strip().lower() or "n"
         if confirm == "y":
             path.rename(new_path)
-            print(f"[+] Переименован в {new_name}")
+            print(f"[+] {tr('renamed')} {new_name}")
             return new_path
         elif confirm == "n":
             return path
-        elif confirm == "back":
-            return path
         else:
-            print("[!] Введите y, n или back")
+            print(f"[!] y/n")
 
 def rename_mode(files):
     while True:
         print_files(files)
-        print("\n[?] Переименовать один файл (1) или группу (2)? [1]: ", end="")
-        choice = input().strip()
-        if choice == "":
-            choice = "1"
+        print(f"\n[?] {tr('rename_q')} [1]: ", end="")
+        choice = _inp_allow_back().strip() or "1"
+        if choice.lower() in ("b", "back"):
+            return
         if choice == "1":
-            selected = select_files(files, allow_multiple=False, prompt="Выберите файл для переименования")
+            selected = select_files(files, allow_multiple=False, prompt=tr("choose_one"))
             if selected is None:
                 continue
             path = selected[0]
             while True:
-                new_name = input(f"[?] Новое имя для {path.name}: ").strip()
-                new_name = clean_str(new_name)
-                new_name = sanitize_filename(new_name)
-                if not new_name:
-                    print("[!] Имя не может быть пустым")
-                    continue
+                new_name = _inp_allow_back(f"[?] {tr('new_name')} {path.name}: ").strip()
                 if new_name.lower() in ("b", "back"):
                     break
+                new_name = sanitize_filename(clean_str(new_name))
+                if not new_name:
+                    print(f"[!] {tr('name_empty')}")
+                    continue
                 new_path = path.parent / new_name
                 if new_path.exists():
-                    print("[!] Файл с таким именем уже существует")
+                    print(f"[!] {tr('file_exists')}")
                     continue
-                confirm = input(f"[?] Переименовать {path.name} в {new_name}? (y/n/back) [n]: ").strip().lower()
-                if confirm == "":
-                    confirm = "n"
+                confirm = _input(f"[?] {tr('rename_out')} {path.name} -> {new_name}? (y/n) [n]: ").strip().lower() or "n"
                 if confirm == "y":
                     path.rename(new_path)
-                    print(f"[+] Переименован в {new_name}")
+                    print(f"[+] {tr('renamed')} {new_name}")
                     files = list_input_files()
-                    print_files(files)
                     break
-                elif confirm == "back":
+                elif confirm == "n":
                     break
                 else:
-                    print("[!] Введите y, n или back")
+                    print(f"[!] y/n")
         elif choice == "2":
-            prefix = input("[?] Введите префикс для группы: ").strip()
-            prefix = clean_str(prefix)
-            prefix = sanitize_filename(prefix)
+            prefix = sanitize_filename(clean_str(_inp_allow_back(f"[?] {tr('new_prefix')}: ").strip()))
             if not prefix:
-                print("[!] Префикс не может быть пустым")
+                print(f"[!] {tr('prefix_empty')}")
                 continue
-            apply_all = input("[?] Применить ко всем файлам? (y/n) [y]: ").strip().lower()
-            if apply_all == "":
-                apply_all = "y"
+            apply_all = _input(f"[?] {tr('apply_all')} [y]: ").strip().lower() or "y"
             if apply_all == "y":
                 selected_files = files
             else:
-                selected_files = select_files(files, allow_multiple=True, prompt="Выберите файлы для переименования")
+                selected_files = select_files(files, allow_multiple=True, prompt=tr("choose_files"))
                 if selected_files is None:
                     continue
             if not selected_files:
-                print("[!] Нет файлов для переименования")
+                print(f"[!] {tr('no_files_rename')}")
                 continue
             selected_files_sorted = sorted(selected_files, key=lambda p: p.name)
             conflicts = []
-            new_paths = []
             for i, path in enumerate(selected_files_sorted, 1):
                 ext = path.suffix
                 new_name = f"{prefix}-{i}{ext}"
                 new_path = path.parent / new_name
                 if new_path.exists() and new_path != path:
                     conflicts.append((path, new_path))
-                new_paths.append(new_path)
             if conflicts:
-                print("[!] Следующие файлы будут перезаписаны:")
+                print(f"[!] {tr('will_over')}:")
                 for old, new in conflicts:
                     print(f"  {old.name} -> {new.name}")
-                confirm = input("[?] Продолжить? (y/n) [n]: ").strip().lower()
+                confirm = _input(f"[?] {tr('cont_q')} [n]: ").strip().lower()
                 if confirm != "y":
-                    print("[!] Отменено")
+                    print(f"[!] {tr('cancel')}")
                     continue
             for i, path in enumerate(selected_files_sorted, 1):
                 ext = path.suffix
@@ -2645,34 +2982,30 @@ def rename_mode(files):
             files = list_input_files()
             print_files(files)
         else:
-            print("[!] Неверный выбор")
+            print(f"[!] {tr('bad')}")
             continue
-        cont = input("[?] Продолжить переименование? (y/n) [n]: ").strip().lower()
-        if cont != "y":
+        if _input(f"[?] {tr('cont_rename')} [n]: ").strip().lower() != "y":
             break
 
 def change_pattern():
     global SPY_PATTERN
-    print(f"\n[+] Текущий паттерн: '{SPY_PATTERN.decode('utf-8', errors='ignore')}'")
-    new = input("[?] Введите новый паттерн (пусто - отмена): ").strip()
+    print(f"\n[+] {tr('pattern_cur')}: '{SPY_PATTERN.decode('utf-8', errors='ignore')}'")
+    new = _inp_allow_back(f"[?] {tr('pattern_new')}: ").strip()
     if new:
         SPY_PATTERN = new.encode('utf-8')
         save_config()
-        print(f"[+] Паттерн изменён на '{new}'")
+        print(f"[+] {tr('pattern_ok')} '{new}'")
     else:
-        print("[!] Отмена")
+        print(f"[!] {tr('pattern_cancel')}")
 
-# Блок очистки
 def clean_broken_files():
-    print("\n=== Очистка ===")
-    print("[1] Очистить папку Input")
-    print("[2] Очистить папку Output")
-    print("[3] Очистить обе папки")
-    print("[4] Показать файлы с подозрительными именами и удалить выборочно")
-    print("[5] Назад")
-    choice = input("[?] Ваш выбор [5]: ").strip()
-    if choice == "":
-        choice = "5"
+    print(f"\n=== {tr('clean_hdr')} ===")
+    print(tr("clean_1"))
+    print(tr("clean_2"))
+    print(tr("clean_3"))
+    print(tr("clean_4"))
+    print(tr("clean_5"))
+    choice = _input(f"[?] {tr('choice')} [5]: ").strip() or "5"
     if choice == "5":
         return
     if choice in ("1", "2", "3"):
@@ -2683,11 +3016,9 @@ def clean_broken_files():
             dirs.append(OUTPUT_DIR)
         for d in dirs:
             if not d.exists():
-                print(f"[!] Папка {d} не существует")
+                print(f"[!] {tr('folder_missing')}: {d}")
                 continue
-            print(f"[?] Удалить всё содержимое {d}? (y/n) [n]: ", end="")
-            ans = input().strip().lower()
-            if ans == "y":
+            if _input(f"[?] {tr('del_all')} {d}? ({tr('y_or_n')}) [n]: ").strip().lower() == "y":
                 for item in d.iterdir():
                     try:
                         if item.is_dir():
@@ -2695,13 +3026,13 @@ def clean_broken_files():
                         else:
                             item.unlink()
                     except Exception as e:
-                        print(f"[!] Ошибка удаления {item}: {e}")
-                print(f"[+] Папка {d} очищена")
+                        print(f"[!] {item}: {e}")
+                print(f"[+] {tr('folder_ok')}: {d}")
             else:
-                print(f"[!] Пропущено {d}")
+                print(f"[!] {tr('skipped')}: {d}")
         return
     if choice == "4":
-        print("\n[+] Поиск файлов с недопустимыми символами...")
+        print(f"\n[+] {tr('bad_found')}...")
         bad_files = []
         for d in [INPUT_DIR, OUTPUT_DIR]:
             if not d.exists():
@@ -2711,60 +3042,70 @@ def clean_broken_files():
                 if re.search(r'[^a-zA-Z0-9_.\-]', name):
                     bad_files.append(item)
         if not bad_files:
-            print("[+] Подозрительных файлов не найдено")
+            print(f"[+] {tr('no_bad')}")
             return
-        print(f"[+] Найдено {len(bad_files)} файлов с проблемными именами:")
+        print(f"[+] {tr('bad_found')}: {len(bad_files)}")
         for i, p in enumerate(bad_files, 1):
             size = p.stat().st_size if p.is_file() else 0
             print(f"{i}. {p.name} ({size} bytes)")
-        print("\n[?] Удалить все проблемные файлы? (y/n) [n]: ", end="")
-        ans = input().strip().lower()
-        if ans == "y":
+        if _input(f"\n[?] {tr('del_all_bad')} [n]: ").strip().lower() == "y":
             for p in bad_files:
                 try:
                     if p.is_dir():
                         shutil.rmtree(p)
                     else:
                         p.unlink()
-                    print(f"[+] Удалён: {p.name}")
+                    print(f"[+] {tr('deleted')}: {p.name}")
                 except Exception as e:
-                    print(f"[!] Ошибка удаления {p.name}: {e}")
-            print("[+] Все проблемные файлы удалены")
+                    print(f"[!] {p.name}: {e}")
+            print(f"[+] {tr('deleted_all')}")
         return
-    print("[!] Неверный выбор")
+    print(f"[!] {tr('bad')}")
 
-# Главное меню
+def handle_empty_input():
+    print(f"\n[!] {tr('empty_hdr')}.")
+    print(f"[*] {tr('how_get_logs')} {INPUT_DIR}")
+    print(f"[*] {tr('press')}")
+    print(f"[*] {tr('empty_or')}")
+    print(f"[*] {tr('empty_or_module')}")
+    cmd = _inp_allow_back().strip().lower()
+    if cmd == "m":
+        fetch_spy_module()
+        print(f"\n[*] {tr('no_input_after_module')}: {INPUT_DIR}")
+        _inp_allow_back(f"[*] {tr('press')}")
+        return "module"
+    if cmd in ("q", "quit", "exit"):
+        print("[+] " + tr("exit"))
+        sys.exit(0)
+    return "retry"
+
 def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     while True:
         files = list_input_files()
         while not files:
-            print("\n[!] В папке Input нет файлов.")
-            print(f"[*] Поместите файлы в {INPUT_DIR} и нажмите Enter для продолжения")
-            print("[*] Или введите 'exit' для выхода")
-            cmd = input().strip().lower()
-            if cmd == "exit":
-                print("[+] Выход.")
-                return
+            result = handle_empty_input()
+            if result == "module":
+                files = list_input_files()
+                if not files:
+                    continue
             files = list_input_files()
-        print("\n[1] Extract")
-        print("[2] Compare")
-        print("[3] Rename files")
-        print("[4] Change search pattern")
-        print("[5] Exit")
-        print("[6] Clean broken files")
-        print("[7] Get Spy.module")
-        mode = input("\n[?] Выберите режим (1/2/3/4/5/6/7) [1]: ").strip()
-        if mode == "":
-            mode = "1"
-        if mode == "5":
-            print("[+] Выход.")
+        print(f"\n{tr('m_1')}")
+        print(tr("m_2"))
+        print(tr("m_3"))
+        print(tr("m_4"))
+        print(tr("m_5"))
+        print(tr("m_6"))
+        print(tr("m_q"))
+        mode = _input(f"\n[?] {tr('menu')} (1/2/3/4/5/6/q) [1]: ").strip() or "1"
+        if mode in ("q", "quit", "exit"):
+            print("[+] " + tr("exit"))
             break
-        if mode == "7":
-            fetch_spy_module()
-            input("\nEnter...")
-            continue
         if mode == "6":
+            fetch_spy_module()
+            _inp_allow_back("\n" + tr("press"))
+            continue
+        if mode == "5":
             clean_broken_files()
             continue
         if mode == "4":
@@ -2774,7 +3115,7 @@ def main():
             rename_mode(files)
             continue
         if mode not in ("1", "2"):
-            print("[!] Неверный выбор")
+            print(f"[!] {tr('bad')}")
             continue
         if mode == "1":
             opts, keywords = ask_options("extract")
@@ -2784,14 +3125,12 @@ def main():
             out_path = extract_mode(selected, opts[0], opts[1], opts[2], keywords, opts[4])
             rename_output_file(out_path)
         else:
-            print("\n[?] Сравнивать файлы (1) или группы (2)? [1]: ", end="")
-            cmp_type = input().strip()
-            if cmp_type == "":
-                cmp_type = "1"
+            print(f"\n[?] {tr('cmp_type')} [1]: ", end="")
+            cmp_type = _inp_allow_back().strip() or "1"
             if cmp_type == "1":
                 selected = ask_files(files, compare=True)
                 if selected is None or len(selected) < 2:
-                    print("[!] Нужно минимум 2 файла")
+                    print(f"[!] {tr('cmp_min')}")
                     continue
                 opts, keywords, sig_level = ask_options("compare")
                 out_path = compare_mode(selected, opts[0], opts[1], opts[2], opts[3], keywords, opts[5], sig_level)
@@ -2804,28 +3143,372 @@ def main():
                 out_path = compare_groups(groups, opts[0], opts[1], opts[2], opts[3], keywords, opts[5], sig_level)
                 rename_output_file(out_path)
             else:
-                print("[!] Неверный выбор")
+                print(f"[!] {tr('bad')}")
                 continue
-        print("\n[+] Готово! Можете продолжить или выйти.")
-        input("[*] Нажмите Enter для продолжения...")
+        print(f"\n[+] {tr('done_continue')}")
+        _inp_allow_back(f"[*] {tr('press')}")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n[+] " + tr("exit"))
+        sys.exit(0)
 SPYLOG_END
-
-# ============================================================
-# Создание SubManager.py
-# ============================================================
-cat << 'SUBMGR_END' > $BASE/SubManager.py
-# ============================================================
-# SUBMANAGER SCRIPT
-# Работа с подписками, генерация JSON Xray, универсальный
-# редактор JSON-конфигов с любыми полями.
-# ============================================================
-
+cat << 'SUBMGR_END' > "$BASE/SubManager.py"
 import os, sys, re, json, base64, urllib.request, ssl, subprocess, shutil, time, random, copy, ipaddress
 from urllib.parse import urlparse, parse_qs, urlencode, unquote, quote
 from pathlib import Path
+
+LANG = os.environ.get("LANG_SEL", "").strip()
+if not LANG:
+    try:
+        with open(os.path.expanduser("~/.sr_toolkit_lang")) as _f:
+            LANG = _f.read().strip()
+    except Exception:
+        LANG = "ru"
+if LANG not in ("ru", "en"):
+    LANG = "ru"
+
+_T = {
+"ru": {
+"exit":"Выход.",
+"allowed":"Допустимо","number":"Введите число","fmt_all":"Формат: 1,3-5 или all",
+"empty":"Пусто",
+"load_src":"ЗАГРУЗКА ИСХОДНИКОВ","load_1":"1 - Локальный файл","load_2":"2 - По ссылке (URL)","load_3":"3 - Несколько ссылок подряд",
+"q_back":"q - Назад","choice":"Ваш выбор","folder_empty":"Папка пуста","put_file":"Поместите файл в",
+"file_n":"Номер файла","url_sub":"URL подписки","dl_fail":"Не удалось загрузить",
+"enter_urls":"Вводите URL по одному. q - завершить.","url_q":"URL (q - конец)","added":"Добавлено. Всего частей",
+"merged":"Объединено частей",
+"xray_detected":"Обнаружен Xray JSON конфиг. Извлечено outbounds",
+"singbox_detected":"Обнаружены sing-box-объекты",
+"links_found":"Найдено ссылок","parsed":"распарсено",
+"parse_fail":"Не удалось распарсить данные.",
+"dedupe_hdr":"ДЕДУПЛИКАЦИЯ","d_full":"1 - Полное сходство","d_name":"2 - По имени","d_addr":"3 - По адресу",
+"d_user":"4 - По адресу и пользователю","d_proto":"5 - По протоколу + адрес + порт","dedupe_removed":"Удалено дубликатов","dedupe_none":"Дубликатов нет.",
+"del_hdr":"УДАЛЕНИЕ СЕРВЕРОВ","del_1":"1 - По имени","del_2":"2 - По протоколу","del_3":"3 - По транспорту",
+"del_4":"4 - По security","del_5":"5 - По домену","del_6":"6 - По номерам","del_7":"7 - Инвертировать",
+"words_csv":"Слова через запятую","proto_l":"Протокол","transport":"Транспорт","security":"Security","domain":"Домен",
+"numbers":"Номера","kw_inv":"Ключевые слова для ИНВЕРТА","not_found":"Ничего не найдено.","found":"Найдено",
+"delete_q":"Удалить? (y/n)","deleted_n":"Удалено",
+"sort_hdr":"СОРТИРОВКА","s_az":"1 - По имени (A-Z)","s_za":"2 - По имени (Z-A)","s_proto":"3 - По протоколу",
+"s_host":"4 - По хосту","s_port":"5 - По порту","s_rand":"6 - Случайно","sorted":"Отсортировано.",
+"move_n":"Номер сервера для перемещения","direction":"Направление (u=вверх / d=вниз)","moved_up":"Перемещён вверх.",
+"moved_dn":"Перемещён вниз.","no_move":"Некуда двигать.",
+"dup_n":"Номера для дублирования","dup_created":"Создано дубликатов","edit_q":"Отредактировать? (y/n)",
+"edit_grp":"РЕДАКТИРОВАНИЕ ГРУППЫ","sel_servers":"Выбрано серверов",
+"edit_hdr":"РЕДАКТИРОВАНИЕ СЕРВЕРОВ","e1":"1 - Имена","e2":"2 - Параметры (группа)","e3":"3 - Удалить по номерам",
+"e4":"4 - Удалить по фильтру","e5":"5 - Добавить сервер вручную","e6":"6 - Удалить дубликаты","e7":"7 - Сортировка",
+"e8":"8 - Переместить сервер","e9":"9 - Создать дубликаты","e10":"10 - Поиск по ключевому слову",
+"e11":"11 - Показать параметры сервера","eq":"q - Готово",
+"names_q":"1-Все с суффиксами / 2-Группу / 3-По одному / 4-Добавить префикс / q-назад",
+"base_name":"Базовое имя","prefix":"Префикс","skip_q":"(q-пропустить)","updated":"Обновлено.",
+"del_q":"Номера для удаления","del_n":"Удалить сервер(ов)","link_q":"Ссылка","added_ok":"Добавлен.","parse_err":"Не удалось распарсить.",
+"kw_q":"Ключевое слово","params_of":"Параметры сервера","u_scheme":"Scheme","u_host":"Host","u_port":"Port",
+"u_cred":"ID/Pass/Method","u_params":"Params",
+"change":"ИЗМЕНЕНИЕ","compat":"Совместимых","will_change":"Будут изменены","incompat":"Несовместимых",
+"default_val":"Значение по умолчанию","enter_default":"Enter = применить значение по умолчанию",
+"minus_del":"'-' = удалить параметр","q_cancel":"q = отмена","new_val":"Новое значение",
+"list_empty":"Список пуст.","no_servers":"Нет серверов.",
+"missing_unsupported":"Пропущены неподдерживаемые Xray протоколы",
+"exp_gt":"больше числа серверов. Установлено",
+"norm_hdr":"НОРМАЛИЗАЦИЯ СУЩЕСТВУЮЩЕГО КОНФИГА","n_from_out":"1 - Из папки Output","n_from_in":"2 - Из папки Input",
+"n_manual":"3 - Ввести путь вручную","no_json_out":"В Output нет JSON файлов.","no_json_in":"В Input нет JSON файлов.",
+"path_q":"Путь к файлу","file_not_found":"Файл не найден","read_err":"Ошибка чтения JSON",
+"norm_nochange":"Конфиг уже корректен, изменений не требуется.","norm_found":"Найдено исправлений",
+"norm_save":"Сохранить исправленный файл? (y/n)","norm_saved":"Сохранено",
+"n_serv_hdr":"НОРМАЛИЗАЦИЯ БЭКАПА СЕРВЕРОВ","n1":"1 - Из папки Backups","n2":"2 - Из папки Output",
+"n3":"3 - Из папки Input","n4":"4 - Ввести путь вручную","no_files":"Нет файлов.",
+"serv_parsed":"Распарсено серверов","serv_valid":"Валидных","serv_dropped":"Отброшено некорректных",
+"serv_save_norm":"Сохранить нормализованный список? (y/n)",
+"imp_hdr":"ИМПОРТ ПРАВИЛ МАРШРУТИЗАЦИИ","imp_1":"1 - Shadowrocket / Clash / Surge","imp_2":"2 - AdGuard",
+"imp_3":"3 - Blocklist без политики","imp_src_1":"1 - Из локального файла","imp_src_2":"2 - По ссылке",
+"imp_rules":"Найдено правил","imp_add":"Добавить правил","imp_added":"Добавлено. Всего",
+"rt_hdr":"РОУТИНГ ДЛЯ КЛИЕНТОВ","rt_direct":"Direct домены","rt_block":"Block домены","rt_dip":"Direct IP","rt_bip":"Block IP",
+"rt_cr":"Custom rules","rt_order":"Порядок","rt_global":"Глобальный",
+"rt_1":"1 - Импорт правил","rt_2":"2 - Просмотр/очистка custom rules","rt_3":"3 - Настроить DNS для роутинга",
+"rt_4":"4 - Настроить порядок правил","rt_5":"5 - Настроить глобальный прокси","rt_6":"6 - Сгенерировать happ ссылку",
+"rt_7":"7 - Сгенерировать v2raytun ссылку","rt_8":"8 - Сохранить JSON роутинга",
+"cr_empty":"Нет custom rules.","clear_all":"Очистить все","del_by_n":"Удалить по номерам",
+"clear_q":"Точно удалить все? (y/n)","cleared":"Очищено.",
+"dns_remote":"Remote DNS domain","dns_local":"Domestic DNS domain",
+"order_q":"Порядок (block,direct,proxy)","saved":"Сохранено.","need_all_three":"Нужно указать все три.",
+"global_q":"Глобальный прокси",
+"happ_saved":"Happ routing","v2r_saved":"v2RayTun routing","rt_json":"JSON роутинга",
+"cfg_hdr":"НАСТРОЙКИ ГЕНЕРАЦИИ","cfg_jname":"JSON имя файла","cfg_jrem":"JSON примечание",
+"cfg_dns":"DNS","cfg_dns_strat":"DNS стратегия","cfg_probe":"Probe URL","cfg_int":"Interval","cfg_to":"Timeout",
+"cfg_bal":"Balancer","cfg_ports":"Порты","cfg_mux":"Mux","cfg_global":"Глобальный","cfg_sniff":"Sniffing",
+"cfg_order":"Порядок правил","cfg_cr":"Custom rules",
+"cfg_1":"1 - DNS (серверы и стратегия)","cfg_2":"2 - Обсерватория","cfg_3":"3 - Балансировщик",
+"cfg_4":"4 - Порты SOCKS/HTTP","cfg_5":"5 - Direct домены","cfg_6":"6 - Block домены","cfg_7":"7 - Direct/Block IP",
+"cfg_8":"8 - Block протоколы","cfg_9":"9 - Порядок применения правил","cfg_10":"10 - Импорт правил",
+"cfg_11":"11 - Просмотр/очистка custom rules","cfg_12":"12 - Глобальный прокси","cfg_13":"13 - Mux / XUDP",
+"cfg_14":"14 - Sniffing","cfg_15":"15 - Имя JSON файла","cfg_16":"16 - Примечание JSON-сервера",
+"cfg_17":"17 - Сбросить к дефолту",
+"dns_csv":"DNS через запятую","strategy":"Стратегия","dns_url":"URL","interval":"Интервал","timeout":"Таймаут",
+"maxrtt":"MaxRTT","tolerance":"Tolerance","baselines":"Baselines","expected":"Expected",
+"socks":"SOCKS","http":"HTTP","cur":"Текущие","hints":"Подсказки","direct_d":"Direct домены (через запятую, пусто=очистить, q=отмена)",
+"block_d":"Block домены (через запятую, пусто=очистить, q=отмена)","direct_ip":"Direct IP","block_ip":"Block IP",
+"protos":"Протоколы (через запятую, пусто=очистить, q=отмена)",
+"mux_on":"Включить Mux? (y/n/q)","concurrency":"Concurrency","xudp_c":"XUDP concurrency","xudp_p":"XUDP proxyUDP443",
+"dest_over":"DestOverride","route_only":"RouteOnly",
+"jname_q":"Имя JSON файла","jrem_q":"Новое примечание","as_fname":"Использовать как имя файла? (y/n)",
+"reset_q":"Сбросить все настройки? (y/n)","reset_done":"Сброшено.",
+"exp_sel_hdr":"ЭКСПОРТ ВЫБРАННЫХ СЕРВЕРОВ","exp_1":"1 - Экспорт ссылок (txt + base64)","exp_2":"2 - Экспорт JSON Xray",
+"exp_sel_n":"Номера серверов для экспорта (1,3-5,all)","exp_name":"Имя файла (без расширения)",
+"exp_json_name":"Имя JSON","exp_rem":"Примечание сервера",
+"links_saved":"Ссылки","b64_saved":"Base64","str_count":"Строк",
+"jname_cfg":"Настройка имени JSON-сервера","jname_cur":"Текущее имя файла","jrem_cur":"Текущее примечание",
+"jenter_keep":"(Enter - оставить текущие, q - отмена)","jchange_q":"Изменить имя/примечание? (y/n)",
+"jrem_new":"Примечание сервера","jname_auto":"Использовать примечание как имя файла (транслитом)? (y/n)",
+"jname_will":"Имя файла будет","jname_noext":"Имя файла (без .json)",
+"backup_ok":"Backup","stat_hdr":"СТАТИСТИКА","no_serv":"Серверов нет.","total_serv":"Всего серверов",
+"by_proto":"По протоколу","by_transp":"По транспорту","by_sec":"По security",
+"uje_hdr":"УНИВЕРСАЛЬНЫЙ РЕДАКТОР JSON","uje_1":"1 - Открыть из Input","uje_2":"2 - Открыть из Output",
+"uje_3":"3 - Ввести путь вручную","uje_4":"4 - Создать новый JSON",
+"uje_field_hdr":"ДОБАВЛЕНИЕ ПОЛЯ","uje_sugg":"Рекомендуемые поля (отсутствующие)",
+"uje_pick_sugg":"1 - Выбрать из рекомендаций","uje_pick_own":"2 - Ввести своё имя",
+"uje_field_name":"Имя поля","uje_exists":"Поле уже существует",
+"uje_type_q":"Тип поля: 1-строка, 2-список, 3-объект, 4-true/false","uje_type":"Тип",
+"uje_val":"Значение","uje_elem":"Элемент (Enter - конец)","uje_key":"Ключ (Enter - конец)","uje_key_n":"Ключ","uje_val_n":"Значение",
+"uje_added":"Добавлено поле",
+"uje_editor_hdr":"УНИВЕРСАЛЬНЫЙ РЕДАКТОР JSON","uje_file":"Файл",
+"uje_a":"a - Добавить новое поле","uje_s":"s - Сохранить","uje_b":"b - Создать бэкап",
+"uje_v":"v - Показать JSON полностью","uje_o":"o - Сохранить как","uje_q":"q - Выход",
+"uje_saved":"Сохранено","uje_backup":"Бэкап","uje_exp":"Экспортировано",
+"uje_list_hdr":"СПИСОК","uje_dict_hdr":"ОБЪЕКТ","uje_elems":"Элементов","uje_keys":"Записей",
+"uje_l1":"1 - Добавить элемент","uje_l2":"2 - Удалить по номеру","uje_l3":"3 - Удалить несколько",
+"uje_l4":"4 - Очистить всё","uje_l5":"5 - Заменить значение по номеру","uje_l6":"6 - Удалить поле полностью",
+"uje_d1":"1 - Добавить запись","uje_d2":"2 - Изменить запись","uje_d3":"3 - Удалить запись",
+"uje_d4":"4 - Удалить поле полностью","uje_back":"q - Назад",
+"uje_del_n":"Номер","uje_del_multi":"Номера (например 1,3-5)","uje_del_range":"Удалено",
+"uje_del_all_q":"Очистить всё? (y/n)","uje_del_all":"Очищено","uje_rep_n":"Номер для замены",
+"uje_del_field_q":"Удалить поле полностью? (y/n)","uje_del_field":"Поле удалено","uje_deleted":"Удалено",
+"uje_new_val":"Новое значение","uje_cur_val":"Текущее значение","uje_updated":"Обновлено","uje_replaced":"Заменено",
+"uje_cur":"Текущее","uje_edit_hint":"(Enter=оставить, '-'=удалить, q=отмена)","uje_nochange":"Без изменений",
+"uje_parse_err":"Ошибка разбора",
+"uje_all_have":"Все рекомендуемые поля уже есть.",
+"uje_file_in":"В Input нет JSON.","uje_file_out":"В Output нет JSON.",
+"uje_root_not_obj":"Корень JSON не является объектом.",
+"gname_hdr":"ГЛАВНОЕ МЕНЮ","g_serv":"Серверов","g_json":"Загружен JSON шаблон",
+"g1":"1 - Загрузить исходники","g2":"2 - Редактировать серверы","g3":"3 - Показать список серверов",
+"g4":"4 - Статистика","g5":"5 - JSON: настройки и редактор","g6":"6 - Сгенерировать JSON Xray",
+"g7":"7 - Роутинг для клиентов","g8":"8 - Экспорт выбранных серверов",
+"g9":"9 - Сохранить ссылки (txt + base64)","g10":"10 - Сохранить Clash YAML","g11":"11 - Сделать бэкап",
+"g12":"12 - Нормализовать существующий конфиг","g13":"13 - Нормализовать бэкап серверов",
+"g14":"14 - Очистить автосохранение","gq":"q - Выход",
+"backup_before":"Сделать бэкап перед выходом? (y/n)","autosave":"Автосохранение",
+"list_hdr":"СПИСОК СЕРВЕРОВ","total":"Всего",
+"load_ok":"Загружено. Всего","no_servers_list":"Список пуст.","parse_data":"Не удалось распарсить данные.",
+"autoload":"Автозагрузка прошлой сессии",
+"json_menu_hdr":"JSON: НАСТРОЙКИ И РЕДАКТОР",
+"json_m1":"1 - Настройки генерации","json_m2":"2 - Универсальный редактор JSON",
+"json_m3":"3 - Быстрый просмотр активного config.json",
+"cur_auto":"Автосохранения нет.","del_auto":"Удалить автосохранение? (y/n)"
+},
+"en": {
+"exit":"Exit.",
+"allowed":"Allowed","number":"Enter a number","fmt_all":"Format: 1,3-5 or all",
+"empty":"Empty",
+"load_src":"LOAD SOURCES","load_1":"1 - Local file","load_2":"2 - By URL","load_3":"3 - Multiple URLs",
+"q_back":"q - Back","choice":"Choice","folder_empty":"Folder is empty","put_file":"Put file into",
+"file_n":"File number","url_sub":"Subscription URL","dl_fail":"Failed to load",
+"enter_urls":"Enter URLs one by one. q - finish.","url_q":"URL (q - end)","added":"Added. Total parts",
+"merged":"Merged parts",
+"xray_detected":"Xray JSON detected. Outbounds extracted",
+"singbox_detected":"sing-box objects detected",
+"links_found":"Links found","parsed":"parsed",
+"parse_fail":"Failed to parse data.",
+"dedupe_hdr":"DEDUPLICATION","d_full":"1 - Full match","d_name":"2 - By name","d_addr":"3 - By address",
+"d_user":"4 - By address and user","d_proto":"5 - By protocol + address + port","dedupe_removed":"Duplicates removed","dedupe_none":"No duplicates.",
+"del_hdr":"DELETE SERVERS","del_1":"1 - By name","del_2":"2 - By protocol","del_3":"3 - By transport",
+"del_4":"4 - By security","del_5":"5 - By domain","del_6":"6 - By numbers","del_7":"7 - Invert",
+"words_csv":"Comma-separated words","proto_l":"Protocol","transport":"Transport","security":"Security","domain":"Domain",
+"numbers":"Numbers","kw_inv":"Keywords to INVERT","not_found":"Nothing found.","found":"Found",
+"delete_q":"Delete? (y/n)","deleted_n":"Deleted",
+"sort_hdr":"SORT","s_az":"1 - By name (A-Z)","s_za":"2 - By name (Z-A)","s_proto":"3 - By protocol",
+"s_host":"4 - By host","s_port":"5 - By port","s_rand":"6 - Random","sorted":"Sorted.",
+"move_n":"Server number to move","direction":"Direction (u=up / d=down)","moved_up":"Moved up.",
+"moved_dn":"Moved down.","no_move":"Nothing to move.",
+"dup_n":"Numbers to duplicate","dup_created":"Created duplicates","edit_q":"Edit? (y/n)",
+"edit_grp":"EDIT GROUP","sel_servers":"Servers selected",
+"edit_hdr":"EDIT SERVERS","e1":"1 - Names","e2":"2 - Parameters (group)","e3":"3 - Delete by numbers",
+"e4":"4 - Delete by filter","e5":"5 - Add server manually","e6":"6 - Remove duplicates","e7":"7 - Sort",
+"e8":"8 - Move server","e9":"9 - Duplicate","e10":"10 - Search by keyword",
+"e11":"11 - Show server parameters","eq":"q - Done",
+"names_q":"1-All with suffixes / 2-Group / 3-One by one / 4-Add prefix / q-back",
+"base_name":"Base name","prefix":"Prefix","skip_q":"(q-skip)","updated":"Updated.",
+"del_q":"Numbers to delete","del_n":"Delete server(s)","link_q":"Link","added_ok":"Added.","parse_err":"Failed to parse.",
+"kw_q":"Keyword","params_of":"Server parameters","u_scheme":"Scheme","u_host":"Host","u_port":"Port",
+"u_cred":"ID/Pass/Method","u_params":"Params",
+"change":"CHANGE","compat":"Compatible","will_change":"Will change","incompat":"Incompatible",
+"default_val":"Default value","enter_default":"Enter = apply default",
+"minus_del":"'-' = remove parameter","q_cancel":"q = cancel","new_val":"New value",
+"list_empty":"List empty.","no_servers":"No servers.",
+"missing_unsupported":"Unsupported Xray protocols skipped",
+"exp_gt":"greater than server count. Set to",
+"norm_hdr":"NORMALIZE EXISTING CONFIG","n_from_out":"1 - From Output","n_from_in":"2 - From Input",
+"n_manual":"3 - Enter path manually","no_json_out":"No JSON files in Output.","no_json_in":"No JSON files in Input.",
+"path_q":"Path to file","file_not_found":"File not found","read_err":"Error reading JSON",
+"norm_nochange":"Config already correct, no changes needed.","norm_found":"Fixes found",
+"norm_save":"Save fixed file? (y/n)","norm_saved":"Saved",
+"n_serv_hdr":"NORMALIZE SERVERS BACKUP","n1":"1 - From Backups","n2":"2 - From Output",
+"n3":"3 - From Input","n4":"4 - Enter path manually","no_files":"No files.",
+"serv_parsed":"Servers parsed","serv_valid":"Valid","serv_dropped":"Invalid dropped",
+"serv_save_norm":"Save normalized list? (y/n)",
+"imp_hdr":"IMPORT ROUTING RULES","imp_1":"1 - Shadowrocket / Clash / Surge","imp_2":"2 - AdGuard",
+"imp_3":"3 - Blocklist without policy","imp_src_1":"1 - From local file","imp_src_2":"2 - By URL",
+"imp_rules":"Rules found","imp_add":"Add rules","imp_added":"Added. Total",
+"rt_hdr":"CLIENT ROUTING","rt_direct":"Direct domains","rt_block":"Block domains","rt_dip":"Direct IP","rt_bip":"Block IP",
+"rt_cr":"Custom rules","rt_order":"Order","rt_global":"Global",
+"rt_1":"1 - Import rules","rt_2":"2 - View/clear custom rules","rt_3":"3 - Configure routing DNS",
+"rt_4":"4 - Configure rule order","rt_5":"5 - Configure global proxy","rt_6":"6 - Generate happ link",
+"rt_7":"7 - Generate v2raytun link","rt_8":"8 - Save routing JSON",
+"cr_empty":"No custom rules.","clear_all":"Clear all","del_by_n":"Delete by numbers",
+"clear_q":"Really clear all? (y/n)","cleared":"Cleared.",
+"dns_remote":"Remote DNS domain","dns_local":"Domestic DNS domain",
+"order_q":"Order (block,direct,proxy)","saved":"Saved.","need_all_three":"All three required.",
+"global_q":"Global proxy",
+"happ_saved":"Happ routing","v2r_saved":"v2RayTun routing","rt_json":"Routing JSON",
+"cfg_hdr":"GENERATION SETTINGS","cfg_jname":"JSON file name","cfg_jrem":"JSON remark",
+"cfg_dns":"DNS","cfg_dns_strat":"DNS strategy","cfg_probe":"Probe URL","cfg_int":"Interval","cfg_to":"Timeout",
+"cfg_bal":"Balancer","cfg_ports":"Ports","cfg_mux":"Mux","cfg_global":"Global","cfg_sniff":"Sniffing",
+"cfg_order":"Rule order","cfg_cr":"Custom rules",
+"cfg_1":"1 - DNS (servers and strategy)","cfg_2":"2 - Observatory","cfg_3":"3 - Balancer",
+"cfg_4":"4 - SOCKS/HTTP ports","cfg_5":"5 - Direct domains","cfg_6":"6 - Block domains","cfg_7":"7 - Direct/Block IP",
+"cfg_8":"8 - Block protocols","cfg_9":"9 - Rule application order","cfg_10":"10 - Import rules",
+"cfg_11":"11 - View/clear custom rules","cfg_12":"12 - Global proxy","cfg_13":"13 - Mux / XUDP",
+"cfg_14":"14 - Sniffing","cfg_15":"15 - JSON file name","cfg_16":"16 - JSON server remark",
+"cfg_17":"17 - Reset to default",
+"dns_csv":"DNS comma-separated","strategy":"Strategy","dns_url":"URL","interval":"Interval","timeout":"Timeout",
+"maxrtt":"MaxRTT","tolerance":"Tolerance","baselines":"Baselines","expected":"Expected",
+"socks":"SOCKS","http":"HTTP","cur":"Current","hints":"Hints","direct_d":"Direct domains (comma, empty=clear, q=cancel)",
+"block_d":"Block domains (comma, empty=clear, q=cancel)","direct_ip":"Direct IP","block_ip":"Block IP",
+"protos":"Protocols (comma, empty=clear, q=cancel)",
+"mux_on":"Enable Mux? (y/n/q)","concurrency":"Concurrency","xudp_c":"XUDP concurrency","xudp_p":"XUDP proxyUDP443",
+"dest_over":"DestOverride","route_only":"RouteOnly",
+"jname_q":"JSON file name","jrem_q":"New remark","as_fname":"Use as file name? (y/n)",
+"reset_q":"Reset all settings? (y/n)","reset_done":"Reset.",
+"exp_sel_hdr":"EXPORT SELECTED SERVERS","exp_1":"1 - Export links (txt + base64)","exp_2":"2 - Export JSON Xray",
+"exp_sel_n":"Server numbers to export (1,3-5,all)","exp_name":"File name (no extension)",
+"exp_json_name":"JSON name","exp_rem":"Server remark",
+"links_saved":"Links","b64_saved":"Base64","str_count":"Lines",
+"jname_cfg":"JSON server name setup","jname_cur":"Current file name","jrem_cur":"Current remark",
+"jenter_keep":"(Enter - keep current, q - cancel)","jchange_q":"Change name/remark? (y/n)",
+"jrem_new":"Server remark","jname_auto":"Use remark as file name (transliterated)? (y/n)",
+"jname_will":"File name will be","jname_noext":"File name (without .json)",
+"backup_ok":"Backup","stat_hdr":"STATISTICS","no_serv":"No servers.","total_serv":"Total servers",
+"by_proto":"By protocol","by_transp":"By transport","by_sec":"By security",
+"uje_hdr":"UNIVERSAL JSON EDITOR","uje_1":"1 - Open from Input","uje_2":"2 - Open from Output",
+"uje_3":"3 - Enter path manually","uje_4":"4 - Create new JSON",
+"uje_field_hdr":"ADD FIELD","uje_sugg":"Suggested fields (missing)",
+"uje_pick_sugg":"1 - Choose from suggestions","uje_pick_own":"2 - Enter custom name",
+"uje_field_name":"Field name","uje_exists":"Field already exists",
+"uje_type_q":"Field type: 1-string, 2-list, 3-object, 4-true/false","uje_type":"Type",
+"uje_val":"Value","uje_elem":"Element (Enter - finish)","uje_key":"Key (Enter - finish)","uje_key_n":"Key","uje_val_n":"Value",
+"uje_added":"Field added",
+"uje_editor_hdr":"UNIVERSAL JSON EDITOR","uje_file":"File",
+"uje_a":"a - Add new field","uje_s":"s - Save","uje_b":"b - Create backup",
+"uje_v":"v - Show full JSON","uje_o":"o - Save as","uje_q":"q - Exit",
+"uje_saved":"Saved","uje_backup":"Backup","uje_exp":"Exported",
+"uje_list_hdr":"LIST","uje_dict_hdr":"OBJECT","uje_elems":"Elements","uje_keys":"Entries",
+"uje_l1":"1 - Add element","uje_l2":"2 - Delete by number","uje_l3":"3 - Delete several",
+"uje_l4":"4 - Clear all","uje_l5":"5 - Replace value by number","uje_l6":"6 - Delete field entirely",
+"uje_d1":"1 - Add entry","uje_d2":"2 - Edit entry","uje_d3":"3 - Delete entry",
+"uje_d4":"4 - Delete field entirely","uje_back":"q - Back",
+"uje_del_n":"Number","uje_del_multi":"Numbers (e.g. 1,3-5)","uje_del_range":"Deleted",
+"uje_del_all_q":"Clear all? (y/n)","uje_del_all":"Cleared","uje_rep_n":"Number to replace",
+"uje_del_field_q":"Delete field entirely? (y/n)","uje_del_field":"Field deleted","uje_deleted":"Deleted",
+"uje_new_val":"New value","uje_cur_val":"Current value","uje_updated":"Updated","uje_replaced":"Replaced",
+"uje_cur":"Current","uje_edit_hint":"(Enter=keep, '-'=delete, q=cancel)","uje_nochange":"No change",
+"uje_parse_err":"Parse error",
+"uje_all_have":"All suggested fields already present.",
+"uje_file_in":"No JSON in Input.","uje_file_out":"No JSON in Output.",
+"uje_root_not_obj":"JSON root is not an object.",
+"gname_hdr":"MAIN MENU","g_serv":"Servers","g_json":"JSON template loaded",
+"g1":"1 - Load sources","g2":"2 - Edit servers","g3":"3 - Show server list",
+"g4":"4 - Statistics","g5":"5 - JSON: settings and editor","g6":"6 - Generate JSON Xray",
+"g7":"7 - Client routing","g8":"8 - Export selected servers",
+"g9":"9 - Save links (txt + base64)","g10":"10 - Save Clash YAML","g11":"11 - Make backup",
+"g12":"12 - Normalize existing config","g13":"13 - Normalize servers backup",
+"g14":"14 - Clear autosave","gq":"q - Quit",
+"backup_before":"Make backup before exit? (y/n)","autosave":"Autosave",
+"list_hdr":"SERVER LIST","total":"Total",
+"load_ok":"Loaded. Total","no_servers_list":"List empty.","parse_data":"Failed to parse data.",
+"autoload":"Autoload from previous session",
+"json_menu_hdr":"JSON: SETTINGS AND EDITOR",
+"json_m1":"1 - Generation settings","json_m2":"2 - Universal JSON editor",
+"json_m3":"3 - Quick view of active config.json",
+"cur_auto":"No autosave.","del_auto":"Delete autosave? (y/n)"
+}}
+
+def tr(k):
+    return _T.get(LANG, _T["ru"]).get(k, _T["ru"].get(k, k))
+
+EXIT = "__EXIT__"
+def _in(prompt="", default=None, allow_exit=True):
+    while True:
+        try:
+            v = input(prompt).strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            return EXIT if allow_exit else default
+        if allow_exit and v.lower() in ("q", "quit", "exit"):
+            return EXIT
+        if not v and default is not None:
+            return default
+        return v
+
+def _in_int(prompt, default=None, mn=None, mx=None):
+    while True:
+        v = _in(prompt, default)
+        if v == EXIT:
+            return EXIT
+        try:
+            n = int(v)
+            if mn is not None and n < mn:
+                print(f"[!] >= {mn}"); continue
+            if mx is not None and n > mx:
+                print(f"[!] <= {mx}"); continue
+            return n
+        except ValueError:
+            print(f"[!] {tr('number')}")
+
+def _in_multi(prompt, mn, mx):
+    while True:
+        v = _in(prompt)
+        if v == EXIT:
+            return EXIT
+        if not v:
+            return None
+        if v.lower() in ("all", "a", "*"):
+            return list(range(mn, mx + 1))
+        try:
+            out = []
+            for p in v.split(','):
+                p = p.strip()
+                if '-' in p:
+                    a, b = p.split('-', 1)
+                    a, b = int(a), int(b)
+                    if a > b: a, b = b, a
+                    for x in range(a, b + 1):
+                        if mn <= x <= mx and x not in out: out.append(x)
+                else:
+                    x = int(p)
+                    if mn <= x <= mx and x not in out: out.append(x)
+            if out: return out
+            print(f"[!] {tr('empty')}")
+        except Exception:
+            print(f"[!] {tr('fmt_all')}")
+
+def _in_choice(prompt, choices):
+    while True:
+        v = _in(prompt)
+        if v == EXIT:
+            return EXIT
+        if v.lower() in [c.lower() for c in choices]:
+            return v
+        print(f"[!] {tr('allowed')}: {', '.join(choices)}")
 
 HOME = Path.home()
 BASE = HOME / "Shadowrocket" / "SubManager"
@@ -2837,208 +3520,85 @@ CFG_FILE = BASE / "config.json"
 AUTOSAVE_FILE = BACKUP_DIR / "autosave_servers.txt"
 UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
 W = 52
-EXIT = "__EXIT__"
-DNS_SERVERS = ["8.8.8.8", "8.8.4.4", "1.1.1.1", "94.140.14.14", "94.140.15.15"]
+DNS_SERVERS = ["8.8.8.8","8.8.4.4","1.1.1.1","94.140.14.14","94.140.15.15"]
 
 DURATION_RE = re.compile(r'^(\d+(?:\.\d+)?)(ms|s|m|h|d)?$')
-DURATION_UNITS = {'ms', 's', 'm', 'h', 'd'}
-BALANCER_TYPES = {"leastload": "leastLoad", "leastping": "leastPing", "random": "random", "roundrobin": "roundRobin"}
-TLD_ONLY = {'ru', 'su', 'by', 'kz', 'xn--p1ai', 'рф'}
+DURATION_UNITS = {'ms','s','m','h','d'}
+BALANCER_TYPES = {"leastload":"leastLoad","leastping":"leastPing","random":"random","roundrobin":"roundRobin"}
+TLD_ONLY = {'ru','su','by','kz','xn--p1ai','рф'}
 
 PARAM_DEFAULTS = {
-    "scheme": "vless", "type": "tcp", "security": "reality", "flow": "xtls-rprx-vision",
-    "path": "/", "host": "", "sni": "", "pbk": "", "sid": "", "fp": "chrome",
-    "serviceName": "", "authority": "", "mode": "auto", "port": "443", "host_addr": "",
-    "alpn": "h2", "obfs": "salamander", "obfs-password": "", "id": "", "password": "",
-    "method": "aes-256-gcm", "concurrency": "4", "spiderX": "/", "headerType": "none",
-    "heartbeatPeriod": "0", "alterId": "0", "encryption": "auto",
-    "allowedIPs": "0.0.0.0/0", "mtu": "1420", "dns": "1.1.1.1", "presharedKey": "",
-    "keepalive": "0", "up": "", "down": "", "congestion_control": "cubic",
-    "pinned_certchain_sha256": "", "verify_peer_cert_by_name": "",
-    "jc": "4", "jmin": "40", "jmax": "70", "s1": "30", "s2": "30",
-    "h1": "1", "h2": "2", "h3": "3", "h4": "4",
-}
+"scheme":"vless","type":"tcp","security":"reality","flow":"xtls-rprx-vision","path":"/","host":"","sni":"","pbk":"","sid":"","fp":"chrome",
+"serviceName":"","authority":"","mode":"auto","port":"443","host_addr":"","alpn":"h2","obfs":"salamander","obfs-password":"","id":"","password":"",
+"method":"aes-256-gcm","concurrency":"4","spiderX":"/","headerType":"none","heartbeatPeriod":"0","alterId":"0","encryption":"auto",
+"allowedIPs":"0.0.0.0/0","mtu":"1420","dns":"1.1.1.1","presharedKey":"","keepalive":"0","up":"","down":"","congestion_control":"cubic",
+"pinned_certchain_sha256":"","verify_peer_cert_by_name":"",
+"jc":"4","jmin":"40","jmax":"70","s1":"30","s2":"30","h1":"1","h2":"2","h3":"3","h4":"4"}
 
-GEOSITE_SUGGESTIONS = [
-    "geosite:private", "geosite:category-ads-all", "geosite:category-ru",
-    "geosite:category-porn", "geosite:google", "geosite:youtube",
-    "geosite:telegram", "geosite:twitter", "geosite:facebook",
-    "geosite:instagram", "geosite:openai", "geosite:geolocation-cn",
-    "geosite:cn", "geosite:apple", "geosite:icloud", "geosite:microsoft",
-    "geosite:github", "geosite:netflix", "geosite:spotify", "geosite:discord",
-    "geosite:tiktok", "geosite:category-games", "geosite:category-media-ru",
-    "geosite:category-communication",
-]
-GEOIP_SUGGESTIONS = [
-    "geoip:private", "geoip:ru", "geoip:by", "geoip:kz",
-    "geoip:cn", "geoip:us", "geoip:eu", "geoip:telegram",
-]
+GEOSITE_SUGG = ["geosite:private","geosite:category-ads-all","geosite:category-ru","geosite:category-porn","geosite:google","geosite:youtube",
+"geosite:telegram","geosite:twitter","geosite:facebook","geosite:instagram","geosite:openai","geosite:geolocation-cn",
+"geosite:cn","geosite:apple","geosite:icloud","geosite:microsoft","geosite:github","geosite:netflix","geosite:spotify","geosite:discord",
+"geosite:tiktok","geosite:category-games","geosite:category-media-ru","geosite:category-communication"]
+GEOIP_SUGG = ["geoip:private","geoip:ru","geoip:by","geoip:kz","geoip:cn","geoip:us","geoip:eu","geoip:telegram"]
 
-# Блок нормализации
-def normalize_duration(val, default_unit='s'):
-    if val is None:
-        return f"1{default_unit}"
+def norm_dur(val, default_unit='s'):
+    if val is None: return f"1{default_unit}"
     v = str(val).strip().lower()
-    if not v:
-        return f"1{default_unit}"
+    if not v: return f"1{default_unit}"
     m = DURATION_RE.match(v)
-    if not m:
-        return f"1{default_unit}"
+    if not m: return f"1{default_unit}"
     num, unit = m.group(1), m.group(2)
-    if unit is None:
-        unit = default_unit
-    if unit not in DURATION_UNITS:
-        unit = default_unit
-    try:
-        float(num)
-    except ValueError:
-        return f"1{default_unit}"
+    if unit is None: unit = default_unit
+    if unit not in DURATION_UNITS: unit = default_unit
+    try: float(num)
+    except ValueError: return f"1{default_unit}"
     return f"{num}{unit}"
 
-def normalize_balancer_type(val):
-    if not val:
-        return "leastLoad"
-    key = re.sub(r'[^a-z]', '', str(val).lower())
-    return BALANCER_TYPES.get(key, "leastLoad")
+def norm_bal(val):
+    if not val: return "leastLoad"
+    return BALANCER_TYPES.get(re.sub(r'[^a-z]','',str(val).lower()), "leastLoad")
 
-def normalize_int(val, default=0, mn=None, mx=None):
-    try:
-        n = int(val)
-    except (ValueError, TypeError):
-        return default
-    if mn is not None and n < mn:
-        n = mn
-    if mx is not None and n > mx:
-        n = mx
+def norm_int(val, default=0, mn=None, mx=None):
+    try: n = int(val)
+    except (ValueError, TypeError): return default
+    if mn is not None and n < mn: n = mn
+    if mx is not None and n > mx: n = mx
     return n
 
-def normalize_float(val, default=0.0):
-    try:
-        return float(val)
-    except (ValueError, TypeError):
-        return default
+def norm_float(val, default=0.0):
+    try: return float(val)
+    except (ValueError, TypeError): return default
 
 def process_domain_list(domains):
     dom_only, kw_set, re_set, other = [], set(), set(), []
     for d in domains:
-        if not isinstance(d, str):
-            continue
+        if not isinstance(d, str): continue
         if d.startswith("domain:"):
             base = d[7:]
-            if '.' not in base and base.lower() in TLD_ONLY:
-                kw_set.add(f"keyword:.{base.lower()}")
-            else:
-                dom_only.append(base)
-        elif d.startswith("keyword:"):
-            kw_set.add(d)
-        elif d.startswith("regexp:"):
-            re_set.add(d)
-        else:
-            other.append(d)
+            if '.' not in base and base.lower() in TLD_ONLY: kw_set.add(f"keyword:.{base.lower()}")
+            else: dom_only.append(base)
+        elif d.startswith("keyword:"): kw_set.add(d)
+        elif d.startswith("regexp:"): re_set.add(d)
+        else: other.append(d)
     dom_only.sort(key=lambda x: x.count('.'))
     keep = set()
     for d in dom_only:
         parts = d.split('.')
         is_child = False
         for i in range(1, len(parts)):
-            if '.'.join(parts[i:]) in keep:
-                is_child = True
-                break
-        if not is_child:
-            keep.add(d)
+            if '.'.join(parts[i:]) in keep: is_child = True; break
+        if not is_child: keep.add(d)
     result = [f"domain:{d}" for d in sorted(keep)]
-    result.extend(sorted(kw_set))
-    result.extend(sorted(re_set))
-    result.extend(sorted(set(other)))
+    result.extend(sorted(kw_set)); result.extend(sorted(re_set)); result.extend(sorted(set(other)))
     return result
 
-# Блок утилит интерфейса
-def clr():
-    os.system('clear')
-
-def hdr(t):
-    print("=" * W)
-    print(f" {t}")
-    print("=" * W)
-
-def ln():
-    print("-" * W)
-
-def ask(prompt, default=None, choices=None, allow_exit=True):
-    while True:
-        try:
-            v = input(prompt).strip()
-        except (EOFError, KeyboardInterrupt):
-            return EXIT if allow_exit else default
-        if allow_exit and v.lower() in ('q', 'exit', 'back', 'назад'):
-            return EXIT
-        if not v and default is not None:
-            return default
-        if choices:
-            if v.lower() in [c.lower() for c in choices]:
-                return v
-            print(f"[!] Допустимо: {', '.join(choices)}")
-        else:
-            return v
-
-def ask_int(prompt, default=None, mn=None, mx=None):
-    while True:
-        try:
-            v = input(prompt).strip()
-            if v.lower() in ('q', 'exit', 'back', 'назад'):
-                return EXIT
-            if not v and default is not None:
-                return default
-            n = int(v)
-            if mn is not None and n < mn:
-                print(f"[!] >= {mn}")
-                continue
-            if mx is not None and n > mx:
-                print(f"[!] <= {mx}")
-                continue
-            return n
-        except ValueError:
-            print("[!] Введите число или 'q' для выхода.")
-        except (EOFError, KeyboardInterrupt):
-            return EXIT
-
-def ask_multi(prompt, mn, mx):
-    while True:
-        try:
-            v = input(prompt).strip()
-            if v.lower() in ('q', 'exit', 'back', 'назад'):
-                return EXIT
-            if not v:
-                return None
-            if v.lower() in ('all', 'a', '*'):
-                return list(range(mn, mx + 1))
-            result = []
-            for part in v.split(','):
-                part = part.strip()
-                if '-' in part:
-                    a, b = part.split('-', 1)
-                    a, b = int(a), int(b)
-                    if a > b:
-                        a, b = b, a
-                    for x in range(a, b + 1):
-                        if mn <= x <= mx and x not in result:
-                            result.append(x)
-                else:
-                    x = int(part)
-                    if mn <= x <= mx and x not in result:
-                        result.append(x)
-            if result:
-                return result
-            print("[!] Пусто.")
-        except Exception:
-            print("[!] Формат: 1,3-5 или all (или q)")
-
+def clr(): os.system('clear')
+def hdr(t): print("=" * W); print(f" {t}"); print("=" * W)
+def ln(): print("-" * W)
 def fmt_size(b):
-    if b < 1024:
-        return f"{b} B"
-    if b < 1024 * 1024:
-        return f"{b / 1024:.1f} KB"
-    return f"{b / 1024 / 1024:.2f} MB"
+    if b < 1024: return f"{b} B"
+    if b < 1024 * 1024: return f"{b/1024:.1f} KB"
+    return f"{b/1024/1024:.2f} MB"
 
 def progress_bar(current, total, prefix="", width=25, elapsed=None):
     if total and total > 0:
@@ -3056,157 +3616,112 @@ def progress_bar(current, total, prefix="", width=25, elapsed=None):
         sys.stdout.write(f"\r{prefix} {fmt_size(current)}   ")
         sys.stdout.flush()
 
-# Блок загрузки
-def dl_urllib(url, show_progress=True):
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
+def dl_urllib(url, show=True):
+    ctx = ssl.create_default_context(); ctx.check_hostname = False; ctx.verify_mode = ssl.CERT_NONE
     req = urllib.request.Request(url, headers={'User-Agent': UA})
     with urllib.request.urlopen(req, context=ctx, timeout=30) as r:
         total = None
         cl = r.getheader('Content-Length')
         if cl:
-            try:
-                total = int(cl)
-            except Exception:
-                total = None
-        data = bytearray()
-        start = time.time()
+            try: total = int(cl)
+            except Exception: pass
+        data = bytearray(); start = time.time()
         while True:
             chunk = r.read(8192)
-            if not chunk:
-                break
+            if not chunk: break
             data.extend(chunk)
-            if show_progress:
-                progress_bar(len(data), total, prefix="  [urllib]", elapsed=time.time() - start)
-        if show_progress:
-            sys.stdout.write("\n")
-            sys.stdout.flush()
+            if show: progress_bar(len(data), total, prefix="  [urllib]", elapsed=time.time()-start)
+        if show: sys.stdout.write("\n"); sys.stdout.flush()
         return bytes(data)
 
-def dl_curl(url, show_progress=True):
+def dl_curl(url, show=True):
     tmp = "/tmp/sub_dl_curl.txt"
-    cmd = ['curl', '-sL', '--insecure', '-A', UA, '--max-time', '60', '-o', tmp, url]
-    if show_progress:
-        print("  [curl] загрузка...")
+    cmd = ['curl','-sL','--insecure','-A',UA,'--max-time','60','-o',tmp,url]
+    if show: print("  [curl] dl...")
     r = subprocess.run(cmd, capture_output=True)
     if r.returncode == 0 and os.path.exists(tmp):
-        with open(tmp, 'rb') as f:
-            data = f.read()
+        with open(tmp,'rb') as f: data = f.read()
         os.unlink(tmp)
-        if show_progress:
-            print(f"  [curl] OK: {fmt_size(len(data))}")
+        if show: print(f"  [curl] OK: {fmt_size(len(data))}")
         return data
     return None
 
-def dl_wget(url, show_progress=True):
-    if not shutil.which('wget'):
-        return None
+def dl_wget(url, show=True):
+    if not shutil.which('wget'): return None
     tmp = "/tmp/sub_dl_wget.txt"
-    cmd = ['wget', '-q', '--no-check-certificate', '-U', UA, '-O', tmp, url]
-    if show_progress:
-        print("  [wget] загрузка...")
+    cmd = ['wget','-q','--no-check-certificate','-U',UA,'-O',tmp,url]
+    if show: print("  [wget] dl...")
     r = subprocess.run(cmd, capture_output=True)
     if r.returncode == 0 and os.path.exists(tmp):
-        with open(tmp, 'rb') as f:
-            data = f.read()
+        with open(tmp,'rb') as f: data = f.read()
         os.unlink(tmp)
-        if show_progress:
-            print(f"  [wget] OK: {fmt_size(len(data))}")
+        if show: print(f"  [wget] OK: {fmt_size(len(data))}")
         return data
     return None
 
-def dl_aria2(url, show_progress=True):
-    if not shutil.which('aria2c'):
-        return None
-    tmp_dir = "/tmp/sub_aria"
-    os.makedirs(tmp_dir, exist_ok=True)
-    cmd = ['aria2c', '-q', '--check-certificate=false', '-U', UA, '-x', '4', '-d', tmp_dir, '-o', 'sub.txt', url]
-    if show_progress:
-        print("  [aria2] загрузка...")
+def dl_aria2(url, show=True):
+    if not shutil.which('aria2c'): return None
+    tmp_dir = "/tmp/sub_aria"; os.makedirs(tmp_dir, exist_ok=True)
+    cmd = ['aria2c','-q','--check-certificate=false','-U',UA,'-x','4','-d',tmp_dir,'-o','sub.txt',url]
+    if show: print("  [aria2] dl...")
     r = subprocess.run(cmd, capture_output=True)
-    out = os.path.join(tmp_dir, 'sub.txt')
+    out = os.path.join(tmp_dir,'sub.txt')
     if r.returncode == 0 and os.path.exists(out):
-        with open(out, 'rb') as f:
-            data = f.read()
+        with open(out,'rb') as f: data = f.read()
         os.unlink(out)
-        if show_progress:
-            print(f"  [aria2] OK: {fmt_size(len(data))}")
+        if show: print(f"  [aria2] OK: {fmt_size(len(data))}")
         return data
     return None
 
-def dl_url(url, method='auto', show_progress=True):
+def dl_url(url, method='auto', show=True):
     print(f"[*] URL: {url}")
-    methods = ['urllib', 'curl', 'wget', 'aria2'] if method == 'auto' else [method]
+    methods = ['urllib','curl','wget','aria2'] if method == 'auto' else [method]
     for m in methods:
         try:
-            if m == 'urllib':
-                data = dl_urllib(url, show_progress)
-            elif m == 'curl':
-                data = dl_curl(url, show_progress)
-            elif m == 'wget':
-                data = dl_wget(url, show_progress)
-            elif m == 'aria2':
-                data = dl_aria2(url, show_progress)
-            else:
-                data = None
+            if m == 'urllib': data = dl_urllib(url, show)
+            elif m == 'curl': data = dl_curl(url, show)
+            elif m == 'wget': data = dl_wget(url, show)
+            elif m == 'aria2': data = dl_aria2(url, show)
+            else: data = None
             if data:
-                for enc in ['utf-8', 'cp1251', 'latin-1']:
-                    try:
-                        return data.decode(enc)
-                    except Exception:
-                        continue
+                for enc in ['utf-8','cp1251','latin-1']:
+                    try: return data.decode(enc)
+                    except Exception: continue
         except Exception as e:
-            print(f"[!] {m}: {e}")
-            continue
+            print(f"[!] {m}: {e}"); continue
     return None
 
-def try_decode_base64(raw):
-    s = raw.strip().replace('\n', '').replace('\r', '').replace(' ', '')
-    if len(s) < 16 or not re.fullmatch(r'[A-Za-z0-9+/=_\-]+', s):
-        return None
-    for enc in ['urlsafe_b64', 'b64']:
+def try_b64(raw):
+    s = raw.strip().replace('\n','').replace('\r','').replace(' ','')
+    if len(s) < 16 or not re.fullmatch(r'[A-Za-z0-9+/=_\-]+', s): return None
+    for enc in ['urlsafe_b64','b64']:
         try:
             pad = 4 - len(s) % 4
             padded = s + ('=' * pad if pad != 4 else '')
-            if enc == 'urlsafe_b64':
-                decoded = base64.urlsafe_b64decode(padded).decode('utf-8', errors='ignore')
-            else:
-                decoded = base64.b64decode(padded).decode('utf-8', errors='ignore')
-            if '://' in decoded or decoded.strip().startswith('{') or 'proxies:' in decoded:
-                return decoded
-        except Exception:
-            continue
+            decoded = (base64.urlsafe_b64decode(padded) if enc == 'urlsafe_b64' else base64.b64decode(padded)).decode('utf-8', errors='ignore')
+            if '://' in decoded or decoded.strip().startswith('{') or 'proxies:' in decoded: return decoded
+        except Exception: continue
     return None
 
 def auto_decode(raw):
-    if not raw:
-        return raw
-    stripped = raw.strip()
-    if stripped.startswith('{') or stripped.startswith('['):
-        return raw
-    if '://' in raw[:500] or 'proxies:' in raw[:200]:
-        return raw
-    dec = try_decode_base64(raw)
-    if dec:
-        print("[+] Base64 декодирован.")
-        return dec
+    if not raw: return raw
+    st = raw.strip()
+    if st.startswith('{') or st.startswith('['): return raw
+    if '://' in raw[:500] or 'proxies:' in raw[:200]: return raw
+    dec = try_b64(raw)
+    if dec: print("[+] Base64 decoded."); return dec
     return raw
 
-# Блок парсинга URI
 def parse_uri(uri):
     uri = uri.strip()
-    if not uri or '://' not in uri:
-        return None
+    if not uri or '://' not in uri: return None
     scheme = uri.split('://')[0].lower()
     frag = ''
-    if '#' in uri:
-        uri, frag = uri.split('#', 1)
-    r = {'scheme': scheme, 'raw': uri + ('#' + frag if frag else ''),
-         'name': unquote(frag) if frag else '', 'params': {},
-         'host': '', 'port': '', 'id': '', 'password': '', 'method': ''}
+    if '#' in uri: uri, frag = uri.split('#', 1)
+    r = {'scheme':scheme, 'raw':uri+('#'+frag if frag else ''), 'name':unquote(frag) if frag else '', 'params':{},
+         'host':'','port':'','id':'','password':'','method':''}
     try:
-        if scheme in ('vless', 'vmess', 'trojan'):
+        if scheme in ('vless','vmess','trojan'):
             p = urlparse(uri)
             r['id'] = unquote(p.username or '')
             if scheme == 'vless' and not re.fullmatch(r'[0-9a-fA-F\-]{20,}', r['id']):
@@ -3217,21 +3732,15 @@ def parse_uri(uri):
                         dec = base64.urlsafe_b64decode(padded).decode('utf-8', errors='ignore')
                         if ':' in dec:
                             cand = dec.split(':', 1)[1].strip()
-                            if len(cand) >= 8:
-                                r['id'] = cand
-                except Exception:
-                    pass
-            r['host'] = p.hostname or ''
-            r['port'] = str(p.port) if p.port else ''
-            for k, v in parse_qs(p.query).items():
-                r['params'][k] = v[0] if len(v) == 1 else v
-        elif scheme in ('hysteria2', 'hy2', 'hysteria', 'hy'):
+                            if len(cand) >= 8: r['id'] = cand
+                except Exception: pass
+            r['host'] = p.hostname or ''; r['port'] = str(p.port) if p.port else ''
+            for k,v in parse_qs(p.query).items(): r['params'][k] = v[0] if len(v) == 1 else v
+        elif scheme in ('hysteria2','hy2','hysteria','hy'):
             p = urlparse(uri)
             r['password'] = unquote(p.username or '')
-            r['host'] = p.hostname or ''
-            r['port'] = str(p.port) if p.port else ''
-            for k, v in parse_qs(p.query).items():
-                r['params'][k] = v[0] if len(v) == 1 else v
+            r['host'] = p.hostname or ''; r['port'] = str(p.port) if p.port else ''
+            for k,v in parse_qs(p.query).items(): r['params'][k] = v[0] if len(v) == 1 else v
         elif scheme == 'ss':
             body = uri[5:]
             if '@' in body:
@@ -3240,21 +3749,13 @@ def parse_uri(uri):
                     pad = 4 - len(ui) % 4
                     ui_pad = ui + '=' * pad if pad != 4 else ui
                     dec = base64.b64decode(ui_pad).decode('utf-8', errors='ignore')
-                    if ':' in dec:
-                        r['method'], r['password'] = dec.split(':', 1)
-                    else:
-                        r['method'] = dec
+                    if ':' in dec: r['method'], r['password'] = dec.split(':', 1)
+                    else: r['method'] = dec
                 except Exception:
-                    if ':' in ui:
-                        r['method'], r['password'] = ui.split(':', 1)
-                    else:
-                        r['method'] = ui
-                if ':' in hp:
-                    h, p = hp.rsplit(':', 1)
-                    r['host'] = h
-                    r['port'] = p
-                else:
-                    r['host'] = hp
+                    if ':' in ui: r['method'], r['password'] = ui.split(':', 1)
+                    else: r['method'] = ui
+                if ':' in hp: r['host'], r['port'] = hp.rsplit(':', 1)
+                else: r['host'] = hp
             else:
                 try:
                     pad = 4 - len(body) % 4
@@ -3262,40 +3763,30 @@ def parse_uri(uri):
                     dec = base64.b64decode(padded).decode('utf-8', errors='ignore')
                     if '@' in dec:
                         ui, hp = dec.rsplit('@', 1)
-                        if ':' in ui:
-                            r['method'], r['password'] = ui.split(':', 1)
-                        if ':' in hp:
-                            r['host'], r['port'] = hp.rsplit(':', 1)
-                except Exception:
-                    pass
+                        if ':' in ui: r['method'], r['password'] = ui.split(':', 1)
+                        if ':' in hp: r['host'], r['port'] = hp.rsplit(':', 1)
+                except Exception: pass
             if '?' in uri:
-                for k, v in parse_qs(uri.split('?', 1)[1]).items():
-                    r['params'][k] = v[0] if len(v) == 1 else v
-        elif scheme in ('socks5', 'http', 'tuic', 'juicity', 'wireguard', 'amneziawg', 'awg', 'mieru', 'sudoku', 'openconnect'):
+                for k,v in parse_qs(uri.split('?',1)[1]).items(): r['params'][k] = v[0] if len(v) == 1 else v
+        elif scheme in ('socks5','http','tuic','juicity','wireguard','amneziawg','awg','mieru','sudoku','openconnect'):
             p = urlparse(uri)
             r['id'] = unquote(p.username or '')
             r['password'] = unquote(p.password or '')
-            r['host'] = p.hostname or ''
-            r['port'] = str(p.port) if p.port else ''
-            for k, v in parse_qs(p.query).items():
-                r['params'][k] = v[0] if len(v) == 1 else v
-        else:
-            return None
-    except Exception:
-        return None
+            r['host'] = p.hostname or ''; r['port'] = str(p.port) if p.port else ''
+            for k,v in parse_qs(p.query).items(): r['params'][k] = v[0] if len(v) == 1 else v
+        else: return None
+    except Exception: return None
     return r
 
 def extract_links(text):
     out = []
     for line in text.splitlines():
         line = line.strip()
-        if not line or line.startswith('#'):
-            continue
-        if any(line.startswith(s + '://') for s in ['vless', 'vmess', 'trojan', 'ss', 'hysteria2', 'hy2', 'hysteria', 'hy', 'socks5', 'http', 'tuic', 'juicity', 'wireguard', 'amneziawg', 'awg', 'mieru', 'sudoku', 'openconnect']):
+        if not line or line.startswith('#'): continue
+        if any(line.startswith(s + '://') for s in ['vless','vmess','trojan','ss','hysteria2','hy2','hysteria','hy','socks5','http','tuic','juicity','wireguard','amneziawg','awg','mieru','sudoku','openconnect']):
             out.append(line)
     return out
 
-# Блок парсинга Xray outbounds
 def parse_xray_outbound(ob):
     proto = (ob.get('protocol') or '').lower()
     tag = ob.get('tag', '')
@@ -3305,52 +3796,35 @@ def parse_xray_outbound(ob):
 
     if proto == 'vless':
         vnext = (ob.get('settings', {}) or {}).get('vnext', [{}])
-        if not vnext:
-            return None
-        vn = vnext[0]
-        users = vn.get('users', [{}])
-        user = users[0] if users else {}
-        s = {
-            'scheme': 'vless', 'name': tag or 'vless',
-            'host': vn.get('address', ''), 'port': str(vn.get('port', '443')),
-            'id': user.get('id', ''), 'password': '', 'method': '',
-            'params': {'type': net, 'security': sec}
-        }
-        if user.get('flow'):
-            s['params']['flow'] = user['flow']
+        if not vnext: return None
+        vn = vnext[0]; users = vn.get('users', [{}]); user = users[0] if users else {}
+        s = {'scheme':'vless','name':tag or 'vless','host':vn.get('address',''),'port':str(vn.get('port','443')),
+             'id':user.get('id',''),'password':'','method':'','params':{'type':net,'security':sec}}
+        if user.get('flow'): s['params']['flow'] = user['flow']
         if sec == 'reality':
             rs = ss.get('realitySettings', {}) or {}
-            for src, dst in [('serverName', 'sni'), ('publicKey', 'pbk'),
-                             ('shortId', 'sid'), ('fingerprint', 'fp'), ('spiderX', 'spiderX')]:
-                if rs.get(src):
-                    s['params'][dst] = str(rs[src])
+            for src, dst in [('serverName','sni'),('publicKey','pbk'),('shortId','sid'),('fingerprint','fp'),('spiderX','spiderX')]:
+                if rs.get(src): s['params'][dst] = str(rs[src])
         elif sec == 'tls':
             ts = ss.get('tlsSettings', {}) or {}
-            if ts.get('serverName'):
-                s['params']['sni'] = ts['serverName']
-            if ts.get('fingerprint'):
-                s['params']['fp'] = ts['fingerprint']
-            if ts.get('alpn'):
-                s['params']['alpn'] = ','.join(ts['alpn'])
+            if ts.get('serverName'): s['params']['sni'] = ts['serverName']
+            if ts.get('fingerprint'): s['params']['fp'] = ts['fingerprint']
+            if ts.get('alpn'): s['params']['alpn'] = ','.join(ts['alpn'])
         if net == 'ws':
             w = ss.get('wsSettings', {}) or {}
             s['params']['path'] = w.get('path', '/')
             headers = w.get('headers', {}) or {}
-            if headers.get('Host'):
-                s['params']['host'] = headers['Host']
-            if w.get('heartbeatPeriod'):
-                s['params']['heartbeatPeriod'] = str(w['heartbeatPeriod'])
+            if headers.get('Host'): s['params']['host'] = headers['Host']
+            if w.get('heartbeatPeriod'): s['params']['heartbeatPeriod'] = str(w['heartbeatPeriod'])
         elif net == 'grpc':
             g = ss.get('grpcSettings', {}) or {}
-            if g.get('serviceName'):
-                s['params']['serviceName'] = g['serviceName']
-            if g.get('authority'):
-                s['params']['authority'] = g['authority']
+            if g.get('serviceName'): s['params']['serviceName'] = g['serviceName']
+            if g.get('authority'): s['params']['authority'] = g['authority']
             s['params']['mode'] = 'multi' if g.get('multiMode') else 'auto'
         elif net == 'tcp':
             th = (ss.get('tcpSettings', {}) or {}).get('header', {}) or {}
             s['params']['headerType'] = th.get('type', 'none')
-        elif net in ('xhttp', 'splithttp'):
+        elif net in ('xhttp','splithttp'):
             x = ss.get('xhttpSettings', {}) or {}
             if x.get('path'): s['params']['path'] = x['path']
             if x.get('host'): s['params']['host'] = x['host']
@@ -3364,2482 +3838,1604 @@ def parse_xray_outbound(ob):
 
     elif proto == 'vmess':
         vnext = (ob.get('settings', {}) or {}).get('vnext', [{}])
-        if not vnext:
-            return None
-        vn = vnext[0]
-        users = vn.get('users', [{}])
-        user = users[0] if users else {}
-        s = {
-            'scheme': 'vmess', 'name': tag or 'vmess',
-            'host': vn.get('address', ''), 'port': str(vn.get('port', '443')),
-            'id': user.get('id', ''), 'password': '', 'method': '',
-            'params': {'type': net, 'security': sec}
-        }
-        if user.get('alterId'):
-            s['params']['alterId'] = str(user['alterId'])
-        if user.get('security'):
-            s['params']['encryption'] = user['security']
+        if not vnext: return None
+        vn = vnext[0]; users = vn.get('users', [{}]); user = users[0] if users else {}
+        s = {'scheme':'vmess','name':tag or 'vmess','host':vn.get('address',''),'port':str(vn.get('port','443')),
+             'id':user.get('id',''),'password':'','method':'','params':{'type':net,'security':sec}}
+        if user.get('alterId'): s['params']['alterId'] = str(user['alterId'])
+        if user.get('security'): s['params']['encryption'] = user['security']
         if sec == 'tls':
             ts = ss.get('tlsSettings', {}) or {}
-            if ts.get('serverName'):
-                s['params']['sni'] = ts['serverName']
+            if ts.get('serverName'): s['params']['sni'] = ts['serverName']
         return s
 
-    elif proto in ('shadowsocks', 'ss'):
+    elif proto in ('shadowsocks','ss'):
         servers = (ob.get('settings', {}) or {}).get('servers', [{}])
-        if not servers:
-            return None
+        if not servers: return None
         srv = servers[0]
-        return {
-            'scheme': 'ss', 'name': tag or 'ss',
-            'host': srv.get('address', ''), 'port': str(srv.get('port', '443')),
-            'id': '', 'password': srv.get('password', ''),
-            'method': srv.get('method', 'aes-256-gcm'), 'params': {}
-        }
+        return {'scheme':'ss','name':tag or 'ss','host':srv.get('address',''),'port':str(srv.get('port','443')),
+                'id':'','password':srv.get('password',''),'method':srv.get('method','aes-256-gcm'),'params':{}}
 
     elif proto == 'hysteria2':
         st = ob.get('settings', {}) or {}
-        s = {
-            'scheme': 'hysteria2', 'name': tag or 'hysteria2',
-            'host': st.get('address', ''), 'port': str(st.get('port', '443')),
-            'id': '', 'password': st.get('password', ''), 'method': '',
-            'params': {'type': 'hysteria2', 'security': 'tls'}
-        }
+        s = {'scheme':'hysteria2','name':tag or 'hysteria2','host':st.get('address',''),'port':str(st.get('port','443')),
+             'id':'','password':st.get('password',''),'method':'','params':{'type':'hysteria2','security':'tls'}}
         if st.get('obfs'):
             s['params']['obfs'] = st['obfs']
-            if st.get('obfsPassword'):
-                s['params']['obfs-password'] = st['obfsPassword']
+            if st.get('obfsPassword'): s['params']['obfs-password'] = st['obfsPassword']
         ts = ss.get('tlsSettings', {}) or {}
-        if ts.get('serverName'):
-            s['params']['sni'] = ts['serverName']
-        if ts.get('alpn'):
-            s['params']['alpn'] = ','.join(ts['alpn'])
+        if ts.get('serverName'): s['params']['sni'] = ts['serverName']
+        if ts.get('alpn'): s['params']['alpn'] = ','.join(ts['alpn'])
         return s
 
     elif proto == 'hysteria':
         st = ob.get('settings', {}) or {}
-        s = {
-            'scheme': 'hysteria', 'name': tag or 'hysteria',
-            'host': st.get('address', ''), 'port': str(st.get('port', '443')),
-            'id': '', 'password': st.get('auth', ''), 'method': '',
-            'params': {'type': 'hysteria', 'security': 'tls'}
-        }
-        if st.get('up'):
-            s['params']['up'] = str(st['up'])
-        if st.get('down'):
-            s['params']['down'] = str(st['down'])
+        s = {'scheme':'hysteria','name':tag or 'hysteria','host':st.get('address',''),'port':str(st.get('port','443')),
+             'id':'','password':st.get('auth',''),'method':'','params':{'type':'hysteria','security':'tls'}}
+        if st.get('up'): s['params']['up'] = str(st['up'])
+        if st.get('down'): s['params']['down'] = str(st['down'])
         return s
 
     elif proto == 'trojan':
         servers = (ob.get('settings', {}) or {}).get('servers', [{}])
-        if not servers:
-            return None
+        if not servers: return None
         srv = servers[0]
-        s = {
-            'scheme': 'trojan', 'name': tag or 'trojan',
-            'host': srv.get('address', ''), 'port': str(srv.get('port', '443')),
-            'id': '', 'password': srv.get('password', ''), 'method': '',
-            'params': {'type': net, 'security': sec if sec != 'none' else 'tls'}
-        }
+        s = {'scheme':'trojan','name':tag or 'trojan','host':srv.get('address',''),'port':str(srv.get('port','443')),
+             'id':'','password':srv.get('password',''),'method':'','params':{'type':net,'security':sec if sec != 'none' else 'tls'}}
         if sec == 'tls':
             ts = ss.get('tlsSettings', {}) or {}
-            if ts.get('serverName'):
-                s['params']['sni'] = ts['serverName']
+            if ts.get('serverName'): s['params']['sni'] = ts['serverName']
         return s
 
     elif proto == 'socks':
         servers = (ob.get('settings', {}) or {}).get('servers', [{}])
-        if not servers:
-            return None
+        if not servers: return None
         srv = servers[0]
-        return {
-            'scheme': 'socks5', 'name': tag or 'socks5',
-            'host': srv.get('address', ''), 'port': str(srv.get('port', '1080')),
-            'id': srv.get('user', ''), 'password': srv.get('pass', ''), 'method': '',
-            'params': {}
-        }
+        return {'scheme':'socks5','name':tag or 'socks5','host':srv.get('address',''),'port':str(srv.get('port','1080')),
+                'id':srv.get('user',''),'password':srv.get('pass',''),'method':'','params':{}}
 
     elif proto == 'http':
         servers = (ob.get('settings', {}) or {}).get('servers', [{}])
-        if not servers:
-            return None
+        if not servers: return None
         srv = servers[0]
-        return {
-            'scheme': 'http', 'name': tag or 'http',
-            'host': srv.get('address', ''), 'port': str(srv.get('port', '8080')),
-            'id': srv.get('user', ''), 'password': srv.get('pass', ''), 'method': '',
-            'params': {}
-        }
+        return {'scheme':'http','name':tag or 'http','host':srv.get('address',''),'port':str(srv.get('port','8080')),
+                'id':srv.get('user',''),'password':srv.get('pass',''),'method':'','params':{}}
 
     elif proto == 'wireguard':
         st = ob.get('settings', {}) or {}
-        peers = st.get('peers', [{}])
-        peer = peers[0] if peers else {}
-        return {
-            'scheme': 'wireguard', 'name': tag or 'wireguard',
-            'host': peer.get('endpoint', '').split(':')[0] if peer.get('endpoint') else '',
-            'port': peer.get('endpoint', '').split(':')[1] if peer.get('endpoint') and ':' in peer.get('endpoint') else '51820',
-            'id': st.get('secretKey', ''), 'password': peer.get('publicKey', ''), 'method': '',
-            'params': {
-                'allowedIPs': ','.join(peer.get('allowedIPs', ['0.0.0.0/0'])),
-                'mtu': str(st.get('mtu', 1420)),
-                'dns': st.get('dns', ''),
-                'presharedKey': peer.get('preSharedKey', ''),
-                'keepalive': str(peer.get('persistentKeepalive', 0))
-            }
-        }
+        peers = st.get('peers', [{}]); peer = peers[0] if peers else {}
+        ep = peer.get('endpoint', '')
+        return {'scheme':'wireguard','name':tag or 'wireguard',
+                'host':ep.split(':')[0] if ep else '','port':ep.split(':')[1] if ep and ':' in ep else '51820',
+                'id':st.get('secretKey',''),'password':peer.get('publicKey',''),'method':'',
+                'params':{'allowedIPs':','.join(peer.get('allowedIPs',['0.0.0.0/0'])),'mtu':str(st.get('mtu',1420)),
+                          'dns':st.get('dns',''),'presharedKey':peer.get('preSharedKey',''),
+                          'keepalive':str(peer.get('persistentKeepalive',0))}}
     return None
 
 def singbox_obj_to_server(obj):
-    if not isinstance(obj, dict):
-        return None
+    if not isinstance(obj, dict): return None
     t = (obj.get('type') or obj.get('protocol') or '').upper()
     host = obj.get('host') or obj.get('server') or obj.get('address') or ''
     port = obj.get('port')
-    if port is None:
-        return None
+    if port is None: return None
     port = str(port)
-    if not host or not port:
-        return None
+    if not host or not port: return None
     name = obj.get('title') or obj.get('remarks') or obj.get('name') or obj.get('tag') or ''
     alpn = obj.get('alpn') or ''
     peer = obj.get('peer') or obj.get('sni') or obj.get('serverName') or ''
-    if t in ('HYSTERIA2', 'HY2'):
-        s = {'scheme': 'hysteria2', 'name': name, 'host': host, 'port': port,
-             'id': '', 'password': obj.get('password') or obj.get('auth') or '',
-             'method': '', 'params': {'type': 'hysteria2', 'security': 'tls'}}
-        if peer:
-            s['params']['sni'] = peer
-        if alpn:
-            s['params']['alpn'] = alpn
+    if t in ('HYSTERIA2','HY2'):
+        s = {'scheme':'hysteria2','name':name,'host':host,'port':port,'id':'',
+             'password':obj.get('password') or obj.get('auth') or '','method':'',
+             'params':{'type':'hysteria2','security':'tls'}}
+        if peer: s['params']['sni'] = peer
+        if alpn: s['params']['alpn'] = alpn
         obfs = obj.get('obfs')
-        if obfs and obfs.lower() not in ('none', ''):
+        if obfs and obfs.lower() not in ('none',''):
             s['params']['obfs'] = obfs
-            if obj.get('obfsParam'):
-                s['params']['obfs-password'] = obj['obfsParam']
+            if obj.get('obfsParam'): s['params']['obfs-password'] = obj['obfsParam']
         return s
     if t == 'VLESS':
-        s = {'scheme': 'vless', 'name': name, 'host': host, 'port': port,
-             'id': obj.get('uuid') or obj.get('id') or '',
-             'password': '', 'method': '', 'params': {'type': 'tcp', 'security': 'none'}}
+        s = {'scheme':'vless','name':name,'host':host,'port':port,'id':obj.get('uuid') or obj.get('id') or '',
+             'password':'','method':'','params':{'type':'tcp','security':'none'}}
         if obj.get('tls') or obj.get('publicKey') or peer:
             s['params']['security'] = 'reality' if obj.get('publicKey') else 'tls'
             s['params']['type'] = 'tcp'
-        if peer:
-            s['params']['sni'] = peer
-        if obj.get('publicKey'):
-            s['params']['pbk'] = obj['publicKey']
-        if obj.get('shortId'):
-            s['params']['sid'] = obj['shortId']
-        if obj.get('tlsProfile'):
-            s['params']['fp'] = obj['tlsProfile']
-        if obj.get('fingerprint'):
-            s['params']['fp'] = obj['fingerprint']
-        xtls = obj.get('xtls')
-        if xtls in (2, '2', True):
-            s['params']['flow'] = 'xtls-rprx-vision'
-        if alpn:
-            s['params']['alpn'] = alpn
+        if peer: s['params']['sni'] = peer
+        if obj.get('publicKey'): s['params']['pbk'] = obj['publicKey']
+        if obj.get('shortId'): s['params']['sid'] = obj['shortId']
+        if obj.get('tlsProfile'): s['params']['fp'] = obj['tlsProfile']
+        if obj.get('fingerprint'): s['params']['fp'] = obj['fingerprint']
+        if obj.get('xtls') in (2,'2',True): s['params']['flow'] = 'xtls-rprx-vision'
+        if alpn: s['params']['alpn'] = alpn
         return s
     if t == 'TROJAN':
-        s = {'scheme': 'trojan', 'name': name, 'host': host, 'port': port,
-             'id': '', 'password': obj.get('password') or '',
-             'method': '', 'params': {'type': 'tcp', 'security': 'tls'}}
-        if peer:
-            s['params']['sni'] = peer
-        if alpn:
-            s['params']['alpn'] = alpn
+        s = {'scheme':'trojan','name':name,'host':host,'port':port,'id':'',
+             'password':obj.get('password') or '','method':'','params':{'type':'tcp','security':'tls'}}
+        if peer: s['params']['sni'] = peer
+        if alpn: s['params']['alpn'] = alpn
         return s
-    if t in ('SHADOWSOCKS', 'SS'):
-        return {'scheme': 'ss', 'name': name, 'host': host, 'port': port,
-                'id': '', 'password': obj.get('password') or '',
-                'method': obj.get('method') or 'aes-256-gcm', 'params': {}}
+    if t in ('SHADOWSOCKS','SS'):
+        return {'scheme':'ss','name':name,'host':host,'port':port,'id':'',
+                'password':obj.get('password') or '','method':obj.get('method') or 'aes-256-gcm','params':{}}
     return None
 
 def extract_servers_from_json(text):
-    try:
-        data = json.loads(text)
-    except Exception:
-        return [], None
-    if not isinstance(data, dict):
-        return [], None
+    try: data = json.loads(text)
+    except Exception: return [], None
+    if not isinstance(data, dict): return [], None
     outbounds = data.get('outbounds', [])
     servers = []
     for ob in outbounds:
-        if not isinstance(ob, dict):
-            continue
+        if not isinstance(ob, dict): continue
         proto = (ob.get('protocol') or '').lower()
-        if proto in ('vless', 'vmess', 'trojan', 'ss', 'shadowsocks', 'hysteria2', 'hysteria', 'socks', 'http', 'wireguard'):
+        if proto in ('vless','vmess','trojan','ss','shadowsocks','hysteria2','hysteria','socks','http','wireguard'):
             s = parse_xray_outbound(ob)
-            if s:
-                servers.append(s)
+            if s: servers.append(s)
     return servers, data
 
 def parse_singbox_multi(text):
     servers = []
     for line in text.splitlines():
         line = line.strip().rstrip(',')
-        if not line.startswith('{'):
-            continue
-        try:
-            obj = json.loads(line)
-        except Exception:
-            continue
+        if not line.startswith('{'): continue
+        try: obj = json.loads(line)
+        except Exception: continue
         srv = singbox_obj_to_server(obj)
-        if srv:
-            servers.append(srv)
+        if srv: servers.append(srv)
     return servers
 
-# Блок сборки URI
 def build_uri(s):
-    scheme = s['scheme']
-    host = s['host']
-    port = s['port']
-    params = dict(s['params'])
-    name = s.get('name', '')
-    if scheme in ('vless', 'vmess', 'trojan'):
-        uri = f"{scheme}://{quote(s.get('id', ''))}@{host}:{port}"
-    elif scheme in ('hysteria2', 'hy2', 'hysteria', 'hy'):
-        uri = f"{scheme}://{quote(s.get('password', ''))}@{host}:{port}"
+    scheme = s['scheme']; host = s['host']; port = s['port']
+    params = dict(s['params']); name = s.get('name','')
+    if scheme in ('vless','vmess','trojan'): uri = f"{scheme}://{quote(s.get('id',''))}@{host}:{port}"
+    elif scheme in ('hysteria2','hy2','hysteria','hy'): uri = f"{scheme}://{quote(s.get('password',''))}@{host}:{port}"
     elif scheme == 'ss':
-        ui = f"{s.get('method', '')}:{s.get('password', '')}"
-        b = base64.b64encode(ui.encode()).decode().rstrip('=')
-        uri = f"ss://{b}@{host}:{port}"
+        ui = f"{s.get('method','')}:{s.get('password','')}"
+        uri = f"ss://{base64.b64encode(ui.encode()).decode().rstrip('=')}@{host}:{port}"
     elif scheme == 'socks5':
-        auth = ''
-        if s.get('id') or s.get('password'):
-            auth = f"{quote(s.get('id', ''))}:{quote(s.get('password', ''))}@"
+        auth = f"{quote(s.get('id',''))}:{quote(s.get('password',''))}@" if (s.get('id') or s.get('password')) else ''
         uri = f"socks5://{auth}{host}:{port}"
     elif scheme == 'http':
-        auth = ''
-        if s.get('id') or s.get('password'):
-            auth = f"{quote(s.get('id', ''))}:{quote(s.get('password', ''))}@"
+        auth = f"{quote(s.get('id',''))}:{quote(s.get('password',''))}@" if (s.get('id') or s.get('password')) else ''
         uri = f"http://{auth}{host}:{port}"
-    elif scheme == 'tuic':
-        uri = f"tuic://{quote(s.get('id', ''))}:{quote(s.get('password', ''))}@{host}:{port}"
-    elif scheme == 'juicity':
-        uri = f"juicity://{quote(s.get('id', ''))}:{quote(s.get('password', ''))}@{host}:{port}"
-    elif scheme == 'wireguard':
-        uri = f"wireguard://{quote(s.get('id', ''))}@{host}:{port}"
-    elif scheme in ('amneziawg', 'awg'):
-        uri = f"{scheme}://{quote(s.get('id', ''))}@{host}:{port}"
-    elif scheme == 'mieru':
-        uri = f"mieru://{quote(s.get('id', ''))}:{quote(s.get('password', ''))}@{host}:{port}"
-    elif scheme == 'sudoku':
-        uri = f"sudoku://{quote(s.get('id', ''))}:{quote(s.get('password', ''))}@{host}:{port}"
-    elif scheme == 'openconnect':
-        uri = f"openconnect://{quote(s.get('id', ''))}@{host}:{port}"
-    else:
-        return s.get('raw', '')
-    if params:
-        uri += '?' + urlencode(params, doseq=True)
-    if name:
-        uri += '#' + quote(name)
+    elif scheme == 'tuic': uri = f"tuic://{quote(s.get('id',''))}:{quote(s.get('password',''))}@{host}:{port}"
+    elif scheme == 'juicity': uri = f"juicity://{quote(s.get('id',''))}:{quote(s.get('password',''))}@{host}:{port}"
+    elif scheme == 'wireguard': uri = f"wireguard://{quote(s.get('id',''))}@{host}:{port}"
+    elif scheme in ('amneziawg','awg'): uri = f"{scheme}://{quote(s.get('id',''))}@{host}:{port}"
+    elif scheme == 'mieru': uri = f"mieru://{quote(s.get('id',''))}:{quote(s.get('password',''))}@{host}:{port}"
+    elif scheme == 'sudoku': uri = f"sudoku://{quote(s.get('id',''))}:{quote(s.get('password',''))}@{host}:{port}"
+    elif scheme == 'openconnect': uri = f"openconnect://{quote(s.get('id',''))}@{host}:{port}"
+    else: return s.get('raw', '')
+    if params: uri += '?' + urlencode(params, doseq=True)
+    if name: uri += '#' + quote(name)
     return uri
 
 def show_servers_list(servers, show_params=False):
     if not servers:
-        print("[!] Список пуст.")
-        return
-    print(f"\n{'#':>3} {'Протокол':12} {'Имя':28} {'Адрес':30} {'Транспорт':8} {'Sec':8}")
+        print(f"[!] {tr('list_empty')}"); return
+    print(f"\n{'#':>3} {'Protocol':12} {'Name':28} {'Address':30} {'Transport':10} {'Sec':8}")
     ln()
     for i, s in enumerate(servers, 1):
-        name = (s.get('name', '') or '(без имени)')[:28]
+        name = (s.get('name','') or '(no name)')[:28]
         addr = f"{s['host']}:{s['port']}"[:30]
-        t = s['params'].get('type', 'tcp')
-        sec = s['params'].get('security', 'none')
-        print(f"{i:>3} {s['scheme']:12} {name:28} {addr:30} {t:8} {sec:8}")
+        t = s['params'].get('type','tcp')
+        sec = s['params'].get('security','none')
+        print(f"{i:>3} {s['scheme']:12} {name:28} {addr:30} {t:10} {sec:8}")
         if show_params:
             extra = []
-            for k in ('flow', 'path', 'host', 'sni', 'pbk', 'sid', 'fp', 'serviceName', 'mode', 'concurrency', 'alpn', 'obfs', 'method', 'alterId', 'encryption', 'allowedIPs', 'mtu', 'dns', 'keepalive'):
+            for k in ('flow','path','host','sni','pbk','sid','fp','serviceName','mode','concurrency','alpn','obfs','method','alterId','encryption','allowedIPs','mtu','dns','keepalive'):
                 if k in s['params'] and s['params'][k]:
                     val = str(s['params'][k])
-                    if len(val) > 40:
-                        val = val[:37] + "..."
+                    if len(val) > 40: val = val[:37] + "..."
                     extra.append(f"{k}={val}")
-            if extra:
-                print(f"      {', '.join(extra)}")
+            if extra: print(f"      {', '.join(extra)}")
 
-# Блок конфигурации по умолчанию
 def cfg_default():
-    return {
-        "dns_servers": DNS_SERVERS,
-        "dns_query_strategy": "UseIP",
-        "observatory_url": "https://www.google.com/generate_204",
-        "observatory_interval": "1m",
-        "observatory_timeout": "3s",
-        "balancer_strategy": "leastLoad",
-        "balancer_expected": 3,
-        "balancer_max_rtt": "2s",
-        "balancer_tolerance": 0,
-        "balancer_baselines": ["2s"],
-        "proxy_ports": [10808, 10809],
-        "mux_enabled": False,
-        "mux_concurrency": 8,
-        "mux_xudp_concurrency": 0,
-        "mux_xudp_proxy_udp443": "reject",
-        "global_proxy": "proxy",
-        "sniffing_enabled": True,
-        "sniffing_dest_override": ["http", "tls", "quic"],
-        "sniffing_route_only": True,
-        "json_name": "xray_config",
-        "json_remarks": "SubManager Auto",
-        "json_use_remarks_as_name": False,
-        "routing_order": ["block", "direct", "proxy"],
-        "routing": {
-            "direct_domains": [], "block_domains": [],
-            "direct_ips": [], "block_ips": [],
-            "block_protocols": [], "direct_ports": [], "block_ports": [],
-            "custom_rules": []
-        }
-    }
+    return {"dns_servers":DNS_SERVERS,"dns_query_strategy":"UseIP","observatory_url":"https://www.google.com/generate_204",
+        "observatory_interval":"1m","observatory_timeout":"3s","balancer_strategy":"leastLoad","balancer_expected":3,
+        "balancer_max_rtt":"2s","balancer_tolerance":0,"balancer_baselines":["2s"],"proxy_ports":[10808,10809],
+        "mux_enabled":False,"mux_concurrency":8,"mux_xudp_concurrency":0,"mux_xudp_proxy_udp443":"reject",
+        "global_proxy":"proxy","sniffing_enabled":True,"sniffing_dest_override":["http","tls","quic"],"sniffing_route_only":True,
+        "json_name":"xray_config","json_remarks":"SubManager Auto","json_use_remarks_as_name":False,
+        "routing_order":["block","direct","proxy"],
+        "routing":{"direct_domains":[],"block_domains":[],"direct_ips":[],"block_ips":[],"block_protocols":[],
+                   "direct_ports":[],"block_ports":[],"custom_rules":[]}}
 
-def normalize_cfg(cfg):
+def norm_cfg(cfg):
     d = cfg_default()
     for k, v in cfg.items():
         if isinstance(v, dict) and k in d and isinstance(d[k], dict):
-            merged = dict(d[k])
-            merged.update(v)
-            cfg[k] = merged
-        else:
-            d[k] = v
+            m = dict(d[k]); m.update(v); cfg[k] = m
+        else: d[k] = v
     cfg = d
-    cfg['observatory_interval'] = normalize_duration(cfg.get('observatory_interval', '1m'), 'm')
-    cfg['observatory_timeout'] = normalize_duration(cfg.get('observatory_timeout', '3s'), 's')
-    cfg['balancer_max_rtt'] = normalize_duration(cfg.get('balancer_max_rtt', '2s'), 's')
-    cfg['balancer_strategy'] = normalize_balancer_type(cfg.get('balancer_strategy', 'leastLoad'))
-    cfg['balancer_expected'] = normalize_int(cfg.get('balancer_expected', 3), 3, 1, 999)
-    cfg['balancer_tolerance'] = normalize_float(cfg.get('balancer_tolerance', 0), 0.0)
-    bl = cfg.get('balancer_baselines', ['2s'])
-    if not isinstance(bl, list):
-        bl = ['2s']
-    cfg['balancer_baselines'] = [normalize_duration(b, 's') for b in bl]
-    pp = cfg.get('proxy_ports', [10808, 10809])
-    if not isinstance(pp, list) or len(pp) != 2:
-        pp = [10808, 10809]
-    cfg['proxy_ports'] = [normalize_int(pp[0], 10808, 1, 65535), normalize_int(pp[1], 10809, 1, 65535)]
-    cfg['mux_concurrency'] = normalize_int(cfg.get('mux_concurrency', 8), 8, 1, 128)
-    cfg['mux_xudp_concurrency'] = normalize_int(cfg.get('mux_xudp_concurrency', 0), 0, 0, 1024)
-    if cfg.get('mux_xudp_proxy_udp443') not in ('reject', 'skip', 'allow'):
-        cfg['mux_xudp_proxy_udp443'] = 'reject'
-    if cfg.get('global_proxy') not in ('proxy', 'direct', 'block'):
-        cfg['global_proxy'] = 'proxy'
-    if cfg.get('dns_query_strategy') not in ('UseIP', 'UseIPv4', 'UseIPv6', 'AsIs'):
-        cfg['dns_query_strategy'] = 'UseIP'
+    cfg['observatory_interval'] = norm_dur(cfg.get('observatory_interval','1m'), 'm')
+    cfg['observatory_timeout'] = norm_dur(cfg.get('observatory_timeout','3s'), 's')
+    cfg['balancer_max_rtt'] = norm_dur(cfg.get('balancer_max_rtt','2s'), 's')
+    cfg['balancer_strategy'] = norm_bal(cfg.get('balancer_strategy','leastLoad'))
+    cfg['balancer_expected'] = norm_int(cfg.get('balancer_expected',3), 3, 1, 999)
+    cfg['balancer_tolerance'] = norm_float(cfg.get('balancer_tolerance',0), 0.0)
+    bl = cfg.get('balancer_baselines',['2s'])
+    if not isinstance(bl, list): bl = ['2s']
+    cfg['balancer_baselines'] = [norm_dur(b,'s') for b in bl]
+    pp = cfg.get('proxy_ports',[10808,10809])
+    if not isinstance(pp, list) or len(pp) != 2: pp = [10808,10809]
+    cfg['proxy_ports'] = [norm_int(pp[0],10808,1,65535), norm_int(pp[1],10809,1,65535)]
+    cfg['mux_concurrency'] = norm_int(cfg.get('mux_concurrency',8),8,1,128)
+    cfg['mux_xudp_concurrency'] = norm_int(cfg.get('mux_xudp_concurrency',0),0,0,1024)
+    if cfg.get('mux_xudp_proxy_udp443') not in ('reject','skip','allow'): cfg['mux_xudp_proxy_udp443'] = 'reject'
+    if cfg.get('global_proxy') not in ('proxy','direct','block'): cfg['global_proxy'] = 'proxy'
+    if cfg.get('dns_query_strategy') not in ('UseIP','UseIPv4','UseIPv6','AsIs'): cfg['dns_query_strategy'] = 'UseIP'
     ds = cfg.get('dns_servers', DNS_SERVERS)
-    if not isinstance(ds, list) or not ds:
-        cfg['dns_servers'] = DNS_SERVERS
-    so = cfg.get('sniffing_dest_override', ["http", "tls", "quic"])
-    if not isinstance(so, list):
-        so = ["http", "tls", "quic"]
+    if not isinstance(ds, list) or not ds: cfg['dns_servers'] = DNS_SERVERS
+    so = cfg.get('sniffing_dest_override',["http","tls","quic"])
+    if not isinstance(so, list): so = ["http","tls","quic"]
     cfg['sniffing_dest_override'] = so
-    ro = cfg.get('routing_order', ["block", "direct", "proxy"])
-    if not isinstance(ro, list) or set(ro) != {'block', 'direct', 'proxy'}:
-        ro = ["block", "direct", "proxy"]
+    ro = cfg.get('routing_order',["block","direct","proxy"])
+    if not isinstance(ro, list) or set(ro) != {'block','direct','proxy'}: ro = ["block","direct","proxy"]
     cfg['routing_order'] = ro
     return cfg
 
 def cfg_load():
     if CFG_FILE.exists():
         try:
-            with open(CFG_FILE, 'r', encoding='utf-8') as f:
-                saved = json.load(f)
-            return normalize_cfg(saved)
-        except Exception:
-            pass
+            with open(CFG_FILE, 'r', encoding='utf-8') as f: return norm_cfg(json.load(f))
+        except Exception: pass
     return cfg_default()
 
 def cfg_save(cfg):
-    cfg = normalize_cfg(cfg)
+    cfg = norm_cfg(cfg)
     CFG_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(CFG_FILE, 'w', encoding='utf-8') as f:
-        json.dump(cfg, f, ensure_ascii=False, indent=2)
+    with open(CFG_FILE, 'w', encoding='utf-8') as f: json.dump(cfg, f, ensure_ascii=False, indent=2)
 
 def ensure_dirs():
     for d in [INPUT_DIR, OUTPUT_DIR, BACKUP_DIR, ROUTING_DIR]:
-        if not d.exists():
-            d.mkdir(parents=True, exist_ok=True)
+        if not d.exists(): d.mkdir(parents=True, exist_ok=True)
 
-def sanitize_filename(name):
-    name = re.sub(r'[\\/:*?"<>|]', '_', name)
-    name = name.strip().strip('.')
+def sanitize_fn(name):
+    name = re.sub(r'[\\/:*?"<>|]', '_', name).strip().strip('.')
     return name or "xray_config"
 
 def transliterate(name):
-    mapping = {
-        'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e','ж':'zh','з':'z',
-        'и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r',
-        'с':'s','т':'t','у':'u','ф':'f','х':'h','ц':'ts','ч':'ch','ш':'sh','щ':'sch',
-        'ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya',
-        'А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ё':'E','Ж':'Zh','З':'Z',
-        'И':'I','Й':'Y','К':'K','Л':'L','М':'M','Н':'N','О':'O','П':'P','Р':'R',
-        'С':'S','Т':'T','У':'U','Ф':'F','Х':'H','Ц':'Ts','Ч':'Ch','Ш':'Sh','Щ':'Sch',
-        'Ъ':'','Ы':'Y','Ь':'','Э':'E','Ю':'Yu','Я':'Ya',' ':'_'
-    }
-    out = []
-    for ch in name:
-        out.append(mapping.get(ch, ch))
-    return ''.join(out)
+    mp = {'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'h','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya',
+          'А':'A','Б':'B','В':'V','Г':'G','Д':'D','Е':'E','Ё':'E','Ж':'Zh','З':'Z','И':'I','Й':'Y','К':'K','Л':'L','М':'M','Н':'N','О':'O','П':'P','Р':'R','С':'S','Т':'T','У':'U','Ф':'F','Х':'H','Ц':'Ts','Ч':'Ch','Ш':'Sh','Щ':'Sch','Ъ':'','Ы':'Y','Ь':'','Э':'E','Ю':'Yu','Я':'Ya',' ':'_'}
+    return ''.join(mp.get(ch, ch) for ch in name)
 
-def autosave_servers(servers):
-    if not servers:
-        return
-    lines = [build_uri(s) for s in servers]
-    with open(AUTOSAVE_FILE, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(lines))
+def autosave(servers):
+    if not servers: return
+    with open(AUTOSAVE_FILE, 'w', encoding='utf-8') as f: f.write('\n'.join(build_uri(s) for s in servers))
 
-def autoload_servers():
-    if not AUTOSAVE_FILE.exists():
-        return []
-    try:
-        raw = AUTOSAVE_FILE.read_text(encoding='utf-8', errors='ignore')
-    except Exception:
-        return []
-    srv, _ = parse_input(raw)
-    return srv
-
-# Блок загрузки источников
-def load_source():
-    hdr("ЗАГРУЗКА ИСХОДНИКОВ")
-    print("  1 - Локальный файл")
-    print("  2 - По ссылке (URL)")
-    print("  3 - Несколько ссылок подряд")
-    print("  q - Назад")
-    ch = ask("Выбор [1]: ", default="1", choices=["1", "2", "3"])
-    if ch == EXIT:
-        return None
-    if ch == "1":
-        files = sorted([p for p in INPUT_DIR.glob("*") if p.is_file()])
-        if not files:
-            print(f"[!] Папка {INPUT_DIR} пуста.")
-            print(f"    Поместите файл (ссылки, base64 или JSON) в {INPUT_DIR}")
-            input("Enter...")
-            return None
-        print("\n[+] Доступные файлы:")
-        for i, f in enumerate(files, 1):
-            print(f"  {i}. {f.name} ({fmt_size(f.stat().st_size)})")
-        idx = ask_int("Номер файла (q - назад): ", mn=1, mx=len(files))
-        if idx == EXIT or idx is None:
-            return None
-        raw = files[idx - 1].read_text(encoding='utf-8', errors='ignore')
-    elif ch == "2":
-        url = ask("URL подписки (q - назад): ")
-        if url == EXIT or not url:
-            return None
-        raw = dl_url(url)
-        if not raw:
-            print("[!] Не удалось загрузить.")
-            input("Enter...")
-            return None
-    else:
-        print("[?] Вводите URL по одному. 'q' - завершить.")
-        parts = []
-        while True:
-            u = ask("URL (q - конец): ")
-            if u == EXIT or not u:
-                break
-            t = dl_url(u)
-            if t:
-                t2 = auto_decode(t)
-                parts.append(t2)
-                print(f"  [+] Добавлено. Всего частей: {len(parts)}")
-            else:
-                print(f"  [!] Не удалось загрузить: {u}")
-        if not parts:
-            input("Enter...")
-            return None
-        raw = "\n".join(parts)
-        print(f"[+] Объединено частей: {len(parts)}")
-        return raw
-    return auto_decode(raw)
+def autoload():
+    if not AUTOSAVE_FILE.exists(): return []
+    try: raw = AUTOSAVE_FILE.read_text(encoding='utf-8', errors='ignore')
+    except Exception: return []
+    srv, _ = parse_input(raw); return srv
 
 def parse_input(raw):
-    if not raw:
-        return [], None
-    stripped = raw.strip()
-    if stripped.startswith('{'):
-        servers, json_data = extract_servers_from_json(stripped)
+    if not raw: return [], None
+    st = raw.strip()
+    if st.startswith('{'):
+        servers, jd = extract_servers_from_json(st)
         if servers:
-            print(f"[+] Обнаружен Xray JSON конфиг. Извлечено outbounds: {len(servers)}")
-            return servers, json_data
+            print(f"[+] {tr('xray_detected')}: {len(servers)}")
+            return servers, jd
     servers = []
     if '{' in raw and '"type"' in raw.upper():
         sb = parse_singbox_multi(raw)
         if sb:
-            print(f"[+] Обнаружены sing-box-объекты: {len(sb)}")
-            servers.extend(sb)
+            print(f"[+] {tr('singbox_detected')}: {len(sb)}"); servers.extend(sb)
     links = extract_links(raw)
     if links:
         cnt = 0
         for l in links:
             p = parse_uri(l)
-            if p:
-                servers.append(p)
-                cnt += 1
-        print(f"[+] Найдено ссылок: {len(links)}, распарсено: {cnt}")
-    if servers:
-        return servers, None
-    print("[!] Не удалось распарсить данные.")
+            if p: servers.append(p); cnt += 1
+        print(f"[+] {tr('links_found')}: {len(links)}, {tr('parsed')}: {cnt}")
+    if servers: return servers, None
+    print(f"[!] {tr('parse_data')}")
     return [], None
 
-# Блок дедупликации
+def load_source():
+    hdr(tr("load_src"))
+    print("  " + tr("load_1")); print("  " + tr("load_2")); print("  " + tr("load_3")); print("  " + tr("q_back"))
+    ch = _in_choice(f"{tr('choice')} [1]: ", ["1","2","3"]) or "1"
+    if ch == EXIT: return None
+    if ch == "1":
+        files = sorted([p for p in INPUT_DIR.glob("*") if p.is_file()])
+        if not files:
+            print(f"[!] {tr('folder_empty')}: {INPUT_DIR}")
+            print(f"    {tr('put_file')} {INPUT_DIR}")
+            _in("\n" + tr("q_back") + ": ", allow_exit=False)
+            return None
+        print(f"\n[+] Files:")
+        for i, f in enumerate(files, 1): print(f"  {i}. {f.name} ({fmt_size(f.stat().st_size)})")
+        idx = _in_int(f"{tr('file_n')} ({tr('q_back')}): ", mn=1, mx=len(files))
+        if idx == EXIT or idx is None: return None
+        raw = files[idx-1].read_text(encoding='utf-8', errors='ignore')
+    elif ch == "2":
+        url = _in(f"{tr('url_sub')} ({tr('q_back')}): ")
+        if url == EXIT or not url: return None
+        raw = dl_url(url)
+        if not raw:
+            print(f"[!] {tr('dl_fail')}")
+            _in("\n" + tr("q_back") + ": ", allow_exit=False)
+            return None
+    else:
+        print(f"[?] {tr('enter_urls')}")
+        parts = []
+        while True:
+            u = _in(f"{tr('url_q')}: ")
+            if u == EXIT or not u: break
+            t = dl_url(u)
+            if t:
+                parts.append(auto_decode(t))
+                print(f"  [+] {tr('added')}: {len(parts)}")
+            else: print(f"  [!] {tr('dl_fail')}: {u}")
+        if not parts:
+            _in("\n" + tr("q_back") + ": ", allow_exit=False); return None
+        raw = "\n".join(parts)
+        print(f"[+] {tr('merged')}: {len(parts)}")
+        return raw
+    return auto_decode(raw)
+
 def dedupe_servers(servers, mode='full'):
-    seen = set()
-    out = []
+    seen = set(); out = []
     for s in servers:
-        if mode == 'full':
-            key = (s['scheme'], s['host'], s['port'], s.get('id', '') or s.get('password', '') or s.get('method', ''))
-        elif mode == 'name':
-            key = s.get('name', '')
-        elif mode == 'addr':
-            key = (s['host'], s['port'])
-        elif mode == 'user':
-            key = (s['host'], s['port'], s.get('id', '') or s.get('password', ''))
-        else:
-            key = (s['scheme'], s['host'], s['port'])
-        if key not in seen:
-            seen.add(key)
-            out.append(s)
+        if mode == 'full': key = (s['scheme'],s['host'],s['port'],s.get('id','') or s.get('password','') or s.get('method',''))
+        elif mode == 'name': key = s.get('name','')
+        elif mode == 'addr': key = (s['host'],s['port'])
+        elif mode == 'user': key = (s['host'],s['port'],s.get('id','') or s.get('password',''))
+        else: key = (s['scheme'],s['host'],s['port'])
+        if key not in seen: seen.add(key); out.append(s)
     removed = len(servers) - len(out)
-    print(f"[+] Удалено дубликатов: {removed}" if removed else "[+] Дубликатов нет.")
+    print(f"[+] {tr('dedupe_removed')}: {removed}" if removed else f"[+] {tr('dedupe_none')}")
     return out
 
 def dedupe_menu(servers):
-    hdr("ДЕДУПЛИКАЦИЯ")
-    print("  1 - Полное сходство")
-    print("  2 - По имени")
-    print("  3 - По адресу")
-    print("  4 - По адресу и пользователю")
-    print("  5 - По протоколу + адрес + порт")
-    print("  q - Отмена")
-    ch = ask("Выбор: ", choices=["1", "2", "3", "4", "5"])
-    if ch == EXIT:
-        return servers
-    mode_map = {"1": "full", "2": "name", "3": "addr", "4": "user", "5": "proto"}
-    return dedupe_servers(servers, mode_map[ch])
+    hdr(tr("dedupe_hdr"))
+    print("  " + tr("d_full")); print("  " + tr("d_name")); print("  " + tr("d_addr")); print("  " + tr("d_user"))
+    print("  " + tr("d_proto")); print("  " + tr("q_back"))
+    ch = _in_choice(f"{tr('choice')}: ", ["1","2","3","4","5"])
+    if ch == EXIT: return servers
+    mm = {"1":"full","2":"name","3":"addr","4":"user","5":"proto"}
+    return dedupe_servers(servers, mm[ch])
 
-# Блок удаления
 def delete_by_keyword(servers):
-    hdr("УДАЛЕНИЕ СЕРВЕРОВ")
-    print("  1 - По имени")
-    print("  2 - По протоколу")
-    print("  3 - По транспорту")
-    print("  4 - По security")
-    print("  5 - По домену")
-    print("  6 - По номерам")
-    print("  7 - Инвертировать")
-    print("  q - Отмена")
-    ch = ask("Выбор: ", choices=["1", "2", "3", "4", "5", "6", "7"])
-    if ch == EXIT:
-        return servers
+    hdr(tr("del_hdr"))
+    print("  " + tr("del_1")); print("  " + tr("del_2")); print("  " + tr("del_3")); print("  " + tr("del_4"))
+    print("  " + tr("del_5")); print("  " + tr("del_6")); print("  " + tr("del_7")); print("  " + tr("q_back"))
+    ch = _in_choice(f"{tr('choice')}: ", ["1","2","3","4","5","6","7"])
+    if ch == EXIT: return servers
     idxs = None
     if ch == "1":
-        kw = ask("Слова через запятую: ")
-        if kw == EXIT:
-            return servers
+        kw = _in(f"{tr('words_csv')}: ")
+        if kw == EXIT: return servers
         kws = [k.strip().lower() for k in kw.split(',') if k.strip()]
-        if not kws:
-            return servers
-        idxs = [i for i, s in enumerate(servers) if any(k in s.get('name', '').lower() for k in kws)]
+        if not kws: return servers
+        idxs = [i for i,s in enumerate(servers) if any(k in s.get('name','').lower() for k in kws)]
     elif ch == "2":
-        proto = ask("Протокол: ").lower()
-        if proto == EXIT:
-            return servers
-        idxs = [i for i, s in enumerate(servers) if s['scheme'] == proto]
+        proto = _in(f"{tr('proto_l')}: ").lower()
+        if proto == EXIT: return servers
+        idxs = [i for i,s in enumerate(servers) if s['scheme'] == proto]
     elif ch == "3":
-        t = ask("Транспорт: ").lower()
-        if t == EXIT:
-            return servers
-        idxs = [i for i, s in enumerate(servers) if s['params'].get('type', 'tcp') == t]
+        t = _in(f"{tr('transport')}: ").lower()
+        if t == EXIT: return servers
+        idxs = [i for i,s in enumerate(servers) if s['params'].get('type','tcp') == t]
     elif ch == "4":
-        sec = ask("Security: ").lower()
-        if sec == EXIT:
-            return servers
-        idxs = [i for i, s in enumerate(servers) if s['params'].get('security', 'none') == sec]
+        sec = _in(f"{tr('security')}: ").lower()
+        if sec == EXIT: return servers
+        idxs = [i for i,s in enumerate(servers) if s['params'].get('security','none') == sec]
     elif ch == "5":
-        dom = ask("Домен: ").lower()
-        if dom == EXIT:
-            return servers
-        idxs = [i for i, s in enumerate(servers) if dom in s['host'].lower()]
+        dom = _in(f"{tr('domain')}: ").lower()
+        if dom == EXIT: return servers
+        idxs = [i for i,s in enumerate(servers) if dom in s['host'].lower()]
     elif ch == "6":
         show_servers_list(servers)
-        sel = ask_multi("Номера: ", 1, len(servers))
-        if sel == EXIT or not sel:
-            return servers
-        idxs = [i - 1 for i in sel]
+        sel = _in_multi(f"{tr('numbers')}: ", 1, len(servers))
+        if sel == EXIT or not sel: return servers
+        idxs = [i-1 for i in sel]
     elif ch == "7":
-        kw = ask("Ключевые слова для ИНВЕРТА: ")
-        if kw == EXIT:
-            return servers
+        kw = _in(f"{tr('kw_inv')}: ")
+        if kw == EXIT: return servers
         kws = [k.strip().lower() for k in kw.split(',') if k.strip()]
-        if not kws:
-            return servers
-        idxs = [i for i, s in enumerate(servers) if not any(k in s.get('name', '').lower() for k in kws)]
+        if not kws: return servers
+        idxs = [i for i,s in enumerate(servers) if not any(k in s.get('name','').lower() for k in kws)]
     if not idxs:
-        print("[!] Ничего не найдено.")
-        input("Enter...")
-        return servers
-    print(f"\n[+] Найдено: {len(idxs)}")
-    for i in idxs[:20]:
-        print(f"   - {servers[i].get('name', '')} ({servers[i]['scheme']}://{servers[i]['host']})")
-    if len(idxs) > 20:
-        print(f"   ... и ещё {len(idxs) - 20}")
-    ans = ask("Удалить? (y/n) [n]: ", default="n")
-    if ans.lower() == 'y':
-        for i in sorted(idxs, reverse=True):
-            servers.pop(i)
-        print(f"[+] Удалено: {len(idxs)}")
+        print(f"[!] {tr('not_found')}")
+        _in("\n" + tr("q_back") + ": ", allow_exit=False); return servers
+    print(f"\n[+] {tr('found')}: {len(idxs)}")
+    for i in idxs[:20]: print(f"   - {servers[i].get('name','')} ({servers[i]['scheme']}://{servers[i]['host']})")
+    if len(idxs) > 20: print(f"   ... +{len(idxs)-20}")
+    ans = _in(f"{tr('delete_q')} [n]: ", default="n")
+    if ans and ans.lower() == 'y':
+        for i in sorted(idxs, reverse=True): servers.pop(i)
+        print(f"[+] {tr('deleted_n')}: {len(idxs)}")
     return servers
 
-# Блок сортировки
 def sort_servers(servers):
-    hdr("СОРТИРОВКА")
-    print("  1 - По имени (A-Z)")
-    print("  2 - По имени (Z-A)")
-    print("  3 - По протоколу")
-    print("  4 - По хосту")
-    print("  5 - По порту")
-    print("  6 - Случайно")
-    print("  q - Отмена")
-    ch = ask("Выбор: ", choices=["1", "2", "3", "4", "5", "6"])
-    if ch == EXIT:
-        return servers
-    if ch == "1":
-        servers.sort(key=lambda x: x.get('name', '').lower())
-    elif ch == "2":
-        servers.sort(key=lambda x: x.get('name', '').lower(), reverse=True)
-    elif ch == "3":
-        servers.sort(key=lambda x: x['scheme'])
-    elif ch == "4":
-        servers.sort(key=lambda x: x['host'].lower())
-    elif ch == "5":
-        servers.sort(key=lambda x: int(x['port']) if str(x['port']).isdigit() else 0)
-    elif ch == "6":
-        random.shuffle(servers)
-    else:
-        return servers
-    print("[+] Отсортировано.")
-    return servers
+    hdr(tr("sort_hdr"))
+    print("  " + tr("s_az")); print("  " + tr("s_za")); print("  " + tr("s_proto")); print("  " + tr("s_host"))
+    print("  " + tr("s_port")); print("  " + tr("s_rand")); print("  " + tr("q_back"))
+    ch = _in_choice(f"{tr('choice')}: ", ["1","2","3","4","5","6"])
+    if ch == EXIT: return servers
+    if ch == "1": servers.sort(key=lambda x: x.get('name','').lower())
+    elif ch == "2": servers.sort(key=lambda x: x.get('name','').lower(), reverse=True)
+    elif ch == "3": servers.sort(key=lambda x: x['scheme'])
+    elif ch == "4": servers.sort(key=lambda x: x['host'].lower())
+    elif ch == "5": servers.sort(key=lambda x: int(x['port']) if str(x['port']).isdigit() else 0)
+    elif ch == "6": random.shuffle(servers)
+    print(f"[+] {tr('sorted')}"); return servers
 
 def move_server(servers):
     show_servers_list(servers)
-    idx = ask_int("Номер сервера для перемещения (q - отмена): ", mn=1, mx=len(servers))
-    if idx == EXIT or idx is None:
-        return servers
-    direction = ask("Направление (u=вверх / d=вниз): ", choices=["u", "d"])
-    if direction == EXIT:
-        return servers
+    idx = _in_int(f"{tr('move_n')} ({tr('q_back')}): ", mn=1, mx=len(servers))
+    if idx == EXIT or idx is None: return servers
+    d = _in_choice(f"{tr('direction')}: ", ["u","d"])
+    if d == EXIT: return servers
     i = idx - 1
-    if direction == "u" and i > 0:
-        servers[i], servers[i - 1] = servers[i - 1], servers[i]
-        print("[+] Перемещён вверх.")
-    elif direction == "d" and i < len(servers) - 1:
-        servers[i], servers[i + 1] = servers[i + 1], servers[i]
-        print("[+] Перемещён вниз.")
-    else:
-        print("[!] Некуда двигать.")
+    if d == "u" and i > 0: servers[i], servers[i-1] = servers[i-1], servers[i]; print(f"[+] {tr('moved_up')}")
+    elif d == "d" and i < len(servers) - 1: servers[i], servers[i+1] = servers[i+1], servers[i]; print(f"[+] {tr('moved_dn')}")
+    else: print(f"[!] {tr('no_move')}")
     return servers
 
 def duplicate_servers(servers):
     show_servers_list(servers)
-    sel = ask_multi("Номера для дублирования: ", 1, len(servers))
-    if sel == EXIT or not sel:
-        return servers
+    sel = _in_multi(f"{tr('dup_n')}: ", 1, len(servers))
+    if sel == EXIT or not sel: return servers
     new = []
     for idx in sel:
-        s = copy.deepcopy(servers[idx - 1])
-        s['name'] = f"{s.get('name', '')} (copy)"
+        s = copy.deepcopy(servers[idx-1])
+        s['name'] = f"{s.get('name','')} (copy)"
         new.append(s)
     servers.extend(new)
-    print(f"[+] Создано дубликатов: {len(new)}")
-    ans = ask("Отредактировать? (y/n) [n]: ", default="n")
-    if ans.lower() == 'y':
-        new_indices = list(range(len(servers) - len(new), len(servers)))
-        edit_params_for_group(servers, new_indices)
+    print(f"[+] {tr('dup_created')}: {len(new)}")
+    ans = _in(f"{tr('edit_q')} [n]: ", default="n")
+    if ans and ans.lower() == 'y':
+        edit_params_for_group(servers, list(range(len(servers)-len(new), len(servers))))
     return servers
 
-# Список редактируемых параметров
 PARAM_LIST = [
-    ("scheme", "Протокол"), ("type", "Транспорт"), ("security", "Безопасность"),
-    ("flow", "Flow"), ("path", "Path"), ("host", "Host"), ("sni", "SNI"),
-    ("pbk", "PublicKey"), ("sid", "ShortId"), ("fp", "Fingerprint"),
-    ("serviceName", "ServiceName"), ("authority", "Authority"), ("mode", "Mode"),
-    ("port", "Порт"), ("host_addr", "Адрес"), ("alpn", "ALPN"),
-    ("obfs", "Obfs"), ("obfs-password", "Obfs-password"),
-    ("id", "UUID / логин"), ("password", "Пароль"), ("method", "Метод SS"),
-    ("concurrency", "Concurrency"), ("spiderX", "SpiderX"), ("headerType", "Header Type"),
-    ("heartbeatPeriod", "HeartbeatPeriod"), ("alterId", "AlterID"), ("encryption", "Шифрование"),
-    ("allowedIPs", "AllowedIPs"), ("mtu", "MTU"), ("dns", "DNS"),
-    ("presharedKey", "PresharedKey"), ("keepalive", "Keepalive"),
-    ("up", "Up"), ("down", "Down"), ("congestion_control", "Congestion Control"),
-    ("pinned_certchain_sha256", "PinnedCertHash"), ("verify_peer_cert_by_name", "VerifyPeerCertByName"),
-    ("jc", "Jc"), ("jmin", "Jmin"), ("jmax", "Jmax"),
-    ("s1", "S1"), ("s2", "S2"), ("h1", "H1"), ("h2", "H2"), ("h3", "H3"), ("h4", "H4"),
-]
+("scheme","Protocol"),("type","Transport"),("security","Security"),("flow","Flow"),("path","Path"),("host","Host"),
+("sni","SNI"),("pbk","PublicKey"),("sid","ShortId"),("fp","Fingerprint"),("serviceName","ServiceName"),("authority","Authority"),
+("mode","Mode"),("port","Port"),("host_addr","Address"),("alpn","ALPN"),("obfs","Obfs"),("obfs-password","Obfs-password"),
+("id","UUID/Login"),("password","Password"),("method","SS Method"),("concurrency","Concurrency"),("spiderX","SpiderX"),
+("headerType","Header Type"),("heartbeatPeriod","HeartbeatPeriod"),("alterId","AlterID"),("encryption","Encryption"),
+("allowedIPs","AllowedIPs"),("mtu","MTU"),("dns","DNS"),("presharedKey","PresharedKey"),("keepalive","Keepalive"),
+("up","Up"),("down","Down"),("congestion_control","Congestion Control"),("pinned_certchain_sha256","PinnedCertHash"),
+("verify_peer_cert_by_name","VerifyPeerCertByName"),("jc","Jc"),("jmin","Jmin"),("jmax","Jmax"),
+("s1","S1"),("s2","S2"),("h1","H1"),("h2","H2"),("h3","H3"),("h4","H4")]
 
-CHOICES_MAP = {
-    "scheme": ["vless", "vmess", "trojan", "hysteria2", "hysteria", "ss", "socks5", "http", "tuic", "juicity", "wireguard", "amneziawg", "mieru", "sudoku", "openconnect"],
-    "type": ["tcp", "ws", "grpc", "xhttp", "splithttp", "httpupgrade", "h2", "kcp", "quic"],
-    "security": ["none", "tls", "reality"],
-    "flow": ["xtls-rprx-vision", ""],
-    "fp": ["chrome", "firefox", "safari", "ios", "android", "edge", "360", "qq", "random", "randomized"],
-    "mode": ["auto", "packet-up", "stream-up", "stream-one", "multi"],
-    "headerType": ["none", "http"],
-    "alpn": ["h3", "h2", "http/1.1", "h3,h2", "h2,http/1.1"],
-    "congestion_control": ["cubic", "new_reno", "bbr"],
-    "encryption": ["auto", "none", "zero"],
-}
+CHOICES = {
+"scheme":["vless","vmess","trojan","hysteria2","hysteria","ss","socks5","http","tuic","juicity","wireguard","amneziawg","mieru","sudoku","openconnect"],
+"type":["tcp","ws","grpc","xhttp","splithttp","httpupgrade","h2","kcp","quic"],
+"security":["none","tls","reality"],"flow":["xtls-rprx-vision",""],
+"fp":["chrome","firefox","safari","ios","android","edge","360","qq","random","randomized"],
+"mode":["auto","packet-up","stream-up","stream-one","multi"],"headerType":["none","http"],
+"alpn":["h3","h2","http/1.1","h3,h2","h2,http/1.1"],"congestion_control":["cubic","new_reno","bbr"],
+"encryption":["auto","none","zero"]}
 
 COMPAT = {
-    "flow": lambda s: s['scheme'] == 'vless' and s['params'].get('type', 'tcp') == 'tcp' and s['params'].get('security') == 'reality',
-    "pbk": lambda s: s['scheme'] == 'vless' and s['params'].get('security') == 'reality',
-    "sid": lambda s: s['scheme'] == 'vless' and s['params'].get('security') == 'reality',
-    "sni": lambda s: s['scheme'] in ('vless', 'hysteria2', 'trojan', 'tuic', 'juicity', 'vmess'),
-    "fp": lambda s: s['scheme'] in ('vless', 'trojan', 'vmess'),
-    "serviceName": lambda s: s['scheme'] in ('vless', 'vmess') and s['params'].get('type') == 'grpc',
-    "authority": lambda s: s['scheme'] in ('vless', 'vmess') and s['params'].get('type') == 'grpc',
-    "path": lambda s: s['scheme'] in ('vless', 'vmess') and s['params'].get('type') in ('ws', 'xhttp', 'splithttp', 'httpupgrade'),
-    "host": lambda s: s['scheme'] in ('vless', 'vmess') and s['params'].get('type') in ('ws', 'xhttp', 'splithttp', 'httpupgrade'),
-    "mode": lambda s: s['scheme'] in ('vless', 'vmess') and s['params'].get('type') in ('grpc', 'xhttp', 'splithttp'),
-    "concurrency": lambda s: s['scheme'] in ('vless', 'vmess') and s['params'].get('type') in ('xhttp', 'splithttp'),
-    "obfs": lambda s: s['scheme'] == 'hysteria2',
-    "obfs-password": lambda s: s['scheme'] == 'hysteria2',
-    "alpn": lambda s: s['params'].get('security') == 'tls' or s['scheme'] in ('hysteria2', 'tuic', 'juicity'),
-    "method": lambda s: s['scheme'] == 'ss',
-    "id": lambda s: s['scheme'] in ('vless', 'vmess', 'trojan', 'tuic', 'juicity', 'wireguard', 'amneziawg', 'mieru', 'sudoku', 'openconnect'),
-    "password": lambda s: s['scheme'] in ('hysteria2', 'hysteria', 'ss', 'trojan', 'tuic', 'juicity', 'mieru', 'sudoku'),
-    "spiderX": lambda s: s['scheme'] == 'vless' and s['params'].get('security') == 'reality',
-    "headerType": lambda s: s['scheme'] in ('vless', 'vmess') and s['params'].get('type') == 'tcp' and s['params'].get('security') != 'reality',
-    "heartbeatPeriod": lambda s: s['scheme'] in ('vless', 'vmess') and s['params'].get('type') == 'ws',
-    "alterId": lambda s: s['scheme'] == 'vmess',
-    "encryption": lambda s: s['scheme'] == 'vmess',
-    "allowedIPs": lambda s: s['scheme'] == 'wireguard',
-    "mtu": lambda s: s['scheme'] in ('wireguard', 'amneziawg'),
-    "dns": lambda s: s['scheme'] in ('wireguard', 'amneziawg'),
-    "presharedKey": lambda s: s['scheme'] == 'wireguard',
-    "keepalive": lambda s: s['scheme'] == 'wireguard',
-    "up": lambda s: s['scheme'] == 'hysteria',
-    "down": lambda s: s['scheme'] == 'hysteria',
-    "congestion_control": lambda s: s['scheme'] in ('tuic', 'juicity'),
-    "pinned_certchain_sha256": lambda s: s['params'].get('security') == 'tls',
-    "verify_peer_cert_by_name": lambda s: s['params'].get('security') == 'tls',
-    "jc": lambda s: s['scheme'] in ('amneziawg', 'awg'),
-    "jmin": lambda s: s['scheme'] in ('amneziawg', 'awg'),
-    "jmax": lambda s: s['scheme'] in ('amneziawg', 'awg'),
-    "s1": lambda s: s['scheme'] in ('amneziawg', 'awg'),
-    "s2": lambda s: s['scheme'] in ('amneziawg', 'awg'),
-    "h1": lambda s: s['scheme'] in ('amneziawg', 'awg'),
-    "h2": lambda s: s['scheme'] in ('amneziawg', 'awg'),
-    "h3": lambda s: s['scheme'] in ('amneziawg', 'awg'),
-    "h4": lambda s: s['scheme'] in ('amneziawg', 'awg'),
-}
+"flow":lambda s: s['scheme']=='vless' and s['params'].get('type','tcp')=='tcp' and s['params'].get('security')=='reality',
+"pbk":lambda s: s['scheme']=='vless' and s['params'].get('security')=='reality',
+"sid":lambda s: s['scheme']=='vless' and s['params'].get('security')=='reality',
+"sni":lambda s: s['scheme'] in ('vless','hysteria2','trojan','tuic','juicity','vmess'),
+"fp":lambda s: s['scheme'] in ('vless','trojan','vmess'),
+"serviceName":lambda s: s['scheme'] in ('vless','vmess') and s['params'].get('type')=='grpc',
+"authority":lambda s: s['scheme'] in ('vless','vmess') and s['params'].get('type')=='grpc',
+"path":lambda s: s['scheme'] in ('vless','vmess') and s['params'].get('type') in ('ws','xhttp','splithttp','httpupgrade'),
+"host":lambda s: s['scheme'] in ('vless','vmess') and s['params'].get('type') in ('ws','xhttp','splithttp','httpupgrade'),
+"mode":lambda s: s['scheme'] in ('vless','vmess') and s['params'].get('type') in ('grpc','xhttp','splithttp'),
+"concurrency":lambda s: s['scheme'] in ('vless','vmess') and s['params'].get('type') in ('xhttp','splithttp'),
+"obfs":lambda s: s['scheme']=='hysteria2',"obfs-password":lambda s: s['scheme']=='hysteria2',
+"alpn":lambda s: s['params'].get('security')=='tls' or s['scheme'] in ('hysteria2','tuic','juicity'),
+"method":lambda s: s['scheme']=='ss',
+"id":lambda s: s['scheme'] in ('vless','vmess','trojan','tuic','juicity','wireguard','amneziawg','mieru','sudoku','openconnect'),
+"password":lambda s: s['scheme'] in ('hysteria2','hysteria','ss','trojan','tuic','juicity','mieru','sudoku'),
+"spiderX":lambda s: s['scheme']=='vless' and s['params'].get('security')=='reality',
+"headerType":lambda s: s['scheme'] in ('vless','vmess') and s['params'].get('type')=='tcp' and s['params'].get('security')!='reality',
+"heartbeatPeriod":lambda s: s['scheme'] in ('vless','vmess') and s['params'].get('type')=='ws',
+"alterId":lambda s: s['scheme']=='vmess',"encryption":lambda s: s['scheme']=='vmess',
+"allowedIPs":lambda s: s['scheme']=='wireguard',"mtu":lambda s: s['scheme'] in ('wireguard','amneziawg'),
+"dns":lambda s: s['scheme'] in ('wireguard','amneziawg'),"presharedKey":lambda s: s['scheme']=='wireguard',
+"keepalive":lambda s: s['scheme']=='wireguard',"up":lambda s: s['scheme']=='hysteria',"down":lambda s: s['scheme']=='hysteria',
+"congestion_control":lambda s: s['scheme'] in ('tuic','juicity'),
+"pinned_certchain_sha256":lambda s: s['params'].get('security')=='tls',
+"verify_peer_cert_by_name":lambda s: s['params'].get('security')=='tls',
+"jc":lambda s: s['scheme'] in ('amneziawg','awg'),"jmin":lambda s: s['scheme'] in ('amneziawg','awg'),
+"jmax":lambda s: s['scheme'] in ('amneziawg','awg'),"s1":lambda s: s['scheme'] in ('amneziawg','awg'),
+"s2":lambda s: s['scheme'] in ('amneziawg','awg'),"h1":lambda s: s['scheme'] in ('amneziawg','awg'),
+"h2":lambda s: s['scheme'] in ('amneziawg','awg'),"h3":lambda s: s['scheme'] in ('amneziawg','awg'),
+"h4":lambda s: s['scheme'] in ('amneziawg','awg')}
 
-SS_METHODS = [
-    "aes-128-gcm", "aes-256-gcm", "chacha20-poly1305", "chacha20-ietf-poly1305",
-    "xchacha20-poly1305", "xchacha20-ietf-poly1305", "2022-blake3-aes-128-gcm",
-    "2022-blake3-aes-256-gcm", "2022-blake3-chacha20-poly1305", "none"
-]
+SS_METHODS = ["aes-128-gcm","aes-256-gcm","chacha20-poly1305","chacha20-ietf-poly1305","xchacha20-poly1305",
+"xchacha20-ietf-poly1305","2022-blake3-aes-128-gcm","2022-blake3-aes-256-gcm","2022-blake3-chacha20-poly1305","none"]
 
 def get_param_current(s, pkey):
-    if pkey == 'port':
-        return s.get('port', '')
-    if pkey == 'host_addr':
-        return s.get('host', '')
-    if pkey == 'scheme':
-        return s.get('scheme', '')
-    if pkey in ('id', 'password', 'method'):
-        return s.get(pkey, '')
-    return s['params'].get(pkey, '')
+    if pkey == 'port': return s.get('port','')
+    if pkey == 'host_addr': return s.get('host','')
+    if pkey == 'scheme': return s.get('scheme','')
+    if pkey in ('id','password','method'): return s.get(pkey,'')
+    return s['params'].get(pkey,'')
 
-# Блок редактирования параметров группы
 def edit_params_for_group(servers, indices):
-    if not indices:
-        return
+    if not indices: return
     while True:
-        clr()
-        hdr("РЕДАКТИРОВАНИЕ ГРУППЫ")
-        print(f"  Выбрано серверов: {len(indices)}")
+        clr(); hdr(tr("edit_grp"))
+        print(f"  {tr('sel_servers')}: {len(indices)}")
         for i in indices[:25]:
             s = servers[i]
-            print(f"    {i+1}. {s.get('name', '')[:32]} [{s['scheme']}] {s['host']}:{s['port']}")
-        if len(indices) > 25:
-            print(f"    ... и ещё {len(indices) - 25}")
+            print(f"    {i+1}. {s.get('name','')[:32]} [{s['scheme']}] {s['host']}:{s['port']}")
+        if len(indices) > 25: print(f"    ... +{len(indices)-25}")
         ln()
         for idx, (k, desc) in enumerate(PARAM_LIST, 1):
             print(f"  {idx:2}. {desc}")
-        print("   q. Назад")
-        ch = ask("Выбор: ")
-        if ch == EXIT or ch == "0":
-            break
-        try:
-            pi = int(ch) - 1
-        except Exception:
-            continue
-        if pi < 0 or pi >= len(PARAM_LIST):
-            continue
+        print(f"   {tr('q_back')}")
+        ch = _in(f"{tr('choice')}: ")
+        if ch == EXIT or ch == "0": break
+        try: pi = int(ch) - 1
+        except Exception: continue
+        if pi < 0 or pi >= len(PARAM_LIST): continue
         pkey, pname = PARAM_LIST[pi]
         compat_fn = COMPAT.get(pkey)
         compatible = [i for i in indices if compat_fn is None or compat_fn(servers[i])]
         if not compatible:
-            print("[!] Нет совместимых серверов в выборке.")
-            input("Enter...")
-            continue
-        clr()
-        hdr(f"ИЗМЕНЕНИЕ: {pname}")
-        print(f"  Совместимых: {len(compatible)} / всего в выборке: {len(indices)}")
-        print(f"  Будут изменены: {len(compatible)}")
-        if len(indices) - len(compatible) > 0:
-            print(f"  Несовместимых: {len(indices) - len(compatible)}")
+            print(f"[!] {tr('no_servers')}")
+            _in("\n" + tr("q_back") + ": ", allow_exit=False); continue
+        clr(); hdr(f"{tr('change')}: {pname}")
+        print(f"  {tr('compat')}: {len(compatible)}/{len(indices)}")
+        print(f"  {tr('will_change')}: {len(compatible)}")
+        if len(indices) - len(compatible) > 0: print(f"  {tr('incompat')}: {len(indices)-len(compatible)}")
         print()
         for i in compatible[:15]:
             s = servers[i]
-            cur = get_param_current(s, pkey)
-            print(f"    {i+1}. {s.get('name', '')[:28]} -> {cur}")
-        if len(compatible) > 15:
-            print(f"    ... и ещё {len(compatible) - 15}")
+            print(f"    {i+1}. {s.get('name','')[:28]} -> {get_param_current(s, pkey)}")
+        if len(compatible) > 15: print(f"    ... +{len(compatible)-15}")
         cur_default = ''
         for i in compatible:
             v = get_param_current(servers[i], pkey)
-            if v:
-                cur_default = str(v)
-                break
-        if not cur_default:
-            cur_default = PARAM_DEFAULTS.get(pkey, '')
+            if v: cur_default = str(v); break
+        if not cur_default: cur_default = PARAM_DEFAULTS.get(pkey, '')
         ln()
-        if pkey == "scheme":
-            print(f"  Варианты: {', '.join(CHOICES_MAP['scheme'])}")
-        elif pkey in CHOICES_MAP:
-            print(f"  Варианты: {', '.join(CHOICES_MAP[pkey])}")
-        elif pkey == "method":
-            print(f"  Варианты: {', '.join(SS_METHODS)}")
-        print(f"  Значение по умолчанию: {cur_default}")
-        print("  Enter = применить значение по умолчанию")
-        print("  '-'   = удалить параметр")
-        print("  q     = отмена")
-        try:
-            raw = input(f"Новое значение [{cur_default}]: ").strip()
-        except (EOFError, KeyboardInterrupt):
-            continue
-        if raw.lower() in ('q', 'exit', 'back', 'назад'):
-            continue
-        if raw == '-':
-            nv = ''
-        elif raw == '':
-            nv = cur_default
-        else:
-            nv = raw
+        if pkey == "scheme": print(f"  {', '.join(CHOICES['scheme'])}")
+        elif pkey in CHOICES: print(f"  {', '.join(CHOICES[pkey])}")
+        elif pkey == "method": print(f"  {', '.join(SS_METHODS)}")
+        print(f"  {tr('default_val')}: {cur_default}")
+        print(f"  {tr('enter_default')}"); print(f"  {tr('minus_del')}"); print(f"  {tr('q_cancel')}")
+        try: raw = input(f"{tr('new_val')} [{cur_default}]: ").strip()
+        except (EOFError, KeyboardInterrupt): continue
+        if raw.lower() in ("q","quit","exit"): continue
+        if raw == '-': nv = ''
+        elif raw == '': nv = cur_default
+        else: nv = raw
         for i in compatible:
             s = servers[i]
-            if pkey == "scheme":
-                s['scheme'] = nv
-            elif pkey == "port":
-                s['port'] = nv
-            elif pkey == "host_addr":
-                s['host'] = nv
-            elif pkey in ("id", "password", "method"):
-                s[pkey] = nv
+            if pkey == "scheme": s['scheme'] = nv
+            elif pkey == "port": s['port'] = nv
+            elif pkey == "host_addr": s['host'] = nv
+            elif pkey in ("id","password","method"): s[pkey] = nv
             else:
-                if nv == "":
-                    s['params'].pop(pkey, None)
-                else:
-                    s['params'][pkey] = nv
-        print(f"\n[+] Обновлено: {len(compatible)}")
+                if nv == "": s['params'].pop(pkey, None)
+                else: s['params'][pkey] = nv
+        print(f"\n[+] {tr('updated')}: {len(compatible)}")
 
-# Блок редактирования серверов
 def edit_servers(servers):
     while True:
-        clr()
-        hdr("РЕДАКТИРОВАНИЕ СЕРВЕРОВ")
+        clr(); hdr(tr("edit_hdr"))
         show_servers_list(servers)
-        print(f"\n  Всего: {len(servers)}")
+        print(f"\n  {tr('total')}: {len(servers)}")
         ln()
-        print("  1 - Имена")
-        print("  2 - Параметры (группа)")
-        print("  3 - Удалить по номерам")
-        print("  4 - Удалить по фильтру")
-        print("  5 - Добавить сервер вручную")
-        print("  6 - Удалить дубликаты")
-        print("  7 - Сортировка")
-        print("  8 - Переместить сервер")
-        print("  9 - Создать дубликаты")
-        print(" 10 - Поиск по ключевому слову")
-        print(" 11 - Показать параметры сервера")
-        print("  q - Готово")
-        ch = ask("Выбор: ", choices=[str(i) for i in range(1, 12)])
-        if ch == EXIT or ch == "0":
-            break
+        print("  " + tr("e1")); print("  " + tr("e2")); print("  " + tr("e3")); print("  " + tr("e4"))
+        print("  " + tr("e5")); print("  " + tr("e6")); print("  " + tr("e7")); print("  " + tr("e8"))
+        print("  " + tr("e9")); print("  " + tr("e10")); print("  " + tr("e11")); print("  " + tr("eq"))
+        ch = _in_choice(f"{tr('choice')}: ", [str(i) for i in range(1, 12)])
+        if ch == EXIT or ch == "0": break
         if ch == "1":
-            sub = ask("1-Все с суффиксами / 2-Группу / 3-По одному / 4-Добавить префикс / q-назад: ", choices=["1", "2", "3", "4"])
-            if sub == EXIT:
-                continue
+            sub = _in_choice(f"{tr('names_q')}: ", ["1","2","3","4"])
+            if sub == EXIT: continue
             if sub == "1":
-                base = ask("Базовое имя (q - отмена): ")
-                if base == EXIT or not base:
-                    continue
-                for i, s in enumerate(servers):
-                    s['name'] = f"{base}-{i + 1}"
-                print("[+] Обновлено.")
+                base = _in(f"{tr('base_name')}: ")
+                if base == EXIT or not base: continue
+                for i, s in enumerate(servers): s['name'] = f"{base}-{i+1}"
+                print(f"[+] {tr('updated')}")
             elif sub == "2":
-                sel = ask_multi("Номера (q - отмена): ", 1, len(servers))
-                if sel == EXIT or not sel:
-                    continue
-                base = ask("Базовое имя: ")
-                if base == EXIT or not base:
-                    continue
-                for idx in sel:
-                    servers[idx - 1]['name'] = f"{base}-{idx}"
-                print("[+] Обновлено.")
+                sel = _in_multi(f"{tr('numbers')}: ", 1, len(servers))
+                if sel == EXIT or not sel: continue
+                base = _in(f"{tr('base_name')}: ")
+                if base == EXIT or not base: continue
+                for idx in sel: servers[idx-1]['name'] = f"{base}-{idx}"
+                print(f"[+] {tr('updated')}")
             elif sub == "3":
-                sel = ask_multi("Номера (q - отмена): ", 1, len(servers))
-                if sel == EXIT or not sel:
-                    continue
+                sel = _in_multi(f"{tr('numbers')}: ", 1, len(servers))
+                if sel == EXIT or not sel: continue
                 for idx in sel:
-                    cur = servers[idx - 1].get('name', '')
-                    nn = ask(f"  {idx}. '{cur}' -> (q-пропустить): ")
-                    if nn == EXIT or not nn:
-                        continue
-                    servers[idx - 1]['name'] = nn
-                print("[+] Обновлено.")
+                    nn = _in(f"  {idx}. '{servers[idx-1].get('name','')}' {tr('skip_q')}: ")
+                    if nn == EXIT or not nn: continue
+                    servers[idx-1]['name'] = nn
+                print(f"[+] {tr('updated')}")
             elif sub == "4":
-                pre = ask("Префикс (q - отмена): ")
-                if pre == EXIT or not pre:
-                    continue
-                for s in servers:
-                    s['name'] = f"{pre}{s.get('name', '')}"
-                print("[+] Обновлено.")
+                pre = _in(f"{tr('prefix')}: ")
+                if pre == EXIT or not pre: continue
+                for s in servers: s['name'] = f"{pre}{s.get('name','')}"
+                print(f"[+] {tr('updated')}")
         elif ch == "2":
-            sel = ask_multi("Номера серверов для редактирования: ", 1, len(servers))
-            if sel == EXIT or not sel:
-                continue
-            edit_params_for_group(servers, [i - 1 for i in sel])
+            sel = _in_multi(f"{tr('numbers')}: ", 1, len(servers))
+            if sel == EXIT or not sel: continue
+            edit_params_for_group(servers, [i-1 for i in sel])
         elif ch == "3":
-            sel = ask_multi("Номера для удаления: ", 1, len(servers))
-            if sel == EXIT or not sel:
-                continue
-            ans = ask(f"Удалить {len(sel)} сервер(ов)? (y/n) [n]: ", default="n")
-            if ans.lower() == 'y':
-                for i in sorted(sel, reverse=True):
-                    servers.pop(i - 1)
-                print(f"[+] Удалено: {len(sel)}")
+            sel = _in_multi(f"{tr('del_q')}: ", 1, len(servers))
+            if sel == EXIT or not sel: continue
+            ans = _in(f"{tr('del_n')} {len(sel)}? (y/n) [n]: ", default="n")
+            if ans and ans.lower() == 'y':
+                for i in sorted(sel, reverse=True): servers.pop(i-1)
+                print(f"[+] {tr('deleted_n')}: {len(sel)}")
         elif ch == "4":
             servers = delete_by_keyword(servers)
         elif ch == "5":
-            uri = ask("Ссылка (q - отмена): ")
-            if uri == EXIT or not uri:
-                continue
+            uri = _in(f"{tr('link_q')}: ")
+            if uri == EXIT or not uri: continue
             p = parse_uri(uri)
-            if p:
-                servers.append(p)
-                print("[+] Добавлен.")
-            else:
-                print("[!] Не удалось распарсить.")
-        elif ch == "6":
-            servers = dedupe_menu(servers)
-        elif ch == "7":
-            servers = sort_servers(servers)
-        elif ch == "8":
-            servers = move_server(servers)
-        elif ch == "9":
-            servers = duplicate_servers(servers)
+            if p: servers.append(p); print(f"[+] {tr('added_ok')}")
+            else: print(f"[!] {tr('parse_err')}")
+        elif ch == "6": servers = dedupe_menu(servers)
+        elif ch == "7": servers = sort_servers(servers)
+        elif ch == "8": servers = move_server(servers)
+        elif ch == "9": servers = duplicate_servers(servers)
         elif ch == "10":
-            kw = ask("Ключевое слово (q - отмена): ").lower()
-            if kw == EXIT:
-                continue
-            found = [(i + 1, s) for i, s in enumerate(servers)
-                     if kw in s.get('name', '').lower() or kw in s['host'].lower() or kw in s['scheme']]
+            kw = _in(f"{tr('kw_q')}: ").lower()
+            if kw == EXIT: continue
+            found = [(i+1, s) for i, s in enumerate(servers)
+                     if kw in s.get('name','').lower() or kw in s['host'].lower() or kw in s['scheme']]
             if found:
-                print(f"\n[+] Найдено: {len(found)}")
-                for n, s in found:
-                    print(f"   {n}. {s.get('name', '')} [{s['scheme']}://{s['host']}:{s['port']}]")
-            else:
-                print("[!] Ничего не найдено.")
-            input("Enter...")
+                print(f"\n[+] {tr('found')}: {len(found)}")
+                for n, s in found: print(f"   {n}. {s.get('name','')} [{s['scheme']}://{s['host']}:{s['port']}]")
+            else: print(f"[!] {tr('not_found')}")
+            _in("\n" + tr("q_back") + ": ", allow_exit=False)
         elif ch == "11":
-            idx = ask_int("Номер сервера (q - отмена): ", mn=1, mx=len(servers))
-            if idx == EXIT or idx is None:
-                continue
-            s = servers[idx - 1]
+            idx = _in_int(f"{tr('file_n')}: ", mn=1, mx=len(servers))
+            if idx == EXIT or idx is None: continue
+            s = servers[idx-1]
             print(f"\n  URI: {build_uri(s)}")
-            print(f"  Scheme: {s['scheme']}")
-            print(f"  Host: {s['host']}")
-            print(f"  Port: {s['port']}")
-            print(f"  ID/Pass/Method: {s.get('id') or s.get('password') or s.get('method')}")
-            print(f"  Params: {json.dumps(s['params'], ensure_ascii=False, indent=4)}")
-            input("Enter...")
+            print(f"  {tr('u_scheme')}: {s['scheme']}")
+            print(f"  {tr('u_host')}: {s['host']}")
+            print(f"  {tr('u_port')}: {s['port']}")
+            print(f"  {tr('u_cred')}: {s.get('id') or s.get('password') or s.get('method')}")
+            print(f"  {tr('u_params')}: {json.dumps(s['params'], ensure_ascii=False, indent=4)}")
+            _in("\n" + tr("q_back") + ": ", allow_exit=False)
     return servers
 
-# Блок генерации outbound
 def gen_outbound(s, tag, cfg):
-    scheme = s['scheme']
-    host = s['host']
-    try:
-        port = int(s['port']) if str(s['port']).isdigit() else 443
-    except Exception:
-        port = 443
+    scheme = s['scheme']; host = s['host']
+    try: port = int(s['port']) if str(s['port']).isdigit() else 443
+    except Exception: port = 443
     out = {}
     if scheme == 'vless':
-        out = {
-            "protocol": "vless",
-            "settings": {"vnext": [{"address": host, "port": port,
-                                    "users": [{"id": s.get('id', ''), "encryption": "none", "flow": s['params'].get('flow', '')}]}]},
-            "streamSettings": {"network": s['params'].get('type', 'tcp'), "security": s['params'].get('security', 'none')},
-            "tag": tag
-        }
+        out = {"protocol":"vless",
+            "settings":{"vnext":[{"address":host,"port":port,
+                "users":[{"id":s.get('id',''),"encryption":"none","flow":s['params'].get('flow','')}]}]},
+            "streamSettings":{"network":s['params'].get('type','tcp'),"security":s['params'].get('security','none')},
+            "tag":tag}
         sec = out["streamSettings"]["security"]
         if sec == 'reality':
-            rs = {"serverName": s['params'].get('sni', ''),
-                  "fingerprint": s['params'].get('fp', 'chrome'),
-                  "publicKey": s['params'].get('pbk', ''),
-                  "shortId": s['params'].get('sid', '')}
-            if 'spiderX' in s['params']:
-                rs["spiderX"] = s['params']['spiderX']
+            rs = {"serverName":s['params'].get('sni',''),"fingerprint":s['params'].get('fp','chrome'),
+                  "publicKey":s['params'].get('pbk',''),"shortId":s['params'].get('sid','')}
+            if 'spiderX' in s['params']: rs["spiderX"] = s['params']['spiderX']
             out["streamSettings"]["realitySettings"] = rs
         elif sec == 'tls':
-            tls = {"serverName": s['params'].get('sni', host)}
-            if 'alpn' in s['params']:
-                tls["alpn"] = [a.strip() for a in str(s['params']['alpn']).split(',') if a.strip()]
-            if 'fp' in s['params']:
-                tls["fingerprint"] = s['params']['fp']
-            if 'pinned_certchain_sha256' in s['params']:
-                tls["pinnedPeerCertSha256"] = s['params']['pinned_certchain_sha256']
-            if 'verify_peer_cert_by_name' in s['params']:
-                tls["verifyPeerCertByName"] = s['params']['verify_peer_cert_by_name']
+            tls = {"serverName":s['params'].get('sni', host)}
+            if 'alpn' in s['params']: tls["alpn"] = [a.strip() for a in str(s['params']['alpn']).split(',') if a.strip()]
+            if 'fp' in s['params']: tls["fingerprint"] = s['params']['fp']
+            if 'pinned_certchain_sha256' in s['params']: tls["pinnedPeerCertSha256"] = s['params']['pinned_certchain_sha256']
+            if 'verify_peer_cert_by_name' in s['params']: tls["verifyPeerCertByName"] = s['params']['verify_peer_cert_by_name']
             out["streamSettings"]["tlsSettings"] = tls
         net = out["streamSettings"]["network"]
         if net == 'ws':
-            ws = {"path": s['params'].get('path', '/'), "headers": {"Host": s['params'].get('host', host)}}
+            ws = {"path":s['params'].get('path','/'), "headers":{"Host":s['params'].get('host', host)}}
             if 'heartbeatPeriod' in s['params']:
-                try:
-                    ws["heartbeatPeriod"] = int(s['params']['heartbeatPeriod'])
-                except Exception:
-                    pass
+                try: ws["heartbeatPeriod"] = int(s['params']['heartbeatPeriod'])
+                except Exception: pass
             out["streamSettings"]["wsSettings"] = ws
         elif net == 'grpc':
-            gs = {"serviceName": s['params'].get('serviceName', ''),
-                  "multiMode": s['params'].get('mode', '') == 'multi'}
-            if 'authority' in s['params']:
-                gs["authority"] = s['params']['authority']
+            gs = {"serviceName":s['params'].get('serviceName',''), "multiMode":s['params'].get('mode','') == 'multi'}
+            if 'authority' in s['params']: gs["authority"] = s['params']['authority']
             out["streamSettings"]["grpcSettings"] = gs
         elif net == 'tcp':
-            out["streamSettings"]["tcpSettings"] = {"header": {"type": s['params'].get('headerType', 'none')}}
-        elif net in ('xhttp', 'splithttp'):
-            xh = {"path": s['params'].get('path', '/'),
-                  "host": s['params'].get('host', host),
-                  "mode": s['params'].get('mode', 'auto')}
+            out["streamSettings"]["tcpSettings"] = {"header":{"type":s['params'].get('headerType','none')}}
+        elif net in ('xhttp','splithttp'):
+            xh = {"path":s['params'].get('path','/'), "host":s['params'].get('host', host), "mode":s['params'].get('mode','auto')}
             if 'concurrency' in s['params']:
-                try:
-                    xh["concurrency"] = int(s['params']['concurrency'])
-                except Exception:
-                    pass
+                try: xh["concurrency"] = int(s['params']['concurrency'])
+                except Exception: pass
             out["streamSettings"]["xhttpSettings"] = xh
         elif net == 'httpupgrade':
-            out["streamSettings"]["httpupgradeSettings"] = {
-                "path": s['params'].get('path', '/'),
-                "host": s['params'].get('host', host)}
+            out["streamSettings"]["httpupgradeSettings"] = {"path":s['params'].get('path','/'), "host":s['params'].get('host', host)}
     elif scheme == 'vmess':
-        out = {
-            "protocol": "vmess",
-            "settings": {"vnext": [{"address": host, "port": port,
-                                    "users": [{"id": s.get('id', ''), "alterId": int(s['params'].get('alterId', 0)) if str(s['params'].get('alterId', '0')).isdigit() else 0,
-                                               "security": s['params'].get('encryption', 'auto')}]}]},
-            "streamSettings": {"network": s['params'].get('type', 'tcp'), "security": s['params'].get('security', 'none')},
-            "tag": tag
-        }
+        out = {"protocol":"vmess",
+            "settings":{"vnext":[{"address":host,"port":port,
+                "users":[{"id":s.get('id',''), "alterId":int(s['params'].get('alterId',0)) if str(s['params'].get('alterId','0')).isdigit() else 0,
+                          "security":s['params'].get('encryption','auto')}]}]},
+            "streamSettings":{"network":s['params'].get('type','tcp'),"security":s['params'].get('security','none')},
+            "tag":tag}
         sec = out["streamSettings"]["security"]
         if sec == 'tls':
-            tls = {"serverName": s['params'].get('sni', host)}
-            if 'alpn' in s['params']:
-                tls["alpn"] = [a.strip() for a in str(s['params']['alpn']).split(',') if a.strip()]
+            tls = {"serverName":s['params'].get('sni', host)}
+            if 'alpn' in s['params']: tls["alpn"] = [a.strip() for a in str(s['params']['alpn']).split(',') if a.strip()]
             out["streamSettings"]["tlsSettings"] = tls
         net = out["streamSettings"]["network"]
         if net == 'ws':
-            out["streamSettings"]["wsSettings"] = {
-                "path": s['params'].get('path', '/'),
-                "headers": {"Host": s['params'].get('host', host)}}
+            out["streamSettings"]["wsSettings"] = {"path":s['params'].get('path','/'), "headers":{"Host":s['params'].get('host', host)}}
         elif net == 'grpc':
-            out["streamSettings"]["grpcSettings"] = {
-                "serviceName": s['params'].get('serviceName', ''),
-                "multiMode": s['params'].get('mode', '') == 'multi'}
+            out["streamSettings"]["grpcSettings"] = {"serviceName":s['params'].get('serviceName',''), "multiMode":s['params'].get('mode','') == 'multi'}
         elif net == 'tcp':
-            out["streamSettings"]["tcpSettings"] = {"header": {"type": s['params'].get('headerType', 'none')}}
-    elif scheme in ('hysteria2', 'hy2'):
-        out = {
-            "protocol": "hysteria2",
-            "settings": {"address": host, "port": port, "password": s.get('password', '')},
-            "streamSettings": {"network": "hysteria2", "security": "tls",
-                               "tlsSettings": {"serverName": s['params'].get('sni', host),
-                                               "alpn": [a.strip() for a in str(s['params'].get('alpn', 'h3')).split(',') if a.strip()]}},
-            "tag": tag
-        }
+            out["streamSettings"]["tcpSettings"] = {"header":{"type":s['params'].get('headerType','none')}}
+    elif scheme in ('hysteria2','hy2'):
+        out = {"protocol":"hysteria2",
+            "settings":{"address":host,"port":port,"password":s.get('password','')},
+            "streamSettings":{"network":"hysteria2","security":"tls",
+                "tlsSettings":{"serverName":s['params'].get('sni', host),
+                               "alpn":[a.strip() for a in str(s['params'].get('alpn','h3')).split(',') if a.strip()]}},
+            "tag":tag}
         if 'obfs' in s['params']:
             out["settings"]["obfs"] = s['params']['obfs']
-            if 'obfs-password' in s['params']:
-                out["settings"]["obfsPassword"] = s['params']['obfs-password']
+            if 'obfs-password' in s['params']: out["settings"]["obfsPassword"] = s['params']['obfs-password']
     elif scheme == 'hysteria':
-        out = {
-            "protocol": "hysteria",
-            "settings": {"address": host, "port": port, "auth": s.get('password', '')},
-            "streamSettings": {"network": "hysteria", "security": "tls",
-                               "tlsSettings": {"serverName": s['params'].get('sni', host),
-                                               "alpn": [a.strip() for a in str(s['params'].get('alpn', 'h3')).split(',') if a.strip()]}},
-            "tag": tag
-        }
-        if 'up' in s['params']:
-            out["settings"]["up"] = s['params']['up']
-        if 'down' in s['params']:
-            out["settings"]["down"] = s['params']['down']
+        out = {"protocol":"hysteria",
+            "settings":{"address":host,"port":port,"auth":s.get('password','')},
+            "streamSettings":{"network":"hysteria","security":"tls",
+                "tlsSettings":{"serverName":s['params'].get('sni', host),
+                               "alpn":[a.strip() for a in str(s['params'].get('alpn','h3')).split(',') if a.strip()]}},
+            "tag":tag}
+        if 'up' in s['params']: out["settings"]["up"] = s['params']['up']
+        if 'down' in s['params']: out["settings"]["down"] = s['params']['down']
     elif scheme == 'ss':
-        out = {
-            "protocol": "shadowsocks",
-            "settings": {"servers": [{"address": host, "port": port,
-                                      "method": s.get('method', 'aes-256-gcm'),
-                                      "password": s.get('password', '')}]},
-            "tag": tag
-        }
+        out = {"protocol":"shadowsocks",
+            "settings":{"servers":[{"address":host,"port":port,"method":s.get('method','aes-256-gcm'),
+                                    "password":s.get('password','')}]},
+            "tag":tag}
     elif scheme == 'trojan':
-        out = {
-            "protocol": "trojan",
-            "settings": {"servers": [{"address": host, "port": port, "password": s.get('password', '')}]},
-            "streamSettings": {"network": s['params'].get('type', 'tcp'), "security": s['params'].get('security', 'tls')},
-            "tag": tag
-        }
-        ts = {"serverName": s['params'].get('sni', host)}
-        if 'alpn' in s['params']:
-            ts["alpn"] = [a.strip() for a in str(s['params']['alpn']).split(',') if a.strip()]
-        if 'pinned_certchain_sha256' in s['params']:
-            ts["pinnedPeerCertSha256"] = s['params']['pinned_certchain_sha256']
-        if 'verify_peer_cert_by_name' in s['params']:
-            ts["verifyPeerCertByName"] = s['params']['verify_peer_cert_by_name']
+        out = {"protocol":"trojan",
+            "settings":{"servers":[{"address":host,"port":port,"password":s.get('password','')}]},
+            "streamSettings":{"network":s['params'].get('type','tcp'),"security":s['params'].get('security','tls')},
+            "tag":tag}
+        ts = {"serverName":s['params'].get('sni', host)}
+        if 'alpn' in s['params']: ts["alpn"] = [a.strip() for a in str(s['params']['alpn']).split(',') if a.strip()]
+        if 'pinned_certchain_sha256' in s['params']: ts["pinnedPeerCertSha256"] = s['params']['pinned_certchain_sha256']
+        if 'verify_peer_cert_by_name' in s['params']: ts["verifyPeerCertByName"] = s['params']['verify_peer_cert_by_name']
         out["streamSettings"]["tlsSettings"] = ts
     elif scheme == 'socks5':
-        out = {
-            "protocol": "socks",
-            "settings": {"servers": [{"address": host, "port": port,
-                                      "user": s.get('id', ''), "pass": s.get('password', '')}]},
-            "tag": tag
-        }
+        out = {"protocol":"socks","settings":{"servers":[{"address":host,"port":port,"user":s.get('id',''),"pass":s.get('password','')}]},"tag":tag}
     elif scheme == 'http':
-        out = {
-            "protocol": "http",
-            "settings": {"servers": [{"address": host, "port": port,
-                                      "user": s.get('id', ''), "pass": s.get('password', '')}]},
-            "tag": tag
-        }
+        out = {"protocol":"http","settings":{"servers":[{"address":host,"port":port,"user":s.get('id',''),"pass":s.get('password','')}]},"tag":tag}
     elif scheme == 'wireguard':
-        peer = {
-            "endpoint": f"{host}:{port}",
-            "publicKey": s.get('password', ''),
-            "allowedIPs": [x.strip() for x in str(s['params'].get('allowedIPs', '0.0.0.0/0')).split(',')],
-        }
-        if s['params'].get('presharedKey'):
-            peer["preSharedKey"] = s['params']['presharedKey']
+        peer = {"endpoint":f"{host}:{port}", "publicKey":s.get('password',''),
+                "allowedIPs":[x.strip() for x in str(s['params'].get('allowedIPs','0.0.0.0/0')).split(',')]}
+        if s['params'].get('presharedKey'): peer["preSharedKey"] = s['params']['presharedKey']
         if s['params'].get('keepalive'):
-            try:
-                peer["persistentKeepalive"] = int(s['params']['keepalive'])
-            except Exception:
-                pass
-        out = {
-            "protocol": "wireguard",
-            "settings": {
-                "secretKey": s.get('id', ''),
-                "dns": s['params'].get('dns', '1.1.1.1'),
-                "mtu": int(s['params'].get('mtu', 1420)) if str(s['params'].get('mtu', '1420')).isdigit() else 1420,
-                "peers": [peer]
-            },
-            "tag": tag
-        }
-    else:
-        return None
+            try: peer["persistentKeepalive"] = int(s['params']['keepalive'])
+            except Exception: pass
+        out = {"protocol":"wireguard",
+            "settings":{"secretKey":s.get('id',''),"dns":s['params'].get('dns','1.1.1.1'),
+                        "mtu":int(s['params'].get('mtu',1420)) if str(s['params'].get('mtu','1420')).isdigit() else 1420,
+                        "peers":[peer]},
+            "tag":tag}
+    else: return None
     if cfg.get('mux_enabled'):
-        mux = {"enabled": True, "concurrency": cfg.get('mux_concurrency', 8)}
-        xc = cfg.get('mux_xudp_concurrency', 0)
+        mux = {"enabled":True, "concurrency":cfg.get('mux_concurrency',8)}
+        xc = cfg.get('mux_xudp_concurrency',0)
         if xc != 0:
             mux["xudpConcurrency"] = xc
-            mux["xudpProxyUDP443"] = cfg.get('mux_xudp_proxy_udp443', 'reject')
+            mux["xudpProxyUDP443"] = cfg.get('mux_xudp_proxy_udp443','reject')
         out["mux"] = mux
     return out
 
 def merge_group_rules(rules, outbound_type):
-    domains = []
-    others = []
+    domains = []; others = []
     for r in rules:
-        if not isinstance(r, dict):
-            continue
+        if not isinstance(r, dict): continue
         keys = set(r.keys()) - {'outboundTag', 'balancerTag'}
         if r.get('type') == 'field' and keys == {'type', 'domain'}:
             for d in r.get('domain', []):
-                if isinstance(d, str):
-                    domains.append(d)
-        else:
-            others.append(r)
+                if isinstance(d, str): domains.append(d)
+        else: others.append(r)
     result = []
     if domains:
         deduped = process_domain_list(domains)
-        rule = {'type': 'field', 'domain': deduped}
-        if outbound_type == 'proxy':
-            rule['balancerTag'] = 'balancer'
-        else:
-            rule['outboundTag'] = outbound_type
+        rule = {'type':'field', 'domain':deduped}
+        if outbound_type == 'proxy': rule['balancerTag'] = 'balancer'
+        else: rule['outboundTag'] = outbound_type
         result.append(rule)
     result.extend(others)
     return result
 
-# Блок генерации конфига
 def gen_config(servers, cfg):
-    outbounds = []
-    tags = []
-    unsupported = []
+    outbounds = []; tags = []; unsupported = []
     for i, s in enumerate(servers):
-        base_tag = re.sub(r'[^a-zA-Z0-9_\-]', '_', s.get('name', f"proxy-{i + 1}")) or f"proxy-{i + 1}"
-        tag = base_tag
-        c = 1
-        while tag in tags:
-            tag = f"{base_tag}_{c}"
-            c += 1
+        base_tag = re.sub(r'[^a-zA-Z0-9_\-]', '_', s.get('name', f"proxy-{i+1}")) or f"proxy-{i+1}"
+        tag = base_tag; c = 1
+        while tag in tags: tag = f"{base_tag}_{c}"; c += 1
         out = gen_outbound(s, tag, cfg)
-        if out:
-            tags.append(tag)
-            outbounds.append(out)
-        else:
-            unsupported.append(s.get('name', s['scheme']))
-    if unsupported:
-        print(f"[!] Пропущены неподдерживаемые Xray протоколы: {', '.join(unsupported)}")
-    outbounds.append({"protocol": "freedom", "tag": "direct"})
-    outbounds.append({"protocol": "blackhole", "tag": "block"})
+        if out: tags.append(tag); outbounds.append(out)
+        else: unsupported.append(s.get('name', s['scheme']))
+    if unsupported: print(f"[!] {tr('missing_unsupported')}: {', '.join(unsupported)}")
+    outbounds.append({"protocol":"freedom","tag":"direct"})
+    outbounds.append({"protocol":"blackhole","tag":"block"})
 
     rt = cfg.get('routing', {})
-    order = cfg.get('routing_order', ["block", "direct", "proxy"])
-    groups = {'block': [], 'direct': [], 'proxy': []}
-
-    if rt.get('block_protocols'):
-        groups['block'].append({"type": "field", "protocol": rt['block_protocols'], "outboundTag": "block"})
-    if rt.get('block_ips'):
-        groups['block'].append({"type": "field", "ip": rt['block_ips'], "outboundTag": "block"})
-    if rt.get('block_ports'):
-        groups['block'].append({"type": "field", "port": rt['block_ports'], "outboundTag": "block"})
-    if rt.get('block_domains'):
-        groups['block'].append({"type": "field", "domain": rt['block_domains'], "outboundTag": "block"})
-
-    if rt.get('direct_ips'):
-        groups['direct'].append({"type": "field", "ip": rt['direct_ips'], "outboundTag": "direct"})
-    if rt.get('direct_ports'):
-        groups['direct'].append({"type": "field", "port": rt['direct_ports'], "outboundTag": "direct"})
-    if rt.get('direct_domains'):
-        groups['direct'].append({"type": "field", "domain": rt['direct_domains'], "outboundTag": "direct"})
-
+    order = cfg.get('routing_order', ["block","direct","proxy"])
+    groups = {'block':[], 'direct':[], 'proxy':[]}
+    if rt.get('block_protocols'): groups['block'].append({"type":"field","protocol":rt['block_protocols'],"outboundTag":"block"})
+    if rt.get('block_ips'): groups['block'].append({"type":"field","ip":rt['block_ips'],"outboundTag":"block"})
+    if rt.get('block_ports'): groups['block'].append({"type":"field","port":rt['block_ports'],"outboundTag":"block"})
+    if rt.get('block_domains'): groups['block'].append({"type":"field","domain":rt['block_domains'],"outboundTag":"block"})
+    if rt.get('direct_ips'): groups['direct'].append({"type":"field","ip":rt['direct_ips'],"outboundTag":"direct"})
+    if rt.get('direct_ports'): groups['direct'].append({"type":"field","port":rt['direct_ports'],"outboundTag":"direct"})
+    if rt.get('direct_domains'): groups['direct'].append({"type":"field","domain":rt['direct_domains'],"outboundTag":"direct"})
     for r in rt.get('custom_rules', []):
-        if not isinstance(r, dict):
-            continue
+        if not isinstance(r, dict): continue
         tag = r.get('outboundTag') or r.get('balancerTag', '')
-        if tag == 'block':
-            groups['block'].append(r)
-        elif tag == 'direct':
-            groups['direct'].append(r)
+        if tag == 'block': groups['block'].append(r)
+        elif tag == 'direct': groups['direct'].append(r)
         else:
-            r2 = dict(r)
-            r2.pop('outboundTag', None)
-            r2['balancerTag'] = 'balancer'
-            groups['proxy'].append(r2)
+            r2 = dict(r); r2.pop('outboundTag', None); r2['balancerTag'] = 'balancer'; groups['proxy'].append(r2)
 
     rules = []
-    for name in order:
-        rules.extend(merge_group_rules(groups.get(name, []), name))
+    for name in order: rules.extend(merge_group_rules(groups.get(name, []), name))
 
     gp = cfg.get('global_proxy', 'proxy')
-    if gp == 'direct':
-        rules.append({"type": "field", "network": "tcp,udp", "outboundTag": "direct"})
-    elif gp == 'block':
-        rules.append({"type": "field", "network": "tcp,udp", "outboundTag": "block"})
-    else:
-        rules.append({"type": "field", "network": "tcp,udp", "balancerTag": "balancer"})
+    if gp == 'direct': rules.append({"type":"field","network":"tcp,udp","outboundTag":"direct"})
+    elif gp == 'block': rules.append({"type":"field","network":"tcp,udp","outboundTag":"block"})
+    else: rules.append({"type":"field","network":"tcp,udp","balancerTag":"balancer"})
 
-    expected = normalize_int(cfg.get('balancer_expected', 3), 3, 1, 999)
+    expected = norm_int(cfg.get('balancer_expected',3), 3, 1, 999)
     if len(tags) > 0 and expected > len(tags):
-        print(f"[!] expected={expected} больше числа серверов ({len(tags)}). Установлено {len(tags)}.")
+        print(f"[!] expected={expected} {tr('exp_gt')} {len(tags)}.")
         expected = len(tags)
 
-    balancer = {
-        "tag": "balancer", "selector": tags,
-        "strategy": {"type": normalize_balancer_type(cfg.get('balancer_strategy', 'leastLoad')),
-                     "settings": {"expected": expected,
-                                  "maxRTT": normalize_duration(cfg.get('balancer_max_rtt', '2s'), 's'),
-                                  "tolerance": normalize_float(cfg.get('balancer_tolerance', 0), 0.0),
-                                  "baselines": [normalize_duration(b, 's') for b in cfg.get('balancer_baselines', ['2s'])]}}
-    }
-    if tags:
-        balancer["fallbackTag"] = tags[0]
-    observatory = {
-        "subjectSelector": tags,
-        "probeUrl": cfg.get('observatory_url', 'https://www.google.com/generate_204'),
-        "probeInterval": normalize_duration(cfg.get('observatory_interval', '1m'), 'm'),
-        "probeTimeout": normalize_duration(cfg.get('observatory_timeout', '3s'), 's'),
-        "enableConcurrency": True
-    }
-    dns = {"servers": cfg.get('dns_servers', DNS_SERVERS),
-           "queryStrategy": cfg.get('dns_query_strategy', 'UseIP')}
-    p_socks, p_http = cfg.get('proxy_ports', [10808, 10809])
-    sniffing = {
-        "enabled": cfg.get('sniffing_enabled', True),
-        "destOverride": cfg.get('sniffing_dest_override', ["http", "tls", "quic"]),
-        "routeOnly": cfg.get('sniffing_route_only', True)
-    }
+    balancer = {"tag":"balancer", "selector":tags,
+        "strategy":{"type":norm_bal(cfg.get('balancer_strategy','leastLoad')),
+                    "settings":{"expected":expected,
+                                "maxRTT":norm_dur(cfg.get('balancer_max_rtt','2s'),'s'),
+                                "tolerance":norm_float(cfg.get('balancer_tolerance',0), 0.0),
+                                "baselines":[norm_dur(b,'s') for b in cfg.get('balancer_baselines',['2s'])]}}}
+    if tags: balancer["fallbackTag"] = tags[0]
+    observatory = {"subjectSelector":tags,
+        "probeUrl":cfg.get('observatory_url','https://www.google.com/generate_204'),
+        "probeInterval":norm_dur(cfg.get('observatory_interval','1m'),'m'),
+        "probeTimeout":norm_dur(cfg.get('observatory_timeout','3s'),'s'),
+        "enableConcurrency":True}
+    dns = {"servers":cfg.get('dns_servers', DNS_SERVERS), "queryStrategy":cfg.get('dns_query_strategy','UseIP')}
+    p_socks, p_http = cfg.get('proxy_ports', [10808,10809])
+    sniffing = {"enabled":cfg.get('sniffing_enabled',True),
+                "destOverride":cfg.get('sniffing_dest_override', ["http","tls","quic"]),
+                "routeOnly":cfg.get('sniffing_route_only', True)}
     inbounds = [
-        {"listen": "127.0.0.1", "port": p_socks, "protocol": "socks",
-         "settings": {"auth": "noauth", "udp": True}, "sniffing": sniffing, "tag": "socks"},
-        {"listen": "127.0.0.1", "port": p_http, "protocol": "http",
-         "settings": {"allowTransparent": False}, "sniffing": sniffing, "tag": "http"}
+        {"listen":"127.0.0.1","port":p_socks,"protocol":"socks","settings":{"auth":"noauth","udp":True},"sniffing":sniffing,"tag":"socks"},
+        {"listen":"127.0.0.1","port":p_http,"protocol":"http","settings":{"allowTransparent":False},"sniffing":sniffing,"tag":"http"}
     ]
-    return {
-        "remarks": cfg.get('json_remarks', 'SubManager Auto'),
-        "log": {"loglevel": "warning"},
-        "dns": dns,
-        "inbounds": inbounds,
-        "outbounds": outbounds,
-        "routing": {"domainStrategy": "IPIfNonMatch", "rules": rules, "balancers": [balancer]},
-        "observatory": observatory
-    }
+    return {"remarks":cfg.get('json_remarks','SubManager Auto'),"log":{"loglevel":"warning"},
+            "dns":dns,"inbounds":inbounds,"outbounds":outbounds,
+            "routing":{"domainStrategy":"IPIfNonMatch","rules":rules,"balancers":[balancer]},
+            "observatory":observatory}
 
-# Блок нормализации конфига
 def normalize_existing_config_file(path):
-    hdr("НОРМАЛИЗАЦИЯ СУЩЕСТВУЮЩЕГО КОНФИГА")
+    hdr(tr("norm_hdr"))
     if not path.exists():
-        print(f"[!] Файл не найден: {path}")
-        return None
+        print(f"[!] {tr('file_not_found')}: {path}"); return None
     try:
-        with open(path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        with open(path, 'r', encoding='utf-8') as f: data = json.load(f)
     except Exception as e:
-        print(f"[!] Ошибка чтения JSON: {e}")
-        return None
+        print(f"[!] {tr('read_err')}: {e}"); return None
     changes = []
     if 'observatory' in data and isinstance(data['observatory'], dict):
         obs = data['observatory']
-        if 'probeInterval' in obs:
-            old = obs['probeInterval']
-            new = normalize_duration(old, 'm')
-            if old != new:
-                changes.append(f"observatory.probeInterval: '{old}' -> '{new}'")
-                obs['probeInterval'] = new
-        if 'probeTimeout' in obs:
-            old = obs['probeTimeout']
-            new = normalize_duration(old, 's')
-            if old != new:
-                changes.append(f"observatory.probeTimeout: '{old}' -> '{new}'")
-                obs['probeTimeout'] = new
+        for k, unit in (('probeInterval','m'), ('probeTimeout','s')):
+            if k in obs:
+                old = obs[k]; new = norm_dur(old, unit)
+                if old != new: changes.append(f"observatory.{k}: '{old}' -> '{new}'"); obs[k] = new
     if 'routing' in data and isinstance(data['routing'], dict):
         rt = data['routing']
         bals = rt.get('balancers', [])
         if isinstance(bals, list):
             for bi, b in enumerate(bals):
-                if not isinstance(b, dict):
-                    continue
+                if not isinstance(b, dict): continue
                 st = b.get('strategy', {})
-                if not isinstance(st, dict):
-                    continue
-                old_type = st.get('type', '')
-                new_type = normalize_balancer_type(old_type)
-                if old_type != new_type:
-                    changes.append(f"balancers[{bi}].strategy.type: '{old_type}' -> '{new_type}'")
-                    st['type'] = new_type
+                if not isinstance(st, dict): continue
+                old = st.get('type',''); new = norm_bal(old)
+                if old != new: changes.append(f"balancers[{bi}].strategy.type: '{old}' -> '{new}'"); st['type'] = new
                 settings = st.get('settings', {})
                 if isinstance(settings, dict):
                     if 'maxRTT' in settings:
-                        old = settings['maxRTT']
-                        new = normalize_duration(old, 's')
-                        if old != new:
-                            changes.append(f"balancers[{bi}].strategy.settings.maxRTT: '{old}' -> '{new}'")
-                            settings['maxRTT'] = new
+                        old = settings['maxRTT']; new = norm_dur(old,'s')
+                        if old != new: changes.append(f"balancers[{bi}].strategy.settings.maxRTT: '{old}' -> '{new}'"); settings['maxRTT'] = new
                     if 'baselines' in settings and isinstance(settings['baselines'], list):
                         new_bl = []
-                        for bval in settings['baselines']:
-                            old = bval
-                            new = normalize_duration(old, 's')
-                            new_bl.append(new)
-                            if old != new:
-                                changes.append(f"balancers[{bi}].strategy.settings.baselines[]: '{old}' -> '{new}'")
+                        for bv in settings['baselines']:
+                            new_v = norm_dur(bv,'s')
+                            new_bl.append(new_v)
+                            if bv != new_v: changes.append(f"balancers[{bi}].baselines[]: '{bv}' -> '{new_v}'")
                         settings['baselines'] = new_bl
                     if 'expected' in settings:
-                        try:
-                            e = int(settings['expected'])
-                        except Exception:
-                            e = 1
-                        if e < 1:
-                            changes.append(f"balancers[{bi}].strategy.settings.expected: '{settings['expected']}' -> '1'")
-                            settings['expected'] = 1
+                        try: e = int(settings['expected'])
+                        except Exception: e = 1
+                        if e < 1: changes.append(f"balancers[{bi}].expected -> '1'"); settings['expected'] = 1
                     if 'tolerance' in settings:
-                        try:
-                            t = float(settings['tolerance'])
+                        try: t = float(settings['tolerance'])
                         except Exception:
-                            t = 0.0
-                            changes.append(f"balancers[{bi}].strategy.settings.tolerance: '{settings.get('tolerance')}' -> '0'")
-                            settings['tolerance'] = t
+                            t = 0.0; changes.append(f"balancers[{bi}].tolerance -> '0'"); settings['tolerance'] = t
         rules = rt.get('rules', [])
         if isinstance(rules, list):
             for ri, r in enumerate(rules):
-                if not isinstance(r, dict):
-                    continue
+                if not isinstance(r, dict): continue
                 if r.get('outboundTag') == 'proxy':
                     changes.append(f"rules[{ri}]: outboundTag 'proxy' -> balancerTag 'balancer'")
-                    del r['outboundTag']
-                    r['balancerTag'] = 'balancer'
+                    del r['outboundTag']; r['balancerTag'] = 'balancer'
                 if 'domain' in r and isinstance(r['domain'], list):
-                    old_domains = list(r['domain'])
-                    new_domains = process_domain_list(old_domains)
+                    old_domains = list(r['domain']); new_domains = process_domain_list(old_domains)
                     if new_domains != old_domains:
                         diff = len(old_domains) - len(new_domains)
-                        changes.append(f"rules[{ri}]: доменов было {len(old_domains)}, стало {len(new_domains)} (TLD->keyword, убрано дочерних: {diff})")
+                        changes.append(f"rules[{ri}]: domains {len(old_domains)} -> {len(new_domains)} (removed {diff})")
                         r['domain'] = new_domains
     if 'outbounds' in data and isinstance(data['outbounds'], list):
         for oi, ob in enumerate(data['outbounds']):
-            if not isinstance(ob, dict):
-                continue
+            if not isinstance(ob, dict): continue
             ss = ob.get('streamSettings', {})
-            if not isinstance(ss, dict):
-                continue
-            sec = ss.get('security', 'none')
-            if sec == 'tls':
+            if not isinstance(ss, dict): continue
+            if ss.get('security') == 'tls':
                 ts = ss.get('tlsSettings', {})
                 if isinstance(ts, dict):
                     if 'allowInsecure' in ts:
-                        changes.append(f"outbounds[{oi}].tlsSettings.allowInsecure: удалён")
-                        del ts['allowInsecure']
+                        changes.append(f"outbounds[{oi}].tlsSettings.allowInsecure: removed"); del ts['allowInsecure']
                     if 'verifyPeerCertInNames' in ts:
-                        changes.append(f"outbounds[{oi}].tlsSettings.verifyPeerCertInNames -> verifyPeerCertByName")
-                        ts['verifyPeerCertByName'] = ts.pop('verifyPeerCertInNames')
+                        changes.append(f"outbounds[{oi}].verifyPeerCertInNames -> verifyPeerCertByName"); ts['verifyPeerCertByName'] = ts.pop('verifyPeerCertInNames')
                     if 'pinnedPeerCertificateChainSha256' in ts:
-                        changes.append(f"outbounds[{oi}].tlsSettings.pinnedPeerCertificateChainSha256 -> pinnedPeerCertSha256")
+                        changes.append(f"outbounds[{oi}].pinnedPeerCertificateChainSha256 -> pinnedPeerCertSha256")
                         ts['pinnedPeerCertSha256'] = ts.pop('pinnedPeerCertificateChainSha256')
     if not changes:
-        print("[+] Конфиг уже корректен, изменений не требуется.")
-        return data
-    print(f"[+] Найдено исправлений: {len(changes)}")
-    for c in changes:
-        print(f"    - {c}")
-    ans = ask("\nСохранить исправленный файл? (y/n) [y]: ", default="y")
-    if ans.lower() == 'y':
+        print(f"[+] {tr('norm_nochange')}"); return data
+    print(f"[+] {tr('norm_found')}: {len(changes)}")
+    for c in changes: print(f"    - {c}")
+    ans = _in(f"\n{tr('norm_save')} [y]: ", default="y")
+    if ans and ans.lower() == 'y':
         p = path.parent / (path.stem + "_fixed.json")
-        with open(p, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        print(f"[+] Сохранено: {p}")
+        with open(p, 'w', encoding='utf-8') as f: json.dump(data, f, ensure_ascii=False, indent=2)
+        print(f"[+] {tr('norm_saved')}: {p}")
         return data
     return data
 
 def normalize_existing_config_menu():
-    hdr("НОРМАЛИЗАЦИЯ СУЩЕСТВУЮЩЕГО КОНФИГА")
-    print("  1 - Из папки Output")
-    print("  2 - Из папки Input")
-    print("  3 - Ввести путь вручную")
-    print("  q - Отмена")
-    ch = ask("Выбор: ", choices=["1", "2", "3"])
-    if ch == EXIT:
-        return
+    hdr(tr("norm_hdr"))
+    print("  " + tr("n_from_out")); print("  " + tr("n_from_in")); print("  " + tr("n_manual")); print("  " + tr("q_back"))
+    ch = _in_choice(f"{tr('choice')}: ", ["1","2","3"])
+    if ch == EXIT: return
     path = None
     if ch == "1":
         files = sorted([p for p in OUTPUT_DIR.glob("*.json") if p.is_file()])
         if not files:
-            print("[!] В Output нет JSON файлов.")
-            input("Enter...")
-            return
-        for i, f in enumerate(files, 1):
-            print(f"  {i}. {f.name} ({fmt_size(f.stat().st_size)})")
-        idx = ask_int("Номер файла: ", mn=1, mx=len(files))
-        if idx == EXIT or idx is None:
-            return
-        path = files[idx - 1]
+            print(f"[!] {tr('no_json_out')}"); _in("\n" + tr("q_back") + ": ", allow_exit=False); return
+        for i, f in enumerate(files, 1): print(f"  {i}. {f.name} ({fmt_size(f.stat().st_size)})")
+        idx = _in_int(f"{tr('file_n')}: ", mn=1, mx=len(files))
+        if idx == EXIT or idx is None: return
+        path = files[idx-1]
     elif ch == "2":
         files = sorted([p for p in INPUT_DIR.glob("*.json") if p.is_file()])
         if not files:
-            print("[!] В Input нет JSON файлов.")
-            input("Enter...")
-            return
-        for i, f in enumerate(files, 1):
-            print(f"  {i}. {f.name} ({fmt_size(f.stat().st_size)})")
-        idx = ask_int("Номер файла: ", mn=1, mx=len(files))
-        if idx == EXIT or idx is None:
-            return
-        path = files[idx - 1]
+            print(f"[!] {tr('no_json_in')}"); _in("\n" + tr("q_back") + ": ", allow_exit=False); return
+        for i, f in enumerate(files, 1): print(f"  {i}. {f.name} ({fmt_size(f.stat().st_size)})")
+        idx = _in_int(f"{tr('file_n')}: ", mn=1, mx=len(files))
+        if idx == EXIT or idx is None: return
+        path = files[idx-1]
     elif ch == "3":
-        p = ask("Путь к файлу (q - отмена): ")
-        if p == EXIT or not p:
-            return
+        p = _in(f"{tr('path_q')}: ")
+        if p == EXIT or not p: return
         path = Path(p)
     if path:
         normalize_existing_config_file(path)
-        input("Enter...")
+        _in("\n" + tr("q_back") + ": ", allow_exit=False)
 
 def normalize_existing_servers_menu():
-    hdr("НОРМАЛИЗАЦИЯ БЭКАПА СЕРВЕРОВ")
-    print("  1 - Из папки Backups")
-    print("  2 - Из папки Output")
-    print("  3 - Из папки Input")
-    print("  4 - Ввести путь вручную")
-    print("  q - Отмена")
-    ch = ask("Выбор: ", choices=["1", "2", "3", "4"])
-    if ch == EXIT:
-        return
-    path = None
-    if ch == "1":
-        files = sorted([p for p in BACKUP_DIR.glob("*") if p.is_file()])
-    elif ch == "2":
-        files = sorted([p for p in OUTPUT_DIR.glob("*.txt") if p.is_file()])
-    elif ch == "3":
-        files = sorted([p for p in INPUT_DIR.glob("*") if p.is_file()])
+    hdr(tr("n_serv_hdr"))
+    print("  " + tr("n1")); print("  " + tr("n2")); print("  " + tr("n3")); print("  " + tr("n4")); print("  " + tr("q_back"))
+    ch = _in_choice(f"{tr('choice')}: ", ["1","2","3","4"])
+    if ch == EXIT: return
+    path = None; files = None
+    if ch == "1": files = sorted([p for p in BACKUP_DIR.glob("*") if p.is_file()])
+    elif ch == "2": files = sorted([p for p in OUTPUT_DIR.glob("*.txt") if p.is_file()])
+    elif ch == "3": files = sorted([p for p in INPUT_DIR.glob("*") if p.is_file()])
     elif ch == "4":
-        p = ask("Путь к файлу (q - отмена): ")
-        if p == EXIT or not p:
-            return
+        p = _in(f"{tr('path_q')}: ")
+        if p == EXIT or not p: return
         path = Path(p)
-        files = None
-    else:
-        return
     if files is not None:
         if not files:
-            print("[!] Нет файлов.")
-            input("Enter...")
-            return
-        for i, f in enumerate(files, 1):
-            print(f"  {i}. {f.name} ({fmt_size(f.stat().st_size)})")
-        idx = ask_int("Номер файла: ", mn=1, mx=len(files))
-        if idx == EXIT or idx is None:
-            return
-        path = files[idx - 1]
+            print(f"[!] {tr('no_files')}"); _in("\n" + tr("q_back") + ": ", allow_exit=False); return
+        for i, f in enumerate(files, 1): print(f"  {i}. {f.name} ({fmt_size(f.stat().st_size)})")
+        idx = _in_int(f"{tr('file_n')}: ", mn=1, mx=len(files))
+        if idx == EXIT or idx is None: return
+        path = files[idx-1]
     if path:
-        try:
-            raw = path.read_text(encoding='utf-8', errors='ignore')
+        try: raw = path.read_text(encoding='utf-8', errors='ignore')
         except Exception as e:
-            print(f"[!] Ошибка чтения: {e}")
-            input("Enter...")
-            return
-        raw2 = auto_decode(raw)
-        servers, _ = parse_input(raw2)
+            print(f"[!] {tr('read_err')}: {e}"); _in("\n" + tr("q_back") + ": ", allow_exit=False); return
+        servers, _ = parse_input(auto_decode(raw))
         if not servers:
-            print("[!] Не удалось распарсить серверы.")
-            input("Enter...")
-            return
-        print(f"[+] Распарсено серверов: {len(servers)}")
+            print(f"[!] {tr('parse_data')}"); _in("\n" + tr("q_back") + ": ", allow_exit=False); return
+        print(f"[+] {tr('serv_parsed')}: {len(servers)}")
         valid = []
         for s in servers:
-            if not s.get('host'):
-                continue
-            if not str(s.get('port', '')).isdigit():
-                continue
-            s['port'] = str(s['port'])
-            valid.append(s)
-        print(f"[+] Валидных: {len(valid)}")
-        if len(valid) != len(servers):
-            print(f"[!] Отброшено некорректных: {len(servers) - len(valid)}")
-        ans = ask("Сохранить нормализованный список? (y/n) [y]: ", default="y")
-        if ans.lower() == 'y':
+            if not s.get('host') or not str(s.get('port','')).isdigit(): continue
+            s['port'] = str(s['port']); valid.append(s)
+        print(f"[+] {tr('serv_valid')}: {len(valid)}")
+        if len(valid) != len(servers): print(f"[!] {tr('serv_dropped')}: {len(servers)-len(valid)}")
+        ans = _in(f"{tr('serv_save_norm')} [y]: ", default="y")
+        if ans and ans.lower() == 'y':
             ts = time.strftime("%Y%m%d_%H%M%S")
             out = BACKUP_DIR / f"normalized_{ts}.txt"
-            lines = [build_uri(s) for s in valid]
-            with open(out, 'w', encoding='utf-8') as f:
-                f.write('\n'.join(lines))
-            print(f"[+] Сохранено: {out}")
-        input("Enter...")
+            with open(out, 'w', encoding='utf-8') as f: f.write('\n'.join(build_uri(s) for s in valid))
+            print(f"[+] {tr('norm_saved')}: {out}")
+        _in("\n" + tr("q_back") + ": ", allow_exit=False)
 
-# Блок парсеров правил
 def parse_shadowrocket_rules(text):
     rules = []
-    stats = {"direct": 0, "proxy": 0, "block": 0, "commented": 0, "url_regex": 0, "skipped": 0}
-    proxy_kw = ["PROXY", "SPEEDPROXY", "BESTPROXY", "AIPROXY", "METAPROXY", "TGPROXY", "SPOTIFYPROXY"]
-    block_kw = ["REJECT", "REJECT-DROP", "REJECT-200", "REJECT-DICT", "REJECT-TINYGIF", "REJECT-NO-DROP"]
+    proxy_kw = ["PROXY","SPEEDPROXY","BESTPROXY","AIPROXY","METAPROXY","TGPROXY","SPOTIFYPROXY"]
+    block_kw = ["REJECT","REJECT-DROP","REJECT-200","REJECT-DICT","REJECT-TINYGIF","REJECT-NO-DROP"]
     for raw in text.splitlines():
         s = raw.strip()
-        if not s:
-            continue
-        if s.startswith('#') or s.startswith(';') or s.startswith('//'):
-            stats["commented"] += 1
-            continue
-        if s.startswith('[') and s.endswith(']'):
-            continue
-        if s.startswith('!'):
-            continue
-        if 'URL-REGEX' in s:
-            stats["url_regex"] += 1
-            continue
-        if s.startswith('RULE-SET') or s.startswith('DOMAIN-WILDCARD') or s.startswith('AND,') or s.startswith('OR,') or s.startswith('NOT,'):
-            stats["skipped"] += 1
-            continue
+        if not s or s.startswith(('#',';','//','[','!')): continue
+        if 'URL-REGEX' in s or s.startswith(('RULE-SET','DOMAIN-WILDCARD','AND,','OR,','NOT,')): continue
         parts = [p.strip() for p in s.split(',')]
-        if len(parts) < 3:
-            stats["skipped"] += 1
-            continue
-        rule_type = parts[0].upper()
-        val = parts[1]
-        policy = parts[2].upper()
-        out = None
-        if policy == 'DIRECT':
-            out = 'direct'
-        elif policy in block_kw:
-            out = 'block'
-        elif any(p in policy for p in proxy_kw):
-            out = 'proxy'
-        else:
-            stats["skipped"] += 1
-            continue
+        if len(parts) < 3: continue
+        rt = parts[0].upper(); val = parts[1]; pol = parts[2].upper()
+        if pol == 'DIRECT': out = 'direct'
+        elif pol in block_kw: out = 'block'
+        elif any(p in pol for p in proxy_kw): out = 'proxy'
+        else: continue
         rule = None
-        if rule_type == 'DOMAIN-SUFFIX':
-            rule = {"type": "field", "domain": [f"domain:{val}"], "outboundTag": out}
-        elif rule_type == 'DOMAIN':
-            rule = {"type": "field", "domain": [val], "outboundTag": out}
-        elif rule_type == 'DOMAIN-KEYWORD':
-            rule = {"type": "field", "domain": [f"keyword:{val}"], "outboundTag": out}
-        elif rule_type in ('IP-CIDR', 'IP-CIDR6'):
-            rule = {"type": "field", "ip": [val], "outboundTag": out}
-        elif rule_type == 'GEOIP':
-            rule = {"type": "field", "ip": [f"geoip:{val.lower()}"], "outboundTag": out}
-        elif rule_type == 'DST-PORT':
-            rule = {"type": "field", "port": val, "outboundTag": out}
-        elif rule_type == 'PROTOCOL':
-            rule = {"type": "field", "protocol": [val.lower()], "outboundTag": out}
-        if rule:
-            rules.append(rule)
-            stats[out] += 1
-        else:
-            stats["skipped"] += 1
-    return rules, stats
+        if rt == 'DOMAIN-SUFFIX': rule = {"type":"field","domain":[f"domain:{val}"],"outboundTag":out}
+        elif rt == 'DOMAIN': rule = {"type":"field","domain":[val],"outboundTag":out}
+        elif rt == 'DOMAIN-KEYWORD': rule = {"type":"field","domain":[f"keyword:{val}"],"outboundTag":out}
+        elif rt in ('IP-CIDR','IP-CIDR6'): rule = {"type":"field","ip":[val],"outboundTag":out}
+        elif rt == 'GEOIP': rule = {"type":"field","ip":[f"geoip:{val.lower()}"],"outboundTag":out}
+        elif rt == 'DST-PORT': rule = {"type":"field","port":val,"outboundTag":out}
+        elif rt == 'PROTOCOL': rule = {"type":"field","protocol":[val.lower()],"outboundTag":out}
+        if rule: rules.append(rule)
+    return rules, {}
 
 def parse_adguard_rules(text):
     rules = []
-    stats = {"block": 0, "skipped": 0}
     for raw in text.splitlines():
         s = raw.strip()
-        if not s or s.startswith(('!', '#', '@@')):
-            continue
-        if s.startswith(('||', '|')):
+        if not s or s.startswith(('!','#','@@')): continue
+        if s.startswith(('||','|')):
             d = s.lstrip('|').rstrip('^').strip()
-            if d:
-                rules.append({"type": "field", "domain": [f"domain:{d}"], "outboundTag": "block"})
-                stats["block"] += 1
-    return rules, stats
+            if d: rules.append({"type":"field","domain":[f"domain:{d}"],"outboundTag":"block"})
+    return rules, {}
 
 def parse_blocklist_rules(text):
     rules = []
-    stats = {"domain": 0, "ip": 0, "keyword": 0, "skipped": 0}
     for raw in text.splitlines():
         s = raw.strip()
-        if not s or s.startswith(('!', '#', ';', '[', '//')):
-            continue
-        if s.startswith('@@'):
-            continue
+        if not s or s.startswith(('!','#',';','[','//','@@')): continue
         if s.startswith('||'):
             d = s[2:].rstrip('^').strip()
-            if d and '.' in d:
-                rules.append({"type": "field", "domain": [f"domain:{d}"], "outboundTag": "block"})
-                stats["domain"] += 1
-            else:
-                stats["skipped"] += 1
+            if d and '.' in d: rules.append({"type":"field","domain":[f"domain:{d}"],"outboundTag":"block"})
             continue
         if ',' in s:
             parts = [p.strip() for p in s.split(',')]
-            rt = parts[0].upper()
-            val = parts[1] if len(parts) > 1 else ''
-            if not val:
-                stats["skipped"] += 1
-                continue
-            if rt in ('DOMAIN-SUFFIX', 'DOMAIN'):
-                rules.append({"type": "field", "domain": [f"domain:{val}"], "outboundTag": "block"})
-                stats["domain"] += 1
-            elif rt == 'DOMAIN-KEYWORD':
-                rules.append({"type": "field", "domain": [f"keyword:{val}"], "outboundTag": "block"})
-                stats["keyword"] += 1
-            elif rt in ('IP-CIDR', 'IP-CIDR6'):
-                rules.append({"type": "field", "ip": [val], "outboundTag": "block"})
-                stats["ip"] += 1
-            elif rt == 'GEOIP':
-                rules.append({"type": "field", "ip": [f"geoip:{val.lower()}"], "outboundTag": "block"})
-                stats["ip"] += 1
-            else:
-                if '.' in val and re.fullmatch(r'[A-Za-z0-9._\-]+', val):
-                    rules.append({"type": "field", "domain": [f"domain:{val}"], "outboundTag": "block"})
-                    stats["domain"] += 1
-                else:
-                    stats["skipped"] += 1
+            rt = parts[0].upper(); val = parts[1] if len(parts) > 1 else ''
+            if not val: continue
+            if rt in ('DOMAIN-SUFFIX','DOMAIN'): rules.append({"type":"field","domain":[f"domain:{val}"],"outboundTag":"block"})
+            elif rt == 'DOMAIN-KEYWORD': rules.append({"type":"field","domain":[f"keyword:{val}"],"outboundTag":"block"})
+            elif rt in ('IP-CIDR','IP-CIDR6'): rules.append({"type":"field","ip":[val],"outboundTag":"block"})
+            elif rt == 'GEOIP': rules.append({"type":"field","ip":[f"geoip:{val.lower()}"],"outboundTag":"block"})
             continue
         if re.fullmatch(r'[A-Za-z0-9._\-]+', s) and '.' in s and not re.fullmatch(r'[\d.]+', s):
-            rules.append({"type": "field", "domain": [f"domain:{s}"], "outboundTag": "block"})
-            stats["domain"] += 1
+            rules.append({"type":"field","domain":[f"domain:{s}"],"outboundTag":"block"})
         elif re.fullmatch(r'[\d.]{7,}', s) or re.fullmatch(r'[0-9a-fA-F:]+/\d+', s):
-            rules.append({"type": "field", "ip": [s], "outboundTag": "block"})
-            stats["ip"] += 1
-        else:
-            stats["skipped"] += 1
-    return rules, stats
+            rules.append({"type":"field","ip":[s],"outboundTag":"block"})
+    return rules, {}
 
 def import_routing_rules(cfg):
-    hdr("ИМПОРТ ПРАВИЛ МАРШРУТИЗАЦИИ")
-    print("  1 - Shadowrocket / Clash / Surge")
-    print("  2 - AdGuard")
-    print("  3 - Blocklist без политики")
-    print("  q - Отмена")
-    ch = ask("Выбор: ", choices=["1", "2", "3"])
-    if ch == EXIT:
-        return cfg
-    parser = {"1": parse_shadowrocket_rules, "2": parse_adguard_rules, "3": parse_blocklist_rules}[ch]
-
-    print("  1 - Из локального файла")
-    print("  2 - По ссылке")
-    ch2 = ask("Выбор: ", choices=["1", "2"])
-    if ch2 == EXIT:
-        return cfg
+    hdr(tr("imp_hdr"))
+    print("  " + tr("imp_1")); print("  " + tr("imp_2")); print("  " + tr("imp_3")); print("  " + tr("q_back"))
+    ch = _in_choice(f"{tr('choice')}: ", ["1","2","3"])
+    if ch == EXIT: return cfg
+    parser = {"1":parse_shadowrocket_rules, "2":parse_adguard_rules, "3":parse_blocklist_rules}[ch]
+    print("  " + tr("imp_src_1")); print("  " + tr("imp_src_2"))
+    ch2 = _in_choice(f"{tr('choice')}: ", ["1","2"])
+    if ch2 == EXIT: return cfg
     raw = ""
     if ch2 == "1":
         files = sorted([p for p in ROUTING_DIR.glob("*") if p.is_file()])
         if not files:
-            print(f"[!] Папка {ROUTING_DIR} пуста.")
-            input("Enter...")
-            return cfg
-        for i, f in enumerate(files, 1):
-            print(f"  {i}. {f.name} ({fmt_size(f.stat().st_size)})")
-        idx = ask_int("Номер файла (q - отмена): ", mn=1, mx=len(files))
-        if idx == EXIT or idx is None:
-            return cfg
-        raw = files[idx - 1].read_text(encoding='utf-8', errors='ignore')
+            print(f"[!] {tr('folder_empty')}: {ROUTING_DIR}"); _in("\n" + tr("q_back") + ": ", allow_exit=False); return cfg
+        for i, f in enumerate(files, 1): print(f"  {i}. {f.name} ({fmt_size(f.stat().st_size)})")
+        idx = _in_int(f"{tr('file_n')}: ", mn=1, mx=len(files))
+        if idx == EXIT or idx is None: return cfg
+        raw = files[idx-1].read_text(encoding='utf-8', errors='ignore')
     else:
-        url = ask("URL (q - отмена): ")
-        if url == EXIT or not url:
-            return cfg
+        url = _in(f"URL: ")
+        if url == EXIT or not url: return cfg
         raw = dl_url(url)
         if not raw:
-            print("[!] Не удалось загрузить.")
-            input("Enter...")
-            return cfg
-
-    rules, stats = parser(raw)
+            print(f"[!] {tr('dl_fail')}"); _in("\n" + tr("q_back") + ": ", allow_exit=False); return cfg
+    rules, _ = parser(raw)
     if not rules:
-        print("[!] Правила не найдены.")
-        input("Enter...")
-        return cfg
-
-    print(f"\n[+] Найдено правил: {len(rules)}")
-    for k, v in stats.items():
-        if v:
-            print(f"    {k}: {v}")
-
-    ans = ask(f"\nДобавить {len(rules)} правил? (y/n) [y]: ", default="y")
-    if ans.lower() == 'y':
-        rt = cfg.get('routing', {})
-        existing = rt.get('custom_rules', [])
-        existing.extend(rules)
-        rt['custom_rules'] = existing
-        cfg['routing'] = rt
-        cfg_save(cfg)
-        print(f"[+] Добавлено: {len(rules)}. Всего: {len(existing)}")
-    input("Enter...")
+        print(f"[!] {tr('not_found')}"); _in("\n" + tr("q_back") + ": ", allow_exit=False); return cfg
+    print(f"\n[+] {tr('imp_rules')}: {len(rules)}")
+    ans = _in(f"\n{tr('imp_add')} {len(rules)}? (y/n) [y]: ", default="y")
+    if ans and ans.lower() == 'y':
+        rt = cfg.get('routing', {}); ex = rt.get('custom_rules', []); ex.extend(rules)
+        rt['custom_rules'] = ex; cfg['routing'] = rt; cfg_save(cfg)
+        print(f"[+] {tr('imp_added')}: {len(ex)}")
+    _in("\n" + tr("q_back") + ": ", allow_exit=False)
     return cfg
 
-# Блок генерации маршрутов
 def gen_happ_routing(cfg):
     rt = cfg.get('routing', {})
-    profile = {
-        "Name": "SubManager Routing",
-        "GlobalProxy": cfg.get('global_proxy') == 'proxy',
-        "RemoteDNSDomain": "https://cloudflare-dns.com/dns-query",
-        "RemoteDNSType": "DoH",
-        "DomesticDNSDomain": "https://dns.comss.one/dns-query",
-        "DomesticDNSType": "DoH",
-        "GeositeUrl": "https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat",
-        "GeoipUrl": "https://github.com/v2fly/geoip/releases/download/202501090053/geoip.dat",
-        "ProxySites": [],
-        "DirectSites": rt.get('direct_domains', []),
-        "BlockSites": rt.get('block_domains', []),
-        "DirectIp": rt.get('direct_ips', []),
-        "BlockIp": rt.get('block_ips', []),
-        "ProxyIp": [],
-        "DomainStrategy": cfg.get('dns_query_strategy', 'IPIfNonMatch'),
-        "RouteOrder": "-".join(cfg.get('routing_order', ['block', 'proxy', 'direct'])),
-        "DnsHosts": {},
-        "UseChunkFiles": False,
-        "LastUpdated": 0,
-        "RemoteDNSIp": "1.1.1.1",
-        "DomesticDNSIp": "83.220.169.155"
-    }
+    profile = {"Name":"SubManager Routing","GlobalProxy":cfg.get('global_proxy') == 'proxy',
+        "RemoteDNSDomain":"https://cloudflare-dns.com/dns-query","RemoteDNSType":"DoH",
+        "DomesticDNSDomain":"https://dns.comss.one/dns-query","DomesticDNSType":"DoH",
+        "GeositeUrl":"https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat",
+        "GeoipUrl":"https://github.com/v2fly/geoip/releases/download/202501090053/geoip.dat",
+        "ProxySites":[], "DirectSites":rt.get('direct_domains', []), "BlockSites":rt.get('block_domains', []),
+        "DirectIp":rt.get('direct_ips', []), "BlockIp":rt.get('block_ips', []), "ProxyIp":[],
+        "DomainStrategy":cfg.get('dns_query_strategy','IPIfNonMatch'),
+        "RouteOrder":"-".join(cfg.get('routing_order',['block','proxy','direct'])),
+        "DnsHosts":{}, "UseChunkFiles":False, "LastUpdated":0,
+        "RemoteDNSIp":"1.1.1.1","DomesticDNSIp":"83.220.169.155"}
     for r in rt.get('custom_rules', []):
-        tag = r.get('outboundTag', '')
-        domains = r.get('domain', [])
-        ips = r.get('ip', [])
+        tag = r.get('outboundTag',''); doms = r.get('domain', []); ips = r.get('ip', [])
         if tag == 'proxy':
-            for d in domains:
-                profile["ProxySites"].append(d)
+            for d in doms: profile["ProxySites"].append(d)
         elif tag == 'direct':
-            for d in domains:
-                profile["DirectSites"].append(d)
-            for ip in ips:
-                profile["DirectIp"].append(ip)
+            for d in doms: profile["DirectSites"].append(d)
+            for ip in ips: profile["DirectIp"].append(ip)
         elif tag == 'block':
-            for d in domains:
-                profile["BlockSites"].append(d)
-            for ip in ips:
-                profile["BlockIp"].append(ip)
+            for d in doms: profile["BlockSites"].append(d)
+            for ip in ips: profile["BlockIp"].append(ip)
     return profile
 
 def gen_v2raytun_routing(cfg):
     rt = cfg.get('routing', {})
-    rules = []
-    for r in rt.get('custom_rules', []):
-        rules.append(r)
-    if rt.get('block_domains'):
-        rules.append({"type": "field", "domain": rt['block_domains'], "outboundTag": "block"})
-    if rt.get('block_ips'):
-        rules.append({"type": "field", "ip": rt['block_ips'], "outboundTag": "block"})
-    if rt.get('direct_domains'):
-        rules.append({"type": "field", "domain": rt['direct_domains'], "outboundTag": "direct"})
-    if rt.get('direct_ips'):
-        rules.append({"type": "field", "ip": rt['direct_ips'], "outboundTag": "direct"})
-    return {
-        "name": "SubManager",
-        "domainStrategy": cfg.get('dns_query_strategy', 'AsIs'),
-        "domainMatcher": "hybrid",
-        "rules": rules
-    }
+    rules = list(rt.get('custom_rules', []))
+    if rt.get('block_domains'): rules.append({"type":"field","domain":rt['block_domains'],"outboundTag":"block"})
+    if rt.get('block_ips'): rules.append({"type":"field","ip":rt['block_ips'],"outboundTag":"block"})
+    if rt.get('direct_domains'): rules.append({"type":"field","domain":rt['direct_domains'],"outboundTag":"direct"})
+    if rt.get('direct_ips'): rules.append({"type":"field","ip":rt['direct_ips'],"outboundTag":"direct"})
+    return {"name":"SubManager","domainStrategy":cfg.get('dns_query_strategy','AsIs'),"domainMatcher":"hybrid","rules":rules}
 
 def routing_menu(cfg):
     while True:
-        clr()
-        hdr("РОУТИНГ ДЛЯ КЛИЕНТОВ")
+        clr(); hdr(tr("rt_hdr"))
         rt = cfg.get('routing', {})
-        print(f"  Direct домены: {len(rt.get('direct_domains', []))}")
-        print(f"  Block домены:  {len(rt.get('block_domains', []))}")
-        print(f"  Direct IP:     {len(rt.get('direct_ips', []))}")
-        print(f"  Block IP:      {len(rt.get('block_ips', []))}")
-        print(f"  Custom rules:  {len(rt.get('custom_rules', []))}")
-        print(f"  Порядок:       {' -> '.join(cfg.get('routing_order', []))}")
-        print(f"  Глобальный:    {cfg.get('global_proxy')}")
+        print(f"  {tr('rt_direct')}: {len(rt.get('direct_domains', []))}")
+        print(f"  {tr('rt_block')}:  {len(rt.get('block_domains', []))}")
+        print(f"  {tr('rt_dip')}:     {len(rt.get('direct_ips', []))}")
+        print(f"  {tr('rt_bip')}:     {len(rt.get('block_ips', []))}")
+        print(f"  {tr('rt_cr')}:  {len(rt.get('custom_rules', []))}")
+        print(f"  {tr('rt_order')}:       {' -> '.join(cfg.get('routing_order', []))}")
+        print(f"  {tr('rt_global')}:    {cfg.get('global_proxy')}")
         ln()
-        print("  1 - Импорт правил")
-        print("  2 - Просмотр/очистка custom rules")
-        print("  3 - Настроить DNS для роутинга")
-        print("  4 - Настроить порядок правил")
-        print("  5 - Настроить глобальный прокси")
-        print("  6 - Сгенерировать happ ссылку")
-        print("  7 - Сгенерировать v2raytun ссылку")
-        print("  8 - Сохранить JSON роутинга")
-        print("  q - Назад")
-        ch = ask("Выбор: ", choices=[str(i) for i in range(1, 9)])
-        if ch == EXIT:
-            break
-        if ch == "1":
-            cfg = import_routing_rules(cfg)
+        for k in ("rt_1","rt_2","rt_3","rt_4","rt_5","rt_6","rt_7","rt_8"): print("  " + tr(k))
+        print("  " + tr("q_back"))
+        ch = _in_choice(f"{tr('choice')}: ", [str(i) for i in range(1, 9)])
+        if ch == EXIT: break
+        if ch == "1": cfg = import_routing_rules(cfg)
         elif ch == "2":
             cr = rt.get('custom_rules', [])
             if not cr:
-                print("[!] Нет custom rules.")
-                input("Enter...")
-                continue
-            print(f"  Всего: {len(cr)}")
-            for i, r in enumerate(cr[:30], 1):
-                print(f"  {i:3}. {json.dumps(r, ensure_ascii=False)[:100]}")
-            if len(cr) > 30:
-                print(f"  ... и ещё {len(cr) - 30}")
+                print(f"[!] {tr('cr_empty')}"); _in("\n" + tr("q_back") + ": ", allow_exit=False); continue
+            print(f"  {tr('total')}: {len(cr)}")
+            for i, r in enumerate(cr[:30], 1): print(f"  {i:3}. {json.dumps(r, ensure_ascii=False)[:100]}")
+            if len(cr) > 30: print(f"  ... +{len(cr)-30}")
             ln()
-            print("  1 - Очистить все")
-            print("  2 - Удалить по номерам")
-            print("  q - Назад")
-            s = ask("Выбор: ", choices=["1", "2"])
+            print("  1 - " + tr("clear_all")); print("  2 - " + tr("del_by_n")); print("  " + tr("q_back"))
+            s = _in_choice(f"{tr('choice')}: ", ["1","2"])
             if s == "1":
-                a = ask("Точно удалить все? (y/n): ", default="n")
-                if a.lower() == 'y':
-                    cfg['routing']['custom_rules'] = []
-                    cfg_save(cfg)
-                    print("[+] Очищено.")
+                a = _in(f"{tr('clear_q')} [n]: ", default="n")
+                if a and a.lower() == 'y':
+                    cfg['routing']['custom_rules'] = []; cfg_save(cfg); print(f"[+] {tr('cleared')}")
             elif s == "2":
-                sel = ask_multi("Номера для удаления: ", 1, len(cr))
+                sel = _in_multi(f"{tr('del_q')}: ", 1, len(cr))
                 if sel and sel != EXIT:
-                    for i in sorted(sel, reverse=True):
-                        cr.pop(i - 1)
-                    cfg['routing']['custom_rules'] = cr
-                    cfg_save(cfg)
-                    print(f"[+] Удалено: {len(sel)}")
+                    for i in sorted(sel, reverse=True): cr.pop(i-1)
+                    cfg['routing']['custom_rules'] = cr; cfg_save(cfg)
+                    print(f"[+] {tr('deleted_n')}: {len(sel)}")
         elif ch == "3":
-            v = ask(f"Remote DNS domain [https://cloudflare-dns.com/dns-query]: ", default="")
-            if v != EXIT and v:
-                cfg['routing_remote_dns'] = v
-            v = ask(f"Domestic DNS domain [https://dns.comss.one/dns-query]: ", default="")
-            if v != EXIT and v:
-                cfg['routing_domestic_dns'] = v
+            v = _in(f"{tr('dns_remote')} [https://cloudflare-dns.com/dns-query]: ")
+            if v != EXIT and v: cfg['routing_remote_dns'] = v
+            v = _in(f"{tr('dns_local')} [https://dns.comss.one/dns-query]: ")
+            if v != EXIT and v: cfg['routing_domestic_dns'] = v
             cfg_save(cfg)
         elif ch == "4":
-            print(f"  Текущий: {' -> '.join(cfg.get('routing_order', []))}")
-            v = ask("Порядок (block,direct,proxy): ")
-            if v == EXIT:
-                continue
+            print(f"  {tr('cur')}: {' -> '.join(cfg.get('routing_order', []))}")
+            v = _in(f"{tr('order_q')}: ")
+            if v == EXIT: continue
             parts = [p.strip().lower() for p in v.split(',') if p.strip()]
-            if all(p in ('block', 'direct', 'proxy') for p in parts) and len(set(parts)) == 3:
-                cfg['routing_order'] = parts
-                cfg_save(cfg)
-                print("[+] Сохранено.")
-            else:
-                print("[!] Нужно указать все три.")
+            if all(p in ('block','direct','proxy') for p in parts) and len(set(parts)) == 3:
+                cfg['routing_order'] = parts; cfg_save(cfg); print(f"[+] {tr('saved')}")
+            else: print(f"[!] {tr('need_all_three')}")
         elif ch == "5":
-            gp = ask(f"Глобальный прокси [{cfg.get('global_proxy')}]: ", choices=['proxy', 'direct', 'block'])
-            if gp != EXIT:
-                cfg['global_proxy'] = gp
-                cfg_save(cfg)
+            gp = _in_choice(f"{tr('global_q')} [{cfg.get('global_proxy')}]: ", ['proxy','direct','block'])
+            if gp != EXIT: cfg['global_proxy'] = gp; cfg_save(cfg)
         elif ch == "6":
             profile = gen_happ_routing(cfg)
-            j = json.dumps(profile, ensure_ascii=False)
-            b = base64.b64encode(j.encode('utf-8')).decode('ascii')
-            link = f"happ://routing/add/{b}"
+            b = base64.b64encode(json.dumps(profile, ensure_ascii=False).encode('utf-8')).decode('ascii')
             p = OUTPUT_DIR / "happ_routing.txt"
-            with open(p, 'w', encoding='utf-8') as f:
-                f.write(link)
-            print(f"[+] Happ routing: {p}")
-            input("Enter...")
+            with open(p, 'w', encoding='utf-8') as f: f.write(f"happ://routing/add/{b}")
+            print(f"[+] {tr('happ_saved')}: {p}")
+            _in("\n" + tr("q_back") + ": ", allow_exit=False)
         elif ch == "7":
             profile = gen_v2raytun_routing(cfg)
-            j = json.dumps(profile, ensure_ascii=False)
-            b = base64.b64encode(j.encode('utf-8')).decode('ascii')
-            link = f"v2rayTun://import_route/{b}"
+            b = base64.b64encode(json.dumps(profile, ensure_ascii=False).encode('utf-8')).decode('ascii')
             p = OUTPUT_DIR / "v2raytun_routing.txt"
-            with open(p, 'w', encoding='utf-8') as f:
-                f.write(link)
-            print(f"[+] v2rayTun routing: {p}")
-            input("Enter...")
+            with open(p, 'w', encoding='utf-8') as f: f.write(f"v2rayTun://import_route/{b}")
+            print(f"[+] {tr('v2r_saved')}: {p}")
+            _in("\n" + tr("q_back") + ": ", allow_exit=False)
         elif ch == "8":
             profile = gen_happ_routing(cfg)
             p = OUTPUT_DIR / "routing_profile.json"
-            with open(p, 'w', encoding='utf-8') as f:
-                f.write(json.dumps(profile, ensure_ascii=False, indent=2))
-            print(f"[+] JSON: {p}")
-            input("Enter...")
+            with open(p, 'w', encoding='utf-8') as f: f.write(json.dumps(profile, ensure_ascii=False, indent=2))
+            print(f"[+] {tr('rt_json')}: {p}")
+            _in("\n" + tr("q_back") + ": ", allow_exit=False)
     return cfg
 
 def config_menu(servers, cfg):
     while True:
-        clr()
-        hdr("НАСТРОЙКИ ГЕНЕРАЦИИ")
+        clr(); hdr(tr("cfg_hdr"))
         rt = cfg.get('routing', {})
-        print(f"  JSON имя файла:  {cfg.get('json_name')}.json")
-        print(f"  JSON примечание: {cfg.get('json_remarks')}")
-        print(f"  DNS:            {', '.join(cfg.get('dns_servers', [])[:3])}...")
-        print(f"  DNS стратегия:  {cfg.get('dns_query_strategy')}")
-        print(f"  Probe URL:      {cfg.get('observatory_url')}")
-        print(f"  Interval:       {cfg.get('observatory_interval')}")
-        print(f"  Timeout:        {cfg.get('observatory_timeout')}")
-        print(f"  Balancer:       {cfg.get('balancer_strategy')} (expected={cfg.get('balancer_expected')}, maxRTT={cfg.get('balancer_max_rtt')})")
-        print(f"  Порты:          SOCKS {cfg.get('proxy_ports', [10808, 10809])[0]}, HTTP {cfg.get('proxy_ports', [10808, 10809])[1]}")
-        print(f"  Mux:            {'ON' if cfg.get('mux_enabled') else 'OFF'}")
-        print(f"  Глобальный:     {cfg.get('global_proxy')}")
-        print(f"  Sniffing:       {'ON' if cfg.get('sniffing_enabled') else 'OFF'}")
-        print(f"  Порядок правил: {' -> '.join(cfg.get('routing_order', []))}")
-        print(f"  Custom rules:   {len(rt.get('custom_rules', []))}")
+        print(f"  {tr('cfg_jname')}: {cfg.get('json_name')}.json")
+        print(f"  {tr('cfg_jrem')}:  {cfg.get('json_remarks')}")
+        print(f"  {tr('cfg_dns')}:            {', '.join(cfg.get('dns_servers', [])[:3])}...")
+        print(f"  {tr('cfg_dns_strat')}:  {cfg.get('dns_query_strategy')}")
+        print(f"  {tr('cfg_probe')}:      {cfg.get('observatory_url')}")
+        print(f"  {tr('cfg_int')}:       {cfg.get('observatory_interval')}")
+        print(f"  {tr('cfg_to')}:        {cfg.get('observatory_timeout')}")
+        print(f"  {tr('cfg_bal')}:       {cfg.get('balancer_strategy')} (exp={cfg.get('balancer_expected')}, maxRTT={cfg.get('balancer_max_rtt')})")
+        print(f"  {tr('cfg_ports')}:          SOCKS {cfg.get('proxy_ports',[10808,10809])[0]}, HTTP {cfg.get('proxy_ports',[10808,10809])[1]}")
+        print(f"  {tr('cfg_mux')}:            {'ON' if cfg.get('mux_enabled') else 'OFF'}")
+        print(f"  {tr('cfg_global')}:     {cfg.get('global_proxy')}")
+        print(f"  {tr('cfg_sniff')}:       {'ON' if cfg.get('sniffing_enabled') else 'OFF'}")
+        print(f"  {tr('cfg_order')}: {' -> '.join(cfg.get('routing_order', []))}")
+        print(f"  {tr('cfg_cr')}:   {len(rt.get('custom_rules', []))}")
         ln()
-        print("  1 - DNS (серверы и стратегия)")
-        print("  2 - Обсерватория")
-        print("  3 - Балансировщик")
-        print("  4 - Порты SOCKS/HTTP")
-        print("  5 - Direct домены")
-        print("  6 - Block домены")
-        print("  7 - Direct/Block IP")
-        print("  8 - Block протоколы")
-        print("  9 - Порядок применения правил")
-        print(" 10 - Импорт правил")
-        print(" 11 - Просмотр/очистка custom rules")
-        print(" 12 - Глобальный прокси")
-        print(" 13 - Mux / XUDP")
-        print(" 14 - Sniffing")
-        print(" 15 - Имя JSON файла")
-        print(" 16 - Примечание JSON-сервера")
-        print(" 17 - Сбросить к дефолту")
-        print("  q - Назад")
-        ch = ask("Выбор: ", choices=[str(i) for i in range(1, 18)])
-        if ch == EXIT:
-            break
+        for k in ("cfg_1","cfg_2","cfg_3","cfg_4","cfg_5","cfg_6","cfg_7","cfg_8","cfg_9","cfg_10","cfg_11","cfg_12","cfg_13","cfg_14","cfg_15","cfg_16","cfg_17"):
+            print("  " + tr(k))
+        print("  " + tr("q_back"))
+        ch = _in_choice(f"{tr('choice')}: ", [str(i) for i in range(1, 18)])
+        if ch == EXIT: break
         if ch == "1":
-            v = ask(f"DNS через запятую [{','.join(cfg.get('dns_servers', []))}]: ", default="")
-            if v == EXIT:
-                continue
-            if v:
-                cfg['dns_servers'] = [x.strip() for x in v.split(',') if x.strip()]
-            st = ask(f"Стратегия [{cfg.get('dns_query_strategy')}]: ", choices=['UseIP', 'UseIPv4', 'UseIPv6', 'AsIs'])
-            if st != EXIT:
-                cfg['dns_query_strategy'] = st
+            v = _in(f"{tr('dns_csv')} [{','.join(cfg.get('dns_servers', []))}]: ")
+            if v == EXIT: continue
+            if v: cfg['dns_servers'] = [x.strip() for x in v.split(',') if x.strip()]
+            st = _in_choice(f"{tr('strategy')} [{cfg.get('dns_query_strategy')}]: ", ['UseIP','UseIPv4','UseIPv6','AsIs'])
+            if st != EXIT: cfg['dns_query_strategy'] = st
             cfg_save(cfg)
         elif ch == "2":
-            u = ask(f"URL [{cfg.get('observatory_url')}]: ", default="")
-            if u == EXIT:
-                continue
-            if u:
-                cfg['observatory_url'] = u
-            i = ask(f"Интервал [{cfg.get('observatory_interval')}]: ", default="")
-            if i != EXIT and i:
-                cfg['observatory_interval'] = normalize_duration(i, 'm')
-            t = ask(f"Таймаут [{cfg.get('observatory_timeout')}]: ", default="")
-            if t != EXIT and t:
-                cfg['observatory_timeout'] = normalize_duration(t, 's')
+            u = _in(f"{tr('dns_url')} [{cfg.get('observatory_url')}]: ")
+            if u == EXIT: continue
+            if u: cfg['observatory_url'] = u
+            i = _in(f"{tr('interval')} [{cfg.get('observatory_interval')}]: ")
+            if i != EXIT and i: cfg['observatory_interval'] = norm_dur(i, 'm')
+            t = _in(f"{tr('timeout')} [{cfg.get('observatory_timeout')}]: ")
+            if t != EXIT and t: cfg['observatory_timeout'] = norm_dur(t, 's')
             cfg_save(cfg)
         elif ch == "3":
-            st = ask(f"Стратегия [{cfg.get('balancer_strategy')}]: ", choices=['leastLoad', 'leastPing', 'random', 'roundRobin'])
-            if st != EXIT:
-                cfg['balancer_strategy'] = normalize_balancer_type(st)
-            e = ask_int(f"Expected [{cfg.get('balancer_expected')}]: ", default=cfg.get('balancer_expected'))
-            if e != EXIT and e is not None:
-                cfg['balancer_expected'] = e
-            m = ask(f"MaxRTT [{cfg.get('balancer_max_rtt')}]: ", default="")
-            if m != EXIT and m:
-                cfg['balancer_max_rtt'] = normalize_duration(m, 's')
-            tol = ask(f"Tolerance [{cfg.get('balancer_tolerance')}]: ", default="")
-            if tol != EXIT and tol:
-                cfg['balancer_tolerance'] = normalize_float(tol, 0.0)
-            bl = ask(f"Baselines [{','.join(cfg.get('balancer_baselines', ['2s']))}]: ", default="")
-            if bl != EXIT and bl:
-                cfg['balancer_baselines'] = [normalize_duration(x, 's') for x in bl.split(',') if x.strip()]
+            st = _in_choice(f"{tr('strategy')} [{cfg.get('balancer_strategy')}]: ", ['leastLoad','leastPing','random','roundRobin'])
+            if st != EXIT: cfg['balancer_strategy'] = norm_bal(st)
+            e = _in_int(f"{tr('expected')} [{cfg.get('balancer_expected')}]: ", default=cfg.get('balancer_expected'))
+            if e != EXIT and e is not None: cfg['balancer_expected'] = e
+            m = _in(f"{tr('maxrtt')} [{cfg.get('balancer_max_rtt')}]: ")
+            if m != EXIT and m: cfg['balancer_max_rtt'] = norm_dur(m, 's')
+            tol = _in(f"{tr('tolerance')} [{cfg.get('balancer_tolerance')}]: ")
+            if tol != EXIT and tol: cfg['balancer_tolerance'] = norm_float(tol, 0.0)
+            bl = _in(f"{tr('baselines')} [{','.join(cfg.get('balancer_baselines', ['2s']))}]: ")
+            if bl != EXIT and bl: cfg['balancer_baselines'] = [norm_dur(x, 's') for x in bl.split(',') if x.strip()]
             cfg_save(cfg)
         elif ch == "4":
-            ps = ask_int(f"SOCKS [{cfg.get('proxy_ports', [10808, 10809])[0]}]: ", default=cfg.get('proxy_ports', [10808, 10809])[0])
-            if ps == EXIT:
-                continue
-            ph = ask_int(f"HTTP [{cfg.get('proxy_ports', [10808, 10809])[1]}]: ", default=cfg.get('proxy_ports', [10808, 10809])[1])
-            if ph == EXIT:
-                continue
-            cfg['proxy_ports'] = [ps, ph]
-            cfg_save(cfg)
+            ps = _in_int(f"SOCKS [{cfg.get('proxy_ports', [10808,10809])[0]}]: ", default=cfg.get('proxy_ports', [10808,10809])[0])
+            if ps == EXIT: continue
+            ph = _in_int(f"HTTP [{cfg.get('proxy_ports', [10808,10809])[1]}]: ", default=cfg.get('proxy_ports', [10808,10809])[1])
+            if ph == EXIT: continue
+            cfg['proxy_ports'] = [ps, ph]; cfg_save(cfg)
         elif ch == "5":
-            print(f"  Текущие: {rt.get('direct_domains', [])}")
-            print(f"  Подсказки: {', '.join(GEOSITE_SUGGESTIONS[:10])}")
-            v = ask("Direct домены (через запятую, пусто=очистить, q=отмена): ")
-            if v == EXIT:
-                continue
+            print(f"  {tr('cur')}: {rt.get('direct_domains', [])}")
+            print(f"  {tr('hints')}: {', '.join(GEOSITE_SUGG[:10])}")
+            v = _in(f"{tr('direct_d')}: ")
+            if v == EXIT: continue
             cfg['routing']['direct_domains'] = [x.strip() for x in v.split(',') if x.strip()] if v else []
             cfg_save(cfg)
         elif ch == "6":
-            print(f"  Текущие: {rt.get('block_domains', [])}")
-            print(f"  Подсказки: {', '.join(GEOSITE_SUGGESTIONS[:10])}")
-            v = ask("Block домены (через запятую, пусто=очистить, q=отмена): ")
-            if v == EXIT:
-                continue
+            print(f"  {tr('cur')}: {rt.get('block_domains', [])}")
+            print(f"  {tr('hints')}: {', '.join(GEOSITE_SUGG[:10])}")
+            v = _in(f"{tr('block_d')}: ")
+            if v == EXIT: continue
             cfg['routing']['block_domains'] = [x.strip() for x in v.split(',') if x.strip()] if v else []
             cfg_save(cfg)
         elif ch == "7":
             print(f"  Direct IP: {rt.get('direct_ips', [])}")
-            print(f"  Подсказки: {', '.join(GEOIP_SUGGESTIONS)}")
-            v = ask("Direct IP: ")
-            if v != EXIT:
-                cfg['routing']['direct_ips'] = [x.strip() for x in v.split(',') if x.strip()] if v else []
+            print(f"  {tr('hints')}: {', '.join(GEOIP_SUGG)}")
+            v = _in(f"{tr('direct_ip')}: ")
+            if v != EXIT: cfg['routing']['direct_ips'] = [x.strip() for x in v.split(',') if x.strip()] if v else []
             print(f"  Block IP: {rt.get('block_ips', [])}")
-            v = ask("Block IP: ")
-            if v != EXIT:
-                cfg['routing']['block_ips'] = [x.strip() for x in v.split(',') if x.strip()] if v else []
+            v = _in(f"{tr('block_ip')}: ")
+            if v != EXIT: cfg['routing']['block_ips'] = [x.strip() for x in v.split(',') if x.strip()] if v else []
             cfg_save(cfg)
         elif ch == "8":
-            print(f"  Текущие: {rt.get('block_protocols', [])}")
-            v = ask("Протоколы (через запятую, пусто=очистить, q=отмена): ")
-            if v == EXIT:
-                continue
+            print(f"  {tr('cur')}: {rt.get('block_protocols', [])}")
+            v = _in(f"{tr('protos')}: ")
+            if v == EXIT: continue
             cfg['routing']['block_protocols'] = [x.strip() for x in v.split(',') if x.strip()] if v else []
             cfg_save(cfg)
         elif ch == "9":
-            print(f"  Текущий: {' -> '.join(cfg.get('routing_order', []))}")
-            v = ask("Порядок (block,direct,proxy): ")
-            if v == EXIT:
-                continue
+            print(f"  {tr('cur')}: {' -> '.join(cfg.get('routing_order', []))}")
+            v = _in(f"{tr('order_q')}: ")
+            if v == EXIT: continue
             parts = [p.strip().lower() for p in v.split(',') if p.strip()]
-            if all(p in ('block', 'direct', 'proxy') for p in parts) and len(set(parts)) == 3:
-                cfg['routing_order'] = parts
-                cfg_save(cfg)
-                print("[+] Сохранено.")
-            else:
-                print("[!] Нужно указать все три.")
-            input("Enter...")
-        elif ch == "10":
-            cfg = import_routing_rules(cfg)
+            if all(p in ('block','direct','proxy') for p in parts) and len(set(parts)) == 3:
+                cfg['routing_order'] = parts; cfg_save(cfg); print(f"[+] {tr('saved')}")
+            else: print(f"[!] {tr('need_all_three')}")
+            _in("\n" + tr("q_back") + ": ", allow_exit=False)
+        elif ch == "10": cfg = import_routing_rules(cfg)
         elif ch == "11":
             cr = rt.get('custom_rules', [])
             if not cr:
-                print("[!] Нет custom rules.")
-                input("Enter...")
-                continue
-            print(f"  Всего: {len(cr)}")
-            for i, r in enumerate(cr[:30], 1):
-                print(f"  {i:3}. {json.dumps(r, ensure_ascii=False)[:100]}")
-            if len(cr) > 30:
-                print(f"  ... и ещё {len(cr) - 30}")
+                print(f"[!] {tr('cr_empty')}"); _in("\n" + tr("q_back") + ": ", allow_exit=False); continue
+            print(f"  {tr('total')}: {len(cr)}")
+            for i, r in enumerate(cr[:30], 1): print(f"  {i:3}. {json.dumps(r, ensure_ascii=False)[:100]}")
+            if len(cr) > 30: print(f"  ... +{len(cr)-30}")
             ln()
-            print("  1 - Очистить все")
-            print("  2 - Удалить по номерам")
-            print("  q - Назад")
-            s = ask("Выбор: ", choices=["1", "2"])
+            print("  1 - " + tr("clear_all")); print("  2 - " + tr("del_by_n")); print("  " + tr("q_back"))
+            s = _in_choice(f"{tr('choice')}: ", ["1","2"])
             if s == "1":
-                a = ask("Точно удалить все? (y/n): ", default="n")
-                if a.lower() == 'y':
-                    cfg['routing']['custom_rules'] = []
-                    cfg_save(cfg)
-                    print("[+] Очищено.")
+                a = _in(f"{tr('clear_q')} [n]: ", default="n")
+                if a and a.lower() == 'y':
+                    cfg['routing']['custom_rules'] = []; cfg_save(cfg); print(f"[+] {tr('cleared')}")
             elif s == "2":
-                sel = ask_multi("Номера для удаления: ", 1, len(cr))
+                sel = _in_multi(f"{tr('del_q')}: ", 1, len(cr))
                 if sel and sel != EXIT:
-                    for i in sorted(sel, reverse=True):
-                        cr.pop(i - 1)
-                    cfg['routing']['custom_rules'] = cr
-                    cfg_save(cfg)
-                    print(f"[+] Удалено: {len(sel)}")
+                    for i in sorted(sel, reverse=True): cr.pop(i-1)
+                    cfg['routing']['custom_rules'] = cr; cfg_save(cfg)
+                    print(f"[+] {tr('deleted_n')}: {len(sel)}")
         elif ch == "12":
-            gp = ask(f"Глобальный прокси [{cfg.get('global_proxy')}]: ", choices=['proxy', 'direct', 'block'])
-            if gp != EXIT:
-                cfg['global_proxy'] = gp
-            cfg_save(cfg)
+            gp = _in_choice(f"{tr('global_q')} [{cfg.get('global_proxy')}]: ", ['proxy','direct','block'])
+            if gp != EXIT: cfg['global_proxy'] = gp; cfg_save(cfg)
         elif ch == "13":
             print(f"  Mux: {'ON' if cfg.get('mux_enabled') else 'OFF'}")
-            en = ask("Включить Mux? (y/n/q): ", default="")
-            if en == EXIT:
-                continue
-            if en:
-                cfg['mux_enabled'] = en.lower() == 'y'
+            en = _in(f"{tr('mux_on')}: ")
+            if en == EXIT: continue
+            if en: cfg['mux_enabled'] = en.lower() == 'y'
             if cfg.get('mux_enabled'):
-                c = ask_int(f"Concurrency [{cfg.get('mux_concurrency')}]: ", default=cfg.get('mux_concurrency'))
-                if c != EXIT and c is not None:
-                    cfg['mux_concurrency'] = c
-                xc = ask_int(f"XUDP concurrency [{cfg.get('mux_xudp_concurrency')}]: ", default=cfg.get('mux_xudp_concurrency'))
-                if xc != EXIT and xc is not None:
-                    cfg['mux_xudp_concurrency'] = xc
-                xp = ask(f"XUDP proxyUDP443 [{cfg.get('mux_xudp_proxy_udp443')}]: ", choices=['reject', 'skip', 'allow'])
-                if xp != EXIT:
-                    cfg['mux_xudp_proxy_udp443'] = xp
+                c = _in_int(f"{tr('concurrency')} [{cfg.get('mux_concurrency')}]: ", default=cfg.get('mux_concurrency'))
+                if c != EXIT and c is not None: cfg['mux_concurrency'] = c
+                xc = _in_int(f"{tr('xudp_c')} [{cfg.get('mux_xudp_concurrency')}]: ", default=cfg.get('mux_xudp_concurrency'))
+                if xc != EXIT and xc is not None: cfg['mux_xudp_concurrency'] = xc
+                xp = _in_choice(f"{tr('xudp_p')} [{cfg.get('mux_xudp_proxy_udp443')}]: ", ['reject','skip','allow'])
+                if xp != EXIT: cfg['mux_xudp_proxy_udp443'] = xp
             cfg_save(cfg)
         elif ch == "14":
-            en = ask(f"Sniffing [{cfg.get('sniffing_enabled')}]: ", choices=['y', 'n'])
-            if en != EXIT:
-                cfg['sniffing_enabled'] = en.lower() == 'y'
+            en = _in_choice(f"Sniffing [{cfg.get('sniffing_enabled')}]: ", ['y','n'])
+            if en != EXIT: cfg['sniffing_enabled'] = en.lower() == 'y'
             if cfg.get('sniffing_enabled'):
-                v = ask(f"DestOverride [{','.join(cfg.get('sniffing_dest_override', []))}]: ", default="")
-                if v != EXIT and v:
-                    cfg['sniffing_dest_override'] = [x.strip() for x in v.split(',') if x.strip()]
-                ro = ask(f"RouteOnly [{cfg.get('sniffing_route_only')}]: ", choices=['y', 'n'])
-                if ro != EXIT:
-                    cfg['sniffing_route_only'] = ro.lower() == 'y'
+                v = _in(f"{tr('dest_over')} [{','.join(cfg.get('sniffing_dest_override', []))}]: ")
+                if v != EXIT and v: cfg['sniffing_dest_override'] = [x.strip() for x in v.split(',') if x.strip()]
+                ro = _in_choice(f"{tr('route_only')} [{cfg.get('sniffing_route_only')}]: ", ['y','n'])
+                if ro != EXIT: cfg['sniffing_route_only'] = ro.lower() == 'y'
             cfg_save(cfg)
         elif ch == "15":
-            n = ask(f"Имя JSON файла [{cfg.get('json_name')}]: ", default="")
-            if n != EXIT and n:
-                cfg['json_name'] = n
-                cfg_save(cfg)
+            n = _in(f"{tr('jname_q')} [{cfg.get('json_name')}]: ")
+            if n != EXIT and n: cfg['json_name'] = n; cfg_save(cfg)
         elif ch == "16":
-            print(f"  Текущее: {cfg.get('json_remarks')}")
-            n = ask(f"Новое примечание [{cfg.get('json_remarks')}]: ", default="")
-            if n == EXIT:
-                continue
+            print(f"  {tr('jrem_cur')}: {cfg.get('json_remarks')}")
+            n = _in(f"{tr('jrem_q')} [{cfg.get('json_remarks')}]: ")
+            if n == EXIT: continue
             if n:
                 cfg['json_remarks'] = n
-                auto = ask("Использовать как имя файла? (y/n) [n]: ", default="n")
-                if auto == EXIT:
-                    continue
+                auto = _in(f"{tr('jname_auto')} [n]: ", default="n")
+                if auto == EXIT: continue
                 if auto.lower() == 'y':
-                    tr = transliterate(n)
-                    cfg['json_name'] = sanitize_filename(tr)
-                    cfg['json_use_remarks_as_name'] = True
-                else:
-                    cfg['json_use_remarks_as_name'] = False
+                    cfg['json_name'] = sanitize_fn(transliterate(n)); cfg['json_use_remarks_as_name'] = True
+                else: cfg['json_use_remarks_as_name'] = False
                 cfg_save(cfg)
         elif ch == "17":
-            a = ask("Сбросить все настройки? (y/n): ", default="n")
-            if a.lower() == 'y':
-                cfg = cfg_default()
-                cfg_save(cfg)
-                print("[+] Сброшено.")
+            a = _in(f"{tr('reset_q')} [n]: ", default="n")
+            if a and a.lower() == 'y':
+                cfg = cfg_default(); cfg_save(cfg); print(f"[+] {tr('reset_done')}")
     return cfg
 
 def save_base64(servers, name="servers"):
     lines = [build_uri(s) for s in servers]
     raw = '\n'.join(lines)
-    b64 = base64.b64encode(raw.encode('utf-8')).decode('ascii')
-    p1 = OUTPUT_DIR / f"{name}.txt"
-    p2 = OUTPUT_DIR / f"{name}_base64.txt"
-    with open(p1, 'w', encoding='utf-8') as f:
-        f.write(raw)
-    with open(p2, 'w', encoding='utf-8') as f:
-        f.write(b64)
-    print(f"[+] Ссылки: {p1}")
-    print(f"[+] Base64: {p2}")
-    print(f"[+] Строк: {len(lines)}")
-
-def export_menu(servers, cfg):
-    while True:
-        clr()
-        hdr("ЭКСПОРТ ВЫБРАННЫХ СЕРВЕРОВ")
-        show_servers_list(servers)
-        print(f"\n  Всего: {len(servers)}")
-        ln()
-        print("  1 - Экспорт ссылок (txt + base64)")
-        print("  2 - Экспорт JSON Xray")
-        print("  q - Назад")
-        ch = ask("Выбор: ", choices=["1", "2"])
-        if ch == EXIT:
-            break
-        sel = ask_multi("Номера серверов для экспорта (1,3-5,all): ", 1, len(servers))
-        if sel == EXIT or not sel:
-            continue
-        subset = [servers[i - 1] for i in sel]
-        if ch == "1":
-            name = ask("Имя файла (без расширения) [servers]: ", default="servers")
-            if name == EXIT:
-                name = "servers"
-            save_base64(subset, name)
-        elif ch == "2":
-            name = ask("Имя JSON [selected_config]: ", default="selected_config")
-            if name == EXIT:
-                name = "selected_config"
-            remarks = ask(f"Примечание сервера [{cfg.get('json_remarks', 'SubManager')}]: ", default=cfg.get('json_remarks', 'SubManager'))
-            if remarks == EXIT:
-                remarks = cfg.get('json_remarks', 'SubManager')
-            cfg2 = copy.deepcopy(cfg)
-            cfg2['json_name'] = name
-            save_json(gen_config(subset, cfg2), cfg2, name, remarks)
-        input("Enter...")
+    p1 = OUTPUT_DIR / f"{name}.txt"; p2 = OUTPUT_DIR / f"{name}_base64.txt"
+    with open(p1, 'w', encoding='utf-8') as f: f.write(raw)
+    with open(p2, 'w', encoding='utf-8') as f: f.write(base64.b64encode(raw.encode('utf-8')).decode('ascii'))
+    print(f"[+] {tr('links_saved')}: {p1}")
+    print(f"[+] {tr('b64_saved')}: {p2}")
+    print(f"[+] {tr('str_count')}: {len(lines)}")
 
 def save_json(config, cfg, name_override=None, remarks_override=None):
     name = name_override or cfg.get('json_name', 'xray_config')
-    if not name.endswith('.json'):
-        name += '.json'
-    if remarks_override is not None:
-        config['remarks'] = remarks_override
+    if not name.endswith('.json'): name += '.json'
+    if remarks_override is not None: config['remarks'] = remarks_override
     p = OUTPUT_DIR / name
-    with open(p, 'w', encoding='utf-8') as f:
-        json.dump(config, f, ensure_ascii=False, indent=2)
+    with open(p, 'w', encoding='utf-8') as f: json.dump(config, f, ensure_ascii=False, indent=2)
     print(f"[+] JSON: {p}")
-    if 'remarks' in config:
-        print(f"    Примечание сервера: {config['remarks']}")
     return p
 
-def ask_json_name_and_remarks(cfg, default_name=None):
-    default_name = default_name or cfg.get('json_name', 'xray_config')
-    default_remarks = cfg.get('json_remarks', 'SubManager Auto')
-    print("\n[?] Настройка имени JSON-сервера")
-    print(f"    Текущее имя файла:    {default_name}.json")
-    print(f"    Текущее примечание:   {default_remarks}")
-    print("    (Enter - оставить текущие, q - отмена)")
-    use = ask("Изменить имя/примечание? (y/n) [n]: ", default="n")
-    if use == EXIT:
-        return None, None
-    if use.lower() != 'y':
-        return default_name, default_remarks
-    remarks = ask(f"Примечание сервера [{default_remarks}]: ", default=default_remarks)
-    if remarks == EXIT:
-        return None, None
-    cfg['json_remarks'] = remarks
-    auto = ask("Использовать примечание как имя файла? (y/n) [n]: ", default="n")
-    if auto == EXIT:
-        return None, None
+def ask_json_name_and_remarks(cfg):
+    dn = cfg.get('json_name', 'xray_config'); dr = cfg.get('json_remarks', 'SubManager Auto')
+    print(f"\n[?] {tr('jname_cfg')}")
+    print(f"    {tr('jname_cur')}:    {dn}.json")
+    print(f"    {tr('jrem_cur')}:   {dr}")
+    print(f"    {tr('jenter_keep')}")
+    use = _in(f"{tr('jchange_q')} [n]: ", default="n")
+    if use == EXIT: return None, None
+    if use.lower() != 'y': return dn, dr
+    rem = _in(f"{tr('jrem_new')} [{dr}]: ", default=dr)
+    if rem == EXIT: return None, None
+    cfg['json_remarks'] = rem
+    auto = _in(f"{tr('jname_auto')} [n]: ", default="n")
+    if auto == EXIT: return None, None
     if auto.lower() == 'y':
-        tr = transliterate(remarks)
-        fname = sanitize_filename(tr)
-        cfg['json_use_remarks_as_name'] = True
-        cfg_save(cfg)
-        print(f"    Имя файла будет: {fname}.json")
-        return fname, remarks
+        fn = sanitize_fn(transliterate(rem)); cfg['json_use_remarks_as_name'] = True
+        cfg_save(cfg); print(f"    {tr('jname_will')}: {fn}.json")
+        return fn, rem
     else:
-        name = ask(f"Имя файла (без .json) [{default_name}]: ", default=default_name)
-        if name == EXIT:
-            return None, None
-        cfg['json_name'] = name
-        cfg_save(cfg)
-        return name, remarks
+        nm = _in(f"{tr('jname_noext')} [{dn}]: ", default=dn)
+        if nm == EXIT: return None, None
+        cfg['json_name'] = nm; cfg_save(cfg); return nm, rem
+
+def export_menu(servers, cfg):
+    while True:
+        clr(); hdr(tr("exp_sel_hdr"))
+        show_servers_list(servers)
+        print(f"\n  {tr('total')}: {len(servers)}")
+        ln()
+        print("  " + tr("exp_1")); print("  " + tr("exp_2")); print("  " + tr("q_back"))
+        ch = _in_choice(f"{tr('choice')}: ", ["1","2"])
+        if ch == EXIT: break
+        sel = _in_multi(f"{tr('exp_sel_n')}: ", 1, len(servers))
+        if sel == EXIT or not sel: continue
+        subset = [servers[i-1] for i in sel]
+        if ch == "1":
+            name = _in(f"{tr('exp_name')} [servers]: ", default="servers")
+            if name == EXIT: name = "servers"
+            save_base64(subset, name)
+        elif ch == "2":
+            name = _in(f"{tr('exp_json_name')} [selected_config]: ", default="selected_config")
+            if name == EXIT: name = "selected_config"
+            remarks = _in(f"{tr('exp_rem')} [{cfg.get('json_remarks','SubManager')}]: ", default=cfg.get('json_remarks','SubManager'))
+            if remarks == EXIT: remarks = cfg.get('json_remarks','SubManager')
+            cfg2 = copy.deepcopy(cfg); cfg2['json_name'] = name
+            save_json(gen_config(subset, cfg2), cfg2, name, remarks)
+        _in("\n" + tr("q_back") + ": ", allow_exit=False)
 
 def backup_servers(servers, name="backup"):
     ts = time.strftime("%Y%m%d_%H%M%S")
     p = BACKUP_DIR / f"{name}_{ts}.txt"
-    lines = [build_uri(s) for s in servers]
-    with open(p, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(lines))
-    print(f"[+] Backup: {p}")
+    with open(p, 'w', encoding='utf-8') as f: f.write('\n'.join(build_uri(s) for s in servers))
+    print(f"[+] {tr('backup_ok')}: {p}")
 
 def stats(servers):
-    clr()
-    hdr("СТАТИСТИКА")
+    clr(); hdr(tr("stat_hdr"))
     if not servers:
-        print("  Серверов нет.")
-        input("Enter...")
-        return
-    print(f"  Всего серверов: {len(servers)}")
-    by_proto, by_type, by_sec = {}, {}, {}
+        print(f"  {tr('no_serv')}"); _in("\n" + tr("q_back") + ": ", allow_exit=False); return
+    print(f"  {tr('total_serv')}: {len(servers)}")
+    by_p, by_t, by_s = {}, {}, {}
     for s in servers:
-        by_proto[s['scheme']] = by_proto.get(s['scheme'], 0) + 1
-        t = s['params'].get('type', 'tcp')
-        by_type[t] = by_type.get(t, 0) + 1
-        sec = s['params'].get('security', 'none')
-        by_sec[sec] = by_sec.get(sec, 0) + 1
-    print("\n  По протоколу:")
-    for k, v in sorted(by_proto.items()):
-        print(f"    {k:15} : {v}")
-    print("\n  По транспорту:")
-    for k, v in sorted(by_type.items()):
-        print(f"    {k:15} : {v}")
-    print("\n  По security:")
-    for k, v in sorted(by_sec.items()):
-        print(f"    {k:15} : {v}")
-    input("\nEnter...")
+        by_p[s['scheme']] = by_p.get(s['scheme'], 0) + 1
+        t = s['params'].get('type','tcp'); by_t[t] = by_t.get(t, 0) + 1
+        sec = s['params'].get('security','none'); by_s[sec] = by_s.get(sec, 0) + 1
+    print(f"\n  {tr('by_proto')}:")
+    for k, v in sorted(by_p.items()): print(f"    {k:15} : {v}")
+    print(f"\n  {tr('by_transp')}:")
+    for k, v in sorted(by_t.items()): print(f"    {k:15} : {v}")
+    print(f"\n  {tr('by_sec')}:")
+    for k, v in sorted(by_s.items()): print(f"    {k:15} : {v}")
+    _in("\n" + tr("q_back") + ": ", allow_exit=False)
 
 def save_yaml_clash(servers, name="clash_proxies.yaml"):
     lines = ["proxies:"]
     for s in servers:
         n = s.get('name', 'proxy')
         if s['scheme'] == 'vless':
-            lines.append(f"  - name: \"{n}\"")
-            lines.append(f"    type: vless")
-            lines.append(f"    server: {s['host']}")
-            lines.append(f"    port: {s['port']}")
-            lines.append(f"    uuid: {s.get('id', '')}")
-            lines.append(f"    network: {s['params'].get('type', 'tcp')}")
+            lines.append(f"  - name: \"{n}\""); lines.append(f"    type: vless")
+            lines.append(f"    server: {s['host']}"); lines.append(f"    port: {s['port']}")
+            lines.append(f"    uuid: {s.get('id', '')}"); lines.append(f"    network: {s['params'].get('type', 'tcp')}")
             lines.append(f"    tls: {str(s['params'].get('security') == 'tls').lower()}")
             if s['params'].get('security') == 'reality':
                 lines.append(f"    reality-opts:")
                 lines.append(f"      public-key: {s['params'].get('pbk', '')}")
                 lines.append(f"      short-id: {s['params'].get('sid', '')}")
                 lines.append(f"    servername: {s['params'].get('sni', '')}")
-            if s['params'].get('flow'):
-                lines.append(f"    flow: {s['params']['flow']}")
+            if s['params'].get('flow'): lines.append(f"    flow: {s['params']['flow']}")
         elif s['scheme'] == 'ss':
-            lines.append(f"  - name: \"{n}\"")
-            lines.append(f"    type: ss")
-            lines.append(f"    server: {s['host']}")
-            lines.append(f"    port: {s['port']}")
-            lines.append(f"    cipher: {s.get('method', '')}")
+            lines.append(f"  - name: \"{n}\""); lines.append(f"    type: ss")
+            lines.append(f"    server: {s['host']}"); lines.append(f"    port: {s['port']}")
+            lines.append(f"    cipher: {s.get('method', '')}"); lines.append(f"    password: \"{s.get('password', '')}\"")
+        elif s['scheme'] in ('hysteria2','hy2','hysteria'):
+            lines.append(f"  - name: \"{n}\""); lines.append(f"    type: hysteria2")
+            lines.append(f"    server: {s['host']}"); lines.append(f"    port: {s['port']}")
             lines.append(f"    password: \"{s.get('password', '')}\"")
-        elif s['scheme'] in ('hysteria2', 'hy2', 'hysteria'):
-            lines.append(f"  - name: \"{n}\"")
-            lines.append(f"    type: hysteria2")
-            lines.append(f"    server: {s['host']}")
-            lines.append(f"    port: {s['port']}")
-            lines.append(f"    password: \"{s.get('password', '')}\"")
-            if 'sni' in s['params']:
-                lines.append(f"    sni: {s['params']['sni']}")
+            if 'sni' in s['params']: lines.append(f"    sni: {s['params']['sni']}")
         elif s['scheme'] == 'trojan':
-            lines.append(f"  - name: \"{n}\"")
-            lines.append(f"    type: trojan")
-            lines.append(f"    server: {s['host']}")
-            lines.append(f"    port: {s['port']}")
+            lines.append(f"  - name: \"{n}\""); lines.append(f"    type: trojan")
+            lines.append(f"    server: {s['host']}"); lines.append(f"    port: {s['port']}")
             lines.append(f"    password: \"{s.get('password', '')}\"")
-            if 'sni' in s['params']:
-                lines.append(f"    sni: {s['params']['sni']}")
+            if 'sni' in s['params']: lines.append(f"    sni: {s['params']['sni']}")
     p = OUTPUT_DIR / name
-    with open(p, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(lines))
+    with open(p, 'w', encoding='utf-8') as f: f.write('\n'.join(lines))
     print(f"[+] Clash YAML: {p}")
 
-# ============================================================
-# Блок универсального редактора JSON
-# ============================================================
+FIELD_HINTS = {"Name":"Name","GlobalProxy":"GlobalProxy true/false","UseChunkFiles":"UseChunkFiles true/false",
+"RemoteDns":"RemoteDns IP","DomesticDns":"DomesticDns IP","RemoteDNSType":"RemoteDNSType","RemoteDNSDomain":"RemoteDNSDomain URL",
+"RemoteDNSIP":"RemoteDNSIP","DomesticDNSType":"DomesticDNSType","DomesticDNSDomain":"DomesticDNSDomain URL",
+"DomesticDNSIP":"DomesticDNSIP","Geoipurl":"GeoIP URL","Geositeurl":"GeoSite URL","LastUpdated":"LastUpdated unix",
+"RouteOrder":"RouteOrder","DomainStrategy":"DomainStrategy","FakeDNS":"FakeDNS true/false",
+"DnsHosts":"DnsHosts object","DirectSites":"DirectSites list","DirectIp":"DirectIp list","ProxySites":"ProxySites list",
+"ProxyIp":"ProxyIp list","BlockSites":"BlockSites list","BlockIp":"BlockIp list"}
+PREF_ORDER = ["Name","GlobalProxy","UseChunkFiles","RemoteDns","DomesticDns","RemoteDNSType","RemoteDNSDomain",
+"RemoteDNSIP","DomesticDNSType","DomesticDNSDomain","DomesticDNSIP","Geoipurl","Geositeurl","LastUpdated","DnsHosts",
+"RouteOrder","DirectSites","DirectIp","ProxySites","ProxyIp","BlockSites","BlockIp","DomainStrategy","FakeDNS"]
 
-FIELD_INFO_HINTS = {
-    "Name": "Название конфига",
-    "GlobalProxy": "Глобальный прокси true/false",
-    "UseChunkFiles": "Использовать чанки true/false",
-    "RemoteDns": "Удалённый DNS IP",
-    "DomesticDns": "Локальный DNS IP",
-    "RemoteDNSType": "Тип удалённого DNS",
-    "RemoteDNSDomain": "URL удалённого DNS",
-    "RemoteDNSIP": "IP удалённого DNS",
-    "DomesticDNSType": "Тип локального DNS",
-    "DomesticDNSDomain": "URL локального DNS",
-    "DomesticDNSIP": "IP локального DNS",
-    "Geoipurl": "URL GeoIP",
-    "Geositeurl": "URL GeoSite",
-    "LastUpdated": "Время обновления unix",
-    "RouteOrder": "Порядок маршрутов",
-    "DomainStrategy": "Стратегия домена",
-    "FakeDNS": "FakeDNS true/false",
-    "DnsHosts": "Объект DNS хостов",
-    "DirectSites": "Список прямых сайтов",
-    "DirectIp": "Список прямых IP",
-    "ProxySites": "Список проксируемых сайтов",
-    "ProxyIp": "Список проксируемых IP",
-    "BlockSites": "Список блокируемых сайтов",
-    "BlockIp": "Список блокируемых IP",
-}
-
-PREFERRED_ORDER_HINTS = ["Name","GlobalProxy","UseChunkFiles","RemoteDns","DomesticDns",
-                   "RemoteDNSType","RemoteDNSDomain","RemoteDNSIP",
-                   "DomesticDNSType","DomesticDNSDomain","DomesticDNSIP",
-                   "Geoipurl","Geositeurl","LastUpdated","DnsHosts","RouteOrder",
-                   "DirectSites","DirectIp","ProxySites","ProxyIp","BlockSites","BlockIp",
-                   "DomainStrategy","FakeDNS"]
-
-def ordered_keys_hint(cfg):
+def uje_ordered_keys(cfg):
     keys = list(cfg.keys())
-    ordered = [k for k in PREFERRED_ORDER_HINTS if k in keys]
+    ordered = [k for k in PREF_ORDER if k in keys]
     extra = [k for k in keys if k not in ordered]
     return ordered + sorted(extra)
 
-def uje_load_json(path):
+def uje_load(path):
     try:
-        with open(path, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        with open(path, 'r', encoding='utf-8') as f: return json.load(f)
     except Exception as e:
-        print(f"[!] Ошибка чтения: {e}")
-        return None
+        print(f"[!] {tr('read_err')}: {e}"); return None
 
-def uje_save_json(path, data):
+def uje_save(path, data):
     try:
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        with open(path, 'w', encoding='utf-8') as f: json.dump(data, f, ensure_ascii=False, indent=2)
         return True
     except Exception as e:
-        print(f"[!] Ошибка записи: {e}")
-        return False
+        print(f"[!] {e}"); return False
 
 def uje_edit_string(cfg, key):
     cur = str(cfg.get(key, ''))
-    print(f"  Текущее: {cur}")
-    v = ask("  Новое значение (Enter=оставить, '-'=удалить, q=отмена): ")
-    if v == EXIT:
-        return False
+    print(f"  {tr('uje_cur')}: {cur}")
+    v = _in(f"  {tr('uje_new_val')} {tr('uje_edit_hint')}: ")
+    if v == EXIT: return False
     if v == '-':
-        cfg.pop(key, None)
-        print("[+] Удалено")
-        return True
+        cfg.pop(key, None); print(f"[+] {tr('uje_deleted')}"); return True
     if v == '':
-        print("[*] Без изменений")
-        return False
+        print(f"[*] {tr('uje_nochange')}"); return False
     cfg[key] = v
-    print(f"[+] Обновлено: {key} = {v}")
-    return True
+    print(f"[+] {tr('uje_updated')}: {key} = {v}"); return True
 
 def uje_edit_list(cfg, key):
     cur = cfg.get(key, [])
-    if not isinstance(cur, list):
-        cur = []
+    if not isinstance(cur, list): cur = []
     while True:
-        clr()
-        hdr(f"СПИСОК: {key}")
-        print(f"  Элементов: {len(cur)}")
-        for i, v in enumerate(cur[:40], 1):
-            print(f"    {i:3}. {v}")
-        if len(cur) > 40:
-            print(f"    ... и ещё {len(cur) - 40}")
+        clr(); hdr(f"{tr('uje_list_hdr')}: {key}")
+        print(f"  {tr('uje_elems')}: {len(cur)}")
+        for i, v in enumerate(cur[:40], 1): print(f"    {i:3}. {v}")
+        if len(cur) > 40: print(f"    ... +{len(cur)-40}")
         ln()
-        print("  1 - Добавить элемент")
-        print("  2 - Удалить по номеру")
-        print("  3 - Удалить несколько")
-        print("  4 - Очистить всё")
-        print("  5 - Заменить значение по номеру")
-        print("  6 - Удалить поле полностью")
-        print("  q - Назад")
-        ch = ask("  Выбор: ", choices=["1","2","3","4","5","6"])
-        if ch == EXIT:
-            return
+        for k in ("uje_l1","uje_l2","uje_l3","uje_l4","uje_l5","uje_l6"): print("  " + tr(k))
+        print("  " + tr("uje_back"))
+        ch = _in_choice(f"  {tr('choice')}: ", ["1","2","3","4","5","6"])
+        if ch == EXIT: return
         if ch == "1":
             while True:
-                v = ask("  Значение (Enter = конец): ", default="")
-                if v == EXIT or not v:
-                    break
-                cur.append(v)
-                print(f"  [+] Добавлено: {v}")
+                v = input(f"  {tr('uje_elem')}: ").strip()
+                if v.lower() in ("q","quit","exit") or not v: break
+                cur.append(v); print(f"  [+] {v}")
             cfg[key] = cur
         elif ch == "2":
-            if not cur:
-                continue
-            idx = ask_int("  Номер: ", mn=1, mx=len(cur))
-            if idx == EXIT or idx is None:
-                continue
-            cur.pop(idx-1)
-            cfg[key] = cur
-            print("[+] Удалено")
+            if not cur: continue
+            idx = _in_int(f"  {tr('uje_del_n')}: ", mn=1, mx=len(cur))
+            if idx == EXIT or idx is None: continue
+            cur.pop(idx-1); cfg[key] = cur; print(f"[+] {tr('uje_deleted')}")
         elif ch == "3":
-            if not cur:
-                continue
-            sel = ask("  Номера (например 1,3-5): ")
-            if sel == EXIT or not sel:
-                continue
+            if not cur: continue
+            sel = _in(f"  {tr('uje_del_multi')}: ")
+            if sel == EXIT or not sel: continue
             idxs = []
             try:
                 for p in sel.split(','):
@@ -5847,524 +5443,370 @@ def uje_edit_list(cfg, key):
                     if '-' in p:
                         a, b = p.split('-', 1)
                         for x in range(int(a), int(b)+1):
-                            if 1 <= x <= len(cur) and (x-1) not in idxs:
-                                idxs.append(x-1)
+                            if 1 <= x <= len(cur) and (x-1) not in idxs: idxs.append(x-1)
                     else:
                         x = int(p)
-                        if 1 <= x <= len(cur) and (x-1) not in idxs:
-                            idxs.append(x-1)
-                for i in sorted(idxs, reverse=True):
-                    cur.pop(i)
-                cfg[key] = cur
-                print(f"[+] Удалено: {len(idxs)}")
-            except Exception:
-                print("[!] Ошибка разбора")
+                        if 1 <= x <= len(cur) and (x-1) not in idxs: idxs.append(x-1)
+                for i in sorted(idxs, reverse=True): cur.pop(i)
+                cfg[key] = cur; print(f"[+] {tr('uje_del_range')}: {len(idxs)}")
+            except Exception: print(f"[!] {tr('uje_parse_err')}")
         elif ch == "4":
-            a = ask("  Очистить всё? (y/n) [n]: ", default="n")
-            if a.lower() == 'y':
-                cfg[key] = []
-                print("[+] Очищено")
+            a = _in(f"  {tr('uje_del_all_q')} [n]: ", default="n")
+            if a and a.lower() == 'y': cfg[key] = []; print(f"[+] {tr('uje_del_all')}")
         elif ch == "5":
-            if not cur:
-                continue
-            idx = ask_int("  Номер для замены: ", mn=1, mx=len(cur))
-            if idx == EXIT or idx is None:
-                continue
-            print(f"  Текущее: {cur[idx-1]}")
-            v = ask("  Новое значение: ")
-            if v == EXIT or not v:
-                continue
-            cur[idx-1] = v
-            cfg[key] = cur
-            print("[+] Заменено")
+            if not cur: continue
+            idx = _in_int(f"  {tr('uje_rep_n')}: ", mn=1, mx=len(cur))
+            if idx == EXIT or idx is None: continue
+            print(f"  {tr('uje_cur_val')}: {cur[idx-1]}")
+            v = _in(f"  {tr('uje_new_val')}: ")
+            if v == EXIT or not v: continue
+            cur[idx-1] = v; cfg[key] = cur; print(f"[+] {tr('uje_replaced')}")
         elif ch == "6":
-            a = ask("  Удалить поле полностью? (y/n) [n]: ", default="n")
-            if a.lower() == 'y':
-                cfg.pop(key, None)
-                print("[+] Поле удалено")
-                return
-        if ch in ("1", "2", "3", "4", "5"):
-            input("Enter...")
+            a = _in(f"  {tr('uje_del_field_q')} [n]: ", default="n")
+            if a and a.lower() == 'y':
+                cfg.pop(key, None); print(f"[+] {tr('uje_del_field')}"); return
+        if ch in ("1","2","3","4","5"): _in("\n" + tr("q_back") + ": ", allow_exit=False)
 
 def uje_edit_dict(cfg, key):
     cur = cfg.get(key, {})
-    if not isinstance(cur, dict):
-        cur = {}
+    if not isinstance(cur, dict): cur = {}
     while True:
-        clr()
-        hdr(f"ОБЪЕКТ: {key}")
-        print(f"  Записей: {len(cur)}")
+        clr(); hdr(f"{tr('uje_dict_hdr')}: {key}")
+        print(f"  {tr('uje_keys')}: {len(cur)}")
         keys_list = list(cur.keys())
         for i, k in enumerate(keys_list, 1):
             v = str(cur[k])
-            if len(v) > 40:
-                v = v[:37] + "..."
+            if len(v) > 40: v = v[:37] + "..."
             print(f"    {i:3}. {k} = {v}")
         ln()
-        print("  1 - Добавить запись")
-        print("  2 - Изменить запись")
-        print("  3 - Удалить запись")
-        print("  4 - Удалить поле полностью")
-        print("  q - Назад")
-        ch = ask("  Выбор: ", choices=["1","2","3","4"])
-        if ch == EXIT:
-            return
+        for k in ("uje_d1","uje_d2","uje_d3","uje_d4"): print("  " + tr(k))
+        print("  " + tr("uje_back"))
+        ch = _in_choice(f"  {tr('choice')}: ", ["1","2","3","4"])
+        if ch == EXIT: return
         if ch == "1":
-            k = ask("  Ключ: ")
-            if k == EXIT or not k:
-                continue
-            v = ask("  Значение: ")
-            if v == EXIT:
-                continue
-            cur[k] = v
-            cfg[key] = cur
-            print("[+] Добавлено")
+            k = _in(f"  {tr('uje_key_n')}: ")
+            if k == EXIT or not k: continue
+            v = _in(f"  {tr('uje_val_n')}: ")
+            if v == EXIT: continue
+            cur[k] = v; cfg[key] = cur; print("[+]")
         elif ch == "2":
-            if not cur:
-                continue
-            idx = ask_int("  Номер: ", mn=1, mx=len(cur))
-            if idx == EXIT or idx is None:
-                continue
+            if not cur: continue
+            idx = _in_int(f"  {tr('uje_del_n')}: ", mn=1, mx=len(cur))
+            if idx == EXIT or idx is None: continue
             k = keys_list[idx-1]
-            print(f"  Текущее значение: {cur[k]}")
-            v = ask("  Новое значение: ")
-            if v == EXIT or not v:
-                continue
-            cur[k] = v
-            cfg[key] = cur
-            print("[+] Обновлено")
+            print(f"  {tr('uje_cur_val')}: {cur[k]}")
+            v = _in(f"  {tr('uje_new_val')}: ")
+            if v == EXIT or not v: continue
+            cur[k] = v; cfg[key] = cur; print(f"[+] {tr('uje_updated')}")
         elif ch == "3":
-            if not cur:
-                continue
-            idx = ask_int("  Номер: ", mn=1, mx=len(cur))
-            if idx == EXIT or idx is None:
-                continue
-            k = keys_list[idx-1]
-            cur.pop(k)
-            cfg[key] = cur
-            print("[+] Удалено")
+            if not cur: continue
+            idx = _in_int(f"  {tr('uje_del_n')}: ", mn=1, mx=len(cur))
+            if idx == EXIT or idx is None: continue
+            cur.pop(keys_list[idx-1]); cfg[key] = cur; print(f"[+] {tr('uje_deleted')}")
         elif ch == "4":
-            a = ask("  Удалить поле полностью? (y/n) [n]: ", default="n")
-            if a.lower() == 'y':
-                cfg.pop(key, None)
-                print("[+] Поле удалено")
-                return
-        if ch in ("1", "2", "3"):
-            input("Enter...")
+            a = _in(f"  {tr('uje_del_field_q')} [n]: ", default="n")
+            if a and a.lower() == 'y':
+                cfg.pop(key, None); print(f"[+] {tr('uje_del_field')}"); return
+        if ch in ("1","2","3"): _in("\n" + tr("q_back") + ": ", allow_exit=False)
 
 def uje_add_field(cfg):
-    clr()
-    hdr("ДОБАВЛЕНИЕ ПОЛЯ")
-    sugg = [k for k in FIELD_INFO_HINTS if k not in cfg]
+    clr(); hdr(tr("uje_field_hdr"))
+    sugg = [k for k in FIELD_HINTS if k not in cfg]
     if sugg:
-        print("  Рекомендуемые поля (отсутствующие):")
-        for i, k in enumerate(sugg, 1):
-            print(f"    {i}. {k} - {FIELD_INFO_HINTS[k]}")
+        print(f"  {tr('uje_sugg')}:")
+        for i, k in enumerate(sugg, 1): print(f"    {i}. {k}")
         ln()
-    print("  1 - Выбрать из рекомендаций")
-    print("  2 - Ввести своё имя")
-    print("  q - Назад")
-    s = ask("  Выбор: ", choices=["1","2"])
-    if s == EXIT:
-        return
-    new_key = None
+    print("  " + tr("uje_pick_sugg")); print("  " + tr("uje_pick_own")); print("  " + tr("uje_back"))
+    s = _in_choice(f"  {tr('choice')}: ", ["1","2"])
+    if s == EXIT: return
     if s == "1":
         if not sugg:
-            print("[!] Все рекомендуемые поля уже есть.")
-            input("Enter...")
-            return
-        idx = ask_int("  Номер: ", mn=1, mx=len(sugg))
-        if idx == EXIT or idx is None:
-            return
+            print(f"[!] {tr('uje_all_have')}"); _in("\n" + tr("q_back") + ": ", allow_exit=False); return
+        idx = _in_int(f"  {tr('uje_del_n')}: ", mn=1, mx=len(sugg))
+        if idx == EXIT or idx is None: return
         new_key = sugg[idx-1]
     else:
-        new_key = ask("  Имя поля: ")
-        if new_key == EXIT or not new_key:
-            return
+        new_key = _in(f"  {tr('uje_field_name')}: ")
+        if new_key == EXIT or not new_key: return
     if new_key in cfg:
-        print(f"[!] Поле уже существует: {new_key}")
-        input("Enter...")
-        return
-    print(f"\n  Тип поля: 1-строка, 2-список, 3-объект, 4-true/false")
-    t = ask("  Тип [1]: ", default="1", choices=["1","2","3","4"])
-    if t == EXIT:
-        return
+        print(f"[!] {tr('uje_exists')}: {new_key}"); _in("\n" + tr("q_back") + ": ", allow_exit=False); return
+    print(f"\n  {tr('uje_type_q')}")
+    t = _in_choice(f"  {tr('uje_type')} [1]: ", ["1","2","3","4"]) or "1"
+    if t == EXIT: return
     if t == "1":
-        v = ask("  Значение: ")
-        if v == EXIT:
-            return
+        v = _in(f"  {tr('uje_val')}: ")
+        if v == EXIT: return
         cfg[new_key] = v
     elif t == "2":
         cfg[new_key] = []
         while True:
-            v = ask("  Элемент (Enter - конец): ", default="")
-            if v == EXIT or not v:
-                break
+            v = input(f"  {tr('uje_elem')}: ").strip()
+            if v.lower() in ("q","quit","exit") or not v: break
             cfg[new_key].append(v)
     elif t == "3":
         cfg[new_key] = {}
         while True:
-            k = ask("  Ключ (Enter - конец): ", default="")
-            if k == EXIT or not k:
-                break
-            val = ask("  Значение: ")
-            if val == EXIT:
-                break
+            k = input(f"  {tr('uje_key')}: ").strip()
+            if k.lower() in ("q","quit","exit") or not k: break
+            val = _in(f"  {tr('uje_val')}: ")
+            if val == EXIT: break
             cfg[new_key][k] = val
     elif t == "4":
-        v = ask("  true/false: ", choices=["true","false"])
-        if v == EXIT:
-            return
+        v = _in_choice(f"  true/false: ", ["true","false"])
+        if v == EXIT: return
         cfg[new_key] = v
-    print(f"[+] Добавлено поле: {new_key}")
-    input("Enter...")
+    print(f"[+] {tr('uje_added')}: {new_key}")
+    _in("\n" + tr("q_back") + ": ", allow_exit=False)
 
 def uje_editor(cfg, path):
     while True:
-        clr()
-        hdr("УНИВЕРСАЛЬНЫЙ РЕДАКТОР JSON")
-        print(f"  Файл: {path.name}")
+        clr(); hdr(tr("uje_editor_hdr"))
+        print(f"  {tr('uje_file')}: {path.name}")
         ln()
-        keys = ordered_keys_hint(cfg)
+        keys = uje_ordered_keys(cfg)
         for i, k in enumerate(keys, 1):
             v = cfg[k]
-            if isinstance(v, list):
-                disp = f"[{len(v)} элем.]"
-            elif isinstance(v, dict):
-                disp = f"{{...}} ({len(v)})"
+            if isinstance(v, list): disp = f"[{len(v)}]"
+            elif isinstance(v, dict): disp = f"{{...}} ({len(v)})"
             else:
                 disp = str(v)
-                if len(disp) > 45:
-                    disp = disp[:42] + "..."
+                if len(disp) > 45: disp = disp[:42] + "..."
             print(f"  {i:3}. {k:24} = {disp}")
         ln()
-        print("  a - Добавить новое поле")
-        print("  s - Сохранить")
-        print("  b - Создать бэкап")
-        print("  v - Показать JSON полностью")
-        print("  o - Сохранить как")
-        print("  q - Выход")
-        ch = ask("  Выбор: ")
-        if ch == EXIT:
-            return cfg
-        if ch == 'a':
-            uje_add_field(cfg)
-            continue
+        print("  " + tr("uje_a")); print("  " + tr("uje_s")); print("  " + tr("uje_b"))
+        print("  " + tr("uje_v")); print("  " + tr("uje_o")); print("  " + tr("uje_q"))
+        ch = _in(f"  {tr('choice')}: ")
+        if ch == EXIT: return cfg
+        if ch == 'a': uje_add_field(cfg); continue
         if ch == 's':
-            if uje_save_json(path, cfg):
-                print(f"[+] Сохранено: {path}")
-                input("Enter...")
+            if uje_save(path, cfg): print(f"[+] {tr('uje_saved')}: {path}"); _in("\n" + tr("q_back") + ": ", allow_exit=False)
             continue
         if ch == 'b':
             ts = time.strftime("%Y%m%d_%H%M%S")
-            bpath = BACKUP_DIR / f"{path.stem}_{ts}.json"
-            if uje_save_json(bpath, cfg):
-                print(f"[+] Бэкап: {bpath}")
-            input("Enter...")
-            continue
+            bp = BACKUP_DIR / f"{path.stem}_{ts}.json"
+            if uje_save(bp, cfg): print(f"[+] {tr('uje_backup')}: {bp}")
+            _in("\n" + tr("q_back") + ": ", allow_exit=False); continue
         if ch == 'v':
-            clr()
-            print(json.dumps(cfg, ensure_ascii=False, indent=2))
-            input("\nEnter...")
-            continue
+            clr(); print(json.dumps(cfg, ensure_ascii=False, indent=2))
+            _in("\n" + tr("q_back") + ": ", allow_exit=False); continue
         if ch == 'o':
-            nm = ask("  Имя файла: ")
-            if nm == EXIT or not nm:
-                continue
-            if not nm.endswith('.json'):
-                nm += '.json'
-            opath = OUTPUT_DIR / nm
-            if uje_save_json(opath, cfg):
-                print(f"[+] Экспортировано: {opath}")
-            input("Enter...")
-            continue
-        if ch == 'q':
-            return cfg
-        try:
-            idx = int(ch)
-        except Exception:
-            continue
+            nm = _in(f"  {tr('uje_file')}: ")
+            if nm == EXIT or not nm: continue
+            if not nm.endswith('.json'): nm += '.json'
+            op = OUTPUT_DIR / nm
+            if uje_save(op, cfg): print(f"[+] {tr('uje_exp')}: {op}")
+            _in("\n" + tr("q_back") + ": ", allow_exit=False); continue
+        if ch == 'q': return cfg
+        try: idx = int(ch)
+        except Exception: continue
         if 1 <= idx <= len(keys):
-            key = keys[idx-1]
-            val = cfg.get(key)
-            if isinstance(val, list):
-                uje_edit_list(cfg, key)
-            elif isinstance(val, dict):
-                uje_edit_dict(cfg, key)
+            key = keys[idx-1]; val = cfg.get(key)
+            if isinstance(val, list): uje_edit_list(cfg, key)
+            elif isinstance(val, dict): uje_edit_dict(cfg, key)
             else:
                 uje_edit_string(cfg, key)
-                input("Enter...")
+                _in("\n" + tr("q_back") + ": ", allow_exit=False)
 
 def uje_menu():
-    hdr("УНИВЕРСАЛЬНЫЙ РЕДАКТОР JSON")
-    print("  1 - Открыть из Input")
-    print("  2 - Открыть из Output")
-    print("  3 - Ввести путь вручную")
-    print("  4 - Создать новый JSON")
-    print("  q - Отмена")
-    ch = ask("Выбор: ", choices=["1","2","3","4"])
-    if ch == EXIT:
-        return
+    hdr(tr("uje_hdr"))
+    print("  " + tr("uje_1")); print("  " + tr("uje_2")); print("  " + tr("uje_3")); print("  " + tr("uje_4"))
+    print("  " + tr("q_back"))
+    ch = _in_choice(f"{tr('choice')}: ", ["1","2","3","4"])
+    if ch == EXIT: return
     if ch == "4":
-        name = ask("  Имя файла (без .json): ")
-        if name == EXIT or not name:
-            return
-        if not name.endswith('.json'):
-            name += '.json'
+        name = _in(f"  {tr('jname_noext')}: ")
+        if name == EXIT or not name: return
+        if not name.endswith('.json'): name += '.json'
         path = OUTPUT_DIR / name
         template = {"Name": name.replace('.json','')}
-        if uje_save_json(path, template):
-            print(f"[+] Создан: {path}")
+        if uje_save(path, template):
+            print(f"[+] {tr('uje_saved')}: {path}")
             uje_editor(template, path)
         return
     path = None
     if ch == "1":
         files = sorted([p for p in INPUT_DIR.glob("*.json") if p.is_file()])
         if not files:
-            print("[!] В Input нет JSON.")
-            input("Enter...")
-            return
-        for i, f in enumerate(files, 1):
-            print(f"  {i}. {f.name} ({fmt_size(f.stat().st_size)})")
-        idx = ask_int("Номер файла: ", mn=1, mx=len(files))
-        if idx == EXIT or idx is None:
-            return
+            print(f"[!] {tr('uje_file_in')}"); _in("\n" + tr("q_back") + ": ", allow_exit=False); return
+        for i, f in enumerate(files, 1): print(f"  {i}. {f.name} ({fmt_size(f.stat().st_size)})")
+        idx = _in_int(f"{tr('file_n')}: ", mn=1, mx=len(files))
+        if idx == EXIT or idx is None: return
         path = files[idx-1]
     elif ch == "2":
         files = sorted([p for p in OUTPUT_DIR.glob("*.json") if p.is_file()])
         if not files:
-            print("[!] В Output нет JSON.")
-            input("Enter...")
-            return
-        for i, f in enumerate(files, 1):
-            print(f"  {i}. {f.name} ({fmt_size(f.stat().st_size)})")
-        idx = ask_int("Номер файла: ", mn=1, mx=len(files))
-        if idx == EXIT or idx is None:
-            return
+            print(f"[!] {tr('uje_file_out')}"); _in("\n" + tr("q_back") + ": ", allow_exit=False); return
+        for i, f in enumerate(files, 1): print(f"  {i}. {f.name} ({fmt_size(f.stat().st_size)})")
+        idx = _in_int(f"{tr('file_n')}: ", mn=1, mx=len(files))
+        if idx == EXIT or idx is None: return
         path = files[idx-1]
     elif ch == "3":
-        p = ask("Путь к файлу: ")
-        if p == EXIT or not p:
-            return
+        p = _in(f"{tr('path_q')}: ")
+        if p == EXIT or not p: return
         path = Path(p)
     if path:
-        cfg = uje_load_json(path)
+        cfg = uje_load(path)
         if cfg is None:
-            input("Enter...")
-            return
+            _in("\n" + tr("q_back") + ": ", allow_exit=False); return
         if not isinstance(cfg, dict):
-            print("[!] Корень JSON не является объектом.")
-            input("Enter...")
-            return
+            print(f"[!] {tr('uje_root_not_obj')}"); _in("\n" + tr("q_back") + ": ", allow_exit=False); return
         uje_editor(cfg, path)
 
-# Главное меню SubManager
+def json_menu(servers, cfg):
+    while True:
+        clr(); hdr(tr("json_menu_hdr"))
+        ln()
+        print("  " + tr("json_m1")); print("  " + tr("json_m2"))
+        print("  " + tr("json_m3")); print("  " + tr("q_back"))
+        ch = _in_choice(f"{tr('choice')}: ", ["1","2","3"])
+        if ch == EXIT: return cfg
+        if ch == "1": cfg = config_menu(servers, cfg)
+        elif ch == "2": uje_menu()
+        elif ch == "3":
+            if CFG_FILE.exists():
+                try:
+                    with open(CFG_FILE, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    clr(); print(json.dumps(data, ensure_ascii=False, indent=2))
+                    _in("\n" + tr("q_back") + ": ", allow_exit=False)
+                except Exception as e:
+                    print(f"[!] {e}"); _in("\n" + tr("q_back") + ": ", allow_exit=False)
+            else:
+                print(f"[!] {tr('no_files')}"); _in("\n" + tr("q_back") + ": ", allow_exit=False)
+    return cfg
+
 def main():
     ensure_dirs()
-    cfg = cfg_load()
-    cfg_save(cfg)
-    clr()
-    hdr("SubManager")
+    cfg = cfg_load(); cfg_save(cfg)
+    clr(); hdr("SubManager")
     print(f"  Input:   {INPUT_DIR}")
     print(f"  Output:  {OUTPUT_DIR}")
     print(f"  Backups: {BACKUP_DIR}")
     print("=" * W)
-    servers = autoload_servers()
+    servers = autoload()
     if servers:
-        print(f"[+] Автозагрузка прошлой сессии: {len(servers)} серверов")
+        print(f"[+] {tr('autoload')}: {len(servers)}")
         time.sleep(1)
     json_template = None
     while True:
-        clr()
-        hdr("ГЛАВНОЕ МЕНЮ")
-        print(f"  Серверов: {len(servers)}")
-        if json_template:
-            print(f"  Загружен JSON шаблон")
+        clr(); hdr(tr("gname_hdr"))
+        print(f"  {tr('g_serv')}: {len(servers)}")
+        if json_template: print(f"  {tr('g_json')}")
         ln()
-        print("  1 - Загрузить исходники")
-        print("  2 - Редактировать серверы")
-        print("  3 - Показать список серверов")
-        print("  4 - Статистика")
-        print("  5 - Сгенерировать JSON Xray")
-        print("  6 - Настройки генерации")
-        print("  7 - Роутинг для клиентов")
-        print("  8 - Экспорт выбранных серверов")
-        print("  9 - Сохранить ссылки (txt + base64)")
-        print(" 10 - Сохранить Clash YAML")
-        print(" 11 - Сделать бэкап")
-        print(" 12 - Нормализовать существующий конфиг")
-        print(" 13 - Нормализовать бэкап серверов")
-        print(" 14 - Очистить автосохранение")
-        print(" 15 - Универсальный редактор JSON")
-        print("  q - Выход")
-        ch = ask("Выбор: ", choices=[str(i) for i in range(1, 16)])
+        for k in ("g1","g2","g3","g4","g5","g6","g7","g8","g9","g10","g11","g12","g13","g14"):
+            print("  " + tr(k))
+        print("  " + tr("gq"))
+        ch = _in_choice(f"{tr('choice')}: ", [str(i) for i in range(1, 15)])
         if ch == EXIT:
             if servers:
-                a = ask("Сделать бэкап перед выходом? (y/n) [n]: ", default="n")
-                if a != EXIT and a.lower() == 'y':
-                    backup_servers(servers)
-                autosave_servers(servers)
-                print(f"[+] Автосохранение: {AUTOSAVE_FILE}")
-            print("[+] Выход.")
+                a = _in(f"{tr('backup_before')} [n]: ", default="n")
+                if a != EXIT and a.lower() == 'y': backup_servers(servers)
+                autosave(servers)
+                print(f"[+] {tr('autosave')}: {AUTOSAVE_FILE}")
+            print("[+] " + tr("exit"))
             break
         if ch == "1":
             raw = load_source()
             if raw:
-                new_servers, json_data = parse_input(raw)
-                if new_servers:
-                    servers.extend(new_servers)
-                    if json_data:
-                        json_template = json_data
-                    print(f"[+] Загружено: {len(new_servers)}. Всего: {len(servers)}")
-                else:
-                    print("[!] Не удалось распарсить данные.")
-            input("\nEnter...")
+                ns, jd = parse_input(raw)
+                if ns:
+                    servers.extend(ns)
+                    if jd: json_template = jd
+                    print(f"[+] {tr('load_ok')}: {len(servers)}")
+                else: print(f"[!] {tr('parse_data')}")
+            _in("\n" + tr("q_back") + ": ", allow_exit=False)
         elif ch == "2":
             if not servers:
-                print("[!] Список пуст.")
-                input("Enter...")
-                continue
+                print(f"[!] {tr('no_servers_list')}"); _in("\n" + tr("q_back") + ": ", allow_exit=False); continue
             servers = edit_servers(servers)
         elif ch == "3":
-            clr()
-            hdr("СПИСОК СЕРВЕРОВ")
+            clr(); hdr(tr("list_hdr"))
             show_servers_list(servers, show_params=True)
-            print(f"\n  Всего: {len(servers)}")
-            input("\nEnter...")
-        elif ch == "4":
-            stats(servers)
-        elif ch == "5":
+            print(f"\n  {tr('total')}: {len(servers)}")
+            _in("\n" + tr("q_back") + ": ", allow_exit=False)
+        elif ch == "4": stats(servers)
+        elif ch == "5": cfg = json_menu(servers, cfg)
+        elif ch == "6":
             if not servers:
-                print("[!] Нет серверов.")
-                input("Enter...")
-                continue
+                print(f"[!] {tr('no_servers')}"); _in("\n" + tr("q_back") + ": ", allow_exit=False); continue
             nm, rem = ask_json_name_and_remarks(cfg)
             if nm is None:
-                input("Enter...")
-                continue
-            cfg_json = gen_config(servers, cfg)
-            save_json(cfg_json, cfg, nm, rem)
-            input("\nEnter...")
-        elif ch == "6":
-            cfg = config_menu(servers, cfg)
-        elif ch == "7":
-            cfg = routing_menu(cfg)
+                _in("\n" + tr("q_back") + ": ", allow_exit=False); continue
+            save_json(gen_config(servers, cfg), cfg, nm, rem)
+            _in("\n" + tr("q_back") + ": ", allow_exit=False)
+        elif ch == "7": cfg = routing_menu(cfg)
         elif ch == "8":
             if not servers:
-                print("[!] Нет серверов.")
-                input("Enter...")
-                continue
+                print(f"[!] {tr('no_servers')}"); _in("\n" + tr("q_back") + ": ", allow_exit=False); continue
             export_menu(servers, cfg)
         elif ch == "9":
             if not servers:
-                print("[!] Нет серверов.")
-                input("Enter...")
-                continue
-            save_base64(servers)
-            input("\nEnter...")
+                print(f"[!] {tr('no_servers')}"); _in("\n" + tr("q_back") + ": ", allow_exit=False); continue
+            save_base64(servers); _in("\n" + tr("q_back") + ": ", allow_exit=False)
         elif ch == "10":
             if not servers:
-                print("[!] Нет серверов.")
-                input("Enter...")
-                continue
-            save_yaml_clash(servers)
-            input("\nEnter...")
+                print(f"[!] {tr('no_servers')}"); _in("\n" + tr("q_back") + ": ", allow_exit=False); continue
+            save_yaml_clash(servers); _in("\n" + tr("q_back") + ": ", allow_exit=False)
         elif ch == "11":
             if not servers:
-                print("[!] Нет серверов.")
-                input("Enter...")
-                continue
-            backup_servers(servers)
-            input("\nEnter...")
-        elif ch == "12":
-            normalize_existing_config_menu()
-        elif ch == "13":
-            normalize_existing_servers_menu()
+                print(f"[!] {tr('no_servers')}"); _in("\n" + tr("q_back") + ": ", allow_exit=False); continue
+            backup_servers(servers); _in("\n" + tr("q_back") + ": ", allow_exit=False)
+        elif ch == "12": normalize_existing_config_menu()
+        elif ch == "13": normalize_existing_servers_menu()
         elif ch == "14":
             if AUTOSAVE_FILE.exists():
-                a = ask("Удалить автосохранение? (y/n): ", default="n")
-                if a.lower() == 'y':
-                    AUTOSAVE_FILE.unlink()
-                    print("[+] Удалено.")
-            else:
-                print("[!] Автосохранения нет.")
-            input("Enter...")
-        elif ch == "15":
-            uje_menu()
+                a = _in(f"{tr('del_auto')} [n]: ", default="n")
+                if a and a.lower() == 'y':
+                    AUTOSAVE_FILE.unlink(); print(f"[+] {tr('uje_deleted')}")
+            else: print(f"[!] {tr('cur_auto')}")
+            _in("\n" + tr("q_back") + ": ", allow_exit=False)
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\n[!] Прервано.")
-    except Exception as e:
-        print(f"\n[!] Ошибка: {e}")
-        import traceback
-        traceback.print_exc()
+        print("\n[+] " + tr("exit"))
+        sys.exit(0)
 SUBMGR_END
 
-echo "[+] Все скрипты созданы."
+echo "[+] All scripts created."
 sleep 1
 
-# ============================================================
-# Главное меню
-# ============================================================
 while true; do
     clear
     echo "===================================================="
-    echo "        Shadowrocket Toolkit (iSH)"
+    echo "        $(T m_title)"
     echo "===================================================="
-    echo "  1 - AdBlock           Формирование блокировщика"
-    echo "  2 - SQLiteTXT         Просмотр SQLite в тексте"
-    echo "  3 - SpyLog            Анализ журналов Shadowrocket"
-    echo "  4 - SubManager        Подписки и JSON Xray"
-    echo "  5 - GetDefaultConfig  Скачать дефолтную конфигурацию"
-    echo "  q - Выход"
+    echo "$(T m_ad)"
+    echo "$(T m_sql)"
+    echo "$(T m_spy)"
+    echo "$(T m_sub)"
+    echo "$(T m_def)"
+    echo "$(T m_q)"
     echo "===================================================="
-    printf "Ваш выбор: "
+    printf "$(T choice): "
     read CH
     case "$CH" in
-        1)
-            cd $BASE/AdBlock
-            python3 $BASE/AdBlock.py
-            cd $HOME
-            ;;
-        2)
-            python3 $BASE/SQLiteTXT.py
-            ;;
-        3)
-            python3 $BASE/SpyLog.py
-            ;;
-        4)
-            python3 $BASE/SubManager.py
-            ;;
+        1) cd "$BASE/AdBlock"; python3 "$BASE/AdBlock.py"; cd "$HOME" ;;
+        2) python3 "$BASE/SQLiteTXT.py" ;;
+        3) python3 "$BASE/SpyLog.py" ;;
+        4) python3 "$BASE/SubManager.py" ;;
         5)
-            echo "[*] Скачивание дефолтной конфигурации..."
-            mkdir -p $BASE/Configurations
-            OUT=$BASE/Configurations/Default_configuration_by_Krest-Neva.module
+            OUT="$BASE/Configurations/Default_configuration_by_Krest-Neva.module"
             curl -sL "https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Configurations/Default_configuration_by_Krest-Neva.module" -o "$OUT"
             if [ -s "$OUT" ]; then
-                echo "[+] Сохранено: $OUT"
-                echo ""
-                echo "---- Содержимое ----"
+                echo "[+] $OUT"
+                echo "----"
                 cat "$OUT"
-                echo ""
-                echo "---- Конец ----"
+                echo "----"
             else
-                echo "[!] Не удалось скачать."
+                echo "$(T fail)"
             fi
             ;;
-        q|Q)
-            echo "Выход."
-            exit 0
-            ;;
-        *)
-            echo "Неверный выбор."
-            sleep 1
-            continue
-            ;;
+        q|Q) echo "$(T m_q)"; exit 0 ;;
+        *) echo "$(T bad)"; sleep 1; continue ;;
     esac
     echo ""
-    printf "Нажмите Enter для возврата в меню..."
+    printf "$(T press)"
     read DUMMY
 done
