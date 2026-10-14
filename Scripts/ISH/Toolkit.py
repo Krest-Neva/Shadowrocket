@@ -260,7 +260,7 @@ _T = {
  "mode_1": "1 - Default",
  "mode_2": "2 - Custom",
  "choice": "Your choice",
-: "oid_hdr": "OISD WH list configuration",
+ "oid_hdr": "OISD WH list configuration",
  "IToid_1": "1 - Normal",
  "oid_2EL": "2 - Small",
  "ISToid_3": "3 - Download all",
