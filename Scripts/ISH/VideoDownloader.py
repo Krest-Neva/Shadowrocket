@@ -1,14 +1,6 @@
 #!/bin/sh
 
-set -u
-
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m'
-
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
 say() { printf '%b\n' "$1"; }
 
 setup_dns() {
@@ -16,535 +8,392 @@ setup_dns() {
 nameserver 1.1.1.1
 nameserver 8.8.8.8
 nameserver 94.140.14.14
-options single-request-reopen
+EOF
+}
+
+have_ytdlp() {
+    python3 - << 'EOF' >/dev/null 2>&1
+import yt_dlp, tqdm
 EOF
 }
 
 install_packages() {
-    apk update || { say "${RED}[!] apk update failed${NC}"; return 1; }
-    apk add --no-cache python3 py3-pip ffmpeg ca-certificates openssl py3-brotli py3-pycryptodomex py3-mutagen py3-websockets || {
-        say "${RED}[!] system packages failed${NC}"
-        return 1
-    }
+    say "${BLUE}[*] apk update...${NC}"
+    apk update || say "${YELLOW}[!] apk update failed, continue${NC}"
+    for p in python3 py3-pip ffmpeg ca-certificates curl \
+             py3-brotli py3-pycryptodomex py3-mutagen py3-websockets; do
+        apk add --no-cache "$p" >/dev/null 2>&1 || say "${YELLOW}[!] apk: $p not installed${NC}"
+    done
 
-    if apk add --no-cache yt-dlp 2>/dev/null; then
-        say "${GREEN}[+] yt-dlp via apk${NC}"
-    fi
-
-    VENV_DIR="/opt/video-downloader-venv"
-    if python3 -m venv "$VENV_DIR" 2>/dev/null; then
-        VENV_PY="$VENV_DIR/bin/python"
-        "$VENV_PY" -m pip install --upgrade pip setuptools wheel >/dev/null 2>&1 || true
-        if "$VENV_PY" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)'; then
-            "$VENV_PY" -m pip install --no-deps --force-reinstall --upgrade 'yt-dlp[default]' tqdm >/dev/null 2>&1 || true
-        else
-            "$VENV_PY" -m pip install --no-deps --force-reinstall --upgrade 'yt-dlp[default]==2025.09.26' tqdm >/dev/null 2>&1 || true
-        fi
-    fi
-
-    say "${GREEN}[+] dependencies installed${NC}"
+    say "${BLUE}[*] pip: yt-dlp...${NC}"
+    pip3 install -U --no-deps --disable-pip-version-check yt-dlp tqdm \
+      || pip3 install -U --no-deps --break-system-packages yt-dlp tqdm \
+      || say "${RED}[!] pip install failed${NC}"
 }
 
-say "${YELLOW}========================================${NC}"
-say "${YELLOW}  Video Downloader${NC}"
-say "${YELLOW}========================================${NC}"
+say "${YELLOW}=== Video Downloader ===${NC}"
+setup_dns
 
-printf 'Setup DNS and install/update dependencies? [y/N]: '
-IFS= read -r ANSWER || ANSWER='n'
-
-case "$ANSWER" in
-    y|Y|yes|YES|Yes|д|Д|да|Да|ДА)
-        setup_dns
-        install_packages || say "${YELLOW}[!] dependency installation incomplete${NC}"
-        ;;
-    *)
-        setup_dns
-        ;;
-esac
-
-if [ -x /opt/video-downloader-venv/bin/python ]; then
-    PYTHON_BIN="/opt/video-downloader-venv/bin/python"
-else
-    PYTHON_BIN="python3"
+if ! have_ytdlp; then
+    say "${YELLOW}[*] yt-dlp не найден — устанавливаю${NC}"
+    install_packages
+elif [ "${1:-}" = "--update" ]; then
+    install_packages
 fi
 
+have_ytdlp || say "${RED}[!] yt-dlp/tqdm не импортируются, но скрипт попробует запасные методы${NC}"
+
 cat > /tmp/video_downloader.py << 'PYEOF'
-import sys
-import subprocess
-import shutil
-import json
+import sys, re, json, socket, shutil, subprocess, urllib.request
 from pathlib import Path
 from urllib.parse import urlparse
 
+_orig_gai = socket.getaddrinfo
+def _gai_v4(host, port, family=0, type=0, proto=0, flags=0):
+    return _orig_gai(host, port, socket.AF_INET, type, proto, flags)
+socket.getaddrinfo = _gai_v4
+
 try:
     import yt_dlp
-    from tqdm import tqdm
 except ImportError:
     yt_dlp = None
+try:
+    from tqdm import tqdm
+except ImportError:
     tqdm = None
 
 YTDLP_BINARY = shutil.which("yt-dlp")
 VIDEOS_DIR = Path("/root/videos")
 FALLBACK_DIR = Path.home() / "videos"
+UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 
-RED = "\033[0;31m"
-GREEN = "\033[0;32m"
-YELLOW = "\033[1;33m"
-BLUE = "\033[0;34m"
-CYAN = "\033[0;36m"
-NC = "\033[0m"
-
-
-def c(text, color):
-    return f"{color}{text}{NC}"
-
+RED, GREEN, YELLOW, BLUE, CYAN, NC = ("\033[0;31m", "\033[0;32m", "\033[1;33m",
+                                      "\033[0;34m", "\033[0;36m", "\033[0m")
+def c(t, col): return f"{col}{t}{NC}"
 
 def ensure_dir():
     global VIDEOS_DIR
-    for directory in (VIDEOS_DIR, FALLBACK_DIR):
+    for d in (VIDEOS_DIR, FALLBACK_DIR):
         try:
-            directory.mkdir(parents=True, exist_ok=True)
-            test = directory / ".write_test"
-            test.touch()
-            test.unlink()
-            VIDEOS_DIR = directory
+            d.mkdir(parents=True, exist_ok=True)
+            t = d / ".write_test"; t.touch(); t.unlink()
+            VIDEOS_DIR = d
             return
         except OSError:
             continue
     raise OSError("no writable video directory")
 
-
-def confirm_action(prompt):
+def confirm(prompt):
     try:
-        answer = input(c(prompt + " [y/N]: ", YELLOW)).strip().lower()
-        return answer in ("y", "yes", "да", "д")
+        return input(c(prompt + " [y/N]: ", YELLOW)).strip().lower() in ("y", "yes", "д", "да")
     except (EOFError, KeyboardInterrupt):
         return False
 
-
-def valid_url(url):
+def valid_url(u):
     try:
-        parsed = urlparse(url)
-        return parsed.scheme in ("http", "https") and bool(parsed.netloc)
+        p = urlparse(u)
+        return p.scheme in ("http", "https") and bool(p.netloc)
     except (ValueError, TypeError):
         return False
 
+def base_opts(**extra):
+    o = {
+        "quiet": True, "no_warnings": True, "noplaylist": True,
+        "socket_timeout": 30, "retries": 5, "fragment_retries": 5,
+        "source_address": "0.0.0.0",
+        "http_headers": {"User-Agent": UA},
+    }
+    o.update(extra)
+    return o
 
-def get_video_info(url, extra_opts=None):
+def first_entry(info):
+    if isinstance(info, dict) and info.get("entries") is not None:
+        return next((e for e in info["entries"] if isinstance(e, dict) and e.get("formats")), None)
+    return info
+
+def get_video_info(url, **extra):
     if yt_dlp is not None:
-        options = {
-            "quiet": True,
-            "no_warnings": True,
-            "noplaylist": True,
-            "socket_timeout": 30,
-            "ignoreerrors": False,
-            "retries": 3,
-            "fragment_retries": 3,
-        }
-        if extra_opts:
-            options.update(extra_opts)
         try:
-            with yt_dlp.YoutubeDL(options) as ydl:
-                info = ydl.extract_info(url, download=False)
-            if isinstance(info, dict):
-                entries = info.get("entries")
-                if entries is not None:
-                    return next((e for e in entries if isinstance(e, dict) and e.get("formats")), None)
-                return info
-        except Exception as exc:
-            print(c(f"[!] info module: {type(exc).__name__}: {exc}", YELLOW))
-
-    if YTDLP_BINARY:
-        cmd = [YTDLP_BINARY, "-J", "--no-warnings", "--no-playlist", url]
-        try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
-            if result.returncode == 0:
-                info = json.loads(result.stdout)
-                entries = info.get("entries")
-                if entries is not None:
-                    return next((e for e in entries if isinstance(e, dict) and e.get("formats")), None)
-                return info
-        except Exception as exc:
-            print(c(f"[!] info binary: {exc}", YELLOW))
-
+            with yt_dlp.YoutubeDL(base_opts(**extra)) as ydl:
+                return first_entry(ydl.extract_info(url, download=False))
+        except Exception as e:
+            print(c(f"[!] info: {type(e).__name__}: {str(e)[:200]}", YELLOW))
     return None
 
-
 def select_format(url):
-    default_selector = "bv*+ba/b"
+    default = "bv*+ba/b"
     info = get_video_info(url)
     if not isinstance(info, dict):
-        return default_selector
-
-    formats = info.get("formats", [])
-    if not isinstance(formats, list):
-        return default_selector
-
+        return default
+    formats = info.get("formats") or []
     videos = [f for f in formats if isinstance(f, dict) and f.get("format_id") and f.get("vcodec") not in (None, "none")]
     audios = [f for f in formats if isinstance(f, dict) and f.get("format_id") and f.get("vcodec") == "none" and f.get("acodec") not in (None, "none")]
-
     if not videos:
-        print(c("[*] no video formats, using default", YELLOW))
-        return default_selector
+        return default
 
-    unique = {}
+    uniq = {}
     for f in videos:
-        key = (f.get("height"), f.get("ext"), f.get("fps"), f.get("vcodec"), f.get("acodec"))
-        unique[key] = f
-    vlist = sorted(unique.values(), key=lambda x: (x.get("height") or 0, x.get("fps") or 0))
+        uniq[(f.get("height"), f.get("ext"), f.get("fps"), f.get("vcodec"), f.get("acodec"))] = f
+    vlist = sorted(uniq.values(), key=lambda x: (x.get("height") or 0, x.get("fps") or 0))
 
     print(c("\nAvailable video formats:", CYAN))
     for i, f in enumerate(vlist, 1):
-        h = f.get("height") or "?"
-        ext = f.get("ext") or "?"
-        fps = f.get("fps")
         size = f.get("filesize") or f.get("filesize_approx")
-        size_txt = f", {size / (1024*1024):.1f} MiB" if isinstance(size, (int, float)) else ""
-        fps_txt = f", {fps} fps" if fps else ""
-        audio_txt = "with audio" if f.get("acodec") not in (None, "none") else "no audio"
-        print(f"  {i}. {h}p ({ext}, {audio_txt}{fps_txt}{size_txt})")
-
+        size_t = f", {size/1048576:.1f} MiB" if isinstance(size, (int, float)) else ""
+        fps_t = f", {f['fps']} fps" if f.get("fps") else ""
+        aud = "with audio" if f.get("acodec") not in (None, "none") else "no audio"
+        print(f"  {i}. {f.get('height') or '?'}p ({f.get('ext') or '?'}, {aud}{fps_t}{size_t})")
     try:
-        choice = input(c("\nSelect video format (Enter = best): ", YELLOW)).strip()
+        ch = input(c("\nSelect video format (Enter = best): ", YELLOW)).strip()
     except (EOFError, KeyboardInterrupt):
-        return default_selector
-
-    if not choice:
-        return default_selector
-
+        return default
+    if not ch:
+        return default
     try:
-        sel = vlist[int(choice) - 1]
+        sel = vlist[int(ch) - 1]
     except (ValueError, IndexError):
         print(c("[!] invalid choice, using default", YELLOW))
-        return default_selector
+        return default
 
     vid = str(sel["format_id"])
     if sel.get("acodec") not in (None, "none"):
         return vid
-
     if not audios:
-        return default_selector
-
+        return f"{vid}+ba/b"
     print(c("\nAvailable audio tracks:", CYAN))
     for i, f in enumerate(audios, 1):
-        lang = f.get("language") or "unknown"
-        ext = f.get("ext") or "?"
         abr = f.get("abr")
-        abr_txt = f", {abr:g} kbps" if isinstance(abr, (int, float)) else ""
-        print(f"  {i}. {lang}, {ext}{abr_txt}")
-
+        abr_t = f", {abr:g} kbps" if isinstance(abr, (int, float)) else ""
+        print(f"  {i}. {f.get('language') or 'unknown'}, {f.get('ext') or '?'}{abr_t}")
     try:
-        aid = input(c("Select audio (Enter = best): ", YELLOW)).strip()
-    except (EOFError, KeyboardInterrupt):
-        return f"{vid}+bestaudio/best"
-    if not aid:
-        return f"{vid}+bestaudio/best"
+        a = input(c("Select audio (Enter = best): ", YELLOW)).strip()
+        if not a:
+            return f"{vid}+ba/b"
+        return f"{vid}+{audios[int(a)-1]['format_id']}"
+    except (ValueError, IndexError, EOFError, KeyboardInterrupt):
+        return f"{vid}+ba/b"
 
-    try:
-        audio = audios[int(aid) - 1]
-        return f"{vid}+{audio['format_id']}"
-    except (ValueError, IndexError, KeyError):
-        return f"{vid}+bestaudio/best"
-
-
-def create_progress_hook(desc):
+def progress_hook():
     if tqdm is None:
         return None
-    pbar = None
+    state = {"bar": None}
     def hook(d):
-        nonlocal pbar
-        status = d.get("status")
-        if status == "downloading":
+        st = d.get("status")
+        if st == "downloading":
             total = d.get("total_bytes") or d.get("total_bytes_estimate")
-            if pbar is None:
-                pbar = tqdm(total=total, unit="B", unit_scale=True, desc=desc, leave=False)
-            elif total and pbar.total != total:
-                pbar.total = total
-            downloaded = d.get("downloaded_bytes", 0)
-            if isinstance(downloaded, (int, float)):
-                pbar.update(max(0, downloaded - pbar.n))
-            pbar.refresh()
-        elif status == "finished":
-            if pbar:
-                if pbar.total and pbar.n < pbar.total:
-                    pbar.update(pbar.total - pbar.n)
-                pbar.close()
-                pbar = None
-            print(c(f"[+] finished: {d.get('filename', '')}", GREEN))
-        elif status == "error":
-            if pbar:
-                pbar.close()
-                pbar = None
+            if state["bar"] is None:
+                state["bar"] = tqdm(total=total, unit="B", unit_scale=True, leave=False)
+            elif total:
+                state["bar"].total = total
+            dl = d.get("downloaded_bytes") or 0
+            state["bar"].update(max(0, dl - state["bar"].n))
+        elif st in ("finished", "error"):
+            if state["bar"]:
+                state["bar"].close(); state["bar"] = None
+            if st == "finished":
+                print(c(f"[+] finished: {d.get('filename','')}", GREEN))
     return hook
 
+OUT_TMPL = "%(title).150B [%(id)s].%(ext)s"
 
-def try_ytdlp(url, selector):
-    out_tmpl = str(VIDEOS_DIR / "%(title).180B [%(id)s].%(ext)s")
+def run_module(url, selector, **extra):
+    if yt_dlp is None:
+        return False
+    opts = base_opts(format=selector, outtmpl=str(VIDEOS_DIR / OUT_TMPL),
+                     merge_output_format="mp4", continuedl=True, overwrites=False, **extra)
+    h = progress_hook()
+    if h:
+        opts["progress_hooks"] = [h]
+    try:
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            return ydl.download([url]) in (None, 0)
+    except Exception as e:
+        print(c(f"[!] yt-dlp: {type(e).__name__}: {str(e)[:250]}", RED))
+        return False
 
+def run_binary(url, selector, *flags):
+    if not YTDLP_BINARY:
+        return False
+    cmd = [YTDLP_BINARY, "-f", selector, "--merge-output-format", "mp4", "--force-ipv4",
+           "-o", str(VIDEOS_DIR / OUT_TMPL), "--no-warnings", "--no-playlist", *flags, url]
+    try:
+        return subprocess.run(cmd, timeout=3600).returncode == 0
+    except Exception as e:
+        print(c(f"[!] yt-dlp binary: {e}", RED))
+        return False
+
+def http_json(url, referer="https://rutube.ru/"):
+    req = urllib.request.Request(url, headers={"User-Agent": UA, "Referer": referer, "Accept": "application/json"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.loads(r.read().decode("utf-8", "replace"))
+
+def rutube_download(url):
+    m = re.search(r"rutube\.ru/(?:video|play/embed|video/private)/([0-9a-f]{32})", url)
+    if not m:
+        return False
+    vid = m.group(1)
+    p = re.search(r"[?&]p=([\w-]+)", url)
+    private = f"&p={p.group(1)}" if p else ""
+    print(c("[*] RuTube: пробую API напрямую...", BLUE))
+
+    title = vid
+    try:
+        meta = http_json(f"https://rutube.ru/api/video/{vid}/?format=json")
+        title = meta.get("title") or vid
+    except Exception as e:
+        print(c(f"[!] meta: {str(e)[:120]}", YELLOW))
+    title = re.sub(r'[\\/:*?"<>|%\n\r]+', "_", title).strip()[:150] or vid
+
+    m3u8 = None
+    variants = [
+        f"https://rutube.ru/api/play/options/{vid}/?no_404=true&referer=https%3A%2F%2Frutube.ru&pver=v2&client=wdp{private}",
+        f"https://rutube.ru/api/play/options/{vid}/?no_404=true&referer=https%3A%2F%2Frutube.ru&pver=v2{private}",
+        f"https://rutube.ru/api/play/options/{vid}/?no_404=true&referer=https%3A%2F%2Frutube.ru{private}",
+        f"https://rutube.ru/api/play/options/{vid}/?format=json{private}",
+        f"https://rutube.ru/api/play/options/{vid}/?no_404=true&referer=https%3A%2F%2Frutube.ru%2Fplay%2Fembed%2F{vid}&pver=v2",
+    ]
+    for u in variants:
+        try:
+            data = http_json(u)
+            vb = data.get("video_balancer") or {}
+            m3u8 = vb.get("m3u8") or vb.get("default") if isinstance(vb, dict) else None
+            if m3u8:
+                break
+        except Exception as e:
+            print(c(f"[!] api: {str(e)[:120]}", YELLOW))
+    if not m3u8:
+        print(c("[!] RuTube API не вернул ссылку на поток", YELLOW))
+        return False
+
+    print(c("[*] RuTube: найден HLS-поток, качаю...", BLUE))
+    hdrs = {"User-Agent": UA, "Referer": "https://rutube.ru/", "Origin": "https://rutube.ru"}
+    out = VIDEOS_DIR / f"{title} [{vid}].mp4"
     if yt_dlp is not None:
-        options = {
-            "format": selector,
-            "outtmpl": out_tmpl,
-            "merge_output_format": "mp4",
-            "quiet": True,
-            "no_warnings": True,
-            "noplaylist": True,
-            "socket_timeout": 30,
-            "retries": 5,
-            "fragment_retries": 5,
-            "file_access_retries": 3,
-            "continuedl": True,
-            "overwrites": False,
-            "nocheckcertificate": False,
-        }
-        if tqdm is not None:
-            options["progress_hooks"] = [create_progress_hook("download")]
+        for sel in ("bv*+ba/b", "best"):
+            opts = base_opts(format=sel, outtmpl=str(VIDEOS_DIR / f"{title} [{vid}].%(ext)s"),
+                             merge_output_format="mp4", http_headers=hdrs, continuedl=True)
+            h = progress_hook()
+            if h:
+                opts["progress_hooks"] = [h]
+            try:
+                with yt_dlp.YoutubeDL(opts) as ydl:
+                    if ydl.download([m3u8]) in (None, 0):
+                        return True
+            except Exception as e:
+                print(c(f"[!] hls ({sel}): {str(e)[:200]}", YELLOW))
+    if shutil.which("ffmpeg"):
+        print(c("[*] запасной вариант: ffmpeg", BLUE))
+        hs = "".join(f"{k}: {v}\r\n" for k, v in hdrs.items())
+        cmd = ["ffmpeg", "-y", "-headers", hs, "-i", m3u8, "-c", "copy", "-bsf:a", "aac_adtstoasc", str(out)]
         try:
-            with yt_dlp.YoutubeDL(options) as ydl:
-                result = ydl.download([url])
-            if result in (None, 0):
+            if subprocess.run(cmd, timeout=7200).returncode == 0 and out.exists() and out.stat().st_size > 0:
+                print(c(f"[+] saved: {out}", GREEN))
                 return True
-        except Exception as exc:
-            print(c(f"[!] yt-dlp module: {type(exc).__name__}: {exc}", RED))
-
-    if YTDLP_BINARY:
-        cmd = [YTDLP_BINARY, "-f", selector, "--merge-output-format", "mp4",
-               "-o", out_tmpl, "--no-warnings", "--no-playlist", url]
-        try:
-            result = subprocess.run(cmd, timeout=3600)
-            if result.returncode == 0:
-                return True
-            print(c(f"[!] yt-dlp binary exit: {result.returncode}", RED))
-        except Exception as exc:
-            print(c(f"[!] yt-dlp binary: {exc}", RED))
-
+        except Exception as e:
+            print(c(f"[!] ffmpeg: {e}", RED))
     return False
-
-
-def try_external(url):
-    info = get_video_info(url, {"nocheckcertificate": True})
-    if not info:
-        return False
-
-    direct = info.get("url")
-    if not direct:
-        formats = info.get("formats", [])
-        best = None
-        best_h = -1
-        for f in formats:
-            if isinstance(f, dict) and f.get("url"):
-                h = f.get("height") or 0
-                if h > best_h:
-                    best_h = h
-                    best = f
-        if best:
-            direct = best["url"]
-
-    if not direct:
-        return False
-
-    ext = info.get("ext", "mp4")
-    title = info.get("title", "video").replace("/", "_").replace("\\", "_")
-    out = VIDEOS_DIR / f"{title}.{ext}"
-
-    for tool, cmd in (
-        ("curl", ["curl", "-L", "-k", "--connect-timeout", "30", "-o", str(out), direct]),
-        ("wget", ["wget", "--no-check-certificate", "-O", str(out), direct]),
-        ("aria2c", ["aria2c", "--check-certificate=false", "-d", str(VIDEOS_DIR), "-o", out.name, direct]),
-    ):
-        if not shutil.which(tool):
-            continue
-        print(c(f"[*] fallback: {tool}", BLUE))
-        try:
-            res = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
-            if res.returncode == 0 and out.exists() and out.stat().st_size > 0:
-                print(c(f"[+] downloaded via {tool}: {out}", GREEN))
-                return True
-        except Exception:
-            pass
-    return False
-
 
 def attempt_download(url):
     if not valid_url(url):
-        print(c(f"[!] invalid url: {url}", RED))
-        return False
+        print(c(f"[!] invalid url: {url}", RED)); return False
 
     selector = select_format(url)
     print(c(f"[*] selector: {selector}", BLUE))
-
-    if try_ytdlp(url, selector):
+    if run_module(url, selector) or run_binary(url, selector):
         return True
 
-    print(c("[!] yt-dlp failed, trying external tools...", YELLOW))
-    if try_external(url):
+    if "rutube.ru" in url and rutube_download(url):
         return True
 
-    if confirm_action("Retry without TLS verification?"):
-        print(c("[*] retry without TLS verification...", BLUE))
-        out_tmpl = str(VIDEOS_DIR / "%(title).180B [%(id)s].%(ext)s")
-        if yt_dlp is not None:
-            opts = {
-                "format": selector,
-                "outtmpl": out_tmpl,
-                "merge_output_format": "mp4",
-                "quiet": True,
-                "no_warnings": True,
-                "noplaylist": True,
-                "nocheckcertificate": True,
-                "retries": 5,
-            }
-            try:
-                with yt_dlp.YoutubeDL(opts) as ydl:
-                    ydl.download([url])
-                return True
-            except Exception as exc:
-                print(c(f"[!] retry module: {exc}", RED))
-        if YTDLP_BINARY:
-            cmd = [YTDLP_BINARY, "-f", selector, "--no-check-certificate",
-                   "--merge-output-format", "mp4", "-o", out_tmpl,
-                   "--no-warnings", "--no-playlist", url]
-            try:
-                result = subprocess.run(cmd, timeout=3600)
-                if result.returncode == 0:
-                    return True
-            except Exception as exc:
-                print(c(f"[!] retry binary: {exc}", RED))
+    print(c("[!] пробую generic-экстрактор...", YELLOW))
+    if run_module(url, "bv*+ba/b", force_generic_extractor=True) or run_binary(url, "bv*+ba/b", "--force-generic-extractor"):
+        return True
+
+    if confirm("Retry without TLS verification?"):
+        if run_module(url, "bv*+ba/b", nocheckcertificate=True) or run_binary(url, "bv*+ba/b", "--no-check-certificate"):
+            return True
 
     print(c("[!] all attempts exhausted", RED))
     return False
 
-
 def find_videos_on_page(page_url):
     print(c(f"\n[*] scanning page: {page_url}", BLUE))
-
-    info = None
-    if yt_dlp is not None:
-        options = {
-            "quiet": True,
-            "no_warnings": True,
-            "extract_flat": True,
-            "socket_timeout": 30,
-            "noplaylist": False,
-        }
-        try:
-            with yt_dlp.YoutubeDL(options) as ydl:
-                info = ydl.extract_info(page_url, download=False)
-        except Exception as exc:
-            print(c(f"[!] scan module: {exc}", YELLOW))
-
-    if info is None and YTDLP_BINARY:
-        cmd = [YTDLP_BINARY, "-J", "--flat-playlist", "--no-warnings", page_url]
-        try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-            if result.returncode == 0:
-                info = json.loads(result.stdout)
-        except Exception as exc:
-            print(c(f"[!] scan binary: {exc}", YELLOW))
-
+    if yt_dlp is None:
+        return []
+    try:
+        with yt_dlp.YoutubeDL(base_opts(extract_flat=True, noplaylist=False)) as ydl:
+            info = ydl.extract_info(page_url, download=False)
+    except Exception as e:
+        print(c(f"[!] scan: {str(e)[:200]}", YELLOW)); return []
     if not isinstance(info, dict):
         return []
-
-    entries = info.get("entries")
-    if entries is not None:
+    if info.get("entries") is not None:
         urls = []
-        for e in entries:
-            if not isinstance(e, dict):
-                continue
-            u = e.get("webpage_url") or e.get("url")
-            if isinstance(u, str) and u.startswith(("http://", "https://")):
-                urls.append(u)
-            elif e.get("ie_key") in ("Youtube", "YoutubeTab") and e.get("id"):
-                urls.append(f"https://www.youtube.com/watch?v={e['id']}")
+        for e in info["entries"]:
+            if isinstance(e, dict):
+                u = e.get("webpage_url") or e.get("url")
+                if isinstance(u, str) and u.startswith(("http://", "https://")):
+                    urls.append(u)
         urls = list(dict.fromkeys(urls))
         print(c(f"[+] found {len(urls)} videos", GREEN))
         return urls
-
     u = info.get("webpage_url") or info.get("original_url") or info.get("url")
-    if isinstance(u, str) and valid_url(u):
-        return [u]
-    return []
+    return [u] if isinstance(u, str) and valid_url(u) else []
 
+DIRECT = ("youtube.com/", "youtu.be/", "rutube.ru/video/", "rutube.ru/play/", ".mp4", ".m3u8")
 
 def process_links(links):
-    markers = ("youtube.com/", "youtu.be/", "rutube.ru/", ".mp4", ".m3u8")
     for url in links:
-        if url.lower() == "q":
-            return
         if not valid_url(url):
-            print(c(f"[!] invalid url: {url}", RED))
-            continue
-        if not any(m in url.lower() for m in markers):
+            print(c(f"[!] invalid url: {url}", RED)); continue
+        if not any(m in url.lower() for m in DIRECT):
             found = find_videos_on_page(url)
             if not found:
-                print(c(f"[!] no videos found: {url}", YELLOW))
-                continue
+                print(c(f"[!] no videos found: {url}", YELLOW)); continue
             if len(found) == 1:
-                attempt_download(found[0])
-                continue
-            print(c("\nmultiple videos found:", CYAN))
+                attempt_download(found[0]); continue
             for i, u in enumerate(found, 1):
                 print(f"  {i}. {u}")
             try:
                 ch = input(c("number or 'all': ", YELLOW)).strip().lower()
                 if ch == "all":
-                    for u in found:
-                        attempt_download(u)
+                    for u in found: attempt_download(u)
                 else:
-                    idx = int(ch) - 1
-                    if 0 <= idx < len(found):
-                        attempt_download(found[idx])
-                    else:
-                        print(c("[!] invalid number", RED))
-            except (ValueError, EOFError, KeyboardInterrupt):
+                    attempt_download(found[int(ch) - 1])
+            except (ValueError, IndexError, EOFError, KeyboardInterrupt):
                 print(c("[!] invalid choice", RED))
         else:
             attempt_download(url)
 
-
 def main_menu():
     try:
         ensure_dir()
-    except OSError as exc:
-        print(c(f"[!] directory error: {exc}", RED))
-        return
+    except OSError as e:
+        print(c(f"[!] directory error: {e}", RED)); return
     print(c(f"[*] videos directory: {VIDEOS_DIR}", CYAN))
-
     while True:
-        print(c("\n" + "=" * 40, YELLOW))
-        print(c("  Main menu", YELLOW))
-        print(c("=" * 40, YELLOW))
-        print("  1. Download video")
-        print("  2. Exit (q)")
+        print(c("\n" + "=" * 40 + "\n  Main menu\n" + "=" * 40, YELLOW))
+        print("  1. Download video\n  2. Exit (q)")
         try:
             ch = input(c("choice: ", GREEN)).strip().lower()
         except (EOFError, KeyboardInterrupt):
-            print(c("\n[+] exit", GREEN))
             break
         if ch in ("2", "q", "quit", "exit"):
-            print(c("[+] exit", GREEN))
             break
         if ch != "1":
-            print(c("[!] invalid choice", RED))
-            continue
-
+            print(c("[!] invalid choice", RED)); continue
         links = []
-        print(c("\n[*] enter URLs (one per line). Empty line to start, 'q' to menu.", YELLOW))
+        print(c("\n[*] enter URLs (one per line). Empty line to start.", YELLOW))
         while True:
             try:
-                link = input(c("> ", GREEN)).strip()
+                l = input(c("> ", GREEN)).strip()
             except (EOFError, KeyboardInterrupt):
-                link = "q"
-            if link.lower() == "q":
                 break
-            if not link:
+            if not l or l.lower() == "q":
                 break
-            links.append(link)
+            links.append(l)
         if links:
             process_links(links)
-        else:
-            print(c("[!] no links entered", YELLOW))
-
 
 if __name__ == "__main__":
     try:
@@ -554,15 +403,5 @@ if __name__ == "__main__":
 PYEOF
 
 chmod 700 /tmp/video_downloader.py
-say "${BLUE}[*] starting...${NC}"
-
-if [ -x "$PYTHON_BIN" ] || command -v "$PYTHON_BIN" >/dev/null 2>&1; then
-    exec "$PYTHON_BIN" /tmp/video_downloader.py
-fi
-
-if command -v python3 >/dev/null 2>&1; then
-    exec python3 /tmp/video_downloader.py
-fi
-
-say "${RED}[!] no python3 available${NC}"
-exit 1
+command -v python3 >/dev/null 2>&1 || { say "${RED}[!] python3 не найден${NC}"; exit 1; }
+exec python3 /tmp/video_downloader.py
