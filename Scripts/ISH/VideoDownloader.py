@@ -18,17 +18,38 @@ DNS_EOF
 }
 
 install_packages() {
-    echo -e "${BLUE}[*] Обновление системы и установка пакетов...${NC}"
-    apk update && apk upgrade
-    apk add --no-cache python3 py3-pip curl wget bash ffmpeg ca-certificates
-    pip install --upgrade yt-dlp tqdm
-    echo -e "${GREEN}[+] Зависимости установлены.${NC}"
+    echo -e "${BLUE}[*] Обновление индексов и всех системных пакетов...${NC}"
+    apk update
+    apk upgrade
+
+    echo -e "${BLUE}[*] Установка базовых зависимостей...${NC}"
+    apk add --no-cache python3 py3-pip curl wget bash ffmpeg ca-certificates openssl
+
+    echo -e "${BLUE}[*] Обновление pip, setuptools и wheel до последних версий...${NC}"
+    python3 -m pip install --upgrade pip setuptools wheel
+
+    PY_VER=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+    echo -e "${CYAN}[*] Обнаружен Python ${PY_VER}${NC}"
+
+    if python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)'; then
+        echo -e "${BLUE}[*] Установка yt-dlp из master-ветки (самая свежая версия)...${NC}"
+        python3 -m pip install --force-reinstall --upgrade "yt-dlp[default] @ https://github.com/yt-dlp/yt-dlp/archive/master.tar.gz"
+    else
+        echo -e "${YELLOW}[!] Python ${PY_VER} ниже 3.10. Master-версия yt-dlp может не работать.${NC}"
+        echo -e "${BLUE}[*] Установка последней совместимой версии yt-dlp (2025.09.26)...${NC}"
+        python3 -m pip install --force-reinstall --upgrade "yt-dlp[default]==2025.09.26"
+    fi
+
+    echo -e "${BLUE}[*] Установка tqdm...${NC}"
+    python3 -m pip install --force-reinstall --upgrade tqdm
+
+    echo -e "${GREEN}[+] Все пакеты и библиотеки обновлены.${NC}"
 }
 
 echo -e "${YELLOW}========================================${NC}"
 echo -e "${YELLOW}  Универсальный загрузчик видео${NC}"
 echo -e "${YELLOW}========================================${NC}"
-printf "Обновить/установить пакеты и настроить DNS? [y/N]: "
+printf "Обновить все пакеты, pip и yt-dlp до последних версий? [y/N]: "
 read -r ANSWER
 case "$ANSWER" in
     [yY]|[yY][eE][sS])
@@ -130,64 +151,87 @@ def get_video_info(url, extra_opts=None):
     try:
         with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(url, download=False)
-            if info and "entries" in info:
+            if not info:
+                return None
+            if "entries" in info:
                 entries = list(info["entries"])
-                if entries:
-                    return entries[0]
+                return entries[0] if entries else None
             return info
     except Exception as e:
         print(c(f"[!] Не удалось получить информацию: {e}", RED))
         return None
 
-def format_selector(ctx):
-    formats = ctx.get("formats")[::-1]
-    unique = {}
-    for f in formats:
-        if f.get("vcodec") == "none":
-            continue
-        key = (f.get("height"), f.get("ext"), f.get("format_note"))
-        if key not in unique:
-            unique[key] = f
-
-    flist = list(unique.values())
-    if not flist:
-        return "bestvideo+bestaudio/best"
-
-    print(c("\nДоступные форматы видео:", CYAN))
-    for i, f in enumerate(flist, 1):
-        h = f.get("height", "?")
-        ext = f.get("ext", "?")
-        note = f.get("format_note", "")
-        size = f.get("filesize") or f.get("filesize_approx")
-        sz = f"{size / 1024 / 1024:.1f} MB" if size else "N/A"
-        print(f"  {i}. {h}p ({ext}) {note} - {sz}")
-
-    audio_fmts = [f for f in formats if f.get("acodec") != "none" and f.get("vcodec") == "none"]
-    if audio_fmts:
-        print(c("\nДоступные аудиодорожки:", CYAN))
-        for i, f in enumerate(audio_fmts, 1):
-            lang = f.get("language", "unknown")
-            abr = f.get("abr", "?")
-            print(f"  {i}. Язык: {lang}, Битрейт: {abr} kbps")
-
+def safe_format_selector(ctx):
     try:
-        choice = input(c("\nВыберите номер видеоформата (Enter — лучший): ", YELLOW)).strip()
-        if not choice:
+        formats = ctx.get("formats", [])
+        if not isinstance(formats, list):
             return "bestvideo+bestaudio/best"
-        idx = int(choice) - 1
-        sel = flist[max(0, min(idx, len(flist) - 1))]
 
-        audio_sel = None
-        if audio_fmts:
-            ai = input(c("Выберите номер аудиодорожки (Enter — лучшая): ", YELLOW)).strip()
-            if ai:
-                aidx = int(ai) - 1
-                audio_sel = audio_fmts[max(0, min(aidx, len(audio_fmts) - 1))]
+        video_formats = []
+        audio_formats = []
+        for f in formats:
+            if not isinstance(f, dict):
+                continue
+            fid = f.get("format_id")
+            if not fid or not isinstance(fid, str):
+                continue
+            vcodec = f.get("vcodec", "none")
+            acodec = f.get("acodec", "none")
+            if vcodec != "none":
+                video_formats.append(f)
+            elif acodec != "none":
+                audio_formats.append(f)
 
-        if audio_sel:
-            return f"{sel['format_id']}+{audio_sel['format_id']}"
-        return f"{sel['format_id']}+bestaudio/best"
-    except (ValueError, IndexError):
+        unique_video = {}
+        for f in video_formats:
+            key = (f.get("height"), f.get("ext"))
+            if key not in unique_video:
+                unique_video[key] = f
+
+        vlist = list(unique_video.values())
+        if not vlist:
+            return "bestvideo+bestaudio/best"
+
+        print(c("\nДоступные форматы видео:", CYAN))
+        for i, f in enumerate(vlist, 1):
+            h = f.get("height", "?")
+            ext = f.get("ext", "?")
+            note = f.get("format_note", "")
+            print(f"  {i}. {h}p ({ext}) {note}")
+
+        audio_choice = None
+        if audio_formats:
+            print(c("\nДоступные аудиодорожки:", CYAN))
+            for i, f in enumerate(audio_formats, 1):
+                lang = f.get("language", "unknown")
+                abr = f.get("abr", "?")
+                print(f"  {i}. Язык: {lang}, Битрейт: {abr} kbps")
+
+        try:
+            choice = input(c("\nВыберите номер видеоформата (Enter — лучший): ", YELLOW)).strip()
+            if not choice:
+                return "bestvideo+bestaudio/best"
+            idx = int(choice) - 1
+            sel = vlist[max(0, min(idx, len(vlist) - 1))]
+            sel_id = sel.get("format_id")
+            if not sel_id:
+                return "bestvideo+bestaudio/best"
+
+            if audio_formats:
+                ai = input(c("Выберите номер аудиодорожки (Enter — лучшая): ", YELLOW)).strip()
+                if ai:
+                    aidx = int(ai) - 1
+                    audio_sel = audio_formats[max(0, min(aidx, len(audio_formats) - 1))]
+                    audio_id = audio_sel.get("format_id")
+                    if audio_id:
+                        audio_choice = audio_id
+
+            if audio_choice:
+                return f"{sel_id}+{audio_choice}"
+            return f"{sel_id}+bestaudio/best"
+        except (ValueError, IndexError, TypeError):
+            return "bestvideo+bestaudio/best"
+    except Exception:
         return "bestvideo+bestaudio/best"
 
 def create_progress_hook(desc):
@@ -195,13 +239,13 @@ def create_progress_hook(desc):
 
     def hook(d):
         nonlocal pbar
-        if d["status"] == "downloading":
+        if d.get("status") == "downloading":
             if pbar is None:
                 total = d.get("total_bytes") or d.get("total_bytes_estimate")
                 pbar = tqdm(total=total, unit="B", unit_scale=True, desc=desc, leave=False)
             pbar.n = d.get("downloaded_bytes", 0)
             pbar.refresh()
-        elif d["status"] == "finished":
+        elif d.get("status") == "finished":
             if pbar:
                 pbar.n = pbar.total
                 pbar.close()
@@ -226,7 +270,7 @@ def try_download_with_opts(url, opts):
 
 def attempt_download(url, use_cert=True):
     base_opts = {
-        "format": format_selector,
+        "format": safe_format_selector,
         "nocheckcertificate": not use_cert,
         "legacy_server_connect": False,
         "prefer_insecure": False,
