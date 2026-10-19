@@ -21,7 +21,6 @@ install_packages() {
     echo -e "${BLUE}[*] Обновление системы и установка пакетов...${NC}"
     apk update && apk upgrade
     apk add --no-cache python3 py3-pip curl wget bash ffmpeg ca-certificates
-    echo -e "${BLUE}[*] Установка Python-библиотек...${NC}"
     pip install --upgrade yt-dlp tqdm
     echo -e "${GREEN}[+] Зависимости установлены.${NC}"
 }
@@ -46,13 +45,11 @@ esac
 cat > /tmp/video_downloader.py << 'PYEOF'
 import os
 import sys
-import re
-import time
-import json
 import subprocess
 import shutil
 import ssl
 import urllib.request
+import time
 from pathlib import Path
 
 try:
@@ -74,13 +71,8 @@ BLUE = "\033[0;34m"
 CYAN = "\033[0;36m"
 NC = "\033[0m"
 
-def color(text, c):
-    return f"{c}{text}{NC}"
-
-def print_banner():
-    print(color("=" * 44, YELLOW))
-    print(color("  Универсальный загрузчик видео", YELLOW))
-    print(color("=" * 44, YELLOW))
+def c(text, color):
+    return f"{color}{text}{NC}"
 
 def is_root():
     return os.geteuid() == 0
@@ -89,11 +81,11 @@ def ensure_dir():
     global VIDEOS_DIR
     try:
         VIDEOS_DIR.mkdir(parents=True, exist_ok=True)
-        test_file = VIDEOS_DIR / ".write_test"
-        test_file.touch()
-        test_file.unlink()
+        test = VIDEOS_DIR / ".wtest"
+        test.touch()
+        test.unlink()
     except Exception:
-        print(color(f"[!] Нет доступа к {VIDEOS_DIR}. Используем {FALLBACK_DIR}", YELLOW))
+        print(c(f"[!] Нет доступа к {VIDEOS_DIR}. Используем {FALLBACK_DIR}", YELLOW))
         VIDEOS_DIR = FALLBACK_DIR
         VIDEOS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -103,26 +95,40 @@ def install_russian_ca():
     if Path(RUSSIAN_CA_PATH).exists():
         return True
     try:
-        print(color("[*] Установка сертификата Минцифры для RuTube...", BLUE))
-        urllib.request.urlretrieve(RUSSIAN_CA_URL, RUSSIAN_CA_PATH)
+        print(c("[*] Установка сертификата Минцифры...", BLUE))
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        with urllib.request.urlopen(RUSSIAN_CA_URL, context=ctx, timeout=30) as r:
+            data = r.read()
+        Path(RUSSIAN_CA_PATH).write_bytes(data)
         subprocess.run(["update-ca-certificates"], check=True, capture_output=True)
-        print(color("[+] Сертификат установлен.", GREEN))
+        print(c("[+] Сертификат установлен.", GREEN))
         return True
     except Exception as e:
-        print(color(f"[!] Не удалось установить сертификат: {e}", YELLOW))
+        print(c(f"[!] Не удалось установить сертификат: {e}", YELLOW))
         return False
 
-def get_video_info(url):
-    ydl_opts = {
+def confirm_action(prompt):
+    try:
+        ans = input(c(prompt + " [y/N]: ", YELLOW)).strip().lower()
+        return ans in ("y", "yes", "да", "д")
+    except (EOFError, KeyboardInterrupt):
+        return False
+
+def get_video_info(url, extra_opts=None):
+    opts = {
         "quiet": True,
         "no_warnings": True,
         "extract_flat": False,
         "noplaylist": True,
         "ignoreerrors": True,
-        "nocheckcertificate": not Path(RUSSIAN_CA_PATH).exists(),
+        "socket_timeout": 30,
     }
+    if extra_opts:
+        opts.update(extra_opts)
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(url, download=False)
             if info and "entries" in info:
                 entries = list(info["entries"])
@@ -130,57 +136,57 @@ def get_video_info(url):
                     return entries[0]
             return info
     except Exception as e:
-        print(color(f"[!] Не удалось получить информацию: {e}", RED))
+        print(c(f"[!] Не удалось получить информацию: {e}", RED))
         return None
 
 def format_selector(ctx):
     formats = ctx.get("formats")[::-1]
-    unique_formats = {}
+    unique = {}
     for f in formats:
         if f.get("vcodec") == "none":
             continue
         key = (f.get("height"), f.get("ext"), f.get("format_note"))
-        if key not in unique_formats:
-            unique_formats[key] = f
+        if key not in unique:
+            unique[key] = f
 
-    format_list = list(unique_formats.values())
-    if not format_list:
+    flist = list(unique.values())
+    if not flist:
         return "bestvideo+bestaudio/best"
 
-    print(color("\nДоступные форматы видео:", CYAN))
-    for i, f in enumerate(format_list, 1):
-        height = f.get("height", "?")
+    print(c("\nДоступные форматы видео:", CYAN))
+    for i, f in enumerate(flist, 1):
+        h = f.get("height", "?")
         ext = f.get("ext", "?")
         note = f.get("format_note", "")
-        filesize = f.get("filesize") or f.get("filesize_approx")
-        size_str = f"{filesize / 1024 / 1024:.1f} MB" if filesize else "N/A"
-        print(f"  {i}. {height}p ({ext}) {note} - {size_str}")
+        size = f.get("filesize") or f.get("filesize_approx")
+        sz = f"{size / 1024 / 1024:.1f} MB" if size else "N/A"
+        print(f"  {i}. {h}p ({ext}) {note} - {sz}")
 
-    audio_formats = [f for f in formats if f.get("acodec") != "none" and f.get("vcodec") == "none"]
-    if audio_formats:
-        print(color("\nДоступные аудиодорожки:", CYAN))
-        for i, f in enumerate(audio_formats, 1):
+    audio_fmts = [f for f in formats if f.get("acodec") != "none" and f.get("vcodec") == "none"]
+    if audio_fmts:
+        print(c("\nДоступные аудиодорожки:", CYAN))
+        for i, f in enumerate(audio_fmts, 1):
             lang = f.get("language", "unknown")
             abr = f.get("abr", "?")
             print(f"  {i}. Язык: {lang}, Битрейт: {abr} kbps")
 
     try:
-        choice = input(color("\nВыберите номер видеоформата (Enter — лучший): ", YELLOW)).strip()
+        choice = input(c("\nВыберите номер видеоформата (Enter — лучший): ", YELLOW)).strip()
         if not choice:
             return "bestvideo+bestaudio/best"
         idx = int(choice) - 1
-        selected = format_list[max(0, min(idx, len(format_list) - 1))]
+        sel = flist[max(0, min(idx, len(flist) - 1))]
 
-        audio_choice = None
-        if audio_formats:
-            a_input = input(color("Выберите номер аудиодорожки (Enter — лучшая): ", YELLOW)).strip()
-            if a_input:
-                a_idx = int(a_input) - 1
-                audio_choice = audio_formats[max(0, min(a_idx, len(audio_formats) - 1))]
+        audio_sel = None
+        if audio_fmts:
+            ai = input(c("Выберите номер аудиодорожки (Enter — лучшая): ", YELLOW)).strip()
+            if ai:
+                aidx = int(ai) - 1
+                audio_sel = audio_fmts[max(0, min(aidx, len(audio_fmts) - 1))]
 
-        if audio_choice:
-            return f"{selected['format_id']}+{audio_choice['format_id']}"
-        return f"{selected['format_id']}+bestaudio/best"
+        if audio_sel:
+            return f"{sel['format_id']}+{audio_sel['format_id']}"
+        return f"{sel['format_id']}+bestaudio/best"
     except (ValueError, IndexError):
         return "bestvideo+bestaudio/best"
 
@@ -200,109 +206,146 @@ def create_progress_hook(desc):
                 pbar.n = pbar.total
                 pbar.close()
                 pbar = None
-            print(color(f"[+] Загрузка завершена: {d.get('filename', '')}", GREEN))
+            print(c(f"[+] Загрузка завершена: {d.get('filename', '')}", GREEN))
 
     return hook
 
-def download_video(url):
-    print(color(f"\n[*] Обработка ссылки: {url}", BLUE))
-    info = get_video_info(url)
-    if not info:
-        return False
-
-    title = info.get("title", "video")
-    print(color(f"[*] Название: {title}", CYAN))
-
-    ydl_opts = {
-        "outtmpl": str(VIDEOS_DIR / "%(title)s.%(ext)s"),
-        "progress_hooks": [create_progress_hook(title)],
-        "format": format_selector,
-        "merge_output_format": "mp4",
-        "nocheckcertificate": not Path(RUSSIAN_CA_PATH).exists(),
-        "writethumbnail": False,
-        "quiet": True,
-        "no_warnings": True,
-    }
-
+def try_download_with_opts(url, opts):
+    opts.setdefault("outtmpl", str(VIDEOS_DIR / "%(title)s.%(ext)s"))
+    opts.setdefault("merge_output_format", "mp4")
+    opts.setdefault("progress_hooks", [create_progress_hook("Загрузка")])
+    opts.setdefault("quiet", True)
+    opts.setdefault("no_warnings", True)
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        with yt_dlp.YoutubeDL(opts) as ydl:
             ydl.download([url])
-        print(color(f"[+] Видео сохранено в {VIDEOS_DIR}", GREEN))
         return True
     except Exception as e:
-        print(color(f"[!] Ошибка скачивания: {e}", RED))
+        print(c(f"  [!] Ошибка: {e}", RED))
         return False
 
+def attempt_download(url, use_cert=True):
+    base_opts = {
+        "format": format_selector,
+        "nocheckcertificate": not use_cert,
+        "legacy_server_connect": False,
+        "prefer_insecure": False,
+    }
+
+    if try_download_with_opts(url, dict(base_opts)):
+        return True
+
+    if use_cert:
+        print(c("[!] Не удалось скачать с проверкой сертификата.", YELLOW))
+        if confirm_action("Разрешить скачать без проверки сертификата?"):
+            base_opts["nocheckcertificate"] = True
+            print(c("[*] Повторная попытка без проверки сертификата...", BLUE))
+            if try_download_with_opts(url, dict(base_opts)):
+                return True
+        else:
+            return False
+
+    print(c("[*] Попытка с legacy_server_connect...", BLUE))
+    base_opts["legacy_server_connect"] = True
+    if try_download_with_opts(url, dict(base_opts)):
+        return True
+
+    print(c("[*] Попытка с prefer_insecure...", BLUE))
+    base_opts["prefer_insecure"] = True
+    if try_download_with_opts(url, dict(base_opts)):
+        return True
+
+    print(c("[!] Все попытки скачивания не удались.", RED))
+    return False
+
 def find_videos_on_page(page_url):
-    print(color(f"\n[*] Поиск видео на странице: {page_url}", BLUE))
-    ydl_opts = {
+    print(c(f"\n[*] Поиск видео на странице: {page_url}", BLUE))
+    opts = {
         "quiet": True,
         "no_warnings": True,
         "extract_flat": True,
-        "nocheckcertificate": not Path(RUSSIAN_CA_PATH).exists(),
+        "nocheckcertificate": True,
+        "socket_timeout": 30,
     }
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(page_url, download=False)
             if info and "entries" in info:
                 urls = [e["url"] for e in info["entries"] if e.get("url")]
-                print(color(f"[+] Найдено видео: {len(urls)}", GREEN))
+                print(c(f"[+] Найдено видео: {len(urls)}", GREEN))
                 return urls
             elif info and info.get("url"):
                 return [info["url"]]
     except Exception as e:
-        print(color(f"[!] Не удалось найти видео на странице: {e}", YELLOW))
+        print(c(f"[!] Не удалось найти видео на странице: {e}", YELLOW))
     return []
 
-def main_loop():
-    ensure_dir()
-    print(color(f"[*] Видео будут сохраняться в: {VIDEOS_DIR}", CYAN))
-
-    links = []
-    print(color("\n[*] Введите ссылки на видео (по одной на строку).", YELLOW))
-    print(color("[*] Оставьте строку пустой и нажмите Enter, чтобы начать загрузку.", YELLOW))
-    while True:
-        link = input(color("> ", GREEN)).strip()
-        if not link:
-            break
-        links.append(link)
-
-    if not links:
-        print(color("[!] Не введено ни одной ссылки. Выход.", RED))
-        return
-
+def process_links(links):
     for url in links:
+        if url.lower() == "q":
+            return
         if not any(domain in url for domain in ["youtube.com", "youtu.be", "rutube.ru", ".mp4", ".m3u8"]):
             found = find_videos_on_page(url)
             if found:
                 if len(found) == 1:
-                    download_video(found[0])
+                    attempt_download(found[0])
                 else:
-                    print(color("\nНа странице найдено несколько видео:", CYAN))
+                    print(c("\nНа странице найдено несколько видео:", CYAN))
                     for i, u in enumerate(found, 1):
                         print(f"  {i}. {u}")
                     try:
-                        choice = input(color("Выберите номер видео (или 'all' для всех): ", YELLOW)).strip()
+                        choice = input(c("Выберите номер видео (или 'all' для всех): ", YELLOW)).strip()
                         if choice.lower() == "all":
                             for u in found:
-                                download_video(u)
+                                attempt_download(u)
                         else:
                             idx = int(choice) - 1
-                            download_video(found[idx])
+                            attempt_download(found[idx])
                     except (ValueError, IndexError):
-                        print(color("[!] Неверный выбор.", RED))
+                        print(c("[!] Неверный выбор.", RED))
             else:
-                print(color(f"[!] Не удалось найти видео на странице: {url}", YELLOW))
+                print(c(f"[!] Не удалось найти видео на странице: {url}", YELLOW))
         else:
-            download_video(url)
+            attempt_download(url)
 
-    print(color("\n[*] Все задачи выполнены.", GREEN))
+def main_menu():
+    ensure_dir()
+    print(c(f"[*] Видео сохраняются в: {VIDEOS_DIR}", CYAN))
+    while True:
+        print(c("\n" + "=" * 40, YELLOW))
+        print(c("  Главное меню", YELLOW))
+        print(c("=" * 40, YELLOW))
+        print("  1. Скачать видео")
+        print("  2. Выход (q)")
+        choice = input(c("Ваш выбор: ", GREEN)).strip().lower()
+        if choice in ("2", "q", "quit", "exit"):
+            print(c("[+] Выход.", GREEN))
+            break
+        if choice != "1":
+            print(c("[!] Неверный выбор.", RED))
+            continue
+
+        links = []
+        print(c("\n[*] Введите ссылки на видео (по одной на строку).", YELLOW))
+        print(c("[*] Пустая строка — начать загрузку. 'q' — вернуться в меню.", YELLOW))
+        while True:
+            link = input(c("> ", GREEN)).strip()
+            if link.lower() == "q":
+                break
+            if not link:
+                break
+            links.append(link)
+
+        if links:
+            process_links(links)
+        else:
+            print(c("[!] Ссылки не введены.", YELLOW))
 
 if __name__ == "__main__":
     if not is_root():
-        print(color("[!] Скрипт запущен без прав root. Установка сертификата и запись в /root могут быть недоступны.", YELLOW))
+        print(c("[!] Скрипт запущен без прав root. Установка сертификата и запись в /root могут быть недоступны.", YELLOW))
     install_russian_ca()
-    main_loop()
+    main_menu()
 PYEOF
 
 echo -e "${BLUE}[*] Запуск загрузчика...${NC}"
