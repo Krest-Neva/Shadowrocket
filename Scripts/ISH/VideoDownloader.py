@@ -52,7 +52,7 @@ REP() {
 }
 
 # ==========================================================
-#  ПРЕДУПРЕЖДЕНИЕ О ГЕОЛОКАЦИИ
+#  ФИКТИВНАЯ ГЕОЛОКАЦИЯ
 # ==========================================================
 
 if [ "$VD_LANG" = "en" ]; then
@@ -74,7 +74,7 @@ fi
 say "${YELLOW}========================================${NC}"
 
 # ==========================================================
-#  АНИМИРОВАННЫЙ СПИННЕР ДЛЯ SHELL-ОПЕРАЦИЙ
+#  АНИМИРОВАННЫЙ СПИННЕР SHELL
 # ==========================================================
 
 run_with_spinner() {
@@ -221,7 +221,7 @@ fi
 
 run_with_spinner "apk update" apk update >/dev/null 2>&1 || true
 
-for pkg in python3 py3-pip curl wget ca-certificates nodejs ffmpeg; do
+for pkg in python3 py3-pip curl wget ca-certificates nodejs ffmpeg yt-dlp; do
     if apk info -e "$pkg" >/dev/null 2>&1; then
         REP ok "$pkg already installed"
         continue
@@ -308,7 +308,7 @@ RED, GREEN, YELLOW, BLUE, CYAN, NC = ("\033[0;31m", "\033[0;32m", "\033[1;33m",
                                       "\033[0;34m", "\033[0;36m", "\033[0m")
 
 # ==========================================================
-#  ГЛОБАЛЬНЫЕ КОНСТАНТЫ (ДО ВСЕХ ФУНКЦИЙ)
+#  ГЛОБАЛЬНЫЕ КОНСТАНТЫ
 # ==========================================================
 DIRECT = ("youtube.com/", "youtu.be/", "rutube.ru/video/", "rutube.ru/play/", ".mp4", ".m3u8")
 SEEN_WARNINGS = set()
@@ -418,7 +418,7 @@ def refresh_ffmpeg():
             ok_line(f"ffmpeg: {new_ff}")
 
 # ==========================================================
-#  СЛОВАРИ ПЕРЕВОДОВ
+#  СЛОВАРИ ПЕРЕВОДОВ (RU / EN)
 # ==========================================================
 TEXTS = {
     "ru": {
@@ -526,43 +526,21 @@ TEXTS = {
         "set_ask_fix": "Спрашивать перенос в fix",
         "set_base_dir": "Основная папка",
         "set_language": "Язык",
-        "opt_auto": "авто",
-        "opt_system": "system",
-        "opt_udp": "udp",
-        "opt_doh": "doh",
-        "opt_none": "нет",
-        "opt_ask": "спрашивать",
-        "opt_always": "всегда",
-        "opt_never": "никогда",
-        "opt_deno": "deno",
-        "opt_node": "node",
-        "opt_bun": "bun",
-        "opt_quickjs": "quickjs",
-        "opt_ipv4": "IPv4",
-        "opt_ipv6": "IPv6",
-        "on": "вкл",
-        "off": "выкл",
-        "unlimited": "без ограничения",
-        "empty": "не задано",
+        "opt_auto": "авто", "opt_system": "system", "opt_udp": "udp", "opt_doh": "doh",
+        "opt_none": "нет", "opt_ask": "спрашивать", "opt_always": "всегда", "opt_never": "никогда",
+        "opt_deno": "deno", "opt_node": "node", "opt_bun": "bun", "opt_quickjs": "quickjs",
+        "opt_ipv4": "IPv4", "opt_ipv6": "IPv6",
+        "on": "вкл", "off": "выкл", "unlimited": "без ограничения", "empty": "не задано",
         "preset_iphone": "iPhone (H.264 + AAC)",
         "preset_android": "Android (H.264 + AAC)",
         "preset_universal": "Универсальный (H.264 Baseline)",
-        "preset_h265": "H.265 / HEVC",
-        "preset_vp9": "VP9",
-        "preset_av1": "AV1",
+        "preset_h265": "H.265 / HEVC", "preset_vp9": "VP9", "preset_av1": "AV1",
         "preset_original": "Оригинал",
-        "audio_aac": "AAC 128k",
-        "audio_ac3": "AC3 192k",
-        "audio_mp3": "MP3 192k",
-        "audio_opus": "Opus 160k",
-        "audio_flac": "FLAC",
-        "audio_original": "Оригинал",
-        "lang_ru": "Русский",
-        "lang_en": "English",
-        "video_ready": "Видео готово",
-        "audio_ready": "Аудио готово",
-        "file": "Файл",
-        "size": "Размер",
+        "audio_aac": "AAC 128k", "audio_ac3": "AC3 192k", "audio_mp3": "MP3 192k",
+        "audio_opus": "Opus 160k", "audio_flac": "FLAC", "audio_original": "Оригинал",
+        "lang_ru": "Русский", "lang_en": "English",
+        "video_ready": "Видео готово", "audio_ready": "Аудио готово",
+        "file": "Файл", "size": "Размер",
         "rename_prompt": "Переименовать?",
         "move_fix_prompt": "В fix?",
         "converting": "Конвертация",
@@ -580,33 +558,19 @@ TEXTS = {
         "preflight_blocked": "Похоже на DPI. Нужен прокси/VPN.",
         "preflight_continue": "Попробовать всё равно?",
         "net_help": "Сетевые ошибки. Задайте прокси или Enter — пропустить.",
-        "proxy_prompt": "Прокси",
-        "proxy_invalid": "Неверный формат",
+        "proxy_prompt": "Прокси", "proxy_invalid": "Неверный формат",
         "proxy_set": "Прокси сохранён, повторяю",
-        "diag_title": "Диагностика сети",
-        "diag_system": "система",
-        "diag_fail": "нет ответа",
-        "diag_mismatch": "DNS-ответы различаются",
-        "diag_tls_ok": "TLS ОК",
-        "diag_tls_fail": "TLS провал",
-        "diag_proxy": "Проверка прокси",
-        "diag_proxy_socks": "SOCKS проверяется при загрузке",
-        "diag_env": "Окружение",
-        "diag_press": "Enter — продолжить",
-        "upd_title": "Обновление yt-dlp",
-        "upd_stable": "Стабильная",
-        "upd_nightly": "Nightly",
-        "upd_ejs": "Только yt-dlp-ejs",
-        "upd_done": "Обновление завершено, перезапуск",
+        "diag_title": "Диагностика сети", "diag_system": "система", "diag_fail": "нет ответа",
+        "diag_mismatch": "DNS-ответы различаются", "diag_tls_ok": "TLS ОК", "diag_tls_fail": "TLS провал",
+        "diag_proxy": "Проверка прокси", "diag_proxy_socks": "SOCKS проверяется при загрузке",
+        "diag_env": "Окружение", "diag_press": "Enter — продолжить",
+        "upd_title": "Обновление yt-dlp", "upd_stable": "Стабильная", "upd_nightly": "Nightly",
+        "upd_ejs": "Только yt-dlp-ejs", "upd_done": "Обновление завершено, перезапуск",
         "upd_failed": "Не удалось",
-        "ejs_installing": "Устанавливаю yt-dlp-ejs",
-        "ejs_failed": "yt-dlp-ejs не установился",
-        "js_none": "JS-движок не найден",
-        "rutube_no_m3u8": "RuTube: нет m3u8",
-        "ytdlp_missing": "yt-dlp нет",
-        "dl_dest": "Сохранено в",
-        "selfupd_title": "Обновление скрипта",
-        "selfupd_checking": "Проверка GitHub",
+        "ejs_installing": "Устанавливаю yt-dlp-ejs", "ejs_failed": "yt-dlp-ejs не установился",
+        "js_none": "JS-движок не найден", "rutube_no_m3u8": "RuTube: нет m3u8",
+        "ytdlp_missing": "yt-dlp нет", "dl_dest": "Сохранено в",
+        "selfupd_title": "Обновление скрипта", "selfupd_checking": "Проверка GitHub",
         "selfupd_uptodate": "Уже последняя версия",
         "selfupd_check_failed": "Не удалось проверить",
         "selfupd_prompt": "Скачать и обновить скрипт?",
@@ -616,210 +580,110 @@ TEXTS = {
         "selfupd_downloading": "Скачивание новой версии",
         "templates_custom": "Ввести вручную",
         "templates_multi_hint": "Можно: 2 или 1,3,5 или 1-3 или all",
-        "debug_title": "Отладочная информация",
-        "debug_python": "Python",
-        "debug_ytdlp": "yt-dlp",
-        "debug_ejs": "yt-dlp-ejs",
-        "debug_ffmpeg": "ffmpeg",
-        "debug_ffprobe": "ffprobe",
-        "debug_node": "Node.js",
-        "debug_js": "JS runtime",
-        "debug_proxy": "Прокси",
-        "debug_dns": "DNS серверы",
-        "debug_ip": "IP версия",
-        "debug_videos": "Папка видео",
-        "debug_audio": "Папка аудио",
+        "debug_title": "Отладочная информация", "debug_python": "Python",
+        "debug_ytdlp": "yt-dlp", "debug_ejs": "yt-dlp-ejs", "debug_ffmpeg": "ffmpeg",
+        "debug_ffprobe": "ffprobe", "debug_node": "Node.js", "debug_js": "JS runtime",
+        "debug_proxy": "Прокси", "debug_dns": "DNS серверы", "debug_ip": "IP версия",
+        "debug_videos": "Папка видео", "debug_audio": "Папка аудио",
         "debug_press": "Enter — продолжить",
         "post_process": "Пост-обработка",
         "interrupted": "Скачивание прервано, возврат в меню",
-        "priority_audio_only": "Только аудио (пропуск видео)",
     },
     "en": {
         "app_title": "Universal Video Downloader",
-        "menu_download_video": "Download video",
-        "menu_download_audio": "Download audio",
-        "menu_search": "Search video",
-        "menu_reencode": "Reencode file",
-        "menu_files": "File manager",
-        "menu_settings": "Settings",
-        "menu_diag": "Network diagnostics",
-        "menu_update": "Update yt-dlp",
-        "menu_selfupdate": "Update script from GitHub",
-        "menu_debug": "Debug (all versions)",
-        "menu_exit": "Exit (q)",
-        "choice": "Choice",
-        "invalid_choice": "Invalid choice",
-        "videos_dir": "Videos saved to",
-        "audio_dir": "Audio saved to",
-        "enter_urls": "Enter URLs (one per line).",
-        "enter_urls_hint": "Empty line — start. 'q' — menu.",
-        "search_query": "Enter search query",
-        "search_results": "Search results",
+        "menu_download_video": "Download video", "menu_download_audio": "Download audio",
+        "menu_search": "Search video", "menu_reencode": "Reencode file",
+        "menu_files": "File manager", "menu_settings": "Settings",
+        "menu_diag": "Network diagnostics", "menu_update": "Update yt-dlp",
+        "menu_selfupdate": "Update script from GitHub", "menu_debug": "Debug (all versions)",
+        "menu_exit": "Exit (q)", "choice": "Choice", "invalid_choice": "Invalid choice",
+        "videos_dir": "Videos saved to", "audio_dir": "Audio saved to",
+        "enter_urls": "Enter URLs (one per line).", "enter_urls_hint": "Empty line — start. 'q' — menu.",
+        "search_query": "Enter search query", "search_results": "Search results",
         "search_select": "Select number (Enter — cancel)",
-        "available_formats": "Available video formats",
-        "select_video": "Format number (Enter = best)",
+        "available_formats": "Available video formats", "select_video": "Format number (Enter = best)",
         "select_audio_track": "Audio track number (Enter = best)",
-        "priority_format": "Priority format",
-        "priority_best": "Best",
-        "priority_1080": "1080p",
-        "priority_720": "720p",
-        "priority_480": "480p",
-        "priority_audio": "Audio only",
-        "invalid_default": "Invalid choice, using default",
-        "selector": "Selector",
-        "strategy": "Method",
+        "priority_format": "Priority format", "priority_best": "Best",
+        "priority_1080": "1080p", "priority_720": "720p", "priority_480": "480p",
+        "priority_audio": "Audio only", "invalid_default": "Invalid choice, using default",
+        "selector": "Selector", "strategy": "Method",
         "trying_generic": "Trying generic extractor...",
         "trying_binary": "Trying yt-dlp as separate process...",
         "trying_manual": "Trying separate video and audio download...",
         "trying_external": "Direct download via curl/wget/ffmpeg...",
         "trying_rutube": "RuTube API directly...",
         "retry_tls": "Retry without TLS verification?",
-        "all_exhausted": "All attempts exhausted",
-        "scanning": "Scanning page",
-        "found_videos": "Videos found",
-        "no_videos": "No videos found",
-        "multiple_videos": "Multiple videos found",
-        "number_or_all": "Number or 'all'",
-        "invalid_url": "Invalid URL",
-        "stopped": "Stopped",
-        "extracting": "Extracting info",
-        "downloading": "Starting download",
+        "all_exhausted": "All attempts exhausted", "scanning": "Scanning page",
+        "found_videos": "Videos found", "no_videos": "No videos found",
+        "multiple_videos": "Multiple videos found", "number_or_all": "Number or 'all'",
+        "invalid_url": "Invalid URL", "stopped": "Stopped",
+        "extracting": "Extracting info", "downloading": "Starting download",
         "download_done": "Downloaded",
         "no_ffmpeg_warn": "ffmpeg missing — only combined formats (up to 720p)",
-        "fm_title": "File manager",
-        "fm_choose_dir": "Choose directory",
-        "fm_videos": "videos",
-        "fm_audio": "audio",
-        "fm_fix": "fix",
-        "fm_back": "Back",
-        "fm_empty": "Directory empty",
-        "fm_delete": "Delete",
-        "fm_delete_multi": "Delete multiple (1,3-5)",
-        "fm_delete_all": "Delete all",
-        "fm_rename": "Rename",
-        "fm_move_to_fix": "Move to fix",
-        "fm_restore": "Restore from fix",
-        "fm_deleted": "Deleted",
-        "fm_failed": "Error",
-        "fm_numbers": "Numbers",
-        "fm_new_name": "New name",
-        "fm_renamed": "Renamed",
-        "fm_moved": "Moved",
-        "fm_file_index": "File number",
-        "fm_exists": "File exists",
-        "settings_title": "Settings",
-        "grp_media": "Video and audio",
-        "grp_network": "Network and YouTube",
-        "grp_interface": "Interface and folders",
-        "set_reset": "Reset settings",
-        "set_saved": "Saved",
+        "fm_title": "File manager", "fm_choose_dir": "Choose directory",
+        "fm_videos": "videos", "fm_audio": "audio", "fm_fix": "fix",
+        "fm_back": "Back", "fm_empty": "Directory empty", "fm_delete": "Delete",
+        "fm_delete_multi": "Delete multiple (1,3-5)", "fm_delete_all": "Delete all",
+        "fm_rename": "Rename", "fm_move_to_fix": "Move to fix", "fm_restore": "Restore from fix",
+        "fm_deleted": "Deleted", "fm_failed": "Error", "fm_numbers": "Numbers",
+        "fm_new_name": "New name", "fm_renamed": "Renamed", "fm_moved": "Moved",
+        "fm_file_index": "File number", "fm_exists": "File exists",
+        "settings_title": "Settings", "grp_media": "Video and audio",
+        "grp_network": "Network and YouTube", "grp_interface": "Interface and folders",
+        "set_reset": "Reset settings", "set_saved": "Saved",
         "set_enter_value": "New value (Enter = keep, '-' = clear)",
         "set_bad_value": "Invalid value",
-        "set_video_codec": "Video codec",
-        "set_audio_codec": "Audio codec",
-        "set_max_height": "Max height (0 = unlimited)",
-        "set_auto_convert": "Convert incompatible",
-        "set_concurrent_fragments": "Parallel fragments",
-        "set_cookies_file": "Cookies file",
-        "set_proxy": "Proxy",
-        "set_dns_mode": "DNS mode",
-        "set_dns_servers": "DNS servers",
-        "set_doh_url": "DoH URL",
-        "set_doh_fallback": "DoH fallback",
-        "set_ip_version": "IP preference",
-        "set_verify_tls": "Verify TLS",
-        "set_preflight": "Network preflight",
-        "set_socket_timeout": "Timeout, sec",
-        "set_retries": "Retries",
-        "set_yt_clients": "YouTube clients",
-        "set_js_runtime": "JS runtime",
-        "set_remote_ejs": "Remote EJS",
-        "set_progress_width": "Progress width",
-        "set_ask_rename": "Ask to rename",
-        "set_ask_fix": "Ask to move to fix",
-        "set_base_dir": "Base folder",
+        "set_video_codec": "Video codec", "set_audio_codec": "Audio codec",
+        "set_max_height": "Max height (0 = unlimited)", "set_auto_convert": "Convert incompatible",
+        "set_concurrent_fragments": "Parallel fragments", "set_cookies_file": "Cookies file",
+        "set_proxy": "Proxy", "set_dns_mode": "DNS mode", "set_dns_servers": "DNS servers",
+        "set_doh_url": "DoH URL", "set_doh_fallback": "DoH fallback",
+        "set_ip_version": "IP preference", "set_verify_tls": "Verify TLS",
+        "set_preflight": "Network preflight", "set_socket_timeout": "Timeout, sec",
+        "set_retries": "Retries", "set_yt_clients": "YouTube clients",
+        "set_js_runtime": "JS runtime", "set_remote_ejs": "Remote EJS",
+        "set_progress_width": "Progress width", "set_ask_rename": "Ask to rename",
+        "set_ask_fix": "Ask to move to fix", "set_base_dir": "Base folder",
         "set_language": "Language",
-        "opt_auto": "auto",
-        "opt_system": "system",
-        "opt_udp": "udp",
-        "opt_doh": "doh",
-        "opt_none": "none",
-        "opt_ask": "ask",
-        "opt_always": "always",
-        "opt_never": "never",
-        "opt_deno": "deno",
-        "opt_node": "node",
-        "opt_bun": "bun",
-        "opt_quickjs": "quickjs",
-        "opt_ipv4": "IPv4",
-        "opt_ipv6": "IPv6",
-        "on": "on",
-        "off": "off",
-        "unlimited": "unlimited",
-        "empty": "not set",
+        "opt_auto": "auto", "opt_system": "system", "opt_udp": "udp", "opt_doh": "doh",
+        "opt_none": "none", "opt_ask": "ask", "opt_always": "always", "opt_never": "never",
+        "opt_deno": "deno", "opt_node": "node", "opt_bun": "bun", "opt_quickjs": "quickjs",
+        "opt_ipv4": "IPv4", "opt_ipv6": "IPv6",
+        "on": "on", "off": "off", "unlimited": "unlimited", "empty": "not set",
         "preset_iphone": "iPhone (H.264 + AAC)",
         "preset_android": "Android (H.264 + AAC)",
         "preset_universal": "Universal (H.264 Baseline)",
-        "preset_h265": "H.265 / HEVC",
-        "preset_vp9": "VP9",
-        "preset_av1": "AV1",
+        "preset_h265": "H.265 / HEVC", "preset_vp9": "VP9", "preset_av1": "AV1",
         "preset_original": "Original",
-        "audio_aac": "AAC 128k",
-        "audio_ac3": "AC3 192k",
-        "audio_mp3": "MP3 192k",
-        "audio_opus": "Opus 160k",
-        "audio_flac": "FLAC",
-        "audio_original": "Original",
-        "lang_ru": "Русский",
-        "lang_en": "English",
-        "video_ready": "Video ready",
-        "audio_ready": "Audio ready",
-        "file": "File",
-        "size": "Size",
-        "rename_prompt": "Rename?",
-        "move_fix_prompt": "Move to fix?",
-        "converting": "Converting",
-        "convert_prompt": "Convert?",
-        "convert_done": "Conversion done",
-        "convert_failed": "Conversion failed",
-        "convert_cancelled": "Cancelled",
-        "ffmpeg_missing": "ffmpeg not found",
-        "compat_warning": "Format may be incompatible",
-        "junk_cleaned": "Cleaned temp files",
-        "encoder_missing": "Codec not supported",
-        "preflight_title": "Network check",
-        "preflight_ok": "Network OK, DNS",
+        "audio_aac": "AAC 128k", "audio_ac3": "AC3 192k", "audio_mp3": "MP3 192k",
+        "audio_opus": "Opus 160k", "audio_flac": "FLAC", "audio_original": "Original",
+        "lang_ru": "Русский", "lang_en": "English",
+        "video_ready": "Video ready", "audio_ready": "Audio ready",
+        "file": "File", "size": "Size", "rename_prompt": "Rename?",
+        "move_fix_prompt": "Move to fix?", "converting": "Converting",
+        "convert_prompt": "Convert?", "convert_done": "Conversion done",
+        "convert_failed": "Conversion failed", "convert_cancelled": "Cancelled",
+        "ffmpeg_missing": "ffmpeg not found", "compat_warning": "Format may be incompatible",
+        "junk_cleaned": "Cleaned temp files", "encoder_missing": "Codec not supported",
+        "preflight_title": "Network check", "preflight_ok": "Network OK, DNS",
         "preflight_fail": "TLS failed",
         "preflight_blocked": "Looks like DPI. Need proxy/VPN.",
         "preflight_continue": "Try anyway?",
         "net_help": "Network errors. Set proxy or Enter to skip.",
-        "proxy_prompt": "Proxy",
-        "proxy_invalid": "Invalid format",
+        "proxy_prompt": "Proxy", "proxy_invalid": "Invalid format",
         "proxy_set": "Proxy saved, retrying",
-        "diag_title": "Network diagnostics",
-        "diag_system": "system",
-        "diag_fail": "no answer",
-        "diag_mismatch": "DNS answers differ",
-        "diag_tls_ok": "TLS OK",
-        "diag_tls_fail": "TLS failed",
-        "diag_proxy": "Proxy check",
-        "diag_proxy_socks": "SOCKS checked on download",
-        "diag_env": "Environment",
-        "diag_press": "Enter — continue",
-        "upd_title": "Update yt-dlp",
-        "upd_stable": "Stable",
-        "upd_nightly": "Nightly",
-        "upd_ejs": "yt-dlp-ejs only",
-        "upd_done": "Update done, restarting",
+        "diag_title": "Network diagnostics", "diag_system": "system",
+        "diag_fail": "no answer", "diag_mismatch": "DNS answers differ",
+        "diag_tls_ok": "TLS OK", "diag_tls_fail": "TLS failed",
+        "diag_proxy": "Proxy check", "diag_proxy_socks": "SOCKS checked on download",
+        "diag_env": "Environment", "diag_press": "Enter — continue",
+        "upd_title": "Update yt-dlp", "upd_stable": "Stable", "upd_nightly": "Nightly",
+        "upd_ejs": "yt-dlp-ejs only", "upd_done": "Update done, restarting",
         "upd_failed": "Failed",
-        "ejs_installing": "Installing yt-dlp-ejs",
-        "ejs_failed": "yt-dlp-ejs install failed",
-        "js_none": "No JS runtime",
-        "rutube_no_m3u8": "RuTube: no m3u8",
-        "ytdlp_missing": "yt-dlp missing",
-        "dl_dest": "Saved to",
-        "selfupd_title": "Update script",
-        "selfupd_checking": "Checking GitHub",
+        "ejs_installing": "Installing yt-dlp-ejs", "ejs_failed": "yt-dlp-ejs install failed",
+        "js_none": "No JS runtime", "rutube_no_m3u8": "RuTube: no m3u8",
+        "ytdlp_missing": "yt-dlp missing", "dl_dest": "Saved to",
+        "selfupd_title": "Update script", "selfupd_checking": "Checking GitHub",
         "selfupd_uptodate": "Already latest version",
         "selfupd_check_failed": "Check failed",
         "selfupd_prompt": "Download and update script?",
@@ -829,23 +693,13 @@ TEXTS = {
         "selfupd_downloading": "Downloading new version",
         "templates_custom": "Custom",
         "templates_multi_hint": "Allowed: 2 or 1,3,5 or 1-3 or all",
-        "debug_title": "Debug information",
-        "debug_python": "Python",
-        "debug_ytdlp": "yt-dlp",
-        "debug_ejs": "yt-dlp-ejs",
-        "debug_ffmpeg": "ffmpeg",
-        "debug_ffprobe": "ffprobe",
-        "debug_node": "Node.js",
-        "debug_js": "JS runtime",
-        "debug_proxy": "Proxy",
-        "debug_dns": "DNS servers",
-        "debug_ip": "IP version",
-        "debug_videos": "Videos dir",
-        "debug_audio": "Audio dir",
-        "debug_press": "Enter — continue",
-        "post_process": "Post-processing",
+        "debug_title": "Debug information", "debug_python": "Python",
+        "debug_ytdlp": "yt-dlp", "debug_ejs": "yt-dlp-ejs", "debug_ffmpeg": "ffmpeg",
+        "debug_ffprobe": "ffprobe", "debug_node": "Node.js", "debug_js": "JS runtime",
+        "debug_proxy": "Proxy", "debug_dns": "DNS servers", "debug_ip": "IP version",
+        "debug_videos": "Videos dir", "debug_audio": "Audio dir",
+        "debug_press": "Enter — continue", "post_process": "Post-processing",
         "interrupted": "Download interrupted, back to menu",
-        "priority_audio_only": "Audio only (skip video)",
     },
 }
 
@@ -853,7 +707,7 @@ def T(key):
     return TEXTS.get(LANG, TEXTS["ru"]).get(key, key)
 
 # ==========================================================
-#  ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ВВОДА (С ТАЙМАУТОМ)
+#  ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ВВОДА
 # ==========================================================
 def save_lang(nl):
     global LANG
@@ -882,9 +736,8 @@ def ask_input_timeout(prompt, timeout=60, default=None):
         if line:
             return line.rstrip("\n")
         return default
-    else:
-        print()
-        return default
+    print()
+    return default
 
 def ask_input(prompt, default=None):
     flush_stdin()
@@ -924,108 +777,60 @@ def parse_multi(text, n):
 #  ШАБЛОНЫ ПРОКСИ / DNS / DOH / YOUTUBE
 # ==========================================================
 PROXY_TEMPLATES = [
-    "http://127.0.0.1:1082",
-    "http://127.0.0.1:8080",
-    "http://127.0.0.1:8081",
-    "http://127.0.0.1:3128",
-    "http://127.0.0.1:9098",
-    "http://198.18.0.3:8080",
-    "http://198.18.0.3:1082",
-    "socks5://127.0.0.1:1080",
-    "socks5h://127.0.0.1:1080",
-    "socks5://127.0.0.1:10808",
-    "socks5h://127.0.0.1:10808",
-    "socks5://127.0.0.1:1081",
-    "socks5h://127.0.0.1:1081",
-    "socks5://127.0.0.1:1086",
-    "socks5h://127.0.0.1:1086",
-    "socks5://127.0.0.1:9050",
-    "socks5h://127.0.0.1:9050",
-    "",
+    "http://127.0.0.1:1082", "http://127.0.0.1:8080", "http://127.0.0.1:8081",
+    "http://127.0.0.1:3128", "http://127.0.0.1:9098",
+    "http://198.18.0.3:8080", "http://198.18.0.3:1082",
+    "socks5://127.0.0.1:1080", "socks5h://127.0.0.1:1080",
+    "socks5://127.0.0.1:10808", "socks5h://127.0.0.1:10808",
+    "socks5://127.0.0.1:1081", "socks5h://127.0.0.1:1081",
+    "socks5://127.0.0.1:1086", "socks5h://127.0.0.1:1086",
+    "socks5://127.0.0.1:9050", "socks5h://127.0.0.1:9050", "",
 ]
 
 DNS_TEMPLATES = [
-    "1.1.1.1,8.8.8.8,94.140.14.14,9.9.9.9",
-    "1.1.1.1,1.0.0.1",
-    "8.8.8.8,8.8.4.4",
-    "94.140.14.14,94.140.15.15",
-    "9.9.9.9,149.112.112.112",
-    "208.67.222.222,208.67.220.220",
-    "76.76.2.0,76.76.10.0",
-    "77.88.8.8,77.88.8.1",
-    "223.5.5.5,223.6.6.6",
-    "185.222.222.222,185.184.222.222",
+    "1.1.1.1,8.8.8.8,94.140.14.14,9.9.9.9", "1.1.1.1,1.0.0.1",
+    "8.8.8.8,8.8.4.4", "94.140.14.14,94.140.15.15",
+    "9.9.9.9,149.112.112.112", "208.67.222.222,208.67.220.220",
+    "76.76.2.0,76.76.10.0", "77.88.8.8,77.88.8.1",
+    "223.5.5.5,223.6.6.6", "185.222.222.222,185.184.222.222",
     "1.1.1.1,1.0.0.1,8.8.8.8,8.8.4.4,9.9.9.9,149.112.112.112,94.140.14.14,94.140.15.15",
 ]
 
 DOH_TEMPLATES = [
-    "",
-    "https://cloudflare-dns.com/dns-query",
-    "https://dns.google/dns-query",
-    "https://dns.quad9.net/dns-query",
-    "https://dns.adguard-dns.com/dns-query",
-    "https://unfiltered.adguard-dns.com/dns-query",
-    "https://dns.comss.one/dns-query",
-    "https://dns.sb/dns-query",
-    "https://doh.libredns.gr/dns-query",
-    "https://dns.alidns.com/dns-query",
-    "https://1.1.1.1/dns-query",
-    "https://8.8.8.8/dns-query",
-    "https://9.9.9.9/dns-query",
-    "https://94.140.14.14/dns-query",
-    "https://doh.angry.im/dns-query",
-    "https://dns.aquilenet.fr/dns-query",
-    "https://nsec.arnor.org/dns-query",
+    "", "https://cloudflare-dns.com/dns-query", "https://dns.google/dns-query",
+    "https://dns.quad9.net/dns-query", "https://dns.adguard-dns.com/dns-query",
+    "https://unfiltered.adguard-dns.com/dns-query", "https://dns.comss.one/dns-query",
+    "https://dns.sb/dns-query", "https://doh.libredns.gr/dns-query",
+    "https://dns.alidns.com/dns-query", "https://1.1.1.1/dns-query",
+    "https://8.8.8.8/dns-query", "https://9.9.9.9/dns-query",
+    "https://94.140.14.14/dns-query", "https://doh.angry.im/dns-query",
+    "https://dns.aquilenet.fr/dns-query", "https://nsec.arnor.org/dns-query",
 ]
 
 DOH_FALLBACK = [
-    "https://1.1.1.1/dns-query",
-    "https://1.0.0.1/dns-query",
-    "https://8.8.8.8/dns-query",
-    "https://8.8.4.4/dns-query",
-    "https://9.9.9.9/dns-query",
-    "https://dns.quad9.net/dns-query",
+    "https://1.1.1.1/dns-query", "https://1.0.0.1/dns-query",
+    "https://8.8.8.8/dns-query", "https://8.8.4.4/dns-query",
+    "https://9.9.9.9/dns-query", "https://dns.quad9.net/dns-query",
     "https://cloudflare-dns.com/dns-query",
 ]
 
 YT_CLIENTS_TEMPLATES = [
-    "",
-    "tv,mweb",
-    "tv,ios",
-    "tv,android_vr",
-    "tv,web_safari,mweb,android_vr,ios",
-    "android_vr,web_safari",
-    "ios,android",
-    "web_safari",
-    "all",
+    "", "tv,mweb", "tv,ios", "tv,android_vr", "tv,web_safari,mweb,android_vr,ios",
+    "android_vr,web_safari", "ios,android", "web_safari", "all",
 ]
 
 # ==========================================================
 #  НАСТРОЙКИ
 # ==========================================================
 DEFAULT_SETTINGS = {
-    "video_codec": "iphone",
-    "audio_codec": "aac",
-    "max_height": 0,
-    "auto_convert": "ask",
-    "concurrent_fragments": 1,
-    "cookies_file": "",
-    "proxy": "",
-    "dns_mode": "auto",
+    "video_codec": "iphone", "audio_codec": "aac", "max_height": 0,
+    "auto_convert": "ask", "concurrent_fragments": 1, "cookies_file": "",
+    "proxy": "", "dns_mode": "auto",
     "dns_servers": "1.1.1.1,8.8.8.8,94.140.14.14,9.9.9.9",
-    "doh_url": "",
-    "doh_fallback": True,
-    "ip_version": "auto",
-    "verify_tls": True,
-    "preflight": True,
-    "socket_timeout": 30,
-    "retries": 10,
-    "yt_clients": "",
-    "js_runtime": "auto",
-    "remote_ejs": False,
-    "progress_width": 36,
-    "ask_rename": True,
-    "ask_fix": True,
+    "doh_url": "", "doh_fallback": True, "ip_version": "auto",
+    "verify_tls": True, "preflight": True, "socket_timeout": 30, "retries": 10,
+    "yt_clients": "", "js_runtime": "auto", "remote_ejs": False,
+    "progress_width": 36, "ask_rename": True, "ask_fix": True,
     "base_dir": "/root/VideoDownloader",
 }
 
@@ -1037,11 +842,8 @@ CHOICES = {
 }
 
 INT_LIMITS = {
-    "max_height": (0, 8640),
-    "concurrent_fragments": (1, 16),
-    "socket_timeout": (5, 600),
-    "retries": (0, 50),
-    "progress_width": (10, 80),
+    "max_height": (0, 8640), "concurrent_fragments": (1, 16),
+    "socket_timeout": (5, 600), "retries": (0, 50), "progress_width": (10, 80),
 }
 
 GROUPS = [
@@ -1103,8 +905,7 @@ def ensure_dir():
     try:
         for d in (VIDEOS_DIR, AUDIO_DIR, FIX_DIR, TMP_DIR):
             d.mkdir(parents=True, exist_ok=True)
-    except OSError as e:
-        err_line(f"{BASE_DIR}: {e}")
+    except OSError:
         SETTINGS["base_dir"] = str(HOME / "VideoDownloader")
         save_settings(SETTINGS)
         apply_dirs()
@@ -1453,7 +1254,7 @@ AUDIO_CODECS = {
 A_COMPAT = {"aac": ("aac", "mp4a"), "opus": ("opus",)}
 
 # ==========================================================
-#  КОДЕКИ/JS/EJS
+#  КОДЕКИ / JS / EJS
 # ==========================================================
 def available_encoders():
     global _encoders_cache
@@ -1535,7 +1336,7 @@ class Log:
         return "\n".join(self.msgs)
 
 # ==========================================================
-#  ПРОГРЕСС-БАР (ПРОЦЕНТЫ, ОБЪЁМ, СКОРОСТЬ, ETA)
+#  ПРОГРЕСС-БАР
 # ==========================================================
 class Progress:
     def __init__(self):
@@ -1547,11 +1348,9 @@ class Progress:
         if st == "downloading":
             total = d.get("total_bytes") or d.get("total_bytes_estimate")
             if self.bar is None:
-                self.bar = tqdm(
-                    total=total, unit="B", unit_scale=True, leave=False,
-                    ncols=SETTINGS["progress_width"], desc="dl",
-                    bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{rate_fmt}, ETA {remaining}]"
-                )
+                self.bar = tqdm(total=total, unit="B", unit_scale=True, leave=False,
+                                ncols=SETTINGS["progress_width"], desc="dl",
+                                bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{rate_fmt}, ETA {remaining}]")
             elif total:
                 self.bar.total = total
             dl = d.get("downloaded_bytes") or 0
@@ -1566,7 +1365,7 @@ class Progress:
             sys.stdout.flush()
 
 # ==========================================================
-#  АНИМИРОВАННЫЙ СПИННЕР В PYTHON
+#  АНИМИРОВАННЫЙ СПИННЕР
 # ==========================================================
 class Spinner:
     def __init__(self, message="working"):
@@ -1618,9 +1417,7 @@ def base_opts(strategy=None, **extra):
     s = SETTINGS
     quick = QUICK["on"]
     o = {
-        "quiet": True,
-        "noplaylist": True,
-        "logger": Log(),
+        "quiet": True, "noplaylist": True, "logger": Log(),
         "socket_timeout": 15 if quick else s["socket_timeout"],
         "retries": 1 if quick else s["retries"],
         "fragment_retries": 1 if quick else s["retries"],
@@ -1653,19 +1450,52 @@ def first_entry(info):
     return info
 
 # ==========================================================
-#  ИЗВЛЕЧЕНИЕ ИНФОРМАЦИИ (СО СПИННЕРОМ)
+#  ИЗВЛЕЧЕНИЕ ИНФОРМАЦИИ (ЧЕРЕЗ SUBPROCESS ДЛЯ БЕЗОПАСНОСТИ)
 # ==========================================================
-def get_info(url, strategy):
-    if yt_dlp is None:
-        return None, ""
-    o = base_opts(strategy, url=url)
-    lg = o["logger"]
+def extract_info_subprocess(url, strategy, flat=False):
+    if yt_dlp is None and not shutil.which("yt-dlp"):
+        return None, "yt-dlp missing"
+    bin_cmd = ["yt-dlp"] if shutil.which("yt-dlp") else [sys.executable, "-m", "yt_dlp"]
+    cmd = bin_cmd + ["-J", "--no-warnings", "--no-playlist"]
+    if flat:
+        cmd.append("--flat-playlist")
+    if strategy and strategy.get("clients"):
+        cmd += ["--extractor-args", "youtube:player_client=" + ",".join(strategy["clients"])]
+    if SETTINGS["proxy"]:
+        cmd += ["--proxy", SETTINGS["proxy"]]
+    if not SETTINGS["verify_tls"]:
+        cmd.append("--no-check-certificate")
+    if SETTINGS["ip_version"] == "ipv4":
+        cmd.append("--force-ipv4")
+    elif SETTINGS["ip_version"] == "ipv6":
+        cmd.append("--force-ipv6")
+    if SETTINGS["cookies_file"] and Path(SETTINGS["cookies_file"]).expanduser().exists():
+        cmd += ["--cookies", str(Path(SETTINGS["cookies_file"]).expanduser())]
+    rt = js_runtime()
+    if rt:
+        cmd += ["--js-runtimes", rt]
+    if SETTINGS["remote_ejs"]:
+        cmd += ["--remote-components", "ejs:github"]
+    cmd += ["--socket-timeout", str(SETTINGS["socket_timeout"])]
+    cmd.append(url)
+    env = dict(os.environ, PYTHONUTF8="1", VD_DNS_ORDER=",".join(dns_order()))
     try:
-        with yt_dlp.YoutubeDL(o) as ydl:
-            info = first_entry(ydl.extract_info(url, download=False))
-        return info, lg.text()
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120, env=env)
     except Exception as e:
-        return None, lg.text() + "\n" + str(e)
+        return None, f"{type(e).__name__}: {e}"
+    if proc.returncode != 0:
+        return None, (proc.stderr or "")[-500:]
+    try:
+        return json.loads(proc.stdout), ""
+    except Exception as e:
+        return None, f"{type(e).__name__}: {e}"
+
+def first_entry_json(info):
+    if isinstance(info, dict) and info.get("entries"):
+        for e in info["entries"]:
+            if isinstance(e, dict):
+                return e
+    return info
 
 def extract_info_smart(url):
     info_line(f"{T('extracting')}: {trunc(url, 60)}")
@@ -1676,9 +1506,11 @@ def extract_info_smart(url):
         for st in build_strategies(url):
             if net_fail >= 2:
                 break
-            info, err = get_info(url, st)
-            if isinstance(info, dict) and (info.get("formats") or info.get("url")):
-                return info, st["name"]
+            info, err = extract_info_subprocess(url, st)
+            if isinstance(info, dict):
+                info = first_entry_json(info)
+                if isinstance(info, dict) and (info.get("formats") or info.get("url")):
+                    return info, st["name"]
             if is_net_error(err):
                 net_fail += 1
             if not is_youtube(url):
@@ -1688,7 +1520,7 @@ def extract_info_smart(url):
         sp.stop_spinner()
 
 # ==========================================================
-#  ЗАПУСК YT-DLP (МОДУЛЬ И БИНАРНИК)
+#  ЗАПУСК ЧЕРЕЗ МОДУЛЬ PYTHON
 # ==========================================================
 def run_module(url, selector, strategy, job, extra=None, outtmpl=None):
     if yt_dlp is None:
@@ -1711,17 +1543,20 @@ def run_module(url, selector, strategy, job, extra=None, outtmpl=None):
     finally:
         pg.close()
 
+# ==========================================================
+#  ЗАПУСК ЧЕРЕЗ БИНАРНИК
+# ==========================================================
 def run_binary(url, selector, strategy, job, extra_flags=(), outtmpl=None):
     if not shutil.which("yt-dlp") and yt_dlp is None:
         return False, ""
     s = SETTINGS
-    base_cmd = ["yt-dlp"] if shutil.which("yt-dlp") else [sys.executable, "-m", "yt_dlp"]
-    cmd = base_cmd + ["-f", selector, "--no-playlist", "--newline", "--no-warnings",
-                      "-o", str(outtmpl or (job["dir"] / OUT_TMPL)),
-                      "--socket-timeout", str(15 if QUICK["on"] else s["socket_timeout"]),
-                      "--retries", str(1 if QUICK["on"] else s["retries"]),
-                      "--fragment-retries", str(1 if QUICK["on"] else s["retries"]),
-                      "-N", str(max(1, s["concurrent_fragments"]))]
+    bin_cmd = ["yt-dlp"] if shutil.which("yt-dlp") else [sys.executable, "-m", "yt_dlp"]
+    cmd = bin_cmd + ["-f", selector, "--no-playlist", "--newline", "--no-warnings",
+                     "-o", str(outtmpl or (job["dir"] / OUT_TMPL)),
+                     "--socket-timeout", str(15 if QUICK["on"] else s["socket_timeout"]),
+                     "--retries", str(1 if QUICK["on"] else s["retries"]),
+                     "--fragment-retries", str(1 if QUICK["on"] else s["retries"]),
+                     "-N", str(max(1, s["concurrent_fragments"]))]
     if job["merge"]:
         cmd += ["--merge-output-format", "mp4"]
     if s["ip_version"] == "ipv4":
@@ -1738,12 +1573,7 @@ def run_binary(url, selector, strategy, job, extra_flags=(), outtmpl=None):
         cmd += ["--extractor-args", "youtube:player_client=" + ",".join(strategy["clients"])]
     rt = js_runtime()
     if rt:
-        try:
-            help_out = subprocess.run(base_cmd + ["--help"], capture_output=True, text=True, timeout=10).stdout or ""
-        except Exception:
-            help_out = ""
-        if "--js-runtimes" in help_out:
-            cmd += ["--js-runtimes", rt]
+        cmd += ["--js-runtimes", rt]
     if s["remote_ejs"]:
         cmd += ["--remote-components", "ejs:github"]
     cmd += list(extra_flags) + [url]
@@ -1903,14 +1733,11 @@ def probe_codec(path, stream):
 def run_ffmpeg_with_progress(cmd, duration, desc):
     if tqdm is None:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=14400)
-        if r.returncode != 0 and r.stderr:
-            err_line(r.stderr.strip()[-1500:])
         return r.returncode == 0
     full = cmd[:1] + ["-nostats", "-progress", "pipe:1"] + cmd[1:]
     try:
         proc = subprocess.Popen(full, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    except Exception as e:
-        err_line(f"ffmpeg: {e}")
+    except Exception:
         return False
     pbar = tqdm(total=duration or 0, unit="s", desc=desc, leave=False, ncols=SETTINGS["progress_width"],
                 bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{rate_fmt}, ETA {remaining}]")
@@ -1932,17 +1759,14 @@ def run_ffmpeg_with_progress(cmd, duration, desc):
         pass
     finally:
         try:
-            _, errtext = proc.communicate(timeout=120)
+            proc.communicate(timeout=120)
         except Exception:
             proc.kill()
-            errtext = ""
         if duration and last < duration:
             pbar.update(duration - last)
         pbar.close()
         sys.stdout.write("\n")
         sys.stdout.flush()
-    if proc.returncode != 0 and errtext:
-        err_line(errtext.strip()[-1500:])
     return proc.returncode == 0
 
 def check_compat(path, vkey):
@@ -2017,8 +1841,7 @@ def convert_file(src, vkey):
             if same:
                 dst.rename(final)
             return final
-        except OSError as e:
-            err_line(str(e))
+        except OSError:
             return dst
     err_line(T("convert_failed"))
     try:
@@ -2066,16 +1889,19 @@ def convert_audio(src, akey):
     return src
 
 # ==========================================================
-#  ВЫБОР ФОРМАТА С ПРИОРИТЕТОМ
+#  ИНТЕРАКТИВНЫЙ ВЫБОР ФОРМАТА (СО СПИСКОМ)
 # ==========================================================
-def select_format_list(info, priority="best"):
+def select_format(info, priority="best"):
+    default = default_selector()
     if not isinstance(info, dict):
-        return [default_selector()]
+        return default, [default]
+
     formats = info.get("formats") or []
     videos = [f for f in formats if isinstance(f, dict) and f.get("format_id") and f.get("vcodec") not in (None, "none")]
     audios = [f for f in formats if isinstance(f, dict) and f.get("format_id") and f.get("vcodec") == "none" and f.get("acodec") not in (None, "none")]
+
     if not videos:
-        return [default_selector()]
+        return default, [default]
 
     def priority_key(f):
         h = f.get("height") or 0
@@ -2088,35 +1914,83 @@ def select_format_list(info, priority="best"):
         return (-h, -(f.get("fps") or 0))
 
     videos_sorted = sorted(videos, key=priority_key)
-    audios_sorted = sorted(audios, key=lambda f: f.get("abr") or 0, reverse=True)
-    best_audio = str(audios_sorted[0]["format_id"]) if audios_sorted else None
 
-    selectors = []
-    for v in videos_sorted[:3]:
-        vid = str(v["format_id"])
-        if v.get("acodec") not in (None, "none"):
-            selectors.append(vid)
-        elif best_audio and HAS_FFMPEG:
-            selectors.append(f"{vid}+{best_audio}")
-        elif HAS_FFMPEG:
-            selectors.append(f"{vid}+ba/b")
-        else:
-            selectors.append(vid)
+    uniq = {}
+    for f in videos_sorted:
+        key = (f.get("height"), f.get("ext"), f.get("fps"), f.get("vcodec"), f.get("acodec"))
+        if key not in uniq:
+            uniq[key] = f
+    vlist = list(uniq.values())[:15]
 
-    if selectors:
-        for sel in selector_chain(selectors[0]):
-            if sel not in selectors:
-                selectors.append(sel)
+    print(c(f"\n{T('available_formats')}:", CYAN))
+    for i, f in enumerate(vlist, 1):
+        h = f.get("height") or "?"
+        ext = f.get("ext") or "?"
+        fps = f.get("fps")
+        size = f.get("filesize") or f.get("filesize_approx")
+        size_t = f", {size / 1048576:.0f}M" if isinstance(size, (int, float)) else ""
+        fps_t = f", {fps}fps" if fps else ""
+        aud = "+" if f.get("acodec") not in (None, "none") else "-"
+        print(f"  {i}. {h}p {ext} {aud}{fps_t}{size_t}")
 
+    sys.stdout.flush()
+    ch = ask_input_timeout(c(f"{T('select_video')}: ", YELLOW), timeout=30)
+
+    chosen_selector = None
+    chosen_audio = None
+
+    if ch is None or not ch.strip():
+        chosen_selector = default
+    else:
+        try:
+            idx = int(ch.strip()) - 1
+            if 0 <= idx < len(vlist):
+                sel = vlist[idx]
+                vid = str(sel["format_id"])
+                if sel.get("acodec") not in (None, "none"):
+                    chosen_selector = vid
+                elif not HAS_FFMPEG:
+                    chosen_selector = default
+                elif audios:
+                    audios_sorted = sorted(audios, key=lambda f: f.get("abr") or 0, reverse=True)
+                    print(c(f"\n{T('select_audio_track')}:", CYAN))
+                    for i, f in enumerate(audios_sorted[:10], 1):
+                        abr = f.get("abr")
+                        abr_t = f", {abr:g}kbps" if isinstance(abr, (int, float)) else ""
+                        lang = f.get("language") or "unknown"
+                        print(f"  {i}. {trunc(lang, 20)} {f.get('ext') or '?'}{abr_t}")
+                    sys.stdout.flush()
+                    a = ask_input_timeout(c(f"{T('select_audio_track')}: ", YELLOW), timeout=30)
+                    if a and a.strip().isdigit():
+                        aidx = int(a.strip()) - 1
+                        if 0 <= aidx < len(audios_sorted):
+                            chosen_audio = audios_sorted[aidx]
+                    if chosen_audio:
+                        chosen_selector = f"{vid}+{chosen_audio['format_id']}"
+                    else:
+                        chosen_selector = f"{vid}+bestaudio/best"
+                else:
+                    chosen_selector = f"{vid}+ba/b"
+            else:
+                warn_line(T("invalid_default"))
+                chosen_selector = default
+        except (ValueError, IndexError):
+            warn_line(T("invalid_default"))
+            chosen_selector = default
+
+    selectors = [chosen_selector]
+    for sel in selector_chain(chosen_selector):
+        if sel not in selectors:
+            selectors.append(sel)
     for v in videos_sorted[:10]:
         fid = str(v["format_id"])
         if fid not in selectors:
             selectors.append(fid)
 
-    return selectors
+    return chosen_selector, selectors
 
 # ==========================================================
-#  HTTP / RUTUBE
+#  HTTP / RUTUBE (ПОЛНЫЙ)
 # ==========================================================
 def make_opener():
     handlers = []
@@ -2170,7 +2044,7 @@ def rutube_download(url, job):
     hdrs = {"User-Agent": UA, "Referer": "https://rutube.ru/", "Origin": "https://rutube.ru"}
     out_tmpl = job["dir"] / f"{title} [{vid}].%(ext)s"
     for sel in (default_selector(), "bv*+ba/b", "b"):
-        ok, _ = run_any(m3u8, sel, None, job, extra={"http_headers": hdrs}, outtmpl=out_tmpl)
+        ok, err = run_any(m3u8, sel, None, job, extra={"http_headers": hdrs}, outtmpl=out_tmpl)
         if ok:
             return True
     if HAS_FFMPEG:
@@ -2186,7 +2060,7 @@ def rutube_download(url, job):
     return False
 
 # ==========================================================
-#  ВНЕШНЯЯ ЗАГРУЗКА
+#  ВНЕШНЯЯ ЗАГРУЗКА (CURL / WGET / FFMPEG HLS)
 # ==========================================================
 def external_download(url, info, job):
     if not isinstance(info, dict):
@@ -2394,7 +2268,7 @@ def make_job(kind):
     return {"kind": "video", "dir": VIDEOS_DIR, "merge": HAS_FFMPEG, "selectors": None}
 
 # ==========================================================
-#  СКАЧИВАНИЕ (С ОБРАБОТКОЙ CTRL+C)
+#  СКАЧИВАНИЕ
 # ==========================================================
 def attempt_download_video(url, priority="best"):
     if not valid_url(url):
@@ -2412,24 +2286,28 @@ def attempt_download_video(url, priority="best"):
         info, win = extract_info_smart(url)
         title = (info.get("title") if isinstance(info, dict) else None) or trunc(url, 40)
         info_line(f"{T('downloading')}: {trunc(title, 50)}")
-        selectors = select_format_list(info, priority)
-        info_line(f"{T('selector')}: {trunc(selectors[0] if selectors else 'best', 60)}")
+        chosen, selectors = select_format(info, priority)
+        info_line(f"{T('selector')}: {trunc(chosen, 60)}")
         job["selectors"] = selectors
-        if not download_chain(url, job, selectors[0] if selectors else "best", info, win):
+        if not download_chain(url, job, chosen, info, win):
             return False, None
         f = newest_changed(VIDEOS_DIR, before, VIDEO_EXTS)
         if f is None:
             return False, None
         ok_line(f"{T('download_done')}: {f.name}")
+        vkey = SETTINGS["video_codec"]
+        mode = SETTINGS["auto_convert"]
+        if mode != "never" and HAS_FFMPEG and not check_compat(f, vkey):
+            warn_line(T("compat_warning"))
+            if mode == "always" or confirm(T("convert_prompt")):
+                f = convert_file(f, vkey)
+                ok_line(f"{T('convert_done')}: {f.name}")
+            else:
+                info_line(T("convert_cancelled"))
         return True, f
     except KeyboardInterrupt:
         print()
         warn_line(T("interrupted"))
-        try:
-            subprocess.run(["pkill", "-f", "yt-dlp"], timeout=5, capture_output=True)
-            subprocess.run(["pkill", "-f", "ffmpeg"], timeout=5, capture_output=True)
-        except Exception:
-            pass
         return False, None
 
 def attempt_download_audio(url):
@@ -2457,11 +2335,6 @@ def attempt_download_audio(url):
     except KeyboardInterrupt:
         print()
         warn_line(T("interrupted"))
-        try:
-            subprocess.run(["pkill", "-f", "yt-dlp"], timeout=5, capture_output=True)
-            subprocess.run(["pkill", "-f", "ffmpeg"], timeout=5, capture_output=True)
-        except Exception:
-            pass
         return False, None
 
 # ==========================================================
@@ -2517,26 +2390,18 @@ def show_ready_and_rename(path, is_audio=False):
     return path
 
 # ==========================================================
-#  ПОИСК ВИДЕО НА СТРАНИЦЕ
+#  ПОИСК ВИДЕО
 # ==========================================================
 def find_videos_on_page(page_url):
     info_line(f"{T('scanning')}: {trunc(page_url, 60)}")
-    if yt_dlp is None:
-        return []
-    o = base_opts(extract_flat=True, noplaylist=False)
-    try:
-        with yt_dlp.YoutubeDL(o) as ydl:
-            info = ydl.extract_info(page_url, download=False)
-    except Exception as e:
-        err_unique(f"{type(e).__name__}: {e}")
-        return []
+    info, err = extract_info_subprocess(page_url, None, flat=True)
     if not isinstance(info, dict):
         return []
     if info.get("entries") is not None:
         urls = []
         for e in info["entries"]:
             if isinstance(e, dict):
-                u = e.get("webpage_url") or e.get("url")
+                u = e.get("url") or e.get("webpage_url")
                 if isinstance(u, str) and u.startswith(("http://", "https://")):
                     urls.append(u)
         urls = list(dict.fromkeys(urls))
@@ -2545,9 +2410,6 @@ def find_videos_on_page(page_url):
     u = info.get("webpage_url") or info.get("original_url") or info.get("url")
     return [u] if isinstance(u, str) and valid_url(u) else []
 
-# ==========================================================
-#  ПОИСК И ПРИОРИТЕТ
-# ==========================================================
 def ask_priority():
     print(c(f"\n{T('priority_format')}:", CYAN))
     print(f"  1. {T('priority_best')}")
@@ -2573,16 +2435,12 @@ def search_videos():
         query = ask_input(c(f"{T('search_query')}: ", YELLOW))
         if not query or not query.strip():
             return
-        query = query.strip()
-        search_url = f"ytsearch10:{query}"
+        search_url = f"ytsearch10:{query.strip()}"
         info_line(f"Search: {query}")
-        try:
-            with yt_dlp.YoutubeDL({'quiet': True, 'no_warnings': True, 'extract_flat': True}) as ydl:
-                info = ydl.extract_info(search_url, download=False)
-        except Exception as e:
-            err_line(f"{type(e).__name__}: {e}")
-            return
-        entries = info.get("entries", []) if isinstance(info, dict) else []
+        info, err = extract_info_subprocess(search_url, None, flat=True)
+        entries = []
+        if isinstance(info, dict):
+            entries = info.get("entries") or []
         if not entries:
             warn_line(T("no_videos"))
             return
@@ -2814,8 +2672,8 @@ def file_manager():
                     try:
                         f.unlink()
                         count += 1
-                    except OSError as e:
-                        err_line(f"{T('fm_failed')}: {e}")
+                    except OSError:
+                        pass
                 ok_line(f"{T('fm_deleted')}: {count}")
             continue
         nums = ask_numbers(f"{T('fm_numbers')} (1-{len(files)}): ", len(files))
@@ -2839,7 +2697,7 @@ def file_manager():
             move_to_fix(files[nums[0] - 1])
 
 # ==========================================================
-#  МЕНЮ ЯЗЫКА
+#  ЯЗЫК
 # ==========================================================
 def language_menu():
     while True:
@@ -2936,8 +2794,7 @@ def edit_with_templates(key, templates, current_value, on_set=None, multi=False)
                         parts.append(cc)
             new_val = ",".join(parts)
         elif key == "doh_url":
-            parts = [s for s in selected if s]
-            new_val = ",".join(parts)
+            new_val = ",".join([s for s in selected if s])
         else:
             new_val = selected[0] if selected else ""
     else:
@@ -3130,7 +2987,7 @@ def self_update_menu():
         return False
 
 # ==========================================================
-#  ДИАГНОСТИКА
+#  ДИАГНОСТИКА (ПОЛНАЯ)
 # ==========================================================
 def diag_hosts():
     return ["rutube.ru", "www.youtube.com", "i.ytimg.com", "redirector.googlevideo.com", "www.google.com"]
@@ -3140,8 +2997,8 @@ def diagnostics():
     print(c(T("diag_env"), CYAN))
     print(f"  python {sys.version.split()[0]}")
     print(f"  yt-dlp {getattr(getattr(yt_dlp, 'version', None), '__version__', T('ytdlp_missing'))}")
-    print(f"  yt-dlp-ejs: {T('on') if has_ejs() else T('off')}")
-    print(f"  ffmpeg: {FFMPEG_BIN or T('ffmpeg_missing')}")
+    print(f"  yt-dlp-ejs: {T('on') if has_ejs_one() else T('off')}")
+    print(f"  ffmpeg:(url {FFMPEG_BIN or T('ffmpeg_missing')}")
     print(f"  JS: {js_runtime() or T('js_none')}")
     print(f"  proxy: {SETTINGS['proxy'] or T('empty')}")
     print(f"  DNS mode: {SETTINGS['dns_mode']}")
@@ -3202,8 +3059,7 @@ def debug_menu():
     print(f"{T('debug_ejs')}: {T('on') if has_ejs() else T('off')}")
     print(f"{T('debug_ffmpeg')}: {FFMPEG_BIN or T('ffmpeg_missing')}")
     print(f"{T('debug_ffprobe')}: {FFPROBE_BIN or 'missing'}")
-    node = shutil.which("node")
-    print(f"{T('debug_node')}: {node or 'not found'}")
+    print(f"{T('debug_node')}: {shutil.which('node') or 'not found'}")
     print(f"{T('debug_js')}: {js_runtime() or T('js_none')}")
     print(f"{T('debug_proxy')}: {SETTINGS['proxy'] or T('empty')}")
     print(f"{T('debug_dns')}: {SETTINGS['dns_servers']}")
@@ -3215,7 +3071,7 @@ def debug_menu():
 # ==========================================================
 #  СКАЧИВАНИЕ ССЫЛОК
 # ==========================================================
-def download_one(url, audio_only, priority="best"):
+def download, audio_only, priority="best"):
     if audio_only or priority == "audio":
         ok, fp = attempt_download_audio(url)
     else:
