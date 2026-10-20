@@ -3296,7 +3296,7 @@ def main_menu():
             break
         if ch == "3":
             search_videos()
-        elif один ch == "4":
+        elif ch == "4":
             reencode_menu()
         elif ch == "5":
             file_manager()
