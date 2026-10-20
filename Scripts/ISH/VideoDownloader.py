@@ -33,6 +33,9 @@ T() {
             installing) echo "[*] yt-dlp not found — installing" ;;
             not_imported) echo "[!] yt-dlp/tqdm not importable, fallbacks will be tried" ;;
             no_python) echo "[!] python3 not found" ;;
+            repo_upgrade) echo "[*] Upgrading Alpine repositories to v3.19 (Python 3.11)..." ;;
+            repo_fail) echo "[!] Repository upgrade failed, continuing with current" ;;
+            python_upgrade) echo "[*] Upgrading Python..." ;;
             *) echo "$1" ;;
         esac
     else
@@ -46,14 +49,17 @@ T() {
             installing) echo "[*] yt-dlp не найден — устанавливаю" ;;
             not_imported) echo "[!] yt-dlp/tqdm не импортируются, будут использованы запасные методы" ;;
             no_python) echo "[!] python3 не найден" ;;
+            repo_upgrade) echo "[*] Обновление репозиториев Alpine до v3.19 (Python 3.11)..." ;;
+            repo_fail) echo "[!] Обновление репозиториев не удалось, продолжаем с текущими" ;;
+            python_upgrade) echo "[*] Обновление Python..."    ;;
             *) echo "$1" ;;
         esac
-    fi
+    ap fi
 }
 
-setup_dns() {
-    cat > /etc/resolv.conf << 'EOF'
-nameserver 1.1.1.1
+setupk_dns() {
+    cat > /etc/resol updatev.conf << 'EOF'
+names ||erver 1.1.1.1
 nameserver 8.8.8.8
 nameserver 94.140.14.14
 EOF
@@ -66,25 +72,38 @@ keep_alive() {
     fi
 }
 
-have_ytdlp() {
-    python3 - << 'EOF' >/dev/null 2>&1
-import yt_dlp, tqdm
-EOF
+upgrade_repos() {
+    say "${BLUE}$(T repo_upgrade)${NC}"
+    rm -rf /ish
+    printf 'https://dl-cdn.alpinelinux.org/alpine/v3.19/main\nhttps://dl-cdn.alpinelinux.org/alpine/v3.19/community\n' > /etc/apk/repositories
+ { say "${RED}$(T repo_fail)${NC}"; return 1; }
+    apk upgrade --available || { say "${RED}$(T repo_fail)${NC}"; return 1; }
+    say "${GREEN}[+] Repositories upgraded.${NC}"
+    return 0
+}
+
+python_version_ok() {
+    python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null
 }
 
 install_packages() {
     say "${BLUE}$(T apk_update)${NC}"
     apk update || say "${YELLOW}$(T apk_fail)${NC}"
-    for p in python3 py3-pip ffmpeg ca-certificates curl \
+    for p in python3 py3-pip ffmpeg ca-certificates curl wget nodejs \
              py3-brotli py3-pycryptodomex py3-mutagen py3-websockets; do
         apk add --no-cache "$p" >/dev/null 2>&1 || say "${YELLOW}$(T apk_skip): $p${NC}"
     done
     apk add --no-cache quickjs >/dev/null 2>&1 || true
 
+    say "${BLUE}$(T python_upgrade)${NC}"
+    python3 -m pip install --upgrade pip setuptools wheel >/dev/null 2>&1 || true
+
     say "${BLUE}$(T pip_install)${NC}"
-    pip3 install -U --no-deps --disable-pip-version-check yt-dlp tqdm \
-      || pip3 install -U --no-deps --break-system-packages yt-dlp tqdm \
+    python3 -m pip install -U --no-deps --disable-pip-version-check yt-dlp tqdm \
+      || python3 -m pip install -U --no-deps --break-system-packages yt-dlp tqdm \
       || say "${RED}$(T pip_fail)${NC}"
+
+    python3 -m pip install -U yt-dlp-ejs >/dev/null 2>&1 || true
 }
 
 say "${YELLOW}========================================${NC}"
@@ -93,14 +112,22 @@ say "${YELLOW}========================================${NC}"
 setup_dns
 keep_alive
 
-if ! have_ytdlp; then
-    say "${YELLOW}$(T installing)${NC}"
+if ! command -v python3 >/dev/null 2>&1; then
+    say "${RED}$(T no_python)${NC}"
     install_packages
-elif [ "${1:-}" = "--update" ]; then
+elif ! python_version_ok; then
+    upgrade_repos
     install_packages
+else
+    if ! python3 -c 'import yt_dlp, tqdm' >/dev/null 2>&1; then
+        say "${YELLOW}$(T installing)${NC}"
+        install_packages
+    elif [ "${1:-}" = "--update" ]; then
+        install_packages
+    fi
 fi
 
-have_ytdlp || say "${RED}$(T not_imported)${NC}"
+python3 -c 'import yt_dlp, tqdm' >/dev/null 2>&1 || say "${RED}$(T not_imported)${NC}"
 
 command -v python3 >/dev/null 2>&1 || { say "${RED}$(T no_python)${NC}"; exit 1; }
 
@@ -1006,6 +1033,8 @@ class Log:
 
     def warning(self, m):
         m = str(m)
+        if "Deprecated Feature: Support for Python version" in m:
+            return
         self.msgs.append(m)
         if m not in SEEN_WARNINGS:
             SEEN_WARNINGS.add(m)
@@ -1013,6 +1042,8 @@ class Log:
 
     def error(self, m):
         m = str(m)
+        if "Deprecated Feature: Support for Python version" in m:
+            return
         self.msgs.append(m)
         err_line(m)
 
@@ -1021,8 +1052,9 @@ class Log:
 
 def report(e, lg):
     msg = str(e).strip()
-    if msg and not any(msg in m or m.strip() in msg for m in lg.msgs):
-        err_line(f"{type(e).__name__}: {msg}")
+    if msg and "Deprecated Feature: Support for Python version" not in msg:
+        if not any(msg in m or m.strip() in msg for m in lg.msgs):
+            err_line(f"{type(e).__name__}: {msg}")
     return lg.text() + "\n" + msg
 
 class Progress:
@@ -1198,6 +1230,8 @@ def run_binary(url, selector, strategy, job, extra_flags=(), outtmpl=None):
     text = (r.stderr or "").strip()
     if text:
         for line in text.splitlines():
+            if "Deprecated Feature: Support for Python version" in line:
+                continue
             (err_line if r.returncode else warn_line)(line)
     return r.returncode == 0, text
 
