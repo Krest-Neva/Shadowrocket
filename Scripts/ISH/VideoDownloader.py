@@ -1,14 +1,13 @@
 #!/bin/sh
 
 # ==========================================================
-#  ИНИЦИАЛИЗАЦИЯ И НАСТРОЙКА ОКРУЖЕНИЯ
+# ИНИЦИАЛИЗАЦИЯ ОКРУЖЕНИЯ
 # ==========================================================
 
 set -u
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; CYAN='\033[0;36m'; NC='\033[0m'
 say() { printf '%b\n' "$1"; }
-msg2() { if [ "$VD_LANG" = "en" ]; then say "$1"; else say "$2"; fi; }
 
 printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\nnameserver 94.140.14.14\nnameserver 9.9.9.9\n' > /etc/resolv.conf 2>/dev/null
 
@@ -24,6 +23,8 @@ export VD_UPDATE_URL="https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/
 LANG_FILE="$HOME/.video_downloader_lang"
 ALPINE_VERSION_FILE="$HOME/.video_downloader_alpine_version"
 ALPINE_DIAG="/tmp/vd_alpine_diag"
+
+rm -f /tmp/vd_pip_cmd /tmp/vd_update_all /tmp/vd_reinstall_py /tmp/vd_self_update
 
 if [ -f "$LANG_FILE" ]; then
     VD_LANG=$(cat "$LANG_FILE" 2>/dev/null)
@@ -54,12 +55,8 @@ REP() {
 }
 
 # ==========================================================
-#  ПРЕДУПРЕЖДЕНИЕ О ФИКТИВНОЙ ГЕОЛОКАЦИИ
+# ГЕОЛОКАЦИЯ И ЗАГОЛОВОК
 # ==========================================================
-
-msg2 "Requesting dummy geolocation to keep iSH running in background..." \
-     "Фиктивно запрашиваю геолокацию для стабильной работы в фоне..." \
-     | xargs -0 printf "${BLUE}[*] %s${NC}\n" 2>/dev/null || true
 
 if [ "$VD_LANG" = "en" ]; then
     REP inf "Requesting dummy geolocation to keep iSH running in background..."
@@ -80,7 +77,7 @@ fi
 say "${YELLOW}========================================${NC}"
 
 # ==========================================================
-#  АНИМИРОВАННЫЙ СПИННЕР ДЛЯ SHELL-ОПЕРАЦИЙ
+# СПИННЕР
 # ==========================================================
 
 run_with_spinner() {
@@ -107,7 +104,7 @@ run_with_spinner() {
 }
 
 # ==========================================================
-#  УПРАВЛЕНИЕ РЕПОЗИТОРИЯМИ ALPINE
+# РЕПОЗИТОРИИ ALPINE И ВЕРСИИ
 # ==========================================================
 
 set_repos() {
@@ -132,7 +129,6 @@ check_python() {
     return 0
 }
 
-# Внутренняя реализация попытки версии (для run_with_spinner)
 try_alpine_impl() {
     ver=$1
     if ! set_repos "$ver"; then
@@ -143,7 +139,6 @@ try_alpine_impl() {
     check_python
 }
 
-# Внутренняя реализация fallback — установить ЛЮБОЙ Python
 try_alpine_any_impl() {
     ver=$1
     if ! set_repos "$ver"; then
@@ -154,13 +149,8 @@ try_alpine_any_impl() {
     command -v python3 >/dev/null 2>&1
 }
 
-# ==========================================================
-#  ПОИСК ALPINE С PYTHON 3.10+
-# ==========================================================
-
 find_alpine() {
     : > "$ALPINE_DIAG"
-
     if [ -f "$ALPINE_VERSION_FILE" ]; then
         saved=$(cat "$ALPINE_VERSION_FILE" 2>/dev/null)
         if [ -n "$saved" ]; then
@@ -171,8 +161,6 @@ find_alpine() {
             echo "Alpine $saved (cached) FAILED" >> "$ALPINE_DIAG"
         fi
     fi
-
-    # 3.19 идёт первой — это версия с рабочим Python 3.11.12
     for ver in 3.19 3.20 3.21 3.18 3.22 3.17 3.16; do
         if run_with_spinner "Alpine $ver" try_alpine_impl "$ver"; then
             echo "$ver" > "$ALPINE_VERSION_FILE"
@@ -196,8 +184,32 @@ find_alpine_any() {
     return 1
 }
 
+ver_newer() {
+    a=$1
+    b=$2
+    if [ -z "$a" ] || [ -z "$b" ]; then
+        return 1
+    fi
+    newer=$(printf '%s\n%s\n' "$a" "$b" | sort -V | tail -1)
+    [ "$newer" = "$b" ] && [ "$a" != "$b" ]
+}
+
+check_update_apk() {
+    pkg=$1
+    if ! apk info -e "$pkg" >/dev/null 2>&1; then
+        return 1
+    fi
+    installed=$(apk info -v "$pkg" 2>/dev/null | head -1 | sed "s/^$pkg-//; s/-r[0-9]*$//")
+    available=$(apk policy "$pkg" 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+    if ver_newer "$installed" "$available"; then
+        echo "$installed -> $available"
+        return 0
+    fi
+    return 1
+}
+
 # ==========================================================
-#  LD_PRELOAD-ХАК ДЛЯ FFMPEG
+# FFMPEG LD_PRELOAD HACK
 # ==========================================================
 
 fix_ffmpeg() {
@@ -253,7 +265,7 @@ WRAP_FP_EOF
 }
 
 # ==========================================================
-#  ПРОВЕРКА И УСТАНОВКА PYTHON 3.10+
+# УСТАНОВКА PYTHON
 # ==========================================================
 
 PY_OK=0
@@ -273,7 +285,7 @@ if [ "$PY_OK" = "0" ]; then
     if [ -z "$ALPINE_VER" ]; then
         REP err "$( [ "$VD_LANG" = "en" ] && echo 'No Alpine version found with Python 3.10+' || echo 'Не найдено версии Alpine с Python 3.10+' )"
         if [ "$ALPINE_ELAPSED" -lt 3 ]; then
-            REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'Search finished suspiciously fast — check network connection' || echo 'Поиск завершился подозрительно быстро — проверьте подключение к сети' )"
+            REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'Search finished suspiciously fast — check network' || echo 'Поиск завершился подозрительно быстро — проверьте сеть' )"
         fi
         if [ -s "$ALPINE_DIAG" ]; then
             REP inf "$( [ "$VD_LANG" = "en" ] && echo 'Diagnostics:' || echo 'Диагностика:' )"
@@ -296,10 +308,10 @@ if [ "$PY_OK" = "0" ]; then
                     REP err "$( [ "$VD_LANG" = "en" ] && echo 'Retry failed' || echo 'Повторный поиск не удался' )"
                     ;;
                 2)
-                    REP inf "$( [ "$VD_LANG" = "en" ] && echo 'Trying to install any Python...' || echo 'Пробую установить любой Python...' )"
+                    REP inf "$( [ "$VD_LANG" = "en" ] && echo 'Trying any Python...' || echo 'Пробую установить любой Python...' )"
                     if find_alpine_any >/dev/null; then
                         REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'Installed Python older than 3.10, yt-dlp may work incorrectly' || echo 'Установлен Python старше 3.10, yt-dlp может работать некорректно' )"
-                        REP inf "$( [ "$VD_LANG" = "en" ] && echo 'Later run Settings → Update → Update ALL tools' || echo 'Позже запустите Настройки → Обновление → Обновить всё' )"
+                        REP inf "$( [ "$VD_LANG" = "en" ] && echo 'Later run menu 8 → Update ALL tools' || echo 'Позже запустите меню 8 → Обновить всё' )"
                         ALPINE_VER=$(cat "$ALPINE_VERSION_FILE" 2>/dev/null)
                         break
                     else
@@ -319,14 +331,23 @@ if [ "$PY_OK" = "0" ]; then
 fi
 
 # ==========================================================
-#  УСТАНОВКА БАЗОВЫХ ПАКЕТОВ
+# БАЗОВЫЕ ПАКЕТЫ
 # ==========================================================
 
 run_with_spinner "apk update" apk update >/dev/null 2>&1 || true
 
-for pkg in python3 py3-pip curl wget ca-certificates nodejs ffmpeg; do
+for pkg in python3 py3-pip py3-readline curl wget ca-certificates nodejs ffmpeg; do
     if apk info -e "$pkg" >/dev/null 2>&1; then
-        REP ok "$pkg $( [ "$VD_LANG" = "en" ] && echo 'already installed' || echo 'уже установлен' )"
+        if UPD=$(check_update_apk "$pkg"); then
+            REP inf "$pkg $( [ "$VD_LANG" = "en" ] && echo "update $UPD" || echo "обновление $UPD" )"
+            if run_with_spinner "Updating $pkg" apk add --no-cache --upgrade "$pkg"; then
+                REP ok "$pkg $( [ "$VD_LANG" = "en" ] && echo 'updated' || echo 'обновлён' )"
+            else
+                REP wrn "$pkg $( [ "$VD_LANG" = "en" ] && echo 'update failed' || echo 'не обновился' )"
+            fi
+        else
+            REP ok "$pkg $( [ "$VD_LANG" = "en" ] && echo 'already installed' || echo 'уже установлен' )"
+        fi
         continue
     fi
     if run_with_spinner "Installing $pkg" apk add --no-cache "$pkg"; then
@@ -339,13 +360,20 @@ done
 fix_ffmpeg
 
 # ==========================================================
-#  УСТАНОВКА PYTHON-ЗАВИСИМОСТЕЙ
+# PYTHON-ЗАВИСИМОСТИ
 # ==========================================================
 
 if command -v python3 >/dev/null 2>&1; then
     if ! python3 -c 'import yt_dlp, tqdm' >/dev/null 2>&1; then
         if ! run_with_spinner "pip: yt-dlp" python3 -m pip install -U --no-deps --break-system-packages yt-dlp tqdm; then
             run_with_spinner "pip: yt-dlp (retry)" python3 -m pip install -U --no-deps yt-dlp tqdm || true
+        fi
+    else
+        OLD_YTV=$(python3 -c 'import yt_dlp; print(yt_dlp.version.__version__)' 2>/dev/null || echo "")
+        run_with_spinner "pip: yt-dlp update check" python3 -m pip install -U --no-deps --break-system-packages yt-dlp tqdm >/dev/null 2>&1 || true
+        NEW_YTV=$(python3 -c 'import yt_dlp; print(yt_dlp.version.__version__)' 2>/dev/null || echo "")
+        if [ -n "$NEW_YTV" ] && [ "$OLD_YTV" != "$NEW_YTV" ]; then
+            REP ok "yt-dlp $( [ "$VD_LANG" = "en" ] && echo "updated $OLD_YTV -> $NEW_YTV" || echo "обновлён $OLD_YTV -> $NEW_YTV" )"
         fi
     fi
     if python3 -c 'import yt_dlp, tqdm' >/dev/null 2>&1; then
@@ -358,6 +386,8 @@ if command -v python3 >/dev/null 2>&1; then
         if ! run_with_spinner "pip: yt-dlp-ejs" python3 -m pip install -U --break-system-packages yt-dlp-ejs; then
             run_with_spinner "pip: yt-dlp-ejs (retry)" python3 -m pip install -U yt-dlp-ejs || true
         fi
+    else
+        run_with_spinner "pip: yt-dlp-ejs update check" python3 -m pip install -U --break-system-packages yt-dlp-ejs >/dev/null 2>&1 || true
     fi
     if python3 -c 'import yt_dlp_ejs' >/dev/null 2>&1; then
         REP ok "yt-dlp-ejs"
@@ -380,12 +410,12 @@ export PYTHONIOENCODING=utf-8
 export PYTHONHASHSEED=0
 
 # ==========================================================
-#  ГЛАВНЫЙ PYTHON-СКРИПТ
+# PYTHON-СКРИПТ
 # ==========================================================
 
 cat > /tmp/video_downloader.py << 'PYEOF'
 # ==========================================================
-#  ИМПОРТЫ
+# ИМПОРТЫ
 # ==========================================================
 import sys
 import os
@@ -404,7 +434,7 @@ import threading
 import urllib.request
 import urllib.error
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlparse, quote
 
 try:
     import yt_dlp
@@ -414,6 +444,12 @@ try:
     from tqdm import tqdm
 except ImportError:
     tqdm = None
+
+try:
+    import readline  # noqa: F401
+    HAS_READLINE = True
+except ImportError:
+    HAS_READLINE = False
 
 HOME = Path.home()
 LANG_FILE = HOME / ".video_downloader_lang"
@@ -425,9 +461,11 @@ UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like 
 RED, GREEN, YELLOW, BLUE, CYAN, NC = ("\033[0;31m", "\033[0;32m", "\033[1;33m",
                                       "\033[0;34m", "\033[0;36m", "\033[0m")
 
-# ==========================================================
-#  ГЛОБАЛЬНЫЕ КОНСТАНТЫ
-# ==========================================================
+ACTION_PIP_FILE = "/tmp/vd_pip_cmd"
+ACTION_UPDATE_ALL_FILE = "/tmp/vd_update_all"
+ACTION_REINSTALL_PY_FILE = "/tmp/vd_reinstall_py"
+ACTION_SELF_UPDATE_FILE = "/tmp/vd_self_update"
+
 DIRECT = ("youtube.com/", "youtu.be/", "rutube.ru/video/", "rutube.ru/play/", ".mp4", ".m3u8")
 SEEN_WARNINGS = set()
 SEEN_ERRORS = set()
@@ -442,8 +480,37 @@ class UserInterrupt(Exception):
     pass
 
 
+def signal_action(path, data=None):
+    try:
+        p = Path(path)
+        if data is not None:
+            p.write_text(data, encoding="utf-8")
+        else:
+            p.touch()
+        return True
+    except Exception as e:
+        err_line(f"signal_action: {e}")
+        return False
+
+
 # ==========================================================
-#  ФУНКЦИИ ВЫВОДА
+# ОЧИСТКА ВВОДА
+# ==========================================================
+ANSI_RE = re.compile(r'\x1b(?:\[[0-9;?]*[A-Za-z~]|O[A-Za-z])')
+CTRL_RE = re.compile(r'[\x00-\x08\x0b-\x1f\x7f]')
+
+
+def clean_input(s):
+    if s is None:
+        return None
+    s = ANSI_RE.sub('', s)
+    s = CTRL_RE.sub('', s)
+    s = s.replace('\r', '').replace('\n', ' ')
+    return s.strip()
+
+
+# ==========================================================
+# ВЫВОД
 # ==========================================================
 def c(t, col):
     return f"{col}{t}{NC}"
@@ -481,7 +548,7 @@ def header(title):
 
 
 # ==========================================================
-#  ЗАГРУЗКА ЯЗЫКА
+# ЯЗЫК
 # ==========================================================
 if LANG_FILE.exists():
     try:
@@ -494,7 +561,7 @@ else:
 
 
 # ==========================================================
-#  ОПРЕДЕЛЕНИЕ FFMPEG/FFPROBE
+# FFMPEG ОБНАРУЖЕНИЕ
 # ==========================================================
 def _detect_ffmpeg():
     cands = []
@@ -553,7 +620,7 @@ def refresh_ffmpeg():
 
 
 # ==========================================================
-#  СЛОВАРИ ПЕРЕВОДОВ
+# ПЕРЕВОДЫ
 # ==========================================================
 TEXTS = {
     "ru": {
@@ -763,6 +830,7 @@ TEXTS = {
         "debug_ffprobe": "ffprobe",
         "debug_node": "Node.js",
         "debug_js": "JS runtime",
+        "debug_readline": "readline",
         "debug_proxy": "Прокси",
         "debug_dns": "DNS серверы",
         "debug_ip": "IP версия",
@@ -983,6 +1051,7 @@ TEXTS = {
         "debug_ffprobe": "ffprobe",
         "debug_node": "Node.js",
         "debug_js": "JS runtime",
+        "debug_readline": "readline",
         "debug_proxy": "Proxy",
         "debug_dns": "DNS servers",
         "debug_ip": "IP version",
@@ -1004,7 +1073,7 @@ def T(key):
 
 
 # ==========================================================
-#  ВВОД С ТАЙМАУТОМ
+# ВВОД
 # ==========================================================
 def save_lang(nl):
     global LANG
@@ -1015,16 +1084,16 @@ def save_lang(nl):
         pass
 
 
-def flush_stdin():
+def ask_input(prompt, default=None):
     try:
-        import termios
-        termios.tcflush(sys.stdin, termios.TCIFLUSH)
-    except Exception:
-        pass
+        sys.stdout.flush()
+        raw = input(prompt)
+        return clean_input(raw)
+    except (EOFError, KeyboardInterrupt):
+        return default
 
 
 def ask_input_timeout(prompt, timeout=60, default=None):
-    flush_stdin()
     sys.stdout.write(prompt)
     sys.stdout.flush()
     try:
@@ -1032,25 +1101,20 @@ def ask_input_timeout(prompt, timeout=60, default=None):
     except Exception:
         return default
     if rlist:
-        line = sys.stdin.readline()
-        if line:
-            return line.rstrip("\n")
+        try:
+            raw = sys.stdin.readline()
+        except Exception:
+            return default
+        if raw:
+            return clean_input(raw)
         return default
-    else:
-        print()
-        return default
-
-
-def ask_input(prompt, default=None):
-    flush_stdin()
-    try:
-        sys.stdout.flush()
-        return input(prompt)
-    except (EOFError, KeyboardInterrupt):
-        return default
+    print()
+    return default
 
 
 def parse_multi(text, n):
+    if not text:
+        return []
     text = text.strip().lower()
     if text in ("all", "a", "*"):
         return list(range(1, n + 1))
@@ -1078,111 +1142,97 @@ def parse_multi(text, n):
 
 
 # ==========================================================
-#  ШАБЛОНЫ ПРОКСИ / DNS / DOH / YOUTUBE
+# URL-УТИЛИТЫ
+# ==========================================================
+def fix_url(u):
+    if not u:
+        return u
+    u = str(u).strip()
+    if not u:
+        return u
+    if "://" in u:
+        return u
+    if u.startswith("ytsearch"):
+        return u
+    if re.match(r'^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}(?:[/:?#]|$)', u):
+        return "https://" + u
+    return u
+
+
+def valid_url(u):
+    try:
+        p = urlparse(u)
+        return p.scheme in ("http", "https") and bool(p.netloc)
+    except (ValueError, TypeError):
+        return False
+
+
+def is_youtube(url):
+    try:
+        host = (urlparse(url).hostname or "").lower()
+    except Exception:
+        return False
+    return host.endswith(("youtube.com", "youtu.be", "youtube-nocookie.com"))
+
+
+def safe_name(s, limit=150):
+    s = re.sub(r'[\\/:*?"<>|%\n\r\t]+', "_", str(s)).strip()
+    return s[:limit] or "video"
+
+
+# ==========================================================
+# ШАБЛОНЫ
 # ==========================================================
 PROXY_TEMPLATES = [
-    "http://127.0.0.1:1082",
-    "http://127.0.0.1:8080",
-    "http://127.0.0.1:8081",
-    "http://127.0.0.1:3128",
-    "http://127.0.0.1:9098",
-    "http://198.18.0.3:8080",
-    "http://198.18.0.3:1082",
-    "socks5://127.0.0.1:1080",
-    "socks5h://127.0.0.1:1080",
-    "socks5://127.0.0.1:10808",
-    "socks5h://127.0.0.1:10808",
-    "socks5://127.0.0.1:1081",
-    "socks5h://127.0.0.1:1081",
-    "socks5://127.0.0.1:1086",
-    "socks5h://127.0.0.1:1086",
-    "socks5://127.0.0.1:9050",
-    "socks5h://127.0.0.1:9050",
-    "",
+    "http://127.0.0.1:1082", "http://127.0.0.1:8080", "http://127.0.0.1:8081",
+    "http://127.0.0.1:3128", "http://127.0.0.1:9098", "http://198.18.0.3:8080",
+    "http://198.18.0.3:1082", "socks5://127.0.0.1:1080", "socks5h://127.0.0.1:1080",
+    "socks5://127.0.0.1:10808", "socks5h://127.0.0.1:10808", "socks5://127.0.0.1:1081",
+    "socks5h://127.0.0.1:1081", "socks5://127.0.0.1:1086", "socks5h://127.0.0.1:1086",
+    "socks5://127.0.0.1:9050", "socks5h://127.0.0.1:9050", "",
 ]
 
 DNS_TEMPLATES = [
-    "1.1.1.1,8.8.8.8,94.140.14.14,9.9.9.9",
-    "1.1.1.1,1.0.0.1",
-    "8.8.8.8,8.8.4.4",
-    "94.140.14.14,94.140.15.15",
-    "9.9.9.9,149.112.112.112",
-    "208.67.222.222,208.67.220.220",
-    "76.76.2.0,76.76.10.0",
-    "77.88.8.8,77.88.8.1",
-    "223.5.5.5,223.6.6.6",
+    "1.1.1.1,8.8.8.8,94.140.14.14,9.9.9.9", "1.1.1.1,1.0.0.1", "8.8.8.8,8.8.4.4",
+    "94.140.14.14,94.140.15.15", "9.9.9.9,149.112.112.112", "208.67.222.222,208.67.220.220",
+    "76.76.2.0,76.76.10.0", "77.88.8.8,77.88.8.1", "223.5.5.5,223.6.6.6",
     "185.222.222.222,185.184.222.222",
     "1.1.1.1,1.0.0.1,8.8.8.8,8.8.4.4,9.9.9.9,149.112.112.112,94.140.14.14,94.140.15.15",
 ]
 
 DOH_TEMPLATES = [
-    "",
-    "https://cloudflare-dns.com/dns-query",
-    "https://dns.google/dns-query",
-    "https://dns.quad9.net/dns-query",
-    "https://dns.adguard-dns.com/dns-query",
-    "https://unfiltered.adguard-dns.com/dns-query",
-    "https://dns.comss.one/dns-query",
-    "https://dns.sb/dns-query",
-    "https://doh.libredns.gr/dns-query",
-    "https://dns.alidns.com/dns-query",
-    "https://1.1.1.1/dns-query",
-    "https://8.8.8.8/dns-query",
-    "https://9.9.9.9/dns-query",
-    "https://94.140.14.14/dns-query",
-    "https://doh.angry.im/dns-query",
-    "https://dns.aquilenet.fr/dns-query",
-    "https://nsec.arnor.org/dns-query",
+    "", "https://cloudflare-dns.com/dns-query", "https://dns.google/dns-query",
+    "https://dns.quad9.net/dns-query", "https://dns.adguard-dns.com/dns-query",
+    "https://unfiltered.adguard-dns.com/dns-query", "https://dns.comss.one/dns-query",
+    "https://dns.sb/dns-query", "https://doh.libredns.gr/dns-query", "https://dns.alidns.com/dns-query",
+    "https://1.1.1.1/dns-query", "https://8.8.8.8/dns-query", "https://9.9.9.9/dns-query",
+    "https://94.140.14.14/dns-query", "https://doh.angry.im/dns-query",
+    "https://dns.aquilenet.fr/dns-query", "https://nsec.arnor.org/dns-query",
 ]
 
 DOH_FALLBACK = [
-    "https://1.1.1.1/dns-query",
-    "https://1.0.0.1/dns-query",
-    "https://8.8.8.8/dns-query",
-    "https://8.8.4.4/dns-query",
-    "https://9.9.9.9/dns-query",
-    "https://dns.quad9.net/dns-query",
+    "https://1.1.1.1/dns-query", "https://1.0.0.1/dns-query", "https://8.8.8.8/dns-query",
+    "https://8.8.4.4/dns-query", "https://9.9.9.9/dns-query", "https://dns.quad9.net/dns-query",
     "https://cloudflare-dns.com/dns-query",
 ]
 
 YT_CLIENTS_TEMPLATES = [
-    "",
-    "tv,mweb",
-    "tv,ios",
-    "tv,android_vr",
-    "tv,web_safari,mweb,android_vr,ios",
-    "android_vr,web_safari",
-    "ios,android",
-    "web_safari",
-    "all",
+    "", "tv,mweb", "tv,ios", "tv,android_vr", "tv,web_safari,mweb,android_vr,ios",
+    "android_vr,web_safari", "ios,android", "web_safari", "all",
 ]
 
 # ==========================================================
-#  НАСТРОЙКИ
+# НАСТРОЙКИ
 # ==========================================================
 DEFAULT_SETTINGS = {
-    "video_codec": "iphone",
-    "audio_codec": "aac",
-    "max_height": 0,
-    "auto_convert": "ask",
-    "concurrent_fragments": 1,
-    "cookies_file": "",
-    "proxy": "",
-    "dns_mode": "auto",
+    "video_codec": "iphone", "audio_codec": "aac", "max_height": 0,
+    "auto_convert": "ask", "concurrent_fragments": 1, "cookies_file": "",
+    "proxy": "", "dns_mode": "auto",
     "dns_servers": "1.1.1.1,8.8.8.8,94.140.14.14,9.9.9.9",
-    "doh_url": "",
-    "doh_fallback": True,
-    "ip_version": "auto",
-    "verify_tls": True,
-    "preflight": True,
-    "socket_timeout": 30,
-    "retries": 10,
-    "yt_clients": "",
-    "js_runtime": "auto",
-    "remote_ejs": False,
-    "progress_width": 36,
-    "ask_rename": True,
-    "ask_fix": True,
+    "doh_url": "", "doh_fallback": True, "ip_version": "auto",
+    "verify_tls": True, "preflight": True, "socket_timeout": 30, "retries": 10,
+    "yt_clients": "", "js_runtime": "auto", "remote_ejs": False,
+    "progress_width": 36, "ask_rename": True, "ask_fix": True,
     "base_dir": "/root/VideoDownloader",
 }
 
@@ -1194,17 +1244,16 @@ CHOICES = {
 }
 
 INT_LIMITS = {
-    "max_height": (0, 8640),
-    "concurrent_fragments": (1, 16),
-    "socket_timeout": (5, 600),
-    "retries": (0, 50),
-    "progress_width": (10, 80),
+    "max_height": (0, 8640), "concurrent_fragments": (1, 16),
+    "socket_timeout": (5, 600), "retries": (0, 50), "progress_width": (10, 80),
 }
 
 GROUPS = [
-    ("grp_media", ["video_codec", "audio_codec", "max_height", "auto_convert", "concurrent_fragments", "cookies_file"]),
-    ("grp_network", ["proxy", "dns_mode", "dns_servers", "doh_url", "doh_fallback", "ip_version", "verify_tls", "preflight",
-                     "socket_timeout", "retries", "yt_clients", "js_runtime", "remote_ejs"]),
+    ("grp_media", ["video_codec", "audio_codec", "max_height", "auto_convert",
+                   "concurrent_fragments", "cookies_file"]),
+    ("grp_network", ["proxy", "dns_mode", "dns_servers", "doh_url", "doh_fallback",
+                     "ip_version", "verify_tls", "preflight", "socket_timeout",
+                     "retries", "yt_clients", "js_runtime", "remote_ejs"]),
     ("grp_interface", ["language", "progress_width", "ask_rename", "ask_fix", "base_dir"]),
 ]
 
@@ -1242,7 +1291,7 @@ def save_settings(s):
 SETTINGS = load_settings()
 
 # ==========================================================
-#  ПУТИ И ПАПКИ
+# ПУТИ
 # ==========================================================
 BASE_DIR = Path(SETTINGS["base_dir"])
 VIDEOS_DIR = BASE_DIR / "videos"
@@ -1275,7 +1324,7 @@ def ensure_dir():
 
 
 # ==========================================================
-#  DNS-РЕЗОЛВЕР
+# DNS
 # ==========================================================
 DNS_CACHE = {}
 DNS_STATE = {"order": None, "busy": False}
@@ -1486,7 +1535,7 @@ def reset_dns():
 
 
 # ==========================================================
-#  ПРЕДПРОВЕРКА СЕТИ
+# ПРЕДПРОВЕРКА СЕТИ
 # ==========================================================
 def tls_probe(host, ip, timeout=15):
     ctx = ssl.create_default_context() if SETTINGS["verify_tls"] else ssl._create_unverified_context()
@@ -1534,7 +1583,7 @@ def preflight(url):
 
 
 # ==========================================================
-#  УТИЛИТЫ
+# УТИЛИТЫ
 # ==========================================================
 NET_PATTERNS = (
     "name does not resolve", "name or service not known", "temporary failure in name resolution",
@@ -1580,10 +1629,12 @@ def confirm(prompt, default=False, timeout=None):
             if ans is None:
                 info_line(T("timeout_skip"))
                 return default
-            ans = (ans or "").strip().lower()
+            ans = ans.strip().lower()
         else:
-            flush_stdin()
-            ans = input(c(prompt + suffix, YELLOW)).strip().lower()
+            ans = ask_input(c(prompt + suffix, YELLOW))
+            if ans is None:
+                return False
+            ans = ans.strip().lower()
     except (EOFError, KeyboardInterrupt):
         return False
     if not ans:
@@ -1591,26 +1642,8 @@ def confirm(prompt, default=False, timeout=None):
     return ans in ("y", "yes", "д", "да")
 
 
-def valid_url(u):
-    try:
-        p = urlparse(u)
-        return p.scheme in ("http", "https") and bool(p.netloc)
-    except (ValueError, TypeError):
-        return False
-
-
-def is_youtube(url):
-    host = (urlparse(url).hostname or "").lower()
-    return host.endswith(("youtube.com", "youtu.be", "youtube-nocookie.com"))
-
-
-def safe_name(s, limit=150):
-    s = re.sub(r'[\\/:*?"<>|%\n\r\t]+', "_", str(s)).strip()
-    return s[:limit] or "video"
-
-
 # ==========================================================
-#  КОДЕКИ
+# КОДЕКИ
 # ==========================================================
 VIDEO_CODECS = {
     "iphone": {"label_key": "preset_iphone", "encoder": "libx264",
@@ -1653,7 +1686,7 @@ A_COMPAT = {"aac": ("aac", "mp4a"), "opus": ("opus",)}
 
 
 # ==========================================================
-#  КОДЕКИ / JS / EJS
+# КОДЕКИ / JS / EJS
 # ==========================================================
 def available_encoders():
     global _encoders_cache
@@ -1713,11 +1746,11 @@ def selector_chain(chosen):
     if not HAS_FFMPEG:
         return [f"b[ext=mp4]{h}", "b"]
     items = [chosen, default_selector(), f"bv*{h}+ba/b{h}", f"b[ext=mp4]{h}/b{h}", "b/w"]
-    return list(dict.fromkeys(items))
+    return list(dict.fromkeys([i for i in items if i]))
 
 
 # ==========================================================
-#  ЛОГГЕР
+# ЛОГГЕР
 # ==========================================================
 class Log:
     def __init__(self):
@@ -1758,7 +1791,7 @@ def report(e, lg):
 
 
 # ==========================================================
-#  ПРОГРЕСС-БАР
+# ПРОГРЕСС
 # ==========================================================
 class Progress:
     def __init__(self):
@@ -1792,7 +1825,7 @@ class Progress:
 
 
 # ==========================================================
-#  СПИННЕР
+# СПИННЕР PYTHON
 # ==========================================================
 class Spinner:
     def __init__(self, message="working"):
@@ -1822,7 +1855,7 @@ class Spinner:
 
 
 # ==========================================================
-#  YOUTUBE СТРАТЕГИИ И ОПЦИИ
+# YOUTUBE СТРАТЕГИИ
 # ==========================================================
 def parse_clients(text):
     groups = []
@@ -1887,7 +1920,7 @@ def first_entry(info):
 
 
 # ==========================================================
-#  ИЗВЛЕЧЕНИЕ ИНФОРМАЦИИ
+# ИЗВЛЕЧЕНИЕ
 # ==========================================================
 def get_info(url, strategy):
     if yt_dlp is None:
@@ -1924,7 +1957,7 @@ def extract_info_smart(url):
 
 
 # ==========================================================
-#  ЗАПУСК ЧЕРЕЗ МОДУЛЬ
+# ЗАПУСК YT-DLP
 # ==========================================================
 def run_module(url, selector, strategy, job, extra=None, outtmpl=None):
     if yt_dlp is None:
@@ -1948,9 +1981,6 @@ def run_module(url, selector, strategy, job, extra=None, outtmpl=None):
         pg.close()
 
 
-# ==========================================================
-#  ЗАПУСК ЧЕРЕЗ БИНАРНИК
-# ==========================================================
 def run_binary(url, selector, strategy, job, extra_flags=(), outtmpl=None):
     if not shutil.which("yt-dlp") and yt_dlp is None:
         return False, ""
@@ -2048,7 +2078,7 @@ def run_any(url, selector, strategy, job, extra=None, flags=(), outtmpl=None):
 
 
 # ==========================================================
-#  ФАЙЛЫ / СНИМКИ / ОЧИСТКА
+# ФАЙЛЫ / ОЧИСТКА
 # ==========================================================
 def snapshot(d):
     result = {}
@@ -2131,7 +2161,7 @@ def cleanup_junk(aggressive=False):
 
 
 # ==========================================================
-#  FFMPEG
+# FFMPEG ФУНКЦИИ
 # ==========================================================
 def get_duration(path):
     if not HAS_FFMPEG or not FFPROBE_BIN:
@@ -2331,7 +2361,7 @@ def convert_audio(src, akey):
 
 
 # ==========================================================
-#  ВЫБОР ФОРМАТА С ПРИОРИТЕТОМ
+# ВЫБОР ФОРМАТА
 # ==========================================================
 def select_format_list(info, priority="best"):
     if not isinstance(info, dict):
@@ -2382,7 +2412,7 @@ def select_format_list(info, priority="best"):
 
 
 # ==========================================================
-#  HTTP / RUTUBE
+# HTTP / RUTUBE
 # ==========================================================
 def make_opener():
     handlers = []
@@ -2455,7 +2485,7 @@ def rutube_download(url, job):
 
 
 # ==========================================================
-#  ВНЕШНЯЯ ЗАГРУЗКА
+# ВНЕШНЯЯ ЗАГРУЗКА
 # ==========================================================
 def external_download(url, info, job):
     if not isinstance(info, dict):
@@ -2542,7 +2572,7 @@ def external_download(url, info, job):
 
 
 # ==========================================================
-#  ВЫБОР ПРОКСИ / СЕТЬ
+# ПРОКСИ
 # ==========================================================
 def prompt_proxy():
     warn_line(T("net_help"))
@@ -2555,7 +2585,6 @@ def prompt_proxy():
     ch = ask_input(c(f"{T('choice')} [0]: ", YELLOW))
     if ch is None:
         return False
-    ch = ch.strip()
     v = ""
     if ch.isdigit() and 1 <= int(ch) <= len(PROXY_TEMPLATES):
         v = PROXY_TEMPLATES[int(ch) - 1]
@@ -2563,7 +2592,7 @@ def prompt_proxy():
         raw = ask_input(c(T("proxy_prompt") + ": ", YELLOW))
         if raw is None:
             return False
-        v = raw.strip()
+        v = raw
     if not v:
         return False
     if not re.match(r"^(https?|socks4a?|socks5h?)://\S+$", v, re.I):
@@ -2590,7 +2619,7 @@ def prepare_network(url):
 
 
 # ==========================================================
-#  ЦЕПОЧКА ЗАГРУЗКИ
+# ЦЕПОЧКА ЗАГРУЗКИ
 # ==========================================================
 def download_chain(url, job, chosen, info, win, allow_proxy=True):
     selectors = list(job["selectors"] or selector_chain(chosen))
@@ -2668,7 +2697,7 @@ def make_job(kind):
 
 
 # ==========================================================
-#  СКАЧИВАНИЕ
+# СКАЧИВАНИЕ
 # ==========================================================
 def attempt_download_video(url, priority="best"):
     if not valid_url(url):
@@ -2760,7 +2789,7 @@ def attempt_download_audio(url):
 
 
 # ==========================================================
-#  ФАЙЛОВЫЕ ОПЕРАЦИИ
+# ФАЙЛОВЫЕ ОПЕРАЦИИ
 # ==========================================================
 def move_to_fix(path):
     if not path or not path.exists():
@@ -2815,7 +2844,7 @@ def show_ready_and_rename(path, is_audio=False):
 
 
 # ==========================================================
-#  ПОИСК ВИДЕО
+# ПОИСК
 # ==========================================================
 def find_videos_on_page(page_url):
     info_line(f"{T('scanning')}: {trunc(page_url, 60)}")
@@ -2854,7 +2883,6 @@ def ask_priority():
     pch = ask_input(c(f"{T('choice')} [1]: ", YELLOW))
     if not pch:
         return "best"
-    pch = pch.strip()
     return {"2": "1080", "3": "720", "4": "480", "5": "audio"}.get(pch, "best")
 
 
@@ -2867,16 +2895,32 @@ def search_videos():
     print(f"  2. {T('search_rutube_url')}")
     print(f"  0. {T('fm_back')}")
     ch = ask_input(c(f"{T('choice')}: ", GREEN))
-    if ch is None:
+    if ch is None or ch in ("0", "q"):
         return
-    ch = ch.strip()
     if ch == "1":
         query = ask_input(c(f"{T('search_query')}: ", YELLOW))
-        if not query or not query.strip():
+        if not query:
             return
-        query = query.strip()
-        search_url = f"ytsearch10:{query}"
-        info_line(f"Search: {query}")
+        if valid_url(query):
+            video_url = query
+            priority = ask_priority()
+            downloaded = []
+            try:
+                if priority == "audio":
+                    ok, fp = attempt_download_audio(video_url)
+                else:
+                    ok, fp = attempt_download_video(video_url, priority)
+                if ok and fp:
+                    show_ready_and_rename(fp, is_audio=(priority == "audio"))
+                    downloaded.append(fp)
+            except UserInterrupt:
+                info_line(T("interrupted"))
+                return
+            if downloaded:
+                post_process_files(downloaded)
+            return
+        search_url = "ytsearch10:" + query
+        info_line(f"Search: {trunc(query, 60)}")
         o = base_opts(extract_flat=True, noplaylist=True)
         try:
             with yt_dlp.YoutubeDL(o) as ydl:
@@ -2885,6 +2929,7 @@ def search_videos():
             err_line(f"{type(e).__name__}: {e}")
             return
         entries = info.get("entries", []) if isinstance(info, dict) else []
+        entries = [e for e in entries if isinstance(e, dict)]
         if not entries:
             warn_line(T("no_videos"))
             return
@@ -2893,15 +2938,22 @@ def search_videos():
             title = e.get("title") or "(no title)"
             print(f"  {i}. {trunc(title, 60)}")
         ch = ask_input(c(f"{T('search_select')}: ", YELLOW))
-        if ch is None or not ch.strip():
+        if ch is None or not ch:
+            return
+        if not ch.isdigit():
+            err_line(T("invalid_choice"))
             return
         try:
-            idx = int(ch.strip()) - 1
+            idx = int(ch) - 1
             if idx < 0 or idx >= len(entries):
                 err_line(T("invalid_choice"))
                 return
             selected = entries[idx]
             video_url = selected.get("webpage_url") or selected.get("url")
+            if not video_url:
+                vid_id = selected.get("id")
+                if vid_id:
+                    video_url = f"https://www.youtube.com/watch?v={vid_id}"
             if video_url and not video_url.startswith("http"):
                 video_url = f"https://www.youtube.com/watch?v={video_url}"
             if not video_url:
@@ -2926,26 +2978,33 @@ def search_videos():
             err_line(T("invalid_choice"))
     elif ch == "2":
         url = ask_input("URL: ", YELLOW)
-        if url and url.strip():
-            priority = ask_priority()
-            downloaded = []
-            try:
-                if priority == "audio":
-                    ok, fp = attempt_download_audio(url.strip())
-                else:
-                    ok, fp = attempt_download_video(url.strip(), priority)
-                if ok and fp:
-                    show_ready_and_rename(fp, is_audio=(priority == "audio"))
-                    downloaded.append(fp)
-            except UserInterrupt:
-                info_line(T("interrupted"))
-                return
-            if downloaded:
-                post_process_files(downloaded)
+        if not url:
+            return
+        url = fix_url(url)
+        if not valid_url(url):
+            err_line(f"{T('invalid_url')}: {url}")
+            return
+        priority = ask_priority()
+        downloaded = []
+        try:
+            if priority == "audio":
+                ok, fp = attempt_download_audio(url)
+            else:
+                ok, fp = attempt_download_video(url, priority)
+            if ok and fp:
+                show_ready_and_rename(fp, is_audio=(priority == "audio"))
+                downloaded.append(fp)
+        except UserInterrupt:
+            info_line(T("interrupted"))
+            return
+        if downloaded:
+            post_process_files(downloaded)
+    else:
+        err_line(T("invalid_choice"))
 
 
 # ==========================================================
-#  ПОСТ-ОБРАБОТКА
+# ПОСТ-ОБРАБОТКА
 # ==========================================================
 def post_process_files(files):
     if not files:
@@ -2958,8 +3017,8 @@ def post_process_files(files):
         try:
             if SETTINGS["ask_rename"] and confirm(f"{T('rename_prompt')} '{trunc(f.name, 40)}'?", timeout=60):
                 new_name = ask_input_timeout(c(f"{T('fm_new_name')}: ", YELLOW), timeout=60)
-                if new_name and new_name.strip():
-                    rename_file(f, new_name.strip())
+                if new_name:
+                    rename_file(f, new_name)
             if SETTINGS["ask_fix"] and confirm(f"{T('move_fix_prompt')} '{trunc(f.name, 40)}'?", timeout=60):
                 move_to_fix(f)
         except (KeyboardInterrupt, EOFError):
@@ -2969,7 +3028,7 @@ def post_process_files(files):
 
 
 # ==========================================================
-#  ПЕРЕКОДИРОВАНИЕ
+# ПЕРЕКОДИРОВАНИЕ
 # ==========================================================
 def reencode_menu():
     header(T("menu_reencode"))
@@ -2982,7 +3041,6 @@ def reencode_menu():
     ch = ask_input(c(f"{T('choice')}: ", GREEN))
     if ch is None:
         return
-    ch = ch.strip()
     if ch == "1":
         files = list_files(VIDEOS_DIR)
         if not files:
@@ -2998,10 +3056,11 @@ def reencode_menu():
         for i, k in enumerate(keys, 1):
             print(f"  {i}. {T(VIDEO_CODECS[k]['label_key'])}")
         idx = ask_input(c(f"{T('choice')}: ", YELLOW))
-        if idx is None:
+        if not idx or not idx.isdigit():
+            err_line(T("invalid_choice"))
             return
         try:
-            vkey = keys[int(idx.strip()) - 1]
+            vkey = keys[int(idx) - 1]
         except (ValueError, IndexError):
             err_line(T("invalid_choice"))
             return
@@ -3023,10 +3082,11 @@ def reencode_menu():
         for i, k in enumerate(keys, 1):
             print(f"  {i}. {T(AUDIO_CODECS[k]['label_key'])}")
         idx = ask_input(c(f"{T('choice')}: ", YELLOW))
-        if idx is None:
+        if not idx or not idx.isdigit():
+            err_line(T("invalid_choice"))
             return
         try:
-            akey = keys[int(idx.strip()) - 1]
+            akey = keys[int(idx) - 1]
         except (ValueError, IndexError):
             err_line(T("invalid_choice"))
             return
@@ -3036,7 +3096,7 @@ def reencode_menu():
 
 
 # ==========================================================
-#  ФАЙЛОВЫЙ МЕНЕДЖЕР
+# ФАЙЛОВЫЙ МЕНЕДЖЕР
 # ==========================================================
 def list_files(directory):
     try:
@@ -3047,6 +3107,8 @@ def list_files(directory):
 
 
 def parse_numbers(text, max_index):
+    if not text:
+        raise ValueError
     text = text.strip().lower()
     if text in ("all", "a"):
         return list(range(1, max_index + 1))
@@ -3073,11 +3135,11 @@ def parse_numbers(text, max_index):
 
 def ask_numbers(prompt, count):
     v = ask_input(c(prompt, YELLOW))
-    if v is None:
+    if not v:
         err_line(T("invalid_choice"))
         return None
     try:
-        return parse_numbers(v.strip(), count)
+        return parse_numbers(v, count)
     except ValueError:
         err_line(T("invalid_choice"))
         return None
@@ -3099,8 +3161,7 @@ def file_manager_choose_dir():
         ch = ask_input(c(f"{T('choice')}: ", GREEN))
         if ch is None:
             return None
-        ch = ch.strip().lower()
-        if ch in ("0", "q"):
+        if ch in ("0", "q", ""):
             return None
         if ch in ("1", "2", "3"):
             return {"1": VIDEOS_DIR, "2": AUDIO_DIR, "3": FIX_DIR}[ch]
@@ -3128,7 +3189,6 @@ def file_manager():
         ch = ask_input(c(f"{T('choice')}: ", GREEN))
         if ch is None:
             return
-        ch = ch.strip().lower()
         if ch in ("0", "q"):
             return
         if ch == "7":
@@ -3185,14 +3245,14 @@ def file_manager():
         elif ch == "4":
             target = files[nums[0] - 1]
             new_name = ask_input(c(f"{T('fm_new_name')}: ", YELLOW))
-            if new_name and new_name.strip():
-                rename_file(target, new_name.strip())
+            if new_name:
+                rename_file(target, new_name)
         elif ch == "5":
             move_to_fix(files[nums[0] - 1])
 
 
 # ==========================================================
-#  МЕНЮ ЯЗЫКА
+# ЯЗЫК МЕНЮ
 # ==========================================================
 def language_menu():
     while True:
@@ -3201,7 +3261,6 @@ def language_menu():
         ch = ask_input(c(f"{T('choice')}: ", GREEN))
         if ch is None:
             return
-        ch = ch.strip().lower()
         if ch in ("0", "q"):
             return
         if ch in ("1", "2"):
@@ -3211,7 +3270,7 @@ def language_menu():
 
 
 # ==========================================================
-#  НАСТРОЙКИ
+# НАСТРОЙКИ МЕНЮ
 # ==========================================================
 def setting_display(key):
     if key == "language":
@@ -3237,10 +3296,10 @@ def pick_from(title, labels, current_index):
     for i, lb in enumerate(labels, 1):
         print(f"  {i}. {lb}{' [*]' if i - 1 == current_index else ''}")
     ch = ask_input(c(f"{T('choice')}: ", YELLOW))
-    if ch is None:
+    if not ch or not ch.isdigit():
         return None
     try:
-        idx = int(ch.strip()) - 1
+        idx = int(ch) - 1
     except ValueError:
         return None
     return idx if 0 <= idx < len(labels) else None
@@ -3258,15 +3317,12 @@ def edit_with_templates(key, templates, current_value, on_set=None, multi=False)
     ch = ask_input(c(f"{T('choice')} [0]: ", YELLOW))
     if ch is None:
         return False
-    ch = ch.strip()
     new_val = None
     if not ch or ch == "0":
         raw = ask_input(c(f"{T('set_' + key)} [{current_value or T('empty')}]\n{T('set_enter_value')}: ", YELLOW))
-        if raw is None or not raw.strip():
+        if not raw:
             return False
-        new_val = raw.strip()
-        if new_val == "-":
-            new_val = ""
+        new_val = raw if raw != "-" else ""
     elif ch.isdigit() and 1 <= int(ch) <= len(templates):
         new_val = templates[int(ch) - 1]
     elif multi:
@@ -3351,9 +3407,8 @@ def edit_setting(key):
         SETTINGS[key] = keys[idx]
     elif isinstance(v, int):
         raw = ask_input(c(f"{title} [{v}]: ", YELLOW))
-        if raw is None or not raw.strip():
+        if not raw:
             return
-        raw = raw.strip()
         lo, hi = INT_LIMITS.get(key, (0, 10 ** 9))
         if not raw.isdigit() or not lo <= int(raw) <= hi:
             err_line(f"{T('set_bad_value')} ({lo}-{hi})")
@@ -3361,12 +3416,9 @@ def edit_setting(key):
         SETTINGS[key] = int(raw)
     else:
         raw = ask_input(c(f"{title} [{v or T('empty')}]\n{T('set_enter_value')}: ", YELLOW))
-        if raw is None or not raw.strip():
+        if not raw:
             return
-        raw = raw.strip()
-        if raw == "-":
-            raw = ""
-        SETTINGS[key] = raw
+        SETTINGS[key] = raw if raw != "-" else ""
     save_settings(SETTINGS)
     if key == "base_dir":
         ensure_dir()
@@ -3384,7 +3436,6 @@ def settings_group_menu(group_key, keys):
         ch = ask_input(c(f"{T('choice')}: ", GREEN))
         if ch is None:
             return
-        ch = ch.strip().lower()
         if ch in ("0", "q"):
             return
         if ch.isdigit() and 1 <= int(ch) <= len(keys):
@@ -3403,7 +3454,6 @@ def settings_menu():
         ch = ask_input(c(f"{T('choice')}: ", GREEN))
         if ch is None:
             return
-        ch = ch.strip().lower()
         if ch in ("0", "q"):
             return
         if ch.isdigit() and 1 <= int(ch) <= len(GROUPS):
@@ -3421,39 +3471,41 @@ def settings_menu():
 
 
 # ==========================================================
-#  ОБНОВЛЕНИЕ YT-DLP / ИНСТРУМЕНТОВ
+# ОБНОВЛЕНИЕ
 # ==========================================================
 def trigger_pip(args):
-    Path("/tmp/vd_pip_cmd").write_text(" ".join(args), encoding="utf-8")
-    sys.exit(98js)
+    signal_action(ACTION_PIP_FILE, " ".join(args))
+    return True
 
 
 def update_menu():
-    header(T("upd_title_r"))
-    printuntime(f"  ()1. {T('upd_stable') or}")
-    print(f"  2. {T('upd_night Tly')}")
+    header(T("upd_title"))
+    print(f"  1. {T('upd_stable')}")
+    print(f"  2. {T('upd_nightly')}")
     print(f"  3. {T('upd_ejs')}")
     print(f"  4. {T('upd_all_tools')}")
     print(f"  5. {T('upd_reinstall_python')}")
     print(f"  0. {T('fm_back')}")
     ch = ask_input(c(f"{T('choice')}: ", GREEN))
     if ch is None:
-        return
-    ch = ch.strip().lower()
+        return False
     if ch == "1":
-        trigger_pip(["yt-dlp", "tqdm"])
+        return trigger_pip(["yt-dlp", "tqdm"])
     elif ch == "2":
-        trigger_pip(["--pre", "yt-dlp", "tqdm"])
+        return trigger_pip(["--pre", "yt-dlp", "tqdm"])
     elif ch == "3":
-        trigger_pip(["yt-dlp-ejs"])
+        return trigger_pip(["yt-dlp-ejs"])
     elif ch == "4":
-        sys.exit(97)
+        signal_action(ACTION_UPDATE_ALL_FILE)
+        return True
     elif ch == "5":
-        sys.exit(96)
+        signal_action(ACTION_REINSTALL_PY_FILE)
+        return True
+    return False
 
 
 # ==========================================================
-#  САМООБНОВЛЕНИЕ
+# САМООБНОВЛЕНИЕ
 # ==========================================================
 def check_remote_version():
     if not UPDATE_URL:
@@ -3504,7 +3556,7 @@ def self_update_menu():
 
 
 # ==========================================================
-#  ДИАГНОСТИКА
+# ДИАГНОСТИКА
 # ==========================================================
 def diag_hosts():
     return ["rutube.ru", "www.youtube.com", "i.ytimg.com", "redirector.googlevideo.com", "www.google.com"]
@@ -3517,7 +3569,8 @@ def diagnostics():
     print(f"  yt-dlp {getattr(getattr(yt_dlp, 'version', None), '__version__', T('ytdlp_missing'))}")
     print(f"  yt-dlp-ejs: {T('on') if has_ejs() else T('off')}")
     print(f"  ffmpeg: {FFMPEG_BIN or T('ffmpeg_missing')}")
-    print(f"  JS: {('js_none')}")
+    print(f"  JS: {js_runtime() or T('js_none')}")
+    print(f"  readline: {T('on') if HAS_READLINE else T('off')}")
     print(f"  proxy: {SETTINGS['proxy'] or T('empty')}")
     print(f"  DNS mode: {SETTINGS['dns_mode']}")
     print(f"  IP: {SETTINGS['ip_version']}")
@@ -3569,7 +3622,7 @@ def diagnostics():
 
 
 # ==========================================================
-#  ОТЛАДКА
+# ОТЛАДКА
 # ==========================================================
 def debug_menu():
     header(T("debug_title"))
@@ -3581,6 +3634,7 @@ def debug_menu():
     node = shutil.which("node")
     print(f"{T('debug_node')}: {node or 'not found'}")
     print(f"{T('debug_js')}: {js_runtime() or T('js_none')}")
+    print(f"{T('debug_readline')}: {T('on') if HAS_READLINE else T('off')}")
     print(f"{T('debug_proxy')}: {SETTINGS['proxy'] or T('empty')}")
     print(f"{T('debug_dns')}: {SETTINGS['dns_servers']}")
     print(f"{T('debug_ip')}: {SETTINGS['ip_version']}")
@@ -3590,7 +3644,7 @@ def debug_menu():
 
 
 # ==========================================================
-#  СКАЧИВАНИЕ СПИСКА ССЫЛОК
+# ПРОЦЕСС ССЫЛОК
 # ==========================================================
 def download_one(url, audio_only, priority="best"):
     if audio_only or priority == "audio":
@@ -3608,9 +3662,10 @@ def process_links(links, audio_only=False, priority="best"):
         audio_only = True
     downloaded = []
     try:
-        for url in links:
+        for raw_url in links:
+            url = fix_url(raw_url)
             if not valid_url(url):
-                err_line(f"{T('invalid_url')}: {url}")
+                err_line(f"{T('invalid_url')}: {raw_url}")
                 continue
             if audio_only or any(m in url.lower() for m in DIRECT):
                 fp = download_one(url, audio_only, priority)
@@ -3632,26 +3687,27 @@ def process_links(links, audio_only=False, priority="best"):
             ch = ask_input(c(f"{T('number_or_all')}: ", YELLOW))
             if ch is None:
                 continue
-            ch = ch.strip().lower()
             if ch == "all":
                 for u in found:
                     fp = download_one(u, False, priority)
                     if fp:
                         downloaded.append(fp)
-            else:
+            elif ch.isdigit():
                 try:
                     fp = download_one(found[int(ch) - 1], False, priority)
                     if fp:
                         downloaded.append(fp)
                 except (ValueError, IndexError):
                     err_line(T("invalid_choice"))
+            else:
+                err_line(T("invalid_choice"))
     except UserInterrupt:
         info_line(T("interrupted"))
     return downloaded
 
 
 # ==========================================================
-#  ГЛАВНОЕ МЕНЮ
+# ГЛАВНОЕ МЕНЮ
 # ==========================================================
 def main_menu():
     ensure_dir()
@@ -3659,7 +3715,10 @@ def main_menu():
     refresh_ffmpeg()
     if not HAS_FFMPEG:
         warn_line(T("no_ffmpeg_warn"))
+    if not HAS_READLINE:
+        warn_line("readline not available, editing may misbehave. Run: apk add py3-readline")
     while True:
+        SEEN_ERRORS.clear()
         header(T("app_title"))
         print(c(f"{T('videos_dir')}: {VIDEOS_DIR}", CYAN))
         print(c(f"{T('audio_dir')}: {AUDIO_DIR}", CYAN))
@@ -3672,7 +3731,6 @@ def main_menu():
         if ch is None:
             print(c(f"\n[+] {T('stopped')}", GREEN))
             break
-        ch = ch.strip().lower()
         if ch in ("0", "q", "quit", "exit"):
             ok_line(T("menu_exit"))
             break
@@ -3691,10 +3749,12 @@ def main_menu():
         elif ch == "7":
             diagnostics()
         elif ch == "8":
-            update_menu()
+            if update_menu():
+                return
         elif ch == "9":
             if self_update_menu():
-                sys.exit(99)
+                signal_action(ACTION_SELF_UPDATE_FILE)
+                return
         elif ch == "10":
             debug_menu()
         elif ch in ("1", "2"):
@@ -3705,7 +3765,6 @@ def main_menu():
                 line = ask_input(c("> ", GREEN))
                 if line is None:
                     break
-                line = line.strip()
                 if not line or line.lower() == "q":
                     break
                 links.append(line)
@@ -3725,7 +3784,6 @@ def main_menu():
 
 
 def main():
-    argv = sys.argv[1:]
     order = os.environ.get("VD_DNS_ORDER")
     if order:
         parsed = [x for x in order.split(",") if x in ("system", "udp", "doh")]
@@ -3742,41 +3800,26 @@ if __name__ == "__main__":
 PYEOF
 
 chmod 700 /tmp/video_downloader.py
+
+# ==========================================================
+# ПРОВЕРКА СИНТАКСИСА
+# ==========================================================
+
+if ! python3 -c 'compile(open("/tmp/video_downloader.py", encoding="utf-8").read(), "vdd", "exec")' 2>/dev/null; then
+    REP err "$( [ "$VD_LANG" = "en" ] && echo 'Syntax error in generated Python code' || echo 'Синтаксическая ошибка в сгенерированном Python' )"
+    python3 -c 'compile(open("/tmp/video_downloader.py", encoding="devutf-8").read(), "vdd", "exec")' /null2>&1 | head -8 
+    REP inf "$(2 [ "$VD_LANG" = "en">& ] && echo 'Re1-download the script from source' || echo 'Скачайте скрипт заново из источника' )"
+    exit 1
+fi
+
 python3 /tmp/video_downloader.py
 CODE=$?
 
 # ==========================================================
-#  ОБРАБОТКА СПЕЦИАЛЬНЫХ КОДОВ ВЫХОДА
+# ДЕЙСТВИЯ ПО МАРКЕРАМ
 # ==========================================================
 
-# 96: переустановить Python — сброс кэша и повторный find_alpine
-if [ $CODE -eq 96 ]; then
-    REP inf "$( [ "$VD_LANG" = "en" ] && echo 'Reinstalling Python via fresh repos...' || echo 'Переустановка Python через свежие репозитории...' )"
-    rm -f "$ALPINE_VERSION_FILE"
-    exec sh "$0"
-fi
-
-# 97: обновить все инструменты (apk + pip + репозитории)
-if [ $CODE -eq 97 ]; then
-    REP inf "$( [ "$VD_LANG" = "en" ] && echo 'Updating all tools...' || echo 'Обновление всех инструментов...' )"
-    rm -f "$ALPINE_VERSION_FILE"
-    NEW_VER=$(find_alpine)
-    if [ -n "$NEW_VER" ]; then
-        REP ok "Alpine $NEW_VER"
-    else
-        REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'Repo refresh failed, using current repositories' || echo 'Обновление репозиториев не удалось, использую текущие' )"
-    fi
-    run_with_spinner "apk update" apk update >/dev/null 2>&1 || true
-    run_with_spinner "apk upgrade" apk upgrade >/dev/null 2>&1 || true
-    if ! run_with_spinner "pip: upgrade all" python3 -m pip install -U --no-deps --break-system-packages yt-dlp tqdm yt-dlp-ejs; then
-        run_with_spinner "pip: upgrade all (retry)" python3 -m pip install -U --no-deps yt-dlp tqdm yt-dlp-ejs || true
-    fi
-    REP ok "$( [ "$VD_LANG" = "en" ] && echo 'Update complete, restarting...' || echo 'Обновление завершено, перезапуск...' )"
-    exec sh "$0"
-fi
-
-# 98: pip install из меню yt-dlp
-if [ $CODE -eq 98 ] && [ -f /tmp/vd_pip_cmd ]; then
+if [ -f /tmp/vd_pip_cmd ]; then
     PIPE_ARGS=$(cat /tmp/vd_pip_cmd)
     rm -f /tmp/vd_pip_cmd
     say "${BLUE}[*] pip install $PIPE_ARGS${NC}"
@@ -3788,8 +3831,34 @@ if [ $CODE -eq 98 ] && [ -f /tmp/vd_pip_cmd ]; then
     exec sh "$0"
 fi
 
-# 99: самообновление скрипта
-if [ $CODE -eq 99 ]; then
+if [ -f /tmp/vd_update_all ]; then
+    rm -f /tmp/vd_update_all
+    REP inf "$( [ "$VD_LANG" = "en" ] && echo 'Updating all tools...' || echo 'Обновление всех инструментов...' )"
+    rm -f "$ALPINE_VERSION_FILE"
+    NEW_VER=$(find_alpine)
+    if [ -n "$NEW_VER" ]; then
+        REP ok "Alpine $NEW_VER"
+    else
+        REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'Repo refresh failed, using current repositories' || echo 'Обновление репозиториев не удалось, использую текущие' )"
+    fi
+    run_with_spinner "apk update" apk update >/dev/null 2>&1 || true
+    run_with_spinner "apk upgrade" apk upgrade >/ || true
+    if ! run_with_spinner "pip: upgrade all" python3 -m pip install -U --no-deps --break-system-packages yt-dlp tqdm yt-dlp-ejs; then
+        run_with_spinner "pip: upgrade all (retry)" python3 -m pip install -U --no-deps yt-dlp tqdm yt-dlp-ejs || true
+    fi
+    REP ok "$( [ "$VD_LANG" = "en" ] && echo 'Update complete, restarting...' || echo 'Обновление завершено, перезапуск...' )"
+    exec sh "$0"
+fi
+
+if [ -f /tmp/vd_reinstall_py ]; then
+    rm -f /tmp/vd_reinstall_py
+    REP inf "$( [ "$VD_LANG" = "en" ] && echo 'Reinstalling Python via fresh repos...' || echo 'Переустановка Python через свежие репозитории...' )"
+    rm -f "$ALPINE_VERSION_FILE"
+    exec sh "$0"
+fi
+
+if [ -f /tmp/vd_self_update ]; then
+    rm -f /tmp/vd_self_update
     say "${GREEN}[+] Скрипт обновлён, перезапуск...${NC}"
     exec sh "$0"
 fi
