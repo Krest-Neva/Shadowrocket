@@ -8,6 +8,7 @@ set -u
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; CYAN='\033[0;36m'; NC='\033[0m'
 say() { printf '%b\n' "$1"; }
+msg2() { if [ "$VD_LANG" = "en" ]; then say "$1"; else say "$2"; fi; }
 
 printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\nnameserver 94.140.14.14\nnameserver 9.9.9.9\n' > /etc/resolv.conf 2>/dev/null
 
@@ -22,6 +23,7 @@ export VD_UPDATE_URL="https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/
 
 LANG_FILE="$HOME/.video_downloader_lang"
 ALPINE_VERSION_FILE="$HOME/.video_downloader_alpine_version"
+ALPINE_DIAG="/tmp/vd_alpine_diag"
 
 if [ -f "$LANG_FILE" ]; then
     VD_LANG=$(cat "$LANG_FILE" 2>/dev/null)
@@ -54,6 +56,10 @@ REP() {
 # ==========================================================
 #  ПРЕДУПРЕЖДЕНИЕ О ФИКТИВНОЙ ГЕОЛОКАЦИИ
 # ==========================================================
+
+msg2 "Requesting dummy geolocation to keep iSH running in background..." \
+     "Фиктивно запрашиваю геолокацию для стабильной работы в фоне..." \
+     | xargs -0 printf "${BLUE}[*] %s${NC}\n" 2>/dev/null || true
 
 if [ "$VD_LANG" = "en" ]; then
     REP inf "Requesting dummy geolocation to keep iSH running in background..."
@@ -90,6 +96,10 @@ run_with_spinner() {
         i=$((i + 1))
         sleep 0.15
     done
+    if [ "$i" = "0" ]; then
+        printf '\r%s %s... ' "$(printf '%s' "$frames" | cut -c1)" "$msg" >&2
+        sleep 0.25
+    fi
     wait "$pid" 2>/dev/null
     rc=$?
     printf '\r\033[K' >&2
@@ -122,34 +132,72 @@ check_python() {
     return 0
 }
 
+# Внутренняя реализация попытки версии (для run_with_spinner)
+try_alpine_impl() {
+    ver=$1
+    if ! set_repos "$ver"; then
+        return 1
+    fi
+    apk add --no-cache --upgrade python3 >/dev/null 2>&1 || \
+    apk add --no-cache python3 >/dev/null 2>&1
+    check_python
+}
+
+# Внутренняя реализация fallback — установить ЛЮБОЙ Python
+try_alpine_any_impl() {
+    ver=$1
+    if ! set_repos "$ver"; then
+        return 1
+    fi
+    apk add --no-cache --upgrade python3 >/dev/null 2>&1 || \
+    apk add --no-cache python3 >/dev/null 2>&1
+    command -v python3 >/dev/null 2>&1
+}
+
+# ==========================================================
+#  ПОИСК ALPINE С PYTHON 3.10+
+# ==========================================================
+
 find_alpine() {
+    : > "$ALPINE_DIAG"
+
     if [ -f "$ALPINE_VERSION_FILE" ]; then
         saved=$(cat "$ALPINE_VERSION_FILE" 2>/dev/null)
         if [ -n "$saved" ]; then
-            if set_repos "$saved"; then
-                apk add --no-cache python3 >/dev/null 2>&1
-                if check_python; then
-                    echo "$saved"
-                    return 0
-                fi
-            fi
-        fi
-    fi
-    for ver in 3.18 3.19 3.17 3.20 3.16; do
-        if set_repos "$ver"; then
-            apk add --no-cache python3 >/dev/null 2>&1
-            if check_python; then
-                echo "$ver" > "$ALPINE_VERSION_FILE"
-                echo "$ver"
+            if run_with_spinner "Alpine $saved (cached)" try_alpine_impl "$saved"; then
+                echo "$saved"
                 return 0
             fi
+            echo "Alpine $saved (cached) FAILED" >> "$ALPINE_DIAG"
         fi
+    fi
+
+    # 3.19 идёт первой — это версия с рабочим Python 3.11.12
+    for ver in 3.19 3.20 3.21 3.18 3.22 3.17 3.16; do
+        if run_with_spinner "Alpine $ver" try_alpine_impl "$ver"; then
+            echo "$ver" > "$ALPINE_VERSION_FILE"
+            echo "$ver"
+            return 0
+        fi
+        echo "Alpine $ver FAILED" >> "$ALPINE_DIAG"
+    done
+    return 1
+}
+
+find_alpine_any() {
+    for ver in 3.15 3.14 3.13; do
+        if run_with_spinner "Alpine $ver (any Python)" try_alpine_any_impl "$ver"; then
+            echo "$ver" > "$ALPINE_VERSION_FILE"
+            echo "$ver"
+            return 0
+        fi
+        echo "Alpine $ver (any) FAILED" >> "$ALPINE_DIAG"
     done
     return 1
 }
 
 # ==========================================================
-#  LD_PRELOAD-ХАК ДЛЯ FFMPEG (ОБХОД BAD SYSTEM CALL)
+#  LD_PRELOAD-ХАК ДЛЯ FFMPEG
 # ==========================================================
 
 fix_ffmpeg() {
@@ -216,21 +264,62 @@ if command -v python3 >/dev/null 2>&1; then
 fi
 
 if [ "$PY_OK" = "0" ]; then
-    if [ "$VD_LANG" = "en" ]; then
-        REP inf "Finding working Alpine version with Python 3.10+..."
-    else
-        REP inf "Поиск рабочей версии Alpine с Python 3.10+..."
-    fi
+    REP inf "$( [ "$VD_LANG" = "en" ] && echo 'Finding working Alpine version with Python 3.10+...' || echo 'Поиск рабочей версии Alpine с Python 3.10+...' )"
+    ALPINE_START=$(date +%s)
     ALPINE_VER=$(find_alpine)
+    ALPINE_END=$(date +%s)
+    ALPINE_ELAPSED=$((ALPINE_END - ALPINE_START))
+
     if [ -z "$ALPINE_VER" ]; then
-        REP err "$( [ "$VD_LANG" = "en" ] && echo 'No working Alpine version found' || echo 'Не найдено рабочей версии Alpine' )"
-        exit 1
+        REP err "$( [ "$VD_LANG" = "en" ] && echo 'No Alpine version found with Python 3.10+' || echo 'Не найдено версии Alpine с Python 3.10+' )"
+        if [ "$ALPINE_ELAPSED" -lt 3 ]; then
+            REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'Search finished suspiciously fast — check network connection' || echo 'Поиск завершился подозрительно быстро — проверьте подключение к сети' )"
+        fi
+        if [ -s "$ALPINE_DIAG" ]; then
+            REP inf "$( [ "$VD_LANG" = "en" ] && echo 'Diagnostics:' || echo 'Диагностика:' )"
+            sed 's/^/    /' "$ALPINE_DIAG"
+        fi
+
+        while true; do
+            say ""
+            say "  1 - $( [ "$VD_LANG" = "en" ] && echo 'Retry search' || echo 'Повторить поиск' )"
+            say "  2 - $( [ "$VD_LANG" = "en" ] && echo 'Install any Python (may be older than 3.10)' || echo 'Установить любой Python (может быть старше 3.10)' )"
+            say "  0 - $( [ "$VD_LANG" = "en" ] && echo 'Exit' || echo 'Выход' )"
+            printf '%s' "$( [ "$VD_LANG" = "en" ] && echo 'Choice [0]: ' || echo 'Выбор [0]: ' )"
+            IFS= read -r FB_CHOICE
+            case "$FB_CHOICE" in
+                1)
+                    ALPINE_VER=$(find_alpine)
+                    if [ -n "$ALPINE_VER" ]; then
+                        break
+                    fi
+                    REP err "$( [ "$VD_LANG" = "en" ] && echo 'Retry failed' || echo 'Повторный поиск не удался' )"
+                    ;;
+                2)
+                    REP inf "$( [ "$VD_LANG" = "en" ] && echo 'Trying to install any Python...' || echo 'Пробую установить любой Python...' )"
+                    if find_alpine_any >/dev/null; then
+                        REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'Installed Python older than 3.10, yt-dlp may work incorrectly' || echo 'Установлен Python старше 3.10, yt-dlp может работать некорректно' )"
+                        REP inf "$( [ "$VD_LANG" = "en" ] && echo 'Later run Settings → Update → Update ALL tools' || echo 'Позже запустите Настройки → Обновление → Обновить всё' )"
+                        ALPINE_VER=$(cat "$ALPINE_VERSION_FILE" 2>/dev/null)
+                        break
+                    else
+                        REP err "$( [ "$VD_LANG" = "en" ] && echo 'Could not install any Python' || echo 'Не удалось установить Python' )"
+                    fi
+                    ;;
+                *)
+                    exit 1
+                    ;;
+            esac
+        done
     fi
-    REP ok "$( [ "$VD_LANG" = "en" ] && echo "Alpine $ALPINE_VER works" || echo "Alpine $ALPINE_VER работает" )"
+
+    if [ -n "$ALPINE_VER" ]; then
+        REP ok "$( [ "$VD_LANG" = "en" ] && echo "Alpine $ALPINE_VER works" || echo "Alpine $ALPINE_VER работает" )"
+    fi
 fi
 
 # ==========================================================
-#  УСТАНОВКА БАЗОВЫХ ПАКЕТОВ СО СПИННЕРОМ
+#  УСТАНОВКА БАЗОВЫХ ПАКЕТОВ
 # ==========================================================
 
 run_with_spinner "apk update" apk update >/dev/null 2>&1 || true
@@ -255,8 +344,9 @@ fix_ffmpeg
 
 if command -v python3 >/dev/null 2>&1; then
     if ! python3 -c 'import yt_dlp, tqdm' >/dev/null 2>&1; then
-        run_with_spinner "pip: yt-dlp" python3 -m pip install -U --no-deps --break-system-packages yt-dlp tqdm >/dev/null 2>&1 \
-            || python3 -m pip install -U --no-deps yt-dlp tqdm >/dev/null 2>&1
+        if ! run_with_spinner "pip: yt-dlp" python3 -m pip install -U --no-deps --break-system-packages yt-dlp tqdm; then
+            run_with_spinner "pip: yt-dlp (retry)" python3 -m pip install -U --no-deps yt-dlp tqdm || true
+        fi
     fi
     if python3 -c 'import yt_dlp, tqdm' >/dev/null 2>&1; then
         YTV=$(python3 -c 'import yt_dlp; print(yt_dlp.version.__version__)' 2>/dev/null || echo "?")
@@ -265,8 +355,9 @@ if command -v python3 >/dev/null 2>&1; then
         REP err "yt-dlp not installed"
     fi
     if ! python3 -c 'import yt_dlp_ejs' >/dev/null 2>&1; then
-        run_with_spinner "pip: yt-dlp-ejs" python3 -m pip install -U --break-system-packages yt-dlp-ejs >/dev/null 2>&1 \
-            || python3 -m pip install -U yt-dlp-ejs >/dev/null 2>&1
+        if ! run_with_spinner "pip: yt-dlp-ejs" python3 -m pip install -U --break-system-packages yt-dlp-ejs; then
+            run_with_spinner "pip: yt-dlp-ejs (retry)" python3 -m pip install -U yt-dlp-ejs || true
+        fi
     fi
     if python3 -c 'import yt_dlp_ejs' >/dev/null 2>&1; then
         REP ok "yt-dlp-ejs"
@@ -474,7 +565,7 @@ TEXTS = {
         "menu_files": "Управление файлами",
         "menu_settings": "Настройки",
         "menu_diag": "Диагностика сети",
-        "menu_update": "Обновить yt-dlp",
+        "menu_update": "Обновить yt-dlp / инструменты",
         "menu_selfupdate": "Обновить скрипт с GitHub",
         "menu_debug": "Отладка (все версии)",
         "menu_exit": "Выход (q)",
@@ -641,10 +732,12 @@ TEXTS = {
         "diag_proxy_socks": "SOCKS проверяется при загрузке",
         "diag_env": "Окружение",
         "diag_press": "Enter — продолжить",
-        "upd_title": "Обновление yt-dlp",
-        "upd_stable": "Стабильная",
-        "upd_nightly": "Nightly",
+        "upd_title": "Обновление yt-dlp / инструментов",
+        "upd_stable": "yt-dlp стабильная",
+        "upd_nightly": "yt-dlp Nightly",
         "upd_ejs": "Только yt-dlp-ejs",
+        "upd_all_tools": "Обновить ВСЁ (apk upgrade + pip + репозитории)",
+        "upd_reinstall_python": "Переустановить Python (свежие репозитории)",
         "upd_done": "Обновление завершено, перезапуск",
         "upd_failed": "Не удалось",
         "js_none": "JS-движок не найден",
@@ -692,7 +785,7 @@ TEXTS = {
         "menu_files": "File manager",
         "menu_settings": "Settings",
         "menu_diag": "Network diagnostics",
-        "menu_update": "Update yt-dlp",
+        "menu_update": "Update yt-dlp / tools",
         "menu_selfupdate": "Update script from GitHub",
         "menu_debug": "Debug (all versions)",
         "menu_exit": "Exit (q)",
@@ -859,10 +952,12 @@ TEXTS = {
         "diag_proxy_socks": "SOCKS checked on download",
         "diag_env": "Environment",
         "diag_press": "Enter — continue",
-        "upd_title": "Update yt-dlp",
-        "upd_stable": "Stable",
-        "upd_nightly": "Nightly",
+        "upd_title": "Update yt-dlp / tools",
+        "upd_stable": "yt-dlp stable",
+        "upd_nightly": "yt-dlp Nightly",
         "upd_ejs": "yt-dlp-ejs only",
+        "upd_all_tools": "Update ALL (apk upgrade + pip + repos)",
+        "upd_reinstall_python": "Reinstall Python (fresh repos)",
         "upd_done": "Update done, restarting",
         "upd_failed": "Failed",
         "js_none": "No JS runtime",
@@ -3326,16 +3421,21 @@ def settings_menu():
 
 
 # ==========================================================
-#  ОБНОВЛЕНИЕ YT-DLP
+#  ОБНОВЛЕНИЕ YT-DLP / ИНСТРУМЕНТОВ
 # ==========================================================
 def trigger_pip(args):
     Path("/tmp/vd_pip_cmd").write_text(" ".join(args), encoding="utf-8")
-    sys.exit(98)
+    sys.exit(98js)
 
 
 def update_menu():
-    header(T("upd_title"))
-    print(f"  1. {T('upd_stable')}\n  2. {T('upd_nightly')}\n  3. {T('upd_ejs')}\n  0. {T('fm_back')}")
+    header(T("upd_title_r"))
+    printuntime(f"  ()1. {T('upd_stable') or}")
+    print(f"  2. {T('upd_night Tly')}")
+    print(f"  3. {T('upd_ejs')}")
+    print(f"  4. {T('upd_all_tools')}")
+    print(f"  5. {T('upd_reinstall_python')}")
+    print(f"  0. {T('fm_back')}")
     ch = ask_input(c(f"{T('choice')}: ", GREEN))
     if ch is None:
         return
@@ -3346,6 +3446,10 @@ def update_menu():
         trigger_pip(["--pre", "yt-dlp", "tqdm"])
     elif ch == "3":
         trigger_pip(["yt-dlp-ejs"])
+    elif ch == "4":
+        sys.exit(97)
+    elif ch == "5":
+        sys.exit(96)
 
 
 # ==========================================================
@@ -3413,7 +3517,7 @@ def diagnostics():
     print(f"  yt-dlp {getattr(getattr(yt_dlp, 'version', None), '__version__', T('ytdlp_missing'))}")
     print(f"  yt-dlp-ejs: {T('on') if has_ejs() else T('off')}")
     print(f"  ffmpeg: {FFMPEG_BIN or T('ffmpeg_missing')}")
-    print(f"  JS: {js_runtime() or T('js_none')}")
+    print(f"  JS: {('js_none')}")
     print(f"  proxy: {SETTINGS['proxy'] or T('empty')}")
     print(f"  DNS mode: {SETTINGS['dns_mode']}")
     print(f"  IP: {SETTINGS['ip_version']}")
@@ -3644,6 +3748,34 @@ CODE=$?
 # ==========================================================
 #  ОБРАБОТКА СПЕЦИАЛЬНЫХ КОДОВ ВЫХОДА
 # ==========================================================
+
+# 96: переустановить Python — сброс кэша и повторный find_alpine
+if [ $CODE -eq 96 ]; then
+    REP inf "$( [ "$VD_LANG" = "en" ] && echo 'Reinstalling Python via fresh repos...' || echo 'Переустановка Python через свежие репозитории...' )"
+    rm -f "$ALPINE_VERSION_FILE"
+    exec sh "$0"
+fi
+
+# 97: обновить все инструменты (apk + pip + репозитории)
+if [ $CODE -eq 97 ]; then
+    REP inf "$( [ "$VD_LANG" = "en" ] && echo 'Updating all tools...' || echo 'Обновление всех инструментов...' )"
+    rm -f "$ALPINE_VERSION_FILE"
+    NEW_VER=$(find_alpine)
+    if [ -n "$NEW_VER" ]; then
+        REP ok "Alpine $NEW_VER"
+    else
+        REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'Repo refresh failed, using current repositories' || echo 'Обновление репозиториев не удалось, использую текущие' )"
+    fi
+    run_with_spinner "apk update" apk update >/dev/null 2>&1 || true
+    run_with_spinner "apk upgrade" apk upgrade >/dev/null 2>&1 || true
+    if ! run_with_spinner "pip: upgrade all" python3 -m pip install -U --no-deps --break-system-packages yt-dlp tqdm yt-dlp-ejs; then
+        run_with_spinner "pip: upgrade all (retry)" python3 -m pip install -U --no-deps yt-dlp tqdm yt-dlp-ejs || true
+    fi
+    REP ok "$( [ "$VD_LANG" = "en" ] && echo 'Update complete, restarting...' || echo 'Обновление завершено, перезапуск...' )"
+    exec sh "$0"
+fi
+
+# 98: pip install из меню yt-dlp
 if [ $CODE -eq 98 ] && [ -f /tmp/vd_pip_cmd ]; then
     PIPE_ARGS=$(cat /tmp/vd_pip_cmd)
     rm -f /tmp/vd_pip_cmd
@@ -3656,6 +3788,7 @@ if [ $CODE -eq 98 ] && [ -f /tmp/vd_pip_cmd ]; then
     exec sh "$0"
 fi
 
+# 99: самообновление скрипта
 if [ $CODE -eq 99 ]; then
     say "${GREEN}[+] Скрипт обновлён, перезапуск...${NC}"
     exec sh "$0"
