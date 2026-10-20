@@ -24,7 +24,9 @@ LANG_FILE="$HOME/.video_downloader_lang"
 ALPINE_VERSION_FILE="$HOME/.video_downloader_alpine_version"
 ALPINE_DIAG="/tmp/vd_alpine_diag"
 
-rm -f /tmp/vd_pip_cmd /tmp/vd_update_all /tmp/vd_reinstall_py /tmp/vd_self_update
+KNOWN_GOOD_YTDLP="2026.10.10.233141"
+
+rm -f /tmp/vd_pip_cmd /tmp/vd_update_all /tmp/vd_reinstall_py /tmp/vd_self_update /tmp/vd_repair_env
 
 if [ -f "$LANG_FILE" ]; then
     VD_LANG=$(cat "$LANG_FILE" 2>/dev/null)
@@ -104,7 +106,7 @@ run_with_spinner() {
 }
 
 # ==========================================================
-# РЕПОЗИТОРИИ ALPINE И ВЕРСИИ
+# РЕПОЗИТОРИИ И ПОИСК ALPINE
 # ==========================================================
 
 set_repos() {
@@ -184,84 +186,98 @@ find_alpine_any() {
     return 1
 }
 
-ver_newer() {
+# ==========================================================
+# СРАВНЕНИЕ ВЕРСИЙ
+# ==========================================================
+
+ver_lt() {
     a=$1
     b=$2
     if [ -z "$a" ] || [ -z "$b" ]; then
         return 1
     fi
-    newer=$(printf '%s\n%s\n' "$a" "$b" | sort -V | tail -1)
-    [ "$newer" = "$b" ] && [ "$a" != "$b" ]
-}
-
-check_update_apk() {
-    pkg=$1
-    if ! apk info -e "$pkg" >/dev/null 2>&1; then
+    if [ "$a" = "$b" ]; then
         return 1
     fi
-    installed=$(apk info -v "$pkg" 2>/dev/null | head -1 | sed "s/^$pkg-//; s/-r[0-9]*$//")
-    available=$(apk policy "$pkg" 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-    if ver_newer "$installed" "$available"; then
-        echo "$installed -> $available"
-        return 0
-    fi
-    return 1
+    lower=$(printf '%s\n%s\n' "$a" "$b" | sort -V 2>/dev/null | head -1)
+    [ "$lower" = "$a" ]
 }
 
 # ==========================================================
-# FFMPEG LD_PRELOAD HACK
+# FFMPEG ВОССТАНОВЛЕНИЕ
 # ==========================================================
 
 fix_ffmpeg() {
-    if command -v ffmpeg >/dev/null 2>&1; then
-        if ffmpeg -version >/dev/null 2>&1; then
-            return 0
+    local WRAP="/usr/local/bin/ffmpeg"
+    local NATIVE="/usr/bin/ffmpeg"
+    local HACK_SO="/usr/local/lib/ffmpeg-hack.so"
+
+    if [ -f "$WRAP" ] && grep -q "LD_PRELOAD" "$WRAP" 2>/dev/null; then
+        local so_path
+        so_path=$(sed -n 's/.*LD_PRELOAD="\([^"]*\)".*/\1/p' "$WRAP" | head -1)
+        if [ -z "$so_path" ] || [ ! -f "$so_path" ]; then
+            rm -f "$WRAP"
+        else
+            if [ -x "$NATIVE" ] && env LD_PRELOAD="$so_path" "$NATIVE" -version >/dev/null 2>&1; then
+                :
+            else
+                rm -f "$WRAP"
+            fi
         fi
     fi
-    REAL_FF=$(command -v ffmpeg 2>/dev/null)
-    if [ -z "$REAL_FF" ]; then
+
+    if command -v ffmpeg >/dev/null 2>&1 && ffmpeg -version >/dev/null 2>&1; then
+        return 0
+    fi
+
+    if [ -x "$NATIVE" ] && "$NATIVE" -version >/dev/null 2>&1; then
+        return 0
+    fi
+
+    if [ ! -x "$NATIVE" ]; then
         return 1
     fi
+
     if [ "$VD_LANG" = "en" ]; then
-        REP wrn "ffmpeg broken (Bad system call), compiling LD_PRELOAD hack..."
+        REP wrn "ffmpeg broken, trying LD_PRELOAD hack..."
     else
-        REP wrn "ffmpeg сломан (Bad system call), компилирую LD_PRELOAD хак..."
+        REP wrn "ffmpeg сломан, пробую LD_PRELOAD хак..."
     fi
+
     apk add --no-cache gcc musl-dev >/dev/null 2>&1 || true
     HACK_C="/tmp/ffmpeg-hack.c"
-    HACK_SO="/usr/local/lib/ffmpeg-hack.so"
     curl -fsSL "https://raw.githubusercontent.com/tjcaul/iSH-LD_PRELOAD-Hack/main/ffmpeg-hack.c" -o "$HACK_C" 2>/dev/null || true
     if [ ! -f "$HACK_C" ]; then
-        REP err "Could not download ffmpeg-hack.c"
-        return 1
+        REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'Cannot download hack source, using native ffmpeg' || echo 'Не удалось скачать исходник хака, использую нативный ffmpeg' )"
+        return 0
     fi
+
     mkdir -p /usr/local/lib
     if ! gcc -O2 -shared -fPIC -o "$HACK_SO" "$HACK_C" -ldl >/dev/null 2>&1; then
-        REP err "Could not compile ffmpeg-hack.so"
-        return 1
+        REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'Cannot compile hack, using native ffmpeg' || echo 'Не удалось скомпилировать хак, использую нативный ffmpeg' )"
+        return 0
     fi
-    WRAP="/usr/local/bin/ffmpeg"
+
+    if ! env LD_PRELOAD="$HACK_SO" "$NATIVE" -version >/dev/null 2>&1; then
+        REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'Hack did not help, removing wrapper' || echo 'Хак не помог, удаляю обёртку' )"
+        rm -f "$WRAP" "$HACK_SO"
+        return 0
+    fi
+
     cat > "$WRAP" << WRAP_EOF
 #!/bin/sh
-exec env LD_PRELOAD="$HACK_SO" "$REAL_FF" "\$@"
+exec env LD_PRELOAD="$HACK_SO" "$NATIVE" "\$@"
 WRAP_EOF
     chmod +x "$WRAP"
-    REAL_FP=$(command -v ffprobe 2>/dev/null)
-    if [ -n "$REAL_FP" ]; then
-        WRAP_FP="/usr/local/bin/ffprobe"
-        cat > "$WRAP_FP" << WRAP_FP_EOF
-#!/bin/sh
-exec env LD_PRELOAD="$HACK_SO" "$REAL_FP" "\$@"
-WRAP_FP_EOF
-        chmod +x "$WRAP_FP"
-    fi
-    if ffmpeg -version >/dev/null 2>&1; then
-        REP ok "ffmpeg now works via LD_PRELOAD (slow but functional)"
+
+    if command -v ffmpeg >/dev/null 2>&1 && ffmpeg -version >/dev/null 2>&1; then
+        REP ok "$( [ "$VD_LANG" = "en" ] && echo 'ffmpeg restored via LD_PRELOAD' || echo 'ffmpeg восстановлен через LD_PRELOAD' )"
         return 0
-    else
-        REP err "ffmpeg still broken after hack"
-        return 1
     fi
+
+    rm -f "$WRAP" "$HACK_SO"
+    REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'Wrapper failed, falling back to native ffmpeg' || echo 'Обёртка не сработала, возврат к нативному ffmpeg' )"
+    return 0
 }
 
 # ==========================================================
@@ -336,74 +352,117 @@ fi
 
 run_with_spinner "apk update" apk update >/dev/null 2>&1 || true
 
-for pkg in python3 py3-pip py3-readline curl wget ca-certificates nodejs ffmpeg; do
+for pkg in python3 py3-pip curl wget ca-certificates nodejs ffmpeg py3-readline; do
     if apk info -e "$pkg" >/dev/null 2>&1; then
-        if UPD=$(check_update_apk "$pkg"); then
-            REP inf "$pkg $( [ "$VD_LANG" = "en" ] && echo "update $UPD" || echo "обновление $UPD" )"
-            if run_with_spinner "Updating $pkg" apk add --no-cache --upgrade "$pkg"; then
-                REP ok "$pkg $( [ "$VD_LANG" = "en" ] && echo 'updated' || echo 'обновлён' )"
-            else
-                REP wrn "$pkg $( [ "$VD_LANG" = "en" ] && echo 'update failed' || echo 'не обновился' )"
-            fi
-        else
-            REP ok "$pkg $( [ "$VD_LANG" = "en" ] && echo 'already installed' || echo 'уже установлен' )"
-        fi
+        REP ok "$pkg $( [ "$VD_LANG" = "en" ] && echo 'already installed' || echo 'уже установлен' )"
         continue
     fi
     if run_with_spinner "Installing $pkg" apk add --no-cache "$pkg"; then
         REP ok "$pkg $( [ "$VD_LANG" = "en" ] && echo 'installed' || echo 'установлен' )"
     else
-        REP err "$pkg $( [ "$VD_LANG" = "en" ] && echo 'failed to install' || echo 'не установился' )"
+        if [ "$pkg" = "py3-readline" ]; then
+            REP wrn "$pkg $( [ "$VD_LANG" = "en" ] && echo 'not available (menu editing may be limited)' || echo 'недоступен (редактирование может работать плохо)' )"
+        elif [ "$pkg" = "ffmpeg" ]; then
+            REP wrn "$pkg $( [ "$VD_LANG" = "en" ] && echo 'failed to install' || echo 'не установился' )"
+        else
+            REP err "$pkg $( [ "$VD_LANG" = "en" ] && echo 'failed to install' || echo 'не установился' )"
+        fi
     fi
 done
 
 fix_ffmpeg
 
 # ==========================================================
-# PYTHON-ЗАВИСИМОСТИ
+# PYTHON-ЗАВИСИМОСТИ С ЗАЩИТОЙ ВЕРСИЙ
 # ==========================================================
 
+get_ytdlp_ver() {
+    python3 -c 'import yt_dlp; print(yt_dlp.version.__version__)' 2>/dev/null
+}
+
+check_ytdlp_import() {
+    python3 -c 'import yt_dlp' >/dev/null 2>&1
+    return $?
+}
+
 if command -v python3 >/dev/null 2>&1; then
-    if ! python3 -c 'import yt_dlp, tqdm' >/dev/null 2>&1; then
-        if ! run_with_spinner "pip: yt-dlp" python3 -m pip install -U --no-deps --break-system-packages yt-dlp tqdm; then
-            run_with_spinner "pip: yt-dlp (retry)" python3 -m pip install -U --no-deps yt-dlp tqdm || true
+    OLD_YTV=$(get_ytdlp_ver)
+    OLD_YTV_RC=$?
+
+    if [ $OLD_YTV_RC -ne 0 ] || [ -z "$OLD_YTV" ]; then
+        REP inf "$( [ "$VD_LANG" = "en" ] && echo 'Installing yt-dlp...' || echo 'Устанавливаю yt-dlp...' )"
+        run_with_spinner "pip: yt-dlp" python3 -m pip install -U --no-deps --break-system-packages yt-dlp tqdm >/dev/null 2>&1 \
+            || run_with_spinner "pip: yt-dlp (retry)" python3 -m pip install -U --no-deps yt-dlp tqdm >/dev/null 2>&1 \
+            || true
+
+        check_ytdlp_import
+        RC=$?
+        if [ $RC -eq 159 ]; then
+            REP err "$( [ "$VD_LANG" = "en" ] && echo 'yt-dlp crash (SIGSYS) — trying known-good version' || echo 'yt-dlp падает (SIGSYS) — пробую известную рабочую версию' )"
+            run_with_spinner "pip: yt-dlp rollback" python3 -m pip install --force-reinstall --no-deps --break-system-packages "yt-dlp==$KNOWN_GOOD_YTDLP" >/dev/null 2>&1 || true
+        elif [ $RC -ne 0 ]; then
+            REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'yt-dlp import failed, trying known-good version' || echo 'импорт yt-dlp не удался, пробую известную рабочую версию' )"
+            run_with_spinner "pip: yt-dlp rollback" python3 -m pip install --force-reinstall --no-deps --break-system-packages "yt-dlp==$KNOWN_GOOD_YTDLP" >/dev/null 2>&1 || true
         fi
     else
-        OLD_YTV=$(python3 -c 'import yt_dlp; print(yt_dlp.version.__version__)' 2>/dev/null || echo "")
-        run_with_spinner "pip: yt-dlp update check" python3 -m pip install -U --no-deps --break-system-packages yt-dlp tqdm >/dev/null 2>&1 || true
-        NEW_YTV=$(python3 -c 'import yt_dlp; print(yt_dlp.version.__version__)' 2>/dev/null || echo "")
-        if [ -n "$NEW_YTV" ] && [ "$OLD_YTV" != "$NEW_YTV" ]; then
-            REP ok "yt-dlp $( [ "$VD_LANG" = "en" ] && echo "updated $OLD_YTV -> $NEW_YTV" || echo "обновлён $OLD_YTV -> $NEW_YTV" )"
+        if [ -n "$OLD_YTV" ]; then
+            NEW_YTV_TMP=$(get_ytdlp_ver)
+            if [ -z "$NEW_YTV_TMP" ]; then
+                run_with_spinner "pip: yt-dlp check" python3 -m pip install -U --no-deps --break-system-packages yt-dlp >/dev/null 2>&1 || true
+                NEW_YTV_TMP=$(get_ytdlp_ver)
+                if [ -n "$NEW_YTV_TMP" ] && ver_lt "$NEW_YTV_TMP" "$OLD_YTV"; then
+                    REP wrn "$( [ "$VD_LANG" = "en" ] && echo "pip downgraded yt-dlp ($OLD_YTV -> $NEW_YTV_TMP), restoring" || echo "pip откатил yt-dlp ($OLD_YTV -> $NEW_YTV_TMP), восстанавливаю" )"
+                    run_with_spinner "pip: restore" python3 -m pip install --force-reinstall --no-deps --break-system-packages "yt-dlp==$OLD_YTV" >/dev/null 2>&1 || true
+                elif [ -n "$NEW_YTV_TMP" ] && [ "$NEW_YTV_TMP" != "$OLD_YTV" ]; then
+                    REP ok "yt-dlp $( [ "$VD_LANG" = "en" ] && echo "updated $OLD_YTV -> $NEW_YTV_TMP" || echo "обновлён $OLD_YTV -> $NEW_YTV_TMP" )"
+                fi
+            fi
         fi
     fi
-    if python3 -c 'import yt_dlp, tqdm' >/dev/null 2>&1; then
-        YTV=$(python3 -c 'import yt_dlp; print(yt_dlp.version.__version__)' 2>/dev/null || echo "?")
+
+    YTV=$(get_ytdlp_ver)
+    if [ -n "$YTV" ]; then
         REP ok "yt-dlp $YTV"
     else
-        REP err "yt-dlp not installed"
+        REP err "yt-dlp $( [ "$VD_LANG" = "en" ] && echo 'not functional' || echo 'не работает' )"
     fi
-    if ! python3 -c 'import yt_dlp_ejs' >/dev/null 2>&1; then
-        if ! run_with_spinner "pip: yt-dlp-ejs" python3 -m pip install -U --break-system-packages yt-dlp-ejs; then
-            run_with_spinner "pip: yt-dlp-ejs (retry)" python3 -m pip install -U yt-dlp-ejs || true
+
+    python3 -c 'import yt_dlp_ejs' >/dev/null 2>&1
+    EJS_RC=$?
+    if [ $EJS_RC -ne 0 ]; then
+        if [ $EJS_RC -eq 159 ]; then
+            REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'yt-dlp-ejs crashes (SIGSYS), skipping' || echo 'yt-dlp-ejs падает (SIGSYS), пропускаю' )"
+        else
+            run_with_spinner "pip: yt-dlp-ejs" python3 -m pip install -U --break-system-packages yt-dlp-ejs >/dev/null 2>&1 \
+                || run_with_spinner "pip: yt-dlp-ejs (retry)" python3 -m pip install -U yt-dlp-ejs >/dev/null 2>&1 \
+                || true
         fi
-    else
-        run_with_spinner "pip: yt-dlp-ejs update check" python3 -m pip install -U --break-system-packages yt-dlp-ejs >/dev/null 2>&1 || true
     fi
-    if python3 -c 'import yt_dlp_ejs' >/dev/null 2>&1; then
-        REP ok "yt-dlp-ejs"
-    fi
+
+    python3 -c 'import yt_dlp_ejs' >/dev/null 2>&1 && REP ok "yt-dlp-ejs" || true
 fi
 
 if command -v python3 >/dev/null 2>&1; then
     PYV=$(python3 --version 2>&1 | awk '{print $2}')
     REP ok "python3 $PYV"
 fi
-if command -v ffmpeg >/dev/null 2>&1 && ffmpeg -version >/dev/null 2>&1; then
-    FFV=$(ffmpeg -version 2>/dev/null | head -1 | awk '{print $3}')
+
+if [ -f /usr/bin/ffmpeg ] && /usr/bin/ffmpeg -version >/dev/null 2>&1; then
+    FFV=$(/usr/bin/ffmpeg -version 2>/dev/null | head -1 | awk '{print $3}')
     REP ok "ffmpeg $FFV"
+elif [ -x /usr/local/bin/ffmpeg ] && /usr/local/bin/ffmpeg -version >/dev/null 2>&1; then
+    REP ok "$( [ "$VD_LANG" = "en" ] && echo 'ffmpeg (LD_PRELOAD wrapper)' || echo 'ffmpeg (обёртка LD_PRELOAD)' )"
+else
+    REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'ffmpeg not functional — only progressive formats available' || echo 'ffmpeg не работает — только прогрессивные форматы' )"
 fi
 
 command -v python3 >/dev/null 2>&1 || { REP err "python3 missing"; exit 1; }
+
+if ! python3 -c 'import yt_dlp' >/dev/null 2>&1; then
+    REP err "$( [ "$VD_LANG" = "en" ] && echo 'yt_dlp import still failing, aborting' || echo 'импорт yt_dlp всё ещё падает, прерываюсь' )"
+    REP inf "$( [ "$VD_LANG" = "en" ] && echo 'Run menu → Update → Update ALL to repair' || echo 'Запустите меню → Обновление → Обновить ВСЁ для восстановления' )"
+    exit 1
+fi
 
 export PYTHONUTF8=1
 export PYTHONIOENCODING=utf-8
@@ -414,9 +473,6 @@ export PYTHONHASHSEED=0
 # ==========================================================
 
 cat > /tmp/video_downloader.py << 'PYEOF'
-# ==========================================================
-# ИМПОРТЫ
-# ==========================================================
 import sys
 import os
 import re
@@ -434,7 +490,7 @@ import threading
 import urllib.request
 import urllib.error
 from pathlib import Path
-from urllib.parse import urlparse, quote
+from urllib.parse import urlparse
 
 try:
     import yt_dlp
@@ -465,6 +521,7 @@ ACTION_PIP_FILE = "/tmp/vd_pip_cmd"
 ACTION_UPDATE_ALL_FILE = "/tmp/vd_update_all"
 ACTION_REINSTALL_PY_FILE = "/tmp/vd_reinstall_py"
 ACTION_SELF_UPDATE_FILE = "/tmp/vd_self_update"
+ACTION_REPAIR_FILE = "/tmp/vd_repair_env"
 
 DIRECT = ("youtube.com/", "youtu.be/", "rutube.ru/video/", "rutube.ru/play/", ".mp4", ".m3u8")
 SEEN_WARNINGS = set()
@@ -496,6 +553,7 @@ def signal_action(path, data=None):
 # ==========================================================
 # ОЧИСТКА ВВОДА
 # ==========================================================
+
 ANSI_RE = re.compile(r'\x1b(?:\[[0-9;?]*[A-Za-z~]|O[A-Za-z])')
 CTRL_RE = re.compile(r'[\x00-\x08\x0b-\x1f\x7f]')
 
@@ -512,6 +570,7 @@ def clean_input(s):
 # ==========================================================
 # ВЫВОД
 # ==========================================================
+
 def c(t, col):
     return f"{col}{t}{NC}"
 
@@ -550,6 +609,7 @@ def header(title):
 # ==========================================================
 # ЯЗЫК
 # ==========================================================
+
 if LANG_FILE.exists():
     try:
         _l = LANG_FILE.read_text(encoding="utf-8").strip()
@@ -563,6 +623,7 @@ else:
 # ==========================================================
 # FFMPEG ОБНАРУЖЕНИЕ
 # ==========================================================
+
 def _detect_ffmpeg():
     cands = []
     w = shutil.which("ffmpeg")
@@ -622,6 +683,7 @@ def refresh_ffmpeg():
 # ==========================================================
 # ПЕРЕВОДЫ
 # ==========================================================
+
 TEXTS = {
     "ru": {
         "app_title": "Универсальный загрузчик видео",
@@ -635,6 +697,7 @@ TEXTS = {
         "menu_update": "Обновить yt-dlp / инструменты",
         "menu_selfupdate": "Обновить скрипт с GitHub",
         "menu_debug": "Отладка (все версии)",
+        "menu_repair": "Восстановить окружение",
         "menu_exit": "Выход (q)",
         "choice": "Ваш выбор",
         "invalid_choice": "Неверный выбор",
@@ -642,7 +705,7 @@ TEXTS = {
         "audio_dir": "Аудио сохраняются в",
         "enter_urls": "Введите ссылки (по одной на строку).",
         "enter_urls_hint": "Пустая строка — начать. 'q' — меню.",
-        "search_query": "Введите поисковый запрос",
+        "search_query": "Введите поисковый запрос или URL",
         "search_results": "Результаты поиска",
         "search_select": "Выберите номер (Enter — отмена)",
         "search_source": "Где искать",
@@ -805,6 +868,7 @@ TEXTS = {
         "upd_ejs": "Только yt-dlp-ejs",
         "upd_all_tools": "Обновить ВСЁ (apk upgrade + pip + репозитории)",
         "upd_reinstall_python": "Переустановить Python (свежие репозитории)",
+        "upd_known_good": "Откатить yt-dlp к известной рабочей версии",
         "upd_done": "Обновление завершено, перезапуск",
         "upd_failed": "Не удалось",
         "js_none": "JS-движок не найден",
@@ -843,6 +907,18 @@ TEXTS = {
         "reencode_audio": "Аудио",
         "reencode_done": "Перекодировано",
         "nothing_to_process": "Нечего обрабатывать",
+        "repair_title": "Восстановление окружения",
+        "repair_check_ytdlp": "Проверка yt-dlp",
+        "repair_ok_ytdlp": "yt-dlp работает",
+        "repair_fix_ytdlp": "yt-dlp сломан, переустанавливаю",
+        "repair_check_ffmpeg": "Проверка ffmpeg",
+        "repair_ok_ffmpeg": "ffmpeg работает",
+        "repair_fix_ffmpeg": "ffmpeg сломан, восстанавливаю",
+        "repair_check_ejs": "Проверка yt-dlp-ejs",
+        "repair_ok_ejs": "yt-dlp-ejs работает",
+        "repair_fix_ejs": "yt-dlp-ejs сломан, отключаю",
+        "repair_done": "Восстановление завершено",
+        "repair_press": "Enter — продолжить",
     },
     "en": {
         "app_title": "Universal Video Downloader",
@@ -856,6 +932,7 @@ TEXTS = {
         "menu_update": "Update yt-dlp / tools",
         "menu_selfupdate": "Update script from GitHub",
         "menu_debug": "Debug (all versions)",
+        "menu_repair": "Repair environment",
         "menu_exit": "Exit (q)",
         "choice": "Choice",
         "invalid_choice": "Invalid choice",
@@ -863,7 +940,7 @@ TEXTS = {
         "audio_dir": "Audio saved to",
         "enter_urls": "Enter URLs (one per line).",
         "enter_urls_hint": "Empty line — start. 'q' — menu.",
-        "search_query": "Enter search query",
+        "search_query": "Enter search query or URL",
         "search_results": "Search results",
         "search_select": "Select number (Enter — cancel)",
         "search_source": "Where to search",
@@ -1026,6 +1103,7 @@ TEXTS = {
         "upd_ejs": "yt-dlp-ejs only",
         "upd_all_tools": "Update ALL (apk upgrade + pip + repos)",
         "upd_reinstall_python": "Reinstall Python (fresh repos)",
+        "upd_known_good": "Rollback yt-dlp to known-good version",
         "upd_done": "Update done, restarting",
         "upd_failed": "Failed",
         "js_none": "No JS runtime",
@@ -1064,6 +1142,18 @@ TEXTS = {
         "reencode_audio": "Audio",
         "reencode_done": "Reencoded",
         "nothing_to_process": "Nothing to process",
+        "repair_title": "Environment repair",
+        "repair_check_ytdlp": "Checking yt-dlp",
+        "repair_ok_ytdlp": "yt-dlp works",
+        "repair_fix_ytdlp": "yt-dlp broken, reinstalling",
+        "repair_check_ffmpeg": "Checking ffmpeg",
+        "repair_ok_ffmpeg": "ffmpeg works",
+        "repair_fix_ffmpeg": "ffmpeg broken, restoring",
+        "repair_check_ejs": "Checking yt-dlp-ejs",
+        "repair_ok_ejs": "yt-dlp-ejs works",
+        "repair_fix_ejs": "yt-dlp-ejs broken, disabling",
+        "repair_done": "Repair complete",
+        "repair_press": "Enter — continue",
     },
 }
 
@@ -1075,6 +1165,7 @@ def T(key):
 # ==========================================================
 # ВВОД
 # ==========================================================
+
 def save_lang(nl):
     global LANG
     LANG = nl
@@ -1144,6 +1235,7 @@ def parse_multi(text, n):
 # ==========================================================
 # URL-УТИЛИТЫ
 # ==========================================================
+
 def fix_url(u):
     if not u:
         return u
@@ -1183,6 +1275,7 @@ def safe_name(s, limit=150):
 # ==========================================================
 # ШАБЛОНЫ
 # ==========================================================
+
 PROXY_TEMPLATES = [
     "http://127.0.0.1:1082", "http://127.0.0.1:8080", "http://127.0.0.1:8081",
     "http://127.0.0.1:3128", "http://127.0.0.1:9098", "http://198.18.0.3:8080",
@@ -1224,6 +1317,7 @@ YT_CLIENTS_TEMPLATES = [
 # ==========================================================
 # НАСТРОЙКИ
 # ==========================================================
+
 DEFAULT_SETTINGS = {
     "video_codec": "iphone", "audio_codec": "aac", "max_height": 0,
     "auto_convert": "ask", "concurrent_fragments": 1, "cookies_file": "",
@@ -1293,6 +1387,7 @@ SETTINGS = load_settings()
 # ==========================================================
 # ПУТИ
 # ==========================================================
+
 BASE_DIR = Path(SETTINGS["base_dir"])
 VIDEOS_DIR = BASE_DIR / "videos"
 AUDIO_DIR = BASE_DIR / "audio"
@@ -1326,6 +1421,7 @@ def ensure_dir():
 # ==========================================================
 # DNS
 # ==========================================================
+
 DNS_CACHE = {}
 DNS_STATE = {"order": None, "busy": False}
 PREFLIGHT_OK = set()
@@ -1537,6 +1633,7 @@ def reset_dns():
 # ==========================================================
 # ПРЕДПРОВЕРКА СЕТИ
 # ==========================================================
+
 def tls_probe(host, ip, timeout=15):
     ctx = ssl.create_default_context() if SETTINGS["verify_tls"] else ssl._create_unverified_context()
     sock = None
@@ -1585,6 +1682,7 @@ def preflight(url):
 # ==========================================================
 # УТИЛИТЫ
 # ==========================================================
+
 NET_PATTERNS = (
     "name does not resolve", "name or service not known", "temporary failure in name resolution",
     "try again", "handshake", "timed out", "timeout", "connection refused", "connection reset",
@@ -1645,6 +1743,7 @@ def confirm(prompt, default=False, timeout=None):
 # ==========================================================
 # КОДЕКИ
 # ==========================================================
+
 VIDEO_CODECS = {
     "iphone": {"label_key": "preset_iphone", "encoder": "libx264",
                "profile": "high", "level": "4.0", "crf": "23", "pix_fmt": "yuv420p", "preset": "medium",
@@ -1688,6 +1787,7 @@ A_COMPAT = {"aac": ("aac", "mp4a"), "opus": ("opus",)}
 # ==========================================================
 # КОДЕКИ / JS / EJS
 # ==========================================================
+
 def available_encoders():
     global _encoders_cache
     if _encoders_cache is not None:
@@ -1752,6 +1852,7 @@ def selector_chain(chosen):
 # ==========================================================
 # ЛОГГЕР
 # ==========================================================
+
 class Log:
     def __init__(self):
         self.msgs = []
@@ -1793,6 +1894,7 @@ def report(e, lg):
 # ==========================================================
 # ПРОГРЕСС
 # ==========================================================
+
 class Progress:
     def __init__(self):
         self.bar = None
@@ -1827,6 +1929,7 @@ class Progress:
 # ==========================================================
 # СПИННЕР PYTHON
 # ==========================================================
+
 class Spinner:
     def __init__(self, message="working"):
         self.message = message
@@ -1857,6 +1960,7 @@ class Spinner:
 # ==========================================================
 # YOUTUBE СТРАТЕГИИ
 # ==========================================================
+
 def parse_clients(text):
     groups = []
     for part in text.split(","):
@@ -1922,6 +2026,7 @@ def first_entry(info):
 # ==========================================================
 # ИЗВЛЕЧЕНИЕ
 # ==========================================================
+
 def get_info(url, strategy):
     if yt_dlp is None:
         return None, ""
@@ -1959,6 +2064,7 @@ def extract_info_smart(url):
 # ==========================================================
 # ЗАПУСК YT-DLP
 # ==========================================================
+
 def run_module(url, selector, strategy, job, extra=None, outtmpl=None):
     if yt_dlp is None:
         return False, ""
@@ -2080,6 +2186,7 @@ def run_any(url, selector, strategy, job, extra=None, flags=(), outtmpl=None):
 # ==========================================================
 # ФАЙЛЫ / ОЧИСТКА
 # ==========================================================
+
 def snapshot(d):
     result = {}
     try:
@@ -2163,6 +2270,7 @@ def cleanup_junk(aggressive=False):
 # ==========================================================
 # FFMPEG ФУНКЦИИ
 # ==========================================================
+
 def get_duration(path):
     if not HAS_FFMPEG or not FFPROBE_BIN:
         return None
@@ -2363,6 +2471,7 @@ def convert_audio(src, akey):
 # ==========================================================
 # ВЫБОР ФОРМАТА
 # ==========================================================
+
 def select_format_list(info, priority="best"):
     if not isinstance(info, dict):
         return [default_selector()]
@@ -2414,6 +2523,7 @@ def select_format_list(info, priority="best"):
 # ==========================================================
 # HTTP / RUTUBE
 # ==========================================================
+
 def make_opener():
     handlers = []
     px = SETTINGS["proxy"]
@@ -2487,6 +2597,7 @@ def rutube_download(url, job):
 # ==========================================================
 # ВНЕШНЯЯ ЗАГРУЗКА
 # ==========================================================
+
 def external_download(url, info, job):
     if not isinstance(info, dict):
         return False
@@ -2574,6 +2685,7 @@ def external_download(url, info, job):
 # ==========================================================
 # ПРОКСИ
 # ==========================================================
+
 def prompt_proxy():
     warn_line(T("net_help"))
     print(c(f"\n{T('set_proxy')}:", CYAN))
@@ -2621,6 +2733,7 @@ def prepare_network(url):
 # ==========================================================
 # ЦЕПОЧКА ЗАГРУЗКИ
 # ==========================================================
+
 def download_chain(url, job, chosen, info, win, allow_proxy=True):
     selectors = list(job["selectors"] or selector_chain(chosen))
     strategies = build_strategies(url, win)
@@ -2699,6 +2812,7 @@ def make_job(kind):
 # ==========================================================
 # СКАЧИВАНИЕ
 # ==========================================================
+
 def attempt_download_video(url, priority="best"):
     if not valid_url(url):
         err_line(f"{T('invalid_url')}: {url}")
@@ -2791,6 +2905,7 @@ def attempt_download_audio(url):
 # ==========================================================
 # ФАЙЛОВЫЕ ОПЕРАЦИИ
 # ==========================================================
+
 def move_to_fix(path):
     if not path or not path.exists():
         return False
@@ -2846,6 +2961,7 @@ def show_ready_and_rename(path, is_audio=False):
 # ==========================================================
 # ПОИСК
 # ==========================================================
+
 def find_videos_on_page(page_url):
     info_line(f"{T('scanning')}: {trunc(page_url, 60)}")
     if yt_dlp is None:
@@ -2886,6 +3002,22 @@ def ask_priority():
     return {"2": "1080", "3": "720", "4": "480", "5": "audio"}.get(pch, "best")
 
 
+def run_single_download(video_url, priority):
+    downloaded = []
+    try:
+        if priority == "audio":
+            ok, fp = attempt_download_audio(video_url)
+        else:
+            ok, fp = attempt_download_video(video_url, priority)
+        if ok and fp:
+            show_ready_and_rename(fp, is_audio=(priority == "audio"))
+            downloaded.append(fp)
+    except UserInterrupt:
+        info_line(T("interrupted"))
+        return []
+    return downloaded
+
+
 def search_videos():
     header(T("menu_search"))
     if yt_dlp is None:
@@ -2901,21 +3033,10 @@ def search_videos():
         query = ask_input(c(f"{T('search_query')}: ", YELLOW))
         if not query:
             return
-        if valid_url(query):
-            video_url = query
+        fixed = fix_url(query)
+        if valid_url(fixed):
             priority = ask_priority()
-            downloaded = []
-            try:
-                if priority == "audio":
-                    ok, fp = attempt_download_audio(video_url)
-                else:
-                    ok, fp = attempt_download_video(video_url, priority)
-                if ok and fp:
-                    show_ready_and_rename(fp, is_audio=(priority == "audio"))
-                    downloaded.append(fp)
-            except UserInterrupt:
-                info_line(T("interrupted"))
-                return
+            downloaded = run_single_download(fixed, priority)
             if downloaded:
                 post_process_files(downloaded)
             return
@@ -2960,18 +3081,7 @@ def search_videos():
                 err_line(T("invalid_url"))
                 return
             priority = ask_priority()
-            downloaded = []
-            try:
-                if priority == "audio":
-                    ok, fp = attempt_download_audio(video_url)
-                else:
-                    ok, fp = attempt_download_video(video_url, priority)
-                if ok and fp:
-                    show_ready_and_rename(fp, is_audio=(priority == "audio"))
-                    downloaded.append(fp)
-            except UserInterrupt:
-                info_line(T("interrupted"))
-                return
+            downloaded = run_single_download(video_url, priority)
             if downloaded:
                 post_process_files(downloaded)
         except (ValueError, IndexError):
@@ -2985,18 +3095,7 @@ def search_videos():
             err_line(f"{T('invalid_url')}: {url}")
             return
         priority = ask_priority()
-        downloaded = []
-        try:
-            if priority == "audio":
-                ok, fp = attempt_download_audio(url)
-            else:
-                ok, fp = attempt_download_video(url, priority)
-            if ok and fp:
-                show_ready_and_rename(fp, is_audio=(priority == "audio"))
-                downloaded.append(fp)
-        except UserInterrupt:
-            info_line(T("interrupted"))
-            return
+        downloaded = run_single_download(url, priority)
         if downloaded:
             post_process_files(downloaded)
     else:
@@ -3006,6 +3105,7 @@ def search_videos():
 # ==========================================================
 # ПОСТ-ОБРАБОТКА
 # ==========================================================
+
 def post_process_files(files):
     if not files:
         return
@@ -3030,6 +3130,7 @@ def post_process_files(files):
 # ==========================================================
 # ПЕРЕКОДИРОВАНИЕ
 # ==========================================================
+
 def reencode_menu():
     header(T("menu_reencode"))
     if not HAS_FFMPEG:
@@ -3098,6 +3199,7 @@ def reencode_menu():
 # ==========================================================
 # ФАЙЛОВЫЙ МЕНЕДЖЕР
 # ==========================================================
+
 def list_files(directory):
     try:
         files = sorted(directory.iterdir(), key=lambda p: p.name.lower())
@@ -3254,6 +3356,7 @@ def file_manager():
 # ==========================================================
 # ЯЗЫК МЕНЮ
 # ==========================================================
+
 def language_menu():
     while True:
         header(T("set_language"))
@@ -3272,6 +3375,7 @@ def language_menu():
 # ==========================================================
 # НАСТРОЙКИ МЕНЮ
 # ==========================================================
+
 def setting_display(key):
     if key == "language":
         return T("lang_ru" if LANG == "ru" else "lang_en")
@@ -3473,6 +3577,7 @@ def settings_menu():
 # ==========================================================
 # ОБНОВЛЕНИЕ
 # ==========================================================
+
 def trigger_pip(args):
     signal_action(ACTION_PIP_FILE, " ".join(args))
     return True
@@ -3485,6 +3590,7 @@ def update_menu():
     print(f"  3. {T('upd_ejs')}")
     print(f"  4. {T('upd_all_tools')}")
     print(f"  5. {T('upd_reinstall_python')}")
+    print(f"  6. {T('upd_known_good')}")
     print(f"  0. {T('fm_back')}")
     ch = ask_input(c(f"{T('choice')}: ", GREEN))
     if ch is None:
@@ -3501,12 +3607,15 @@ def update_menu():
     elif ch == "5":
         signal_action(ACTION_REINSTALL_PY_FILE)
         return True
+    elif ch == "6":
+        return trigger_pip(["--force-reinstall", "--no-deps", "yt-dlp==2026.10.10.233141"])
     return False
 
 
 # ==========================================================
 # САМООБНОВЛЕНИЕ
 # ==========================================================
+
 def check_remote_version():
     if not UPDATE_URL:
         return None
@@ -3556,8 +3665,52 @@ def self_update_menu():
 
 
 # ==========================================================
+# ВОССТАНОВЛЕНИЕ ОКРУЖЕНИЯ
+# ==========================================================
+
+def repair_env():
+    header(T("repair_title"))
+    info_line(T("repair_check_ytdlp"))
+    try:
+        import yt_dlp as _yd
+        ver = getattr(_yd.version, "__version__", "?")
+        ok_line(f"{T('repair_ok_ytdlp')}: {ver}")
+    except Exception as e:
+        warn_line(f"{T('repair_fix_ytdlp')}: {type(e).__name__}")
+        signal_action(ACTION_PIP_FILE, "--force-reinstall --no-deps yt-dlp")
+        info_line(T("repair_done"))
+        ask_input(c(f"\n{T('repair_press')}", YELLOW))
+        return
+
+    info_line(T("repair_check_ffmpeg"))
+    refresh_ffmpeg()
+    if HAS_FFMPEG:
+        ok_line(f"{T('repair_ok_ffmpeg')}: {FFMPEG_BIN}")
+    else:
+        warn_line(T("repair_fix_ffmpeg"))
+        signal_action(ACTION_UPDATE_ALL_FILE)
+        info_line(T("repair_done"))
+        ask_input(c(f"\n{T('repair_press')}", YELLOW))
+        return
+
+    info_line(T("repair_check_ejs"))
+    if has_ejs():
+        try:
+            import yt_dlp_ejs  # noqa: F401
+            ok_line(T("repair_ok_ejs"))
+        except Exception:
+            warn_line(T("repair_fix_ejs"))
+    else:
+        warn_line(T("repair_fix_ejs"))
+
+    info_line(T("repair_done"))
+    ask_input(c(f"\n{T('repair_press')}", YELLOW))
+
+
+# ==========================================================
 # ДИАГНОСТИКА
 # ==========================================================
+
 def diag_hosts():
     return ["rutube.ru", "www.youtube.com", "i.ytimg.com", "redirector.googlevideo.com", "www.google.com"]
 
@@ -3624,6 +3777,7 @@ def diagnostics():
 # ==========================================================
 # ОТЛАДКА
 # ==========================================================
+
 def debug_menu():
     header(T("debug_title"))
     print(f"{T('debug_python')}: {sys.version.split()[0]}")
@@ -3646,6 +3800,7 @@ def debug_menu():
 # ==========================================================
 # ПРОЦЕСС ССЫЛОК
 # ==========================================================
+
 def download_one(url, audio_only, priority="best"):
     if audio_only or priority == "audio":
         ok, fp = attempt_download_audio(url)
@@ -3709,6 +3864,7 @@ def process_links(links, audio_only=False, priority="best"):
 # ==========================================================
 # ГЛАВНОЕ МЕНЮ
 # ==========================================================
+
 def main_menu():
     ensure_dir()
     cleanup_junk(aggressive=True)
@@ -3716,7 +3872,7 @@ def main_menu():
     if not HAS_FFMPEG:
         warn_line(T("no_ffmpeg_warn"))
     if not HAS_READLINE:
-        warn_line("readline not available, editing may misbehave. Run: apk add py3-readline")
+        warn_line("readline not available (editing may misbehave) — run menu 11 to repair or install py3-readline manually")
     while True:
         SEEN_ERRORS.clear()
         header(T("app_title"))
@@ -3726,7 +3882,8 @@ def main_menu():
         print(f"  1. {T('menu_download_video')}\n  2. {T('menu_download_audio')}")
         print(f"  3. {T('menu_search')}\n  4. {T('menu_reencode')}\n  5. {T('menu_files')}")
         print(f"  6. {T('menu_settings')}\n  7. {T('menu_diag')}\n  8. {T('menu_update')}")
-        print(f"  9. {T('menu_selfupdate')}\n 10. {T('menu_debug')}\n  0. {T('menu_exit')}")
+        print(f"  9. {T('menu_selfupdate')}\n 10. {T('menu_debug')}\n 11. {T('menu_repair')}")
+        print(f"  0. {T('menu_exit')}")
         ch = ask_input(c(f"{T('choice')}: ", GREEN))
         if ch is None:
             print(c(f"\n[+] {T('stopped')}", GREEN))
@@ -3757,6 +3914,8 @@ def main_menu():
                 return
         elif ch == "10":
             debug_menu()
+        elif ch == "11":
+            repair_env()
         elif ch in ("1", "2"):
             links = []
             info_line(T("enter_urls"))
@@ -3807,8 +3966,8 @@ chmod 700 /tmp/video_downloader.py
 
 if ! python3 -c 'compile(open("/tmp/video_downloader.py", encoding="utf-8").read(), "vdd", "exec")' 2>/dev/null; then
     REP err "$( [ "$VD_LANG" = "en" ] && echo 'Syntax error in generated Python code' || echo 'Синтаксическая ошибка в сгенерированном Python' )"
-    python3 -c 'compile(open("/tmp/video_downloader.py", encoding="devutf-8").read(), "vdd", "exec")' /null2>&1 | head -8 
-    REP inf "$(2 [ "$VD_LANG" = "en">& ] && echo 'Re1-download the script from source' || echo 'Скачайте скрипт заново из источника' )"
+    python3 -c 'compile(open("/tmp/video_downloader.py", encoding="utf-8").read(), "vdd", "exec")' 2>&1 | head -8
+    REP inf "$( [ "$VD_LANG" = "en" ] && echo 'Re-download the script from source' || echo 'Скачайте скрипт заново из источника' )"
     exit 1
 fi
 
@@ -3823,10 +3982,10 @@ if [ -f /tmp/vd_pip_cmd ]; then
     PIPE_ARGS=$(cat /tmp/vd_pip_cmd)
     rm -f /tmp/vd_pip_cmd
     say "${BLUE}[*] pip install $PIPE_ARGS${NC}"
-    if python3 -m pip install -U --no-deps --break-system-packages $PIPE_ARGS 2>&1 | tail -5; then
+    if python3 -m pip install -U --break-system-packages $PIPE_ARGS 2>&1 | tail -5; then
         say "${GREEN}[+] pip install OK${NC}"
     else
-        python3 -m pip install -U --no-deps $PIPE_ARGS 2>&1 | tail -5
+        python3 -m pip install -U $PIPE_ARGS 2>&1 | tail -5
     fi
     exec sh "$0"
 fi
@@ -3842,10 +4001,20 @@ if [ -f /tmp/vd_update_all ]; then
         REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'Repo refresh failed, using current repositories' || echo 'Обновление репозиториев не удалось, использую текущие' )"
     fi
     run_with_spinner "apk update" apk update >/dev/null 2>&1 || true
-    run_with_spinner "apk upgrade" apk upgrade >/ || true
-    if ! run_with_spinner "pip: upgrade all" python3 -m pip install -U --no-deps --break-system-packages yt-dlp tqdm yt-dlp-ejs; then
-        run_with_spinner "pip: upgrade all (retry)" python3 -m pip install -U --no-deps yt-dlp tqdm yt-dlp-ejs || true
+    run_with_spinner "apk upgrade" apk upgrade >/dev/null 2>&1 || true
+
+    run_with_spinner "pip: upgrade all" python3 -m pip install --force-reinstall --no-deps --break-system-packages yt-dlp tqdm >/dev/null 2>&1 || true
+    run_with_spinner "pip: upgrade all (retry)" python3 -m pip install --force-reinstall --no-deps yt-dlp tqdm >/dev/null 2>&1 || true
+
+    if ! python3 -c 'import yt_dlp' >/dev/null 2>&1; then
+        REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'yt-dlp broken after update, rolling back' || echo 'yt-dlp сломан после обновления, откатываю' )"
+        run_with_spinner "pip: rollback" python3 -m pip install --force-reinstall --no-deps --break-system-packages "yt-dlp==$KNOWN_GOOD_YTDLP" >/dev/null 2>&1 || true
     fi
+
+    run_with_spinner "pip: yt-dlp-ejs" python3 -m pip install -U --break-system-packages yt-dlp-ejs >/dev/null 2>&1 \
+        || run_with_spinner "pip: yt-dlp-ejs (retry)" python3 -m pip install -U yt-dlp-ejs >/dev/null 2>&1 \
+        || true
+
     REP ok "$( [ "$VD_LANG" = "en" ] && echo 'Update complete, restarting...' || echo 'Обновление завершено, перезапуск...' )"
     exec sh "$0"
 fi
@@ -3860,6 +4029,15 @@ fi
 if [ -f /tmp/vd_self_update ]; then
     rm -f /tmp/vd_self_update
     say "${GREEN}[+] Скрипт обновлён, перезапуск...${NC}"
+    exec sh "$0"
+fi
+
+if [ "$CODE" = "159" ]; then
+    REP err "$( [ "$VD_LANG" = "en" ] && echo 'Python crashed (SIGSYS) — repairing yt-dlp' || echo 'Python упал (SIGSYS) — восстанавливаю yt-dlp' )"
+    python3 -m pip uninstall -y yt-dlp-ejs >/dev/null 2>&1 || true
+    python3 -m pip install --force-reinstall --no-deps --break-system-packages "yt-dlp==$KNOWN_GOOD_YTDLP" >/dev/null 2>&1 \
+        || python3 -m pip install --force-reinstall --no-deps "yt-dlp==$KNOWN_GOOD_YTDLP" >/dev/null 2>&1 || true
+    REP inf "$( [ "$VD_LANG" = "en" ] && echo 'Restarting...' || echo 'Перезапуск...' )"
     exec sh "$0"
 fi
 
