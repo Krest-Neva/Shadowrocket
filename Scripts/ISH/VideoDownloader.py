@@ -74,7 +74,7 @@ fi
 say "${YELLOW}========================================${NC}"
 
 # ==========================================================
-#  ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ SHELL
+#  АНИМИРОВАННЫЙ СПИННЕР ДЛЯ SHELL-ОПЕРАЦИЙ
 # ==========================================================
 
 run_with_spinner() {
@@ -95,6 +95,10 @@ run_with_spinner() {
     printf '\r\033[K' >&2
     return $rc
 }
+
+# ==========================================================
+#  УПРАВЛЕНИЕ РЕПОЗИТОРИЯМИ ALPINE
+# ==========================================================
 
 set_repos() {
     ver=$1
@@ -137,6 +141,10 @@ find_alpine() {
     done
     return 1
 }
+
+# ==========================================================
+#  LD_PRELOAD-ХАК ДЛЯ FFMPEG
+# ==========================================================
 
 fix_ffmpeg() {
     if command -v ffmpeg >/dev/null 2>&1; then
@@ -274,6 +282,7 @@ import shutil
 import subprocess
 import importlib.util
 import select
+import threading
 import urllib.request
 import urllib.error
 from pathlib import Path
@@ -299,6 +308,18 @@ RED, GREEN, YELLOW, BLUE, CYAN, NC = ("\033[0;31m", "\033[0;32m", "\033[1;33m",
                                       "\033[0;34m", "\033[0;36m", "\033[0m")
 
 # ==========================================================
+#  ГЛОБАЛЬНЫЕ КОНСТАНТЫ (ДО ВСЕХ ФУНКЦИЙ)
+# ==========================================================
+DIRECT = ("youtube.com/", "youtu.be/", "rutube.ru/video/", "rutube.ru/play/", ".mp4", ".m3u8")
+SEEN_WARNINGS = set()
+SEEN_ERRORS = set()
+OUT_TMPL = "%(title).150B [%(id)s].%(ext)s"
+JS_BIN = {"deno": "deno", "node": "node", "bun": "bun", "quickjs": "qjs"}
+YT_CLIENT_SEQ = [[], ["tv"], ["android_vr"], ["web_safari"], ["mweb"], ["ios"], ["android"]]
+VIDEO_EXTS = (".mp4", ".mkv", ".webm", ".mov", ".m4v", ".avi", ".flv", ".ts")
+_encoders_cache = None
+
+# ==========================================================
 #  ФУНКЦИИ ВЫВОДА
 # ==========================================================
 def c(t, col):
@@ -315,6 +336,13 @@ def warn_line(m):
 
 def err_line(m):
     print(c("[!] " + str(m), RED))
+
+def err_unique(m):
+    msg = str(m).strip()
+    if not msg or msg in SEEN_ERRORS:
+        return
+    SEEN_ERRORS.add(msg)
+    err_line(msg)
 
 def header(title):
     line = "=" * 40
@@ -413,11 +441,8 @@ TEXTS = {
         "enter_urls": "Введите ссылки (по одной на строку).",
         "enter_urls_hint": "Пустая строка — начать. 'q' — меню.",
         "search_query": "Введите поисковый запрос",
-        "search_platform": "Где искать?",
-        "search_youtube": "YouTube",
-        "search_rutube": "RuTube (только по ссылке)",
         "search_results": "Результаты поиска",
-        "search_select": "Выберите номер видео (Enter — отмена)",
+        "search_select": "Выберите номер (Enter — отмена)",
         "available_formats": "Доступные форматы видео",
         "select_video": "Номер видеоформата (Enter — лучший)",
         "select_audio_track": "Номер аудиодорожки (Enter — лучшая)",
@@ -539,7 +564,7 @@ TEXTS = {
         "file": "Файл",
         "size": "Размер",
         "rename_prompt": "Переименовать?",
-        "move_fix_prompt": "В fix (если не открывается)?",
+        "move_fix_prompt": "В fix?",
         "converting": "Конвертация",
         "convert_prompt": "Конвертировать?",
         "convert_done": "Конвертация завершена",
@@ -605,6 +630,9 @@ TEXTS = {
         "debug_videos": "Папка видео",
         "debug_audio": "Папка аудио",
         "debug_press": "Enter — продолжить",
+        "post_process": "Пост-обработка",
+        "interrupted": "Скачивание прервано, возврат в меню",
+        "priority_audio_only": "Только аудио (пропуск видео)",
     },
     "en": {
         "app_title": "Universal Video Downloader",
@@ -626,11 +654,8 @@ TEXTS = {
         "enter_urls": "Enter URLs (one per line).",
         "enter_urls_hint": "Empty line — start. 'q' — menu.",
         "search_query": "Enter search query",
-        "search_platform": "Where to search?",
-        "search_youtube": "YouTube",
-        "search_rutube": "RuTube (link only)",
         "search_results": "Search results",
-        "search_select": "Select video number (Enter — cancel)",
+        "search_select": "Select number (Enter — cancel)",
         "available_formats": "Available video formats",
         "select_video": "Format number (Enter = best)",
         "select_audio_track": "Audio track number (Enter = best)",
@@ -752,7 +777,7 @@ TEXTS = {
         "file": "File",
         "size": "Size",
         "rename_prompt": "Rename?",
-        "move_fix_prompt": "Move to fix (if it won't open)?",
+        "move_fix_prompt": "Move to fix?",
         "converting": "Converting",
         "convert_prompt": "Convert?",
         "convert_done": "Conversion done",
@@ -818,6 +843,9 @@ TEXTS = {
         "debug_videos": "Videos dir",
         "debug_audio": "Audio dir",
         "debug_press": "Enter — continue",
+        "post_process": "Post-processing",
+        "interrupted": "Download interrupted, back to menu",
+        "priority_audio_only": "Audio only (skip video)",
     },
 }
 
@@ -843,7 +871,6 @@ def flush_stdin():
         pass
 
 def ask_input_timeout(prompt, timeout=60, default=None):
-    """Ввод с таймаутом. Если пользователь не ответил за timeout секунд, возвращает default."""
     sys.stdout.write(prompt)
     sys.stdout.flush()
     try:
@@ -860,7 +887,6 @@ def ask_input_timeout(prompt, timeout=60, default=None):
         return default
 
 def ask_input(prompt, default=None):
-    """Обычный ввод без таймаута (для коротких ответов)."""
     flush_stdin()
     try:
         sys.stdout.flush()
@@ -895,7 +921,7 @@ def parse_multi(text, n):
     return result
 
 # ==========================================================
-#  ШАБЛОНЫ ПРОКСИ / DNS / DOH / YOUTUBE-КЛИЕНТОВ
+#  ШАБЛОНЫ ПРОКСИ / DNS / DOH / YOUTUBE
 # ==========================================================
 PROXY_TEMPLATES = [
     "http://127.0.0.1:1082",
@@ -975,7 +1001,7 @@ YT_CLIENTS_TEMPLATES = [
 ]
 
 # ==========================================================
-#  НАСТРОЙКИ ПО УМОЛЧАНИЮ
+#  НАСТРОЙКИ
 # ==========================================================
 DEFAULT_SETTINGS = {
     "video_codec": "iphone",
@@ -1385,7 +1411,7 @@ def safe_name(s, limit=150):
     return s[:limit] or "video"
 
 # ==========================================================
-#  КОДЕКИ И ПРЕСЕТЫ
+#  КОДЕКИ
 # ==========================================================
 VIDEO_CODECS = {
     "iphone": {"label_key": "preset_iphone", "encoder": "libx264",
@@ -1425,13 +1451,10 @@ AUDIO_CODECS = {
 }
 
 A_COMPAT = {"aac": ("aac", "mp4a"), "opus": ("opus",)}
-VIDEO_EXTS = (".mp4", ".mkv", ".webm", ".mov", ".m4v", ".avi", ".flv", ".ts")
-OUT_TMPL = "%(title).150B [%(id)s].%(ext)s"
-JS_BIN = {"deno": "deno", "node": "node", "bun": "bun", "quickjs": "qjs"}
-YT_CLIENT_SEQ = [[], ["tv"], ["android_vr"], ["web_safari"], ["mweb"], ["ios"], ["android"]]
-SEEN_WARNINGS = set()
-_encoders_cache = None
 
+# ==========================================================
+#  КОДЕКИ/JS/EJS
+# ==========================================================
 def available_encoders():
     global _encoders_cache
     if _encoders_cache is not None:
@@ -1469,9 +1492,6 @@ def has_ejs():
     except Exception:
         return False
 
-# ==========================================================
-#  СЕЛЕКТОРЫ
-# ==========================================================
 def height_filter():
     h = SETTINGS["max_height"]
     return f"[height<={h}]" if h else ""
@@ -1495,7 +1515,6 @@ def selector_chain(chosen):
 class Log:
     def __init__(self):
         self.msgs = []
-        self.summary = []
     def debug(self, m):
         pass
     def info(self, m):
@@ -1504,40 +1523,19 @@ class Log:
         m = str(m)
         if "Deprecated Feature" in m or "Support for Python version" in m:
             return
-        if "PO Token" in m:
-            if "PO token required" not in self.summary:
-                self.summary.append("PO token required")
-            return
-        if "SABR" in m:
-            if "SABR streaming" not in self.summary:
-                self.summary.append("SABR streaming")
-            return
-        if "n challenge solving failed" in m:
-            if "challenge failed" not in self.summary:
-                self.summary.append("challenge failed")
+        if "PO Token" in m or "SABR" in m or "n challenge" in m:
             return
         self.msgs.append(m)
-        if m not in SEEN_WARNINGS:
-            SEEN_WARNINGS.add(m)
-            warn_line(m)
     def error(self, m):
         m = str(m)
         if "Deprecated Feature" in m or "Support for Python version" in m:
             return
         self.msgs.append(m)
-        err_line(m)
     def text(self):
         return "\n".join(self.msgs)
 
-def report(e, lg):
-    msg = str(e).strip()
-    if msg and "Deprecated Feature" not in msg and "Support for Python version" not in msg:
-        if not any(msg in m or m.strip() in msg for m in lg.msgs):
-            err_line(f"{type(e).__name__}: {msg}")
-    return lg.text() + "\n" + msg
-
 # ==========================================================
-#  ПРОГРЕСС-БАР
+#  ПРОГРЕСС-БАР (ПРОЦЕНТЫ, ОБЪЁМ, СКОРОСТЬ, ETA)
 # ==========================================================
 class Progress:
     def __init__(self):
@@ -1550,12 +1548,8 @@ class Progress:
             total = d.get("total_bytes") or d.get("total_bytes_estimate")
             if self.bar is None:
                 self.bar = tqdm(
-                    total=total,
-                    unit="B",
-                    unit_scale=True,
-                    leave=False,
-                    ncols=SETTINGS["progress_width"],
-                    desc="dl",
+                    total=total, unit="B", unit_scale=True, leave=False,
+                    ncols=SETTINGS["progress_width"], desc="dl",
                     bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{rate_fmt}, ETA {remaining}]"
                 )
             elif total:
@@ -1572,7 +1566,33 @@ class Progress:
             sys.stdout.flush()
 
 # ==========================================================
-#  СТРАТЕГИИ YOUTUBE
+#  АНИМИРОВАННЫЙ СПИННЕР В PYTHON
+# ==========================================================
+class Spinner:
+    def __init__(self, message="working"):
+        self.message = message
+        self.stop = False
+        self.thread = None
+    def start(self):
+        self.thread = threading.Thread(target=self._run, daemon=True)
+        self.thread.start()
+    def _run(self):
+        frames = "|/-\\"
+        i = 0
+        while not self.stop:
+            sys.stdout.write(f"\r{frames[i % len(frames)]} {self.message}... ")
+            sys.stdout.flush()
+            time.sleep(0.1)
+            i += 1
+    def stop_spinner(self):
+        self.stop = True
+        if self.thread:
+            self.thread.join(timeout=1)
+        sys.stdout.write("\r\033[K")
+        sys.stdout.flush()
+
+# ==========================================================
+#  YOUTUBE СТРАТЕГИИ И ОПЦИИ
 # ==========================================================
 def parse_clients(text):
     groups = []
@@ -1594,9 +1614,6 @@ def build_strategies(url, win=None):
         out.sort(key=lambda s: 0 if s["name"] == win else 1)
     return out
 
-# ==========================================================
-#  БАЗОВЫЕ ОПЦИИ YT-DLP
-# ==========================================================
 def base_opts(strategy=None, **extra):
     s = SETTINGS
     quick = QUICK["on"]
@@ -1636,7 +1653,7 @@ def first_entry(info):
     return info
 
 # ==========================================================
-#  ИЗВЛЕЧЕНИЕ ИНФОРМАЦИИ
+#  ИЗВЛЕЧЕНИЕ ИНФОРМАЦИИ (СО СПИННЕРОМ)
 # ==========================================================
 def get_info(url, strategy):
     if yt_dlp is None:
@@ -1648,25 +1665,30 @@ def get_info(url, strategy):
             info = first_entry(ydl.extract_info(url, download=False))
         return info, lg.text()
     except Exception as e:
-        return None, report(e, lg)
+        return None, lg.text() + "\n" + str(e)
 
 def extract_info_smart(url):
     info_line(f"{T('extracting')}: {trunc(url, 60)}")
+    sp = Spinner(T("extracting"))
+    sp.start()
     net_fail = 0
-    for st in build_strategies(url):
-        if net_fail >= 2:
-            break
-        info, err = get_info(url, st)
-        if isinstance(info, dict) and (info.get("formats") or info.get("url")):
-            return info, st["name"]
-        if is_net_error(err):
-            net_fail += 1
-        if not is_youtube(url):
-            break
-    return None, None
+    try:
+        for st in build_strategies(url):
+            if net_fail >= 2:
+                break
+            info, err = get_info(url, st)
+            if isinstance(info, dict) and (info.get("formats") or info.get("url")):
+                return info, st["name"]
+            if is_net_error(err):
+                net_fail += 1
+            if not is_youtube(url):
+                break
+        return None, None
+    finally:
+        sp.stop_spinner()
 
 # ==========================================================
-#  ЗАПУСК ЧЕРЕЗ МОДУЛЬ
+#  ЗАПУСК YT-DLP (МОДУЛЬ И БИНАРНИК)
 # ==========================================================
 def run_module(url, selector, strategy, job, extra=None, outtmpl=None):
     if yt_dlp is None:
@@ -1685,13 +1707,10 @@ def run_module(url, selector, strategy, job, extra=None, outtmpl=None):
             code = ydl.download([url])
         return code in (None, 0), lg.text()
     except Exception as e:
-        return False, report(e, lg)
+        return False, lg.text() + "\n" + str(e)
     finally:
         pg.close()
 
-# ==========================================================
-#  ЗАПУСК ЧЕРЕЗ БИНАРНИК
-# ==========================================================
 def run_binary(url, selector, strategy, job, extra_flags=(), outtmpl=None):
     if not shutil.which("yt-dlp") and yt_dlp is None:
         return False, ""
@@ -1734,7 +1753,6 @@ def run_binary(url, selector, strategy, job, extra_flags=(), outtmpl=None):
         proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
                                 text=True, bufsize=1, env=env)
     except Exception as e:
-        err_line(f"{type(e).__name__}: {e}")
         return False, str(e)
     try:
         for line in proc.stderr:
@@ -1758,25 +1776,27 @@ def run_binary(url, selector, strategy, job, extra_flags=(), outtmpl=None):
     finally:
         sys.stdout.write("\n")
         sys.stdout.flush()
-    text = "\n".join(err_lines)
-    for line in err_lines:
-        if proc.returncode != 0:
-            err_line(line)
-        else:
-            warn_line(line)
-    return proc.returncode == 0, text
+    return proc.returncode == 0, "\n".join(err_lines)
 
 def run_any(url, selector, strategy, job, extra=None, flags=(), outtmpl=None):
+    errors = []
     if yt_dlp is not None:
         ok, err = run_module(url, selector, strategy, job, extra, outtmpl)
         if ok:
             return True, err
+        if err:
+            errors.append(err)
         if not shutil.which("yt-dlp"):
-            return False, err
-    return run_binary(url, selector, strategy, job, flags, outtmpl)
+            return False, "\n".join(errors)
+    ok, err = run_binary(url, selector, strategy, job, flags, outtmpl)
+    if ok:
+        return True, err
+    if err:
+        errors.append(err)
+    return False, "\n".join(errors)
 
 # ==========================================================
-#  СНИМКИ И НОВЫЕ ФАЙЛЫ
+#  ФАЙЛЫ И ОЧИСТКА
 # ==========================================================
 def snapshot(d):
     result = {}
@@ -1809,9 +1829,6 @@ def newest_changed(d, before, exts=None):
         pass
     return best
 
-# ==========================================================
-#  ОЧИСТКА ВРЕМЕННЫХ ФАЙЛОВ
-# ==========================================================
 def cleanup_junk(aggressive=False):
     removed = []
     now = time.time()
@@ -2049,43 +2066,54 @@ def convert_audio(src, akey):
     return src
 
 # ==========================================================
-#  ВЫБОР ФОРМАТА (С ПРИОРИТЕТОМ)
+#  ВЫБОР ФОРМАТА С ПРИОРИТЕТОМ
 # ==========================================================
-def select_format(info, priority="best"):
-    default = default_selector()
+def select_format_list(info, priority="best"):
     if not isinstance(info, dict):
-        return default
+        return [default_selector()]
     formats = info.get("formats") or []
     videos = [f for f in formats if isinstance(f, dict) and f.get("format_id") and f.get("vcodec") not in (None, "none")]
     audios = [f for f in formats if isinstance(f, dict) and f.get("format_id") and f.get("vcodec") == "none" and f.get("acodec") not in (None, "none")]
     if not videos:
-        return default
-    # Сортировка по приоритету
-    if priority == "1080":
-        videos.sort(key=lambda f: (f.get("height") or 0), reverse=True)
-    elif priority == "720":
-        videos.sort(key=lambda f: (f.get("height") or 0), reverse=True)
-    elif priority == "480":
-        videos.sort(key=lambda f: (f.get("height") or 0), reverse=True)
-    else:
-        videos.sort(key=lambda f: (f.get("height") or 0, f.get("fps") or 0), reverse=True)
-    # Выбор лучшего видео
-    uniq = {}
-    for f in videos:
-        uniq[(f.get("height"), f.get("ext"), f.get("fps"), f.get("vcodec"), f.get("acodec"))] = f
-    vlist = list(uniq.values())
-    if not vlist:
-        return default
-    sel = vlist[0]
-    vid = str(sel["format_id"])
-    if sel.get("acodec") not in (None, "none"):
-        return vid
-    if not audios or not HAS_FFMPEG:
-        return vid if not audios else default
-    # Выбор аудио
-    audios.sort(key=lambda f: f.get("abr") or 0, reverse=True)
-    audio = audios[0]
-    return f"{vid}+{audio['format_id']}"
+        return [default_selector()]
+
+    def priority_key(f):
+        h = f.get("height") or 0
+        if priority == "1080":
+            return (abs(h - 1080), -h)
+        if priority == "720":
+            return (abs(h - 720), -h)
+        if priority == "480":
+            return (abs(h - 480), -h)
+        return (-h, -(f.get("fps") or 0))
+
+    videos_sorted = sorted(videos, key=priority_key)
+    audios_sorted = sorted(audios, key=lambda f: f.get("abr") or 0, reverse=True)
+    best_audio = str(audios_sorted[0]["format_id"]) if audios_sorted else None
+
+    selectors = []
+    for v in videos_sorted[:3]:
+        vid = str(v["format_id"])
+        if v.get("acodec") not in (None, "none"):
+            selectors.append(vid)
+        elif best_audio and HAS_FFMPEG:
+            selectors.append(f"{vid}+{best_audio}")
+        elif HAS_FFMPEG:
+            selectors.append(f"{vid}+ba/b")
+        else:
+            selectors.append(vid)
+
+    if selectors:
+        for sel in selector_chain(selectors[0]):
+            if sel not in selectors:
+                selectors.append(sel)
+
+    for v in videos_sorted[:10]:
+        fid = str(v["format_id"])
+        if fid not in selectors:
+            selectors.append(fid)
+
+    return selectors
 
 # ==========================================================
 #  HTTP / RUTUBE
@@ -2244,7 +2272,7 @@ def external_download(url, info, job):
     return False
 
 # ==========================================================
-#  ВЫБОР ПРОКСИ
+#  ВЫБОР ПРОКСИ / СЕТЬ
 # ==========================================================
 def prompt_proxy():
     warn_line(T("net_help"))
@@ -2278,9 +2306,6 @@ def prompt_proxy():
     info_line(T("proxy_set"))
     return True
 
-# ==========================================================
-#  ПОДГОТОВКА СЕТИ
-# ==========================================================
 def prepare_network(url):
     QUICK["on"] = False
     if preflight(url):
@@ -2296,17 +2321,22 @@ def prepare_network(url):
 #  ЦЕПОЧКА ЗАГРУЗКИ
 # ==========================================================
 def download_chain(url, job, chosen, info, win, allow_proxy=True):
-    selectors = job["selectors"] or selector_chain(chosen)
+    selectors = list(job["selectors"] or selector_chain(chosen))
     strategies = build_strategies(url, win)
     net_fail = 0
     for st in strategies:
         if net_fail >= 2:
             break
         for sel in selectors:
-            info_line(f"{T('strategy')}: {st['name']} | {T('selector')}: {sel}")
+            info_line(f"{T('strategy')}: {st['name']} | {T('selector')}: {trunc(sel, 40)}")
             ok, err = run_any(url, sel, st, job)
             if ok:
                 return True
+            if err:
+                for line in err.split("\n"):
+                    line = line.strip()
+                    if line:
+                        err_unique(line)
             if is_net_error(err):
                 net_fail += 1
                 break
@@ -2321,6 +2351,11 @@ def download_chain(url, job, chosen, info, win, allow_proxy=True):
             ok, err = run_binary(url, sel, first, job)
             if ok:
                 return True
+            if err:
+                for line in err.split("\n"):
+                    line = line.strip()
+                    if line:
+                        err_unique(line)
             if not is_format_error(err) and not is_net_error(err):
                 break
     if job["kind"] == "video" and "rutube.ru" in url:
@@ -2332,6 +2367,11 @@ def download_chain(url, job, chosen, info, win, allow_proxy=True):
                           flags=("--force-generic-extractor",))
         if ok:
             return True
+        if err:
+            for line in err.split("\n"):
+                line = line.strip()
+                if line:
+                    err_unique(line)
         if not is_format_error(err) and not is_net_error(err):
             break
     if info:
@@ -2354,80 +2394,78 @@ def make_job(kind):
     return {"kind": "video", "dir": VIDEOS_DIR, "merge": HAS_FFMPEG, "selectors": None}
 
 # ==========================================================
-#  СКАЧИВАНИЕ ВИДЕО
+#  СКАЧИВАНИЕ (С ОБРАБОТКОЙ CTRL+C)
 # ==========================================================
 def attempt_download_video(url, priority="best"):
     if not valid_url(url):
         err_line(f"{T('invalid_url')}: {url}")
         return False, None
-    refresh_ffmpeg()
-    if not prepare_network(url):
+    SEEN_ERRORS.clear()
+    try:
+        refresh_ffmpeg()
+        if not prepare_network(url):
+            return False, None
+        if not HAS_FFMPEG:
+            warn_line(T("no_ffmpeg_warn"))
+        job = make_job("video")
+        before = snapshot(VIDEOS_DIR)
+        info, win = extract_info_smart(url)
+        title = (info.get("title") if isinstance(info, dict) else None) or trunc(url, 40)
+        info_line(f"{T('downloading')}: {trunc(title, 50)}")
+        selectors = select_format_list(info, priority)
+        info_line(f"{T('selector')}: {trunc(selectors[0] if selectors else 'best', 60)}")
+        job["selectors"] = selectors
+        if not download_chain(url, job, selectors[0] if selectors else "best", info, win):
+            return False, None
+        f = newest_changed(VIDEOS_DIR, before, VIDEO_EXTS)
+        if f is None:
+            return False, None
+        ok_line(f"{T('download_done')}: {f.name}")
+        return True, f
+    except KeyboardInterrupt:
+        print()
+        warn_line(T("interrupted"))
+        try:
+            subprocess.run(["pkill", "-f", "yt-dlp"], timeout=5, capture_output=True)
+            subprocess.run(["pkill", "-f", "ffmpeg"], timeout=5, capture_output=True)
+        except Exception:
+            pass
         return False, None
-    if not HAS_FFMPEG:
-        warn_line(T("no_ffmpeg_warn"))
-    job = make_job("video")
-    before = snapshot(VIDEOS_DIR)
-    info, win = extract_info_smart(url)
-    title = (info.get("title") if isinstance(info, dict) else None) or trunc(url, 40)
-    info_line(f"{T('downloading')}: {trunc(title, 50)}")
-    chosen = select_format(info, priority)
-    info_line(f"{T('selector')}: {chosen}")
-    if not download_chain(url, job, chosen, info, win):
-        err_line(T("all_exhausted"))
-        return False, None
-    f = newest_changed(VIDEOS_DIR, before, VIDEO_EXTS)
-    if f is None:
-        err_line(T("all_exhausted"))
-        return False, None
-    ok_line(f"{T('download_done')}: {f.name}")
-    return True, f
 
-# ==========================================================
-#  СКАЧИВАНИЕ АУДИО
-# ==========================================================
 def attempt_download_audio(url):
     if not valid_url(url):
         err_line(f"{T('invalid_url')}: {url}")
         return False, None
-    refresh_ffmpeg()
-    if not prepare_network(url):
+    SEEN_ERRORS.clear()
+    try:
+        refresh_ffmpeg()
+        if not prepare_network(url):
+            return False, None
+        job = make_job("audio")
+        before = snapshot(AUDIO_DIR)
+        info, win = extract_info_smart(url)
+        title = (info.get("title") if isinstance(info, dict) else None) or trunc(url, 40)
+        info_line(f"{T('downloading')}: {trunc(title, 50)}")
+        if not download_chain(url, job, "bestaudio/best", info, win):
+            return False, None
+        f = newest_changed(AUDIO_DIR, before)
+        if f is None:
+            return False, None
+        ok_line(f"{T('download_done')}: {f.name}")
+        f = convert_audio(f, SETTINGS["audio_codec"])
+        return True, f
+    except KeyboardInterrupt:
+        print()
+        warn_line(T("interrupted"))
+        try:
+            subprocess.run(["pkill", "-f", "yt-dlp"], timeout=5, capture_output=True)
+            subprocess.run(["pkill", "-f", "ffmpeg"], timeout=5, capture_output=True)
+        except Exception:
+            pass
         return False, None
-    job = make_job("audio")
-    before = snapshot(AUDIO_DIR)
-    info, win = extract_info_smart(url)
-    title = (info.get("title") if isinstance(info, dict) else None) or trunc(url, 40)
-    info_line(f"{T('downloading')}: {trunc(title, 50)}")
-    if not download_chain(url, job, "bestaudio/best", info, win):
-        err_line(T("all_exhausted"))
-        return False, None
-    f = newest_changed(AUDIO_DIR, before)
-    if f is None:
-        err_line(T("all_exhausted"))
-        return False, None
-    ok_line(f"{T('download_done')}: {f.name}")
-    f = convert_audio(f, SETTINGS["audio_codec"])
-    return True, f
 
 # ==========================================================
-#  ПОСТ-ОБРАБОТКА (ПЕРЕИМЕНОВАНИЕ, FIX)
-# ==========================================================
-def post_process_files(files):
-    if not files:
-        return
-    print()
-    header("Пост-обработка" if LANG == "ru" else "Post-processing")
-    for f in files:
-        if not f.exists():
-            continue
-        if SETTINGS["ask_rename"] and confirm(f"{T('rename_prompt')} '{f.name}'?"):
-            new_name = ask_input(c(f"{T('fm_new_name')}: ", YELLOW))
-            if new_name and new_name.strip():
-                rename_file(f, new_name.strip())
-        if SETTINGS["ask_fix"] and confirm(f"{T('move_fix_prompt')} '{f.name}'?"):
-            move_to_fix(f)
-
-# ==========================================================
-#  ОПЕРАЦИИ С ФАЙЛАМИ
+#  ФАЙЛОВЫЕ ОПЕРАЦИИ
 # ==========================================================
 def move_to_fix(path):
     if not path or not path.exists():
@@ -2479,8 +2517,50 @@ def show_ready_and_rename(path, is_audio=False):
     return path
 
 # ==========================================================
-#  ПОИСК ВИДЕО
+#  ПОИСК ВИДЕО НА СТРАНИЦЕ
 # ==========================================================
+def find_videos_on_page(page_url):
+    info_line(f"{T('scanning')}: {trunc(page_url, 60)}")
+    if yt_dlp is None:
+        return []
+    o = base_opts(extract_flat=True, noplaylist=False)
+    try:
+        with yt_dlp.YoutubeDL(o) as ydl:
+            info = ydl.extract_info(page_url, download=False)
+    except Exception as e:
+        err_unique(f"{type(e).__name__}: {e}")
+        return []
+    if not isinstance(info, dict):
+        return []
+    if info.get("entries") is not None:
+        urls = []
+        for e in info["entries"]:
+            if isinstance(e, dict):
+                u = e.get("webpage_url") or e.get("url")
+                if isinstance(u, str) and u.startswith(("http://", "https://")):
+                    urls.append(u)
+        urls = list(dict.fromkeys(urls))
+        ok_line(f"{T('found_videos')}: {len(urls)}")
+        return urls
+    u = info.get("webpage_url") or info.get("original_url") or info.get("url")
+    return [u] if isinstance(u, str) and valid_url(u) else []
+
+# ==========================================================
+#  ПОИСК И ПРИОРИТЕТ
+# ==========================================================
+def ask_priority():
+    print(c(f"\n{T('priority_format')}:", CYAN))
+    print(f"  1. {T('priority_best')}")
+    print(f"  2. {T('priority_1080')}")
+    print(f"  3. {T('priority_720')}")
+    print(f"  4. {T('priority_480')}")
+    print(f"  5. {T('priority_audio')}")
+    pch = ask_input(c(f"{T('choice')} [1]: ", YELLOW))
+    if not pch:
+        return "best"
+    pch = pch.strip()
+    return {"2": "1080", "3": "720", "4": "480", "5": "audio"}.get(pch, "best")
+
 def search_videos():
     header(T("menu_search"))
     print("1. YouTube")
@@ -2502,14 +2582,14 @@ def search_videos():
         except Exception as e:
             err_line(f"{type(e).__name__}: {e}")
             return
-        entries = info.get("entries", [])
+        entries = info.get("entries", []) if isinstance(info, dict) else []
         if not entries:
             warn_line(T("no_videos"))
             return
         print(c(f"\n{T('search_results')}:", CYAN))
         for i, e in enumerate(entries[:10], 1):
             title = e.get("title") or "(no title)"
-            print(f"  {i}. {title}")
+            print(f"  {i}. {trunc(title, 60)}")
         ch = ask_input(c(f"{T('search_select')}: ", YELLOW))
         if ch is None or not ch.strip():
             return
@@ -2518,22 +2598,27 @@ def search_videos():
             selected = entries[idx]
             video_url = selected.get("url") or selected.get("webpage_url")
             if video_url:
-                download_one(video_url, False)
+                priority = ask_priority()
+                fp = attempt_download_video(video_url, priority)
+                if fp[0] and fp[1]:
+                    post_process_files([fp[1]])
         except (ValueError, IndexError):
             err_line(T("invalid_choice"))
     elif ch == "2":
-        info_line("RuTube: вставьте ссылку на видео")
         url = ask_input("URL: ", YELLOW)
         if url and url.strip():
-            download_one(url.strip(), False)
+            priority = ask_priority()
+            fp = attempt_download_video(url.strip(), priority)
+            if fp[0] and fp[1]:
+                post_process_files([fp[1]])
 
 # ==========================================================
-#  ПЕРЕКОДИРОВАНИЕ ГОТОВЫХ ФАЙЛОВ
+#  ПЕРЕКОДИРОВАНИЕ
 # ==========================================================
 def reencode_menu():
     header(T("menu_reencode"))
-    print("1. Видео")
-    print("2. Аудио")
+    print("1. Video")
+    print("2. Audio")
     ch = ask_input(c(f"{T('choice')}: ", GREEN))
     if ch is None:
         return
@@ -2586,6 +2671,24 @@ def reencode_menu():
         convert_audio(target, akey)
 
 # ==========================================================
+#  ПОСТ-ОБРАБОТКА
+# ==========================================================
+def post_process_files(files):
+    if not files:
+        return
+    print()
+    header(T("post_process"))
+    for f in files:
+        if not f or not f.exists():
+            continue
+        if SETTINGS["ask_rename"] and confirm(f"{T('rename_prompt')} '{trunc(f.name, 40)}'?"):
+            new_name = ask_input_timeout(c(f"{T('fm_new_name')}: ", YELLOW), timeout=60)
+            if new_name and new_name.strip():
+                rename_file(f, new_name.strip())
+        if SETTINGS["ask_fix"] and confirm(f"{T('move_fix_prompt')} '{trunc(f.name, 40)}'?"):
+            move_to_fix(f)
+
+# ==========================================================
 #  ФАЙЛОВЫЙ МЕНЕДЖЕР
 # ==========================================================
 def list_files(directory):
@@ -2636,7 +2739,7 @@ def print_files(files):
             size = f.stat().st_size
         except OSError:
             size = 0
-        print(f"  {i}. {f.name} ({fmt_size(size)})")
+        print(f"  {i}. {trunc(f.name, 60)} ({fmt_size(size)})")
 
 def file_manager_choose_dir():
     while True:
@@ -2976,11 +3079,9 @@ def update_menu():
         trigger_pip(["--pre", "yt-dlp", "tqdm"])
     elif ch == "3":
         trigger_pip(["yt-dlp-ejs"])
-    else:
-        return
 
 # ==========================================================
-#  САМООБНОВЛЕНИЕ СКРИПТА
+#  САМООБНОВЛЕНИЕ
 # ==========================================================
 def check_remote_version():
     if not UPDATE_URL:
@@ -2988,8 +3089,7 @@ def check_remote_version():
     try:
         req = urllib.request.Request(UPDATE_URL, headers={"User-Agent": UA})
         with urllib.request.urlopen(req, timeout=30) as r:
-            content = r.read().decode("utf-8", "replace")
-        return content
+            return r.read().decode("utf-8", "replace")
     except Exception as e:
         err_line(f"{type(e).__name__}: {e}")
         return None
@@ -3030,7 +3130,7 @@ def self_update_menu():
         return False
 
 # ==========================================================
-#  ДИАГНОСТИКА СЕТИ
+#  ДИАГНОСТИКА
 # ==========================================================
 def diag_hosts():
     return ["rutube.ru", "www.youtube.com", "i.ytimg.com", "redirector.googlevideo.com", "www.google.com"]
@@ -3093,7 +3193,7 @@ def diagnostics():
     ask_input(c(f"\n{T('diag_press')}", YELLOW))
 
 # ==========================================================
-#  ОТЛАДОЧНЫЙ ЭКРАН
+#  ОТЛАДКА
 # ==========================================================
 def debug_menu():
     header(T("debug_title"))
@@ -3113,10 +3213,10 @@ def debug_menu():
     ask_input(c(f"\n{T('debug_press')}", YELLOW))
 
 # ==========================================================
-#  ОСНОВНОЙ ЦИКЛ
+#  СКАЧИВАНИЕ ССЫЛОК
 # ==========================================================
 def download_one(url, audio_only, priority="best"):
-    if audio_only:
+    if audio_only or priority == "audio":
         ok, fp = attempt_download_audio(url)
     else:
         ok, fp = attempt_download_video(url, priority)
@@ -3126,6 +3226,8 @@ def download_one(url, audio_only, priority="best"):
     return None
 
 def process_links(links, audio_only=False, priority="best"):
+    if priority == "audio":
+        audio_only = True
     downloaded = []
     for url in links:
         if not valid_url(url):
@@ -3147,7 +3249,7 @@ def process_links(links, audio_only=False, priority="best"):
             continue
         print(c(f"\n{T('multiple_videos')}:", CYAN))
         for i, u in enumerate(found, 1):
-            print(f"  {i}. {u}")
+            print(f"  {i}. {trunc(u, 60)}")
         ch = ask_input(c(f"{T('number_or_all')}: ", YELLOW))
         if ch is None:
             continue
@@ -3166,6 +3268,9 @@ def process_links(links, audio_only=False, priority="best"):
                 err_line(T("invalid_choice"))
     return downloaded
 
+# ==========================================================
+#  ГЛАВНОЕ МЕНЮ
+# ==========================================================
 def main_menu():
     ensure_dir()
     cleanup_junk(aggressive=True)
@@ -3191,7 +3296,7 @@ def main_menu():
             break
         if ch == "3":
             search_videos()
-        elif ch == "4":
+        elif один ch == "4":
             reencode_menu()
         elif ch == "5":
             file_manager()
@@ -3219,25 +3324,7 @@ def main_menu():
                     break
                 links.append(line)
             if links:
-                # Спросить приоритет
-                print(c(f"\n{T('priority_format')}:", CYAN))
-                print(f"  1. {T('priority_best')}")
-                print(f"  2. {T('priority_1080')}")
-                print(f"  3. {T('priority_720')}")
-                print(f"  4. {T('priority_480')}")
-                print(f"  5. {T('priority_audio')}")
-                pch = ask_input(c(f"{T('choice')} [1]: ", YELLOW))
-                priority = "best"
-                if pch:
-                    pch = pch.strip()
-                    if pch == "2":
-                        priority = "1080"
-                    elif pch == "3":
-                        priority = "720"
-                    elif pch == "4":
-                        priority = "480"
-                    elif pch == "5":
-                        priority = "audio"
+                priority = ask_priority()
                 downloaded = process_links(links, audio_only=(ch == "2"), priority=priority)
                 if downloaded:
                     post_process_files(downloaded)
@@ -3265,9 +3352,6 @@ chmod 700 /tmp/video_downloader.py
 python3 /tmp/video_downloader.py
 CODE=$?
 
-# ==========================================================
-#  ОБРАБОТКА СПЕЦИАЛЬНЫХ КОДОВ
-# ==========================================================
 if [ $CODE -eq 98 ] && [ -f /tmp/vd_pip_cmd ]; then
     PIPE_ARGS=$(cat /tmp/vd_pip_cmd)
     rm -f /tmp/vd_pip_cmd
