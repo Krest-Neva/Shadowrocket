@@ -144,7 +144,7 @@ TEXTS = {
         "enter_urls": "Введите ссылки на видео (по одной на строку).",
         "enter_urls_hint": "Пустая строка — начать загрузку. 'q' — меню.",
         "available_formats": "Доступные форматы видео",
-        "select_video": "Номер видеоформата (Enter — лучший)",
+        "select_video": "Номер видеоформата (Enter — совместимый с iPhone)",
         "available_audio": "Доступные аудиодорожки",
         "select_audio": "Номер аудио (Enter — лучшее)",
         "with_audio": "со звуком",
@@ -170,6 +170,8 @@ TEXTS = {
         "fm_2": "Удалить несколько (1,3-5)",
         "fm_3": "Удалить все",
         "fm_4": "Переименовать файл",
+        "fm_5": "Переместить в fix (если видео не открывается)",
+        "fm_6": "Вернуть из fix",
         "fm_back": "Назад",
         "fm_delete_file": "Удалить файл",
         "fm_delete_all": "Удалить ВСЕ файлы?",
@@ -192,6 +194,12 @@ TEXTS = {
         "junk_cleaned": "Очищено временных файлов",
         "press_enter": "Enter — продолжить",
         "file_index": "Номер файла",
+        "move_to_fix_prompt": "Если видео не открывается в Files, переместить в папку fix?",
+        "moved_to_fix": "Перемещено в fix",
+        "fix_empty": "Папка fix пуста",
+        "fix_dir": "Папка fix",
+        "move_failed": "Не удалось переместить",
+        "compat_warning": "Формат может быть несовместим с iPhone (не H.264/AAC). Рекомендуется VLC или переместить в fix.",
     },
     "en": {
         "app_title": "Universal Video Downloader",
@@ -205,7 +213,7 @@ TEXTS = {
         "enter_urls": "Enter video URLs (one per line).",
         "enter_urls_hint": "Empty line to start download. 'q' to menu.",
         "available_formats": "Available video formats",
-        "select_video": "Video format number (Enter = best)",
+        "select_video": "Video format number (Enter = iPhone-compatible)",
         "available_audio": "Available audio tracks",
         "select_audio": "Audio number (Enter = best)",
         "with_audio": "with audio",
@@ -231,6 +239,8 @@ TEXTS = {
         "fm_2": "Delete multiple (1,3-5)",
         "fm_3": "Delete all",
         "fm_4": "Rename file",
+        "fm_5": "Move to fix (if video won't open)",
+        "fm_6": "Restore from fix",
         "fm_back": "Back",
         "fm_delete_file": "Delete file",
         "fm_delete_all": "Delete ALL files?",
@@ -253,6 +263,12 @@ TEXTS = {
         "junk_cleaned": "Cleaned temp files",
         "press_enter": "Enter — continue",
         "file_index": "File number",
+        "move_to_fix_prompt": "If video won't open in Files, move to fix folder?",
+        "moved_to_fix": "Moved to fix",
+        "fix_empty": "fix folder is empty",
+        "fix_dir": "fix folder",
+        "move_failed": "Failed to move",
+        "compat_warning": "Format may be incompatible with iPhone (not H.264/AAC). Use VLC or move to fix.",
     },
 }
 
@@ -268,9 +284,12 @@ def save_lang(new_lang):
         pass
 
 YTDLP_BINARY = shutil.which("yt-dlp")
-VIDEOS_DIR = Path("/root/videos")
-FALLBACK_DIR = Path.home() / "videos"
+BASE_DIR = Path("/root/VideoDownloader")
+VIDEOS_DIR = BASE_DIR / "videos"
+FIX_DIR = BASE_DIR / "fix"
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+
+COMPAT_FORMAT = "bv*[vcodec^=avc1]+ba[ext=m4a]/b[ext=mp4]/bv*+ba/b"
 
 RED, GREEN, YELLOW, BLUE, CYAN, NC = ("\033[0;31m", "\033[0;32m", "\033[1;33m",
                                       "\033[0;34m", "\033[0;36m", "\033[0m")
@@ -287,16 +306,10 @@ def header(title):
     print(c(line, YELLOW))
 
 def ensure_dir():
-    global VIDEOS_DIR
-    for d in (VIDEOS_DIR, FALLBACK_DIR):
-        try:
-            d.mkdir(parents=True, exist_ok=True)
-            t = d / ".write_test"; t.touch(); t.unlink()
-            VIDEOS_DIR = d
-            return
-        except OSError:
-            continue
-    raise OSError("no writable video directory")
+    global VIDEOS_DIR, FIX_DIR
+    for d in (VIDEOS_DIR, FIX_DIR):
+        d.mkdir(parents=True, exist_ok=True)
+    return VIDEOS_DIR
 
 def fmt_size(n):
     if n < 1024: return f"{n} B"
@@ -385,7 +398,7 @@ def get_video_info(url, **extra):
     return None
 
 def select_format(url):
-    default = "bv*+ba/b"
+    default = COMPAT_FORMAT
     info = get_video_info(url)
     if not isinstance(info, dict):
         return default
@@ -541,7 +554,7 @@ def rutube_download(url):
     hdrs = {"User-Agent": UA, "Referer": "https://rutube.ru/", "Origin": "https://rutube.ru"}
     out = VIDEOS_DIR / f"{title} [{vid}].mp4"
     if yt_dlp is not None:
-        for sel in ("bv*+ba/b", "best"):
+        for sel in (COMPAT_FORMAT, "bv*+ba/b"):
             opts = base_opts(format=sel, outtmpl=str(VIDEOS_DIR / f"{title} [{vid}].%(ext)s"),
                              merge_output_format="mp4", http_headers=hdrs, continuedl=True)
             h = progress_hook()
@@ -564,6 +577,25 @@ def rutube_download(url):
         except Exception:
             pass
     return False
+
+def check_compat(filepath):
+    if not filepath or not filepath.exists():
+        return False
+    if not shutil.which("ffprobe"):
+        return True
+    try:
+        r = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "v:0",
+             "-show_entries", "stream=codec_name", "-of", "default=nw=1:nk=1",
+             str(filepath)],
+            capture_output=True, text=True, timeout=30
+        )
+        vcodec = r.stdout.strip().lower()
+        if vcodec and vcodec not in ("h264", "avc1"):
+            return False
+    except Exception:
+        pass
+    return True
 
 def attempt_download(url):
     if not valid_url(url):
@@ -590,12 +622,12 @@ def attempt_download(url):
         success = True
     else:
         print(c(f"[!] {T('trying_generic')}", YELLOW))
-        if run_module(url, "bv*+ba/b", force_generic_extractor=True) or \
-           run_binary(url, "bv*+ba/b", "--force-generic-extractor"):
+        if run_module(url, COMPAT_FORMAT, force_generic_extractor=True) or \
+           run_binary(url, COMPAT_FORMAT, "--force-generic-extractor"):
             success = True
         elif confirm(T("retry_tls")):
-            if run_module(url, "bv*+ba/b", nocheckcertificate=True) or \
-               run_binary(url, "bv*+ba/b", "--no-check-certificate"):
+            if run_module(url, COMPAT_FORMAT, nocheckcertificate=True) or \
+               run_binary(url, COMPAT_FORMAT, "--no-check-certificate"):
                 success = True
 
     if not success:
@@ -620,7 +652,30 @@ def attempt_download(url):
 
     if newest_file is None:
         newest_file = find_newest_mp4()
+
+    if newest_file and not check_compat(newest_file):
+        print(c(f"[!] {T('compat_warning')}", YELLOW))
+
     return True, newest_file
+
+def move_to_fix(filepath):
+    if not filepath or not filepath.exists():
+        return False
+    try:
+        dest = FIX_DIR / filepath.name
+        if dest.exists():
+            stem = filepath.stem
+            suffix = filepath.suffix
+            counter = 1
+            while dest.exists():
+                dest = FIX_DIR / f"{stem}_{counter}{suffix}"
+                counter += 1
+        filepath.rename(dest)
+        print(c(f"[+] {T('moved_to_fix')}: {trunc(dest.name, 34)}", GREEN))
+        return True
+    except OSError as e:
+        print(c(f"[!] {T('move_failed')}: {trunc(str(e), 50)}", RED))
+        return False
 
 def show_ready_and_rename(filepath):
     if not filepath or not filepath.exists():
@@ -640,28 +695,29 @@ def show_ready_and_rename(filepath):
         do_rename = confirm(T("rename_prompt"))
     except (EOFError, KeyboardInterrupt):
         return filepath
-    if not do_rename:
-        return filepath
-    try:
-        new_name = input(c(f"{T('rename_new_name')}: ", YELLOW)).strip()
-    except (EOFError, KeyboardInterrupt):
-        return filepath
-    if not new_name:
-        return filepath
-    if not new_name.endswith(filepath.suffix):
-        new_name += filepath.suffix
-    new_name = re.sub(r'[\\/:*?"<>|]', "_", new_name)
-    new_path = filepath.parent / new_name
-    if new_path.exists() and new_path != filepath:
-        print(c(f"[!] {T('rename_exists')}", RED))
-        return filepath
-    try:
-        filepath.rename(new_path)
-        print(c(f"[+] {T('renamed')}: {trunc(new_name, 34)}", GREEN))
-        return new_path
-    except OSError as e:
-        print(c(f"[!] {T('rename_failed')}: {trunc(str(e), 50)}", RED))
-        return filepath
+    if do_rename:
+        try:
+            new_name = input(c(f"{T('rename_new_name')}: ", YELLOW)).strip()
+        except (EOFError, KeyboardInterrupt):
+            new_name = ""
+        if new_name:
+            if not new_name.endswith(filepath.suffix):
+                new_name += filepath.suffix
+            new_name = re.sub(r'[\\/:*?"<>|]', "_", new_name)
+            new_path = filepath.parent / new_name
+            if new_path.exists() and new_path != filepath:
+                print(c(f"[!] {T('rename_exists')}", RED))
+            else:
+                try:
+                    filepath.rename(new_path)
+                    print(c(f"[+] {T('renamed')}: {trunc(new_name, 34)}", GREEN))
+                    filepath = new_path
+                except OSError as e:
+                    print(c(f"[!] {T('rename_failed')}: {trunc(str(e), 50)}", RED))
+
+    if confirm(T("move_to_fix_prompt")):
+        move_to_fix(filepath)
+    return filepath
 
 def find_videos_on_page(page_url):
     print(c(f"\n[*] {T('scanning')}: {trunc(page_url, 40)}", BLUE))
@@ -759,10 +815,7 @@ def parse_numbers(text, max_index):
     return result
 
 def file_manager():
-    try:
-        ensure_dir()
-    except OSError:
-        return
+    ensure_dir()
     while True:
         files = list_video_files()
         header(T("fm_title"))
@@ -783,6 +836,8 @@ def file_manager():
         print(f"  2. {T('fm_2')}")
         print(f"  3. {T('fm_3')}")
         print(f"  4. {T('fm_4')}")
+        print(f"  5. {T('fm_5')}")
+        print(f"  6. {T('fm_6')}")
         print(f"  0. {T('fm_back')}")
         try:
             ch = input(c(f"{T('choice')}: ", GREEN)).strip().lower()
@@ -790,10 +845,10 @@ def file_manager():
             return
         if ch in ("0", "q", "back", "назад"):
             return
-        if ch not in ("1", "2", "3", "4"):
+        if ch not in ("1", "2", "3", "4", "5", "6"):
             print(c(f"[!] {T('invalid_choice')}", RED))
             continue
-        if not files:
+        if not files and ch not in ("6",):
             continue
         if ch == "1":
             try:
@@ -861,6 +916,42 @@ def file_manager():
                 print(c(f"[+] {T('renamed')}: {trunc(new_name, 34)}", GREEN))
             except OSError as e:
                 print(c(f"[!] {T('rename_failed')}: {trunc(str(e), 50)}", RED))
+        elif ch == "5":
+            try:
+                idx = input(c(f"{T('file_index')} (1-{len(files)}): ", YELLOW)).strip()
+                nums = parse_numbers(idx, len(files))
+            except (ValueError, EOFError, KeyboardInterrupt):
+                print(c(f"[!] {T('invalid_choice')}", RED))
+                continue
+            move_to_fix(files[nums[0] - 1])
+        elif ch == "6":
+            try:
+                fix_files = sorted(FIX_DIR.iterdir(), key=lambda p: p.name.lower())
+            except OSError:
+                fix_files = []
+            fix_files = [f for f in fix_files if f.is_file() and not f.name.startswith(".")]
+            if not fix_files:
+                print(c(f"[!] {T('fix_empty')}", YELLOW))
+                continue
+            header(T("fix_dir"))
+            for i, f in enumerate(fix_files, 1):
+                try:
+                    size = f.stat().st_size
+                except OSError:
+                    size = 0
+                print(f"  {i}. {trunc(f.name, 28)} ({fmt_size(size)})")
+            try:
+                idx = input(c(f"{T('file_index')} (1-{len(fix_files)}): ", YELLOW)).strip()
+                nums = parse_numbers(idx, len(fix_files))
+            except (ValueError, EOFError, KeyboardInterrupt):
+                print(c(f"[!] {T('invalid_choice')}", RED))
+                continue
+            target = fix_files[nums[0] - 1]
+            try:
+                target.rename(VIDEOS_DIR / target.name)
+                print(c(f"[+] {T('renamed')}: {trunc(target.name, 34)}", GREEN))
+            except OSError as e:
+                print(c(f"[!] {T('move_failed')}: {trunc(str(e), 50)}", RED))
 
 def language_menu():
     while True:
@@ -884,11 +975,7 @@ def language_menu():
             return
 
 def main_menu():
-    try:
-        ensure_dir()
-    except OSError as e:
-        print(c(f"[!] directory error: {trunc(str(e), 60)}", RED))
-        return
+    ensure_dir()
     while True:
         cleanup_junk()
         header(T("app_title"))
