@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# ==========================================================
+#  ИНИЦИАЛИЗАЦИЯ И НАСТРОЙКА ОКРУЖЕНИЯ
+# ==========================================================
+
 set -u
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; CYAN='\033[0;36m'; NC='\033[0m'
@@ -14,7 +18,6 @@ if [ -f "$0" ]; then
 else
     export VD_SCRIPT_PATH=""
 fi
-
 export VD_UPDATE_URL="https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/ISH/VideoDownloader.py"
 
 LANG_FILE="$HOME/.video_downloader_lang"
@@ -59,6 +62,33 @@ else
     say "${YELLOW}  === Универсальный загрузчик видео ===${NC}"
 fi
 say "${YELLOW}========================================${NC}"
+
+# ==========================================================
+#  АНИМИРОВАННЫЙ СПИННЕР ДЛЯ SHELL-ОПЕРАЦИЙ
+# ==========================================================
+
+run_with_spinner() {
+    msg="$1"
+    shift
+    ("$@") >/tmp/vd_spin_out 2>/tmp/vd_spin_err &
+    pid=$!
+    frames='|/-\'
+    i=0
+    while kill -0 "$pid" 2>/dev/null; do
+        frame=$(printf '%s' "$frames" | cut -c$(( (i % 4) + 1 )))
+        printf '\r%s %s... ' "$frame" "$msg" >&2
+        i=$((i + 1))
+        sleep 0.15
+    done
+    wait "$pid" 2>/dev/null
+    rc=$?
+    printf '\r\033[K' >&2
+    return $rc
+}
+
+# ==========================================================
+#  УПРАВЛЕНИЕ РЕПОЗИТОРИЯМИ ALPINE
+# ==========================================================
 
 set_repos() {
     ver=$1
@@ -107,6 +137,10 @@ find_alpine() {
     done
     return 1
 }
+
+# ==========================================================
+#  LD_PRELOAD-ХАК ДЛЯ FFMPEG (ОБХОД BAD SYSTEM CALL)
+# ==========================================================
 
 fix_ffmpeg() {
     if command -v ffmpeg >/dev/null 2>&1; then
@@ -160,6 +194,10 @@ WRAP_FP_EOF
     fi
 }
 
+# ==========================================================
+#  ПРОВЕРКА И УСТАНОВКА PYTHON 3.10+
+# ==========================================================
+
 PY_OK=0
 if command -v python3 >/dev/null 2>&1; then
     if python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3,10) else 1)' 2>/dev/null; then
@@ -181,20 +219,33 @@ if [ "$PY_OK" = "0" ]; then
     REP ok "$( [ "$VD_LANG" = "en" ] && echo "Alpine $ALPINE_VER works" || echo "Alpine $ALPINE_VER работает" )"
 fi
 
-apk update >/dev/null 2>&1 || true
+# ==========================================================
+#  УСТАНОВКА БАЗОВЫХ ПАКЕТОВ СО СПИННЕРОМ
+# ==========================================================
+
+run_with_spinner "apk update" apk update >/dev/null 2>&1 || true
 
 for pkg in python3 py3-pip curl wget ca-certificates nodejs ffmpeg; do
     if apk info -e "$pkg" >/dev/null 2>&1; then
+        REP ok "$pkg $( [ "$VD_LANG" = "en" ] && echo 'already installed' || echo 'уже установлен' )"
         continue
     fi
-    apk add --no-cache "$pkg" >/dev/null 2>&1 || true
+    if run_with_spinner "Installing $pkg" apk add --no-cache "$pkg"; then
+        REP ok "$pkg $( [ "$VD_LANG" = "en" ] && echo 'installed' || echo 'установлен' )"
+    else
+        REP err "$pkg $( [ "$VD_LANG" = "en" ] && echo 'failed to install' || echo 'не установился' )"
+    fi
 done
 
 fix_ffmpeg
 
+# ==========================================================
+#  УСТАНОВКА PYTHON-ЗАВИСИМОСТЕЙ
+# ==========================================================
+
 if command -v python3 >/dev/null 2>&1; then
     if ! python3 -c 'import yt_dlp, tqdm' >/dev/null 2>&1; then
-        python3 -m pip install -U --no-deps --break-system-packages yt-dlp tqdm >/dev/null 2>&1 \
+        run_with_spinner "pip: yt-dlp" python3 -m pip install -U --no-deps --break-system-packages yt-dlp tqdm >/dev/null 2>&1 \
             || python3 -m pip install -U --no-deps yt-dlp tqdm >/dev/null 2>&1
     fi
     if python3 -c 'import yt_dlp, tqdm' >/dev/null 2>&1; then
@@ -204,12 +255,22 @@ if command -v python3 >/dev/null 2>&1; then
         REP err "yt-dlp not installed"
     fi
     if ! python3 -c 'import yt_dlp_ejs' >/dev/null 2>&1; then
-        python3 -m pip install -U --break-system-packages yt-dlp-ejs >/dev/null 2>&1 \
+        run_with_spinner "pip: yt-dlp-ejs" python3 -m pip install -U --break-system-packages yt-dlp-ejs >/dev/null 2>&1 \
             || python3 -m pip install -U yt-dlp-ejs >/dev/null 2>&1
     fi
     if python3 -c 'import yt_dlp_ejs' >/dev/null 2>&1; then
         REP ok "yt-dlp-ejs"
     fi
+fi
+
+# Финальная верификация всех инструментов
+if command -v python3 >/dev/null 2>&1; then
+    PYV=$(python3 --version 2>&1 | awk '{print $2}')
+    REP ok "python3 $PYV"
+fi
+if command -v ffmpeg >/dev/null 2>&1 && ffmpeg -version >/dev/null 2>&1; then
+    FFV=$(ffmpeg -version 2>/dev/null | head -1 | awk '{print $3}')
+    REP ok "ffmpeg $FFV"
 fi
 
 command -v python3 >/dev/null 2>&1 || { REP err "python3 missing"; exit 1; }
@@ -218,7 +279,14 @@ export PYTHONUTF8=1
 export PYTHONIOENCODING=utf-8
 export PYTHONHASHSEED=0
 
+# ==========================================================
+#  ГЛАВНЫЙ PYTHON-СКРИПТ
+# ==========================================================
+
 cat > /tmp/video_downloader.py << 'PYEOF'
+# ==========================================================
+#  ИМПОРТЫ
+# ==========================================================
 import sys
 import os
 import re
@@ -255,6 +323,9 @@ UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like 
 RED, GREEN, YELLOW, BLUE, CYAN, NC = ("\033[0;31m", "\033[0;32m", "\033[1;33m",
                                       "\033[0;34m", "\033[0;36m", "\033[0m")
 
+# ==========================================================
+#  ФУНКЦИИ ВЫВОДА
+# ==========================================================
 def c(t, col):
     return f"{col}{t}{NC}"
 
@@ -276,6 +347,9 @@ def header(title):
     print(c("  " + str(title), YELLOW))
     print(c(line, YELLOW))
 
+# ==========================================================
+#  ЗАГРУЗКА ЯЗЫКА
+# ==========================================================
 if LANG_FILE.exists():
     try:
         _l = LANG_FILE.read_text(encoding="utf-8").strip()
@@ -285,6 +359,9 @@ if LANG_FILE.exists():
 else:
     LANG = "ru"
 
+# ==========================================================
+#  ОПРЕДЕЛЕНИЕ FFMPEG/FFPROBE
+# ==========================================================
 def _detect_ffmpeg():
     cands = []
     w = shutil.which("ffmpeg")
@@ -337,6 +414,9 @@ def refresh_ffmpeg():
         if HAS_FFMPEG:
             ok_line(f"ffmpeg: {new_ff}")
 
+# ==========================================================
+#  СЛОВАРИ ПЕРЕВОДОВ (RU/EN)
+# ==========================================================
 TEXTS = {
     "ru": {
         "app_title": "Универсальный загрузчик видео",
@@ -347,6 +427,7 @@ TEXTS = {
         "menu_diag": "Диагностика сети",
         "menu_update": "Обновить yt-dlp",
         "menu_selfupdate": "Обновить скрипт с GitHub",
+        "menu_debug": "Отладка (все версии)",
         "menu_exit": "Выход (q)",
         "choice": "Ваш выбор",
         "invalid_choice": "Неверный выбор",
@@ -521,6 +602,20 @@ TEXTS = {
         "selfupd_downloading": "Скачивание новой версии",
         "templates_custom": "Ввести вручную",
         "templates_multi_hint": "Можно: 2 или 1,3,5 или 1-3 или all",
+        "debug_title": "Отладочная информация",
+        "debug_python": "Python",
+        "debug_ytdlp": "yt-dlp",
+        "debug_ejs": "yt-dlp-ejs",
+        "debug_ffmpeg": "ffmpeg",
+        "debug_ffprobe": "ffprobe",
+        "debug_node": "Node.js",
+        "debug_js": "JS runtime",
+        "debug_proxy": "Прокси",
+        "debug_dns": "DNS серверы",
+        "debug_ip": "IP версия",
+        "debug_videos": "Папка видео",
+        "debug_audio": "Папка аудио",
+        "debug_press": "Enter — продолжить",
     },
     "en": {
         "app_title": "Universal Video Downloader",
@@ -531,6 +626,7 @@ TEXTS = {
         "menu_diag": "Network diagnostics",
         "menu_update": "Update yt-dlp",
         "menu_selfupdate": "Update script from GitHub",
+        "menu_debug": "Debug (all versions)",
         "menu_exit": "Exit (q)",
         "choice": "Choice",
         "invalid_choice": "Invalid choice",
@@ -705,12 +801,29 @@ TEXTS = {
         "selfupd_downloading": "Downloading new version",
         "templates_custom": "Custom",
         "templates_multi_hint": "Allowed: 2 or 1,3,5 or 1-3 or all",
+        "debug_title": "Debug information",
+        "debug_python": "Python",
+        "debug_ytdlp": "yt-dlp",
+        "debug_ejs": "yt-dlp-ejs",
+        "debug_ffmpeg": "ffmpeg",
+        "debug_ffprobe": "ffprobe",
+        "debug_node": "Node.js",
+        "debug_js": "JS runtime",
+        "debug_proxy": "Proxy",
+        "debug_dns": "DNS servers",
+        "debug_ip": "IP version",
+        "debug_videos": "Videos dir",
+        "debug_audio": "Audio dir",
+        "debug_press": "Enter — continue",
     },
 }
 
 def T(key):
     return TEXTS.get(LANG, TEXTS["ru"]).get(key, key)
 
+# ==========================================================
+#  ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ВВОДА
+# ==========================================================
 def save_lang(nl):
     global LANG
     LANG = nl
@@ -760,11 +873,17 @@ def parse_multi(text, n):
                 result.append(i)
     return result
 
+# ==========================================================
+#  ШАБЛОНЫ ПРОКСИ / DNS / DOH / YOUTUBE-КЛИЕНТОВ
+# ==========================================================
 PROXY_TEMPLATES = [
     "http://127.0.0.1:1082",
     "http://127.0.0.1:8080",
     "http://127.0.0.1:8081",
-    "http://127.0.0.1:1080",
+    "http://127.0.0.1:3128",
+    "http://127.0.0.1:9098",
+    "http://198.18.0.3:8080",
+    "http://198.18.0.3:1082",
     "socks5://127.0.0.1:1080",
     "socks5h://127.0.0.1:1080",
     "socks5://127.0.0.1:10808",
@@ -787,6 +906,8 @@ DNS_TEMPLATES = [
     "208.67.222.222,208.67.220.220",
     "76.76.2.0,76.76.10.0",
     "77.88.8.8,77.88.8.1",
+    "223.5.5.5,223.6.6.6",
+    "185.222.222.222,185.184.222.222",
     "1.1.1.1,1.0.0.1,8.8.8.8,8.8.4.4,9.9.9.9,149.112.112.112,94.140.14.14,94.140.15.15",
 ]
 
@@ -805,6 +926,9 @@ DOH_TEMPLATES = [
     "https://8.8.8.8/dns-query",
     "https://9.9.9.9/dns-query",
     "https://94.140.14.14/dns-query",
+    "https://doh.angry.im/dns-query",
+    "https://dns.aquilenet.fr/dns-query",
+    "https://nsec.arnor.org/dns-query",
 ]
 
 DOH_FALLBACK = [
@@ -829,6 +953,9 @@ YT_CLIENTS_TEMPLATES = [
     "all",
 ]
 
+# ==========================================================
+#  НАСТРОЙКИ ПО УМОЛЧАНИЮ
+# ==========================================================
 DEFAULT_SETTINGS = {
     "video_codec": "iphone",
     "audio_codec": "aac",
@@ -907,6 +1034,9 @@ def save_settings(s):
 
 SETTINGS = load_settings()
 
+# ==========================================================
+#  ПУТИ И ПАПКИ
+# ==========================================================
 BASE_DIR = Path(SETTINGS["base_dir"])
 VIDEOS_DIR = BASE_DIR / "videos"
 AUDIO_DIR = BASE_DIR / "audio"
@@ -934,6 +1064,9 @@ def ensure_dir():
         for d in (VIDEOS_DIR, AUDIO_DIR, FIX_DIR, TMP_DIR):
             d.mkdir(parents=True, exist_ok=True)
 
+# ==========================================================
+#  DNS-РЕЗОЛВЕР
+# ==========================================================
 DNS_CACHE = {}
 DNS_STATE = {"order": None, "busy": False}
 PREFLIGHT_OK = set()
@@ -1124,6 +1257,9 @@ def reset_dns():
     DNS_CACHE.clear()
     PREFLIGHT_OK.clear()
 
+# ==========================================================
+#  ПРЕДПРОВЕРКА СЕТИ
+# ==========================================================
 def tls_probe(host, ip, timeout=15):
     ctx = ssl.create_default_context() if SETTINGS["verify_tls"] else ssl._create_unverified_context()
     sock = None
@@ -1167,6 +1303,9 @@ def preflight(url):
     warn_line(T("preflight_blocked"))
     return False
 
+# ==========================================================
+#  УТИЛИТЫ
+# ==========================================================
 NET_PATTERNS = (
     "name does not resolve", "name or service not known", "temporary failure in name resolution",
     "try again", "handshake", "timed out", "timeout", "connection refused", "connection reset",
@@ -1224,6 +1363,9 @@ def safe_name(s, limit=150):
     s = re.sub(r'[\\/:*?"<>|%\n\r\t]+', "_", str(s)).strip()
     return s[:limit] or "video"
 
+# ==========================================================
+#  КОДЕКИ И ПРЕСЕТЫ
+# ==========================================================
 VIDEO_CODECS = {
     "iphone": {"label_key": "preset_iphone", "encoder": "libx264",
                "profile": "high", "level": "4.0", "crf": "23", "pix_fmt": "yuv420p", "preset": "medium",
@@ -1306,6 +1448,9 @@ def has_ejs():
     except Exception:
         return False
 
+# ==========================================================
+#  СЕЛЕКТОРЫ
+# ==========================================================
 def height_filter():
     h = SETTINGS["max_height"]
     return f"[height<={h}]" if h else ""
@@ -1323,6 +1468,9 @@ def selector_chain(chosen):
     items = [chosen, default_selector(), f"bv*{h}+ba/b{h}", f"b[ext=mp4]{h}/b{h}", "b/w"]
     return list(dict.fromkeys(items))
 
+# ==========================================================
+#  ЛОГГЕР
+# ==========================================================
 class Log:
     def __init__(self):
         self.msgs = []
@@ -1367,6 +1515,9 @@ def report(e, lg):
             err_line(f"{type(e).__name__}: {msg}")
     return lg.text() + "\n" + msg
 
+# ==========================================================
+#  ПРОГРЕСС-БАР (ПРОЦЕНТЫ, ОБЪЁМ, СКОРОСТЬ, ETA)
+# ==========================================================
 class Progress:
     def __init__(self):
         self.bar = None
@@ -1377,8 +1528,15 @@ class Progress:
         if st == "downloading":
             total = d.get("total_bytes") or d.get("total_bytes_estimate")
             if self.bar is None:
-                self.bar = tqdm(total=total, unit="B", unit_scale=True, leave=False,
-                                ncols=SETTINGS["progress_width"], desc="dl")
+                self.bar = tqdm(
+                    total=total,
+                    unit="B",
+                    unit_scale=True,
+                    leave=False,
+                    ncols=SETTINGS["progress_width"],
+                    desc="dl",
+                    bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{rate_fmt}, ETA {remaining}]"
+                )
             elif total:
                 self.bar.total = total
             dl = d.get("downloaded_bytes") or 0
@@ -1392,6 +1550,9 @@ class Progress:
             sys.stdout.write("\n")
             sys.stdout.flush()
 
+# ==========================================================
+#  СТРАТЕГИИ YOUTUBE
+# ==========================================================
 def parse_clients(text):
     groups = []
     for part in text.split(","):
@@ -1412,6 +1573,9 @@ def build_strategies(url, win=None):
         out.sort(key=lambda s: 0 if s["name"] == win else 1)
     return out
 
+# ==========================================================
+#  БАЗОВЫЕ ОПЦИИ YT-DLP
+# ==========================================================
 def base_opts(strategy=None, **extra):
     s = SETTINGS
     quick = QUICK["on"]
@@ -1450,6 +1614,9 @@ def first_entry(info):
         return next((e for e in info["entries"] if isinstance(e, dict) and e.get("formats")), None)
     return info
 
+# ==========================================================
+#  ИЗВЛЕЧЕНИЕ ИНФОРМАЦИИ
+# ==========================================================
 def get_info(url, strategy):
     if yt_dlp is None:
         return None, ""
@@ -1477,6 +1644,9 @@ def extract_info_smart(url):
             break
     return None, None
 
+# ==========================================================
+#  ЗАПУСК ЧЕРЕЗ МОДУЛЬ
+# ==========================================================
 def run_module(url, selector, strategy, job, extra=None, outtmpl=None):
     if yt_dlp is None:
         return False, ""
@@ -1498,6 +1668,9 @@ def run_module(url, selector, strategy, job, extra=None, outtmpl=None):
     finally:
         pg.close()
 
+# ==========================================================
+#  ЗАПУСК ЧЕРЕЗ БИНАРНИК
+# ==========================================================
 def run_binary(url, selector, strategy, job, extra_flags=(), outtmpl=None):
     if not shutil.which("yt-dlp") and yt_dlp is None:
         return False, ""
@@ -1581,6 +1754,9 @@ def run_any(url, selector, strategy, job, extra=None, flags=(), outtmpl=None):
             return False, err
     return run_binary(url, selector, strategy, job, flags, outtmpl)
 
+# ==========================================================
+#  СНИМКИ И НОВЫЕ ФАЙЛЫ
+# ==========================================================
 def snapshot(d):
     result = {}
     try:
@@ -1612,6 +1788,9 @@ def newest_changed(d, before, exts=None):
         pass
     return best
 
+# ==========================================================
+#  ОЧИСТКА ВРЕМЕННЫХ ФАЙЛОВ
+# ==========================================================
 def cleanup_junk(aggressive=False):
     removed = []
     now = time.time()
@@ -1658,6 +1837,9 @@ def cleanup_junk(aggressive=False):
         pass
     return removed
 
+# ==========================================================
+#  FFMPEG (ДЛИТЕЛЬНОСТЬ, КОДЕКИ, КОНВЕРТАЦИЯ)
+# ==========================================================
 def get_duration(path):
     if not HAS_FFMPEG or not FFPROBE_BIN:
         return None
@@ -1692,7 +1874,8 @@ def run_ffmpeg_with_progress(cmd, duration, desc):
     except Exception as e:
         err_line(f"ffmpeg: {e}")
         return False
-    pbar = tqdm(total=duration or 0, unit="s", desc=desc, leave=False, ncols=SETTINGS["progress_width"])
+    pbar = tqdm(total=duration or 0, unit="s", desc=desc, leave=False, ncols=SETTINGS["progress_width"],
+                bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{rate_fmt}, ETA {remaining}]")
     last = 0
     try:
         for line in proc.stdout:
@@ -1844,6 +2027,9 @@ def convert_audio(src, akey):
     err_line(T("convert_failed"))
     return src
 
+# ==========================================================
+#  ВЫБОР ФОРМАТА
+# ==========================================================
 def select_format(info):
     default = default_selector()
     if not isinstance(info, dict):
@@ -1894,6 +2080,9 @@ def select_format(info):
     except (ValueError, IndexError):
         return f"{vid}+ba/b"
 
+# ==========================================================
+#  HTTP / RUTUBE
+# ==========================================================
 def make_opener():
     handlers = []
     px = SETTINGS["proxy"]
@@ -1961,6 +2150,9 @@ def rutube_download(url, job):
             pass
     return False
 
+# ==========================================================
+#  ВНЕШНЯЯ ЗАГРУЗКА
+# ==========================================================
 def external_download(url, info, job):
     if not isinstance(info, dict):
         return False
@@ -2044,6 +2236,9 @@ def external_download(url, info, job):
                 pass
     return False
 
+# ==========================================================
+#  ВЫБОР ПРОКСИ
+# ==========================================================
 def prompt_proxy():
     warn_line(T("net_help"))
     print(c(f"\n{T('set_proxy')}:", CYAN))
@@ -2076,6 +2271,9 @@ def prompt_proxy():
     info_line(T("proxy_set"))
     return True
 
+# ==========================================================
+#  ПОДГОТОВКА СЕТИ
+# ==========================================================
 def prepare_network(url):
     QUICK["on"] = False
     if preflight(url):
@@ -2087,6 +2285,9 @@ def prepare_network(url):
         return True
     return False
 
+# ==========================================================
+#  ЦЕПОЧКА ЗАГРУЗКИ
+# ==========================================================
 def download_chain(url, job, chosen, info, win, allow_proxy=True):
     selectors = job["selectors"] or selector_chain(chosen)
     strategies = build_strategies(url, win)
@@ -2145,6 +2346,9 @@ def make_job(kind):
         return {"kind": "audio", "dir": AUDIO_DIR, "merge": False, "selectors": ["bestaudio/best", "b"]}
     return {"kind": "video", "dir": VIDEOS_DIR, "merge": HAS_FFMPEG, "selectors": None}
 
+# ==========================================================
+#  СКАЧИВАНИЕ ВИДЕО
+# ==========================================================
 def attempt_download_video(url):
     if not valid_url(url):
         err_line(f"{T('invalid_url')}: {url}")
@@ -2180,6 +2384,9 @@ def attempt_download_video(url):
             info_line(T("convert_cancelled"))
     return True, f
 
+# ==========================================================
+#  СКАЧИВАНИЕ АУДИО
+# ==========================================================
 def attempt_download_audio(url):
     if not valid_url(url):
         err_line(f"{T('invalid_url')}: {url}")
@@ -2203,6 +2410,9 @@ def attempt_download_audio(url):
     f = convert_audio(f, SETTINGS["audio_codec"])
     return True, f
 
+# ==========================================================
+#  РАБОТА С ФАЙЛАМИ
+# ==========================================================
 def move_to_fix(path):
     if not path or not path.exists():
         return False
@@ -2258,6 +2468,9 @@ def show_ready_and_rename(path, is_audio=False):
         move_to_fix(path)
     return path
 
+# ==========================================================
+#  ПОИСК ВИДЕО НА СТРАНИЦЕ
+# ==========================================================
 def find_videos_on_page(page_url):
     info_line(f"{T('scanning')}: {trunc(page_url, 60)}")
     if yt_dlp is None:
@@ -2326,6 +2539,9 @@ def process_links(links, audio_only=False):
             except (ValueError, IndexError):
                 err_line(T("invalid_choice"))
 
+# ==========================================================
+#  ФАЙЛОВЫЙ МЕНЕДЖЕР
+# ==========================================================
 def list_files(directory):
     try:
         files = sorted(directory.iterdir(), key=lambda p: p.name.lower())
@@ -2473,6 +2689,9 @@ def file_manager():
         elif ch == "5":
             move_to_fix(files[nums[0] - 1])
 
+# ==========================================================
+#  МЕНЮ ЯЗЫКА
+# ==========================================================
 def language_menu():
     while True:
         header(T("set_language"))
@@ -2488,6 +2707,9 @@ def language_menu():
             ok_line(T("set_saved"))
             return
 
+# ==========================================================
+#  НАСТРОЙКИ
+# ==========================================================
 def setting_display(key):
     if key == "language":
         return T("lang_ru" if LANG == "ru" else "lang_en")
@@ -2688,6 +2910,9 @@ def settings_menu():
         else:
             err_line(T("invalid_choice"))
 
+# ==========================================================
+#  ОБНОВЛЕНИЕ YT-DLP
+# ==========================================================
 def trigger_pip(args):
     Path("/tmp/vd_pip_cmd").write_text(" ".join(args), encoding="utf-8")
     sys.exit(98)
@@ -2708,6 +2933,9 @@ def update_menu():
     else:
         return
 
+# ==========================================================
+#  САМООБНОВЛЕНИЕ СКРИПТА
+# ==========================================================
 def check_remote_version():
     if not UPDATE_URL:
         return None
@@ -2755,6 +2983,9 @@ def self_update_menu():
         err_line(f"{type(e).__name__}: {e}")
         return False
 
+# ==========================================================
+#  ДИАГНОСТИКА СЕТИ
+# ==========================================================
 def diag_hosts():
     return ["rutube.ru", "www.youtube.com", "i.ytimg.com", "redirector.googlevideo.com", "www.google.com"]
 
@@ -2815,6 +3046,29 @@ def diagnostics():
             warn_line(T("diag_proxy_socks"))
     ask_input(c(f"\n{T('diag_press')}", YELLOW))
 
+# ==========================================================
+#  ОТЛАДОЧНЫЙ ЭКРАН
+# ==========================================================
+def debug_menu():
+    header(T("debug_title"))
+    print(f"{T('debug_python')}: {sys.version.split()[0]}")
+    print(f"{T('debug_ytdlp')}: {getattr(getattr(yt_dlp, 'version', None), '__version__', T('ytdlp_missing'))}")
+    print(f"{T('debug_ejs')}: {T('on') if has_ejs() else T('off')}")
+    print(f"{T('debug_ffmpeg')}: {FFMPEG_BIN or T('ffmpeg_missing')}")
+    print(f"{T('debug_ffprobe')}: {FFPROBE_BIN or 'missing'}")
+    node = shutil.which("node")
+    print(f"{T('debug_node')}: {node or 'not found'}")
+    print(f"{T('debug_js')}: {js_runtime() or T('js_none')}")
+    print(f"{T('debug_proxy')}: {SETTINGS['proxy'] or T('empty')}")
+    print(f"{T('debug_dns')}: {SETTINGS['dns_servers']}")
+    print(f"{T('debug_ip')}: {SETTINGS['ip_version']}")
+    print(f"{T('debug_videos')}: {VIDEOS_DIR}")
+    print(f"{T('debug_audio')}: {AUDIO_DIR}")
+    ask_input(c(f"\n{T('debug_press')}", YELLOW))
+
+# ==========================================================
+#  ГЛАВНОЕ МЕНЮ
+# ==========================================================
 def main_menu():
     ensure_dir()
     cleanup_junk(aggressive=True)
@@ -2828,7 +3082,7 @@ def main_menu():
         print("-" * 40)
         print(f"  1. {T('menu_download_video')}\n  2. {T('menu_download_audio')}\n  3. {T('menu_files')}")
         print(f"  4. {T('menu_settings')}\n  5. {T('menu_diag')}\n  6. {T('menu_update')}")
-        print(f"  7. {T('menu_selfupdate')}\n  0. {T('menu_exit')}")
+        print(f"  7. {T('menu_selfupdate')}\n  8. {T('menu_debug')}\n  0. {T('menu_exit')}")
         ch = ask_input(c(f"{T('choice')}: ", GREEN))
         if ch is None:
             print(c(f"\n[+] {T('stopped')}", GREEN))
@@ -2848,6 +3102,8 @@ def main_menu():
         elif ch == "7":
             if self_update_menu():
                 sys.exit(99)
+        elif ch == "8":
+            debug_menu()
         elif ch in ("1", "2"):
             links = []
             info_line(T("enter_urls"))
@@ -2886,6 +3142,9 @@ chmod 700 /tmp/video_downloader.py
 python3 /tmp/video_downloader.py
 CODE=$?
 
+# ==========================================================
+#  ОБРАБОТКА СПЕЦИАЛЬНЫХ КОДОВ ВЫХОДА
+# ==========================================================
 if [ $CODE -eq 98 ] && [ -f /tmp/vd_pip_cmd ]; then
     PIPE_ARGS=$(cat /tmp/vd_pip_cmd)
     rm -f /tmp/vd_pip_cmd
