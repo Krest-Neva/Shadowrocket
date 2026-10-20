@@ -1,10 +1,8 @@
 #!/bin/sh
 
-VD_VERSION="2.2"
-UPDATE_URL="https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/ISH/VideoDownloader.py"
-export VD_VERSION UPDATE_URL
+set -u
 
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; CYAN='\033[0;36m'; NC='\033[0m'
 say() { printf '%b\n' "$1"; }
 
 printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\nnameserver 94.140.14.14\nnameserver 9.9.9.9\n' > /etc/resolv.conf 2>/dev/null
@@ -16,6 +14,8 @@ if [ -f "$0" ]; then
 else
     export VD_SCRIPT_PATH=""
 fi
+
+export VD_UPDATE_URL="https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/ISH/VideoDownloader.py"
 
 LANG_FILE="$HOME/.video_downloader_lang"
 
@@ -53,9 +53,9 @@ fi
 
 say "${YELLOW}========================================${NC}"
 if [ "$VD_LANG" = "en" ]; then
-    say "${YELLOW}  === Universal Video Downloader v$VD_VERSION ===${NC}"
+    say "${YELLOW}  === Universal Video Downloader ===${NC}"
 else
-    say "${YELLOW}  === Универсальный загрузчик видео v$VD_VERSION ===${NC}"
+    say "${YELLOW}  === Универсальный загрузчик видео ===${NC}"
 fi
 say "${YELLOW}========================================${NC}"
 
@@ -104,6 +104,21 @@ for pkg in python3 py3-pip curl wget ca-certificates nodejs ffmpeg; do
     fi
 done
 
+if command -v ffmpeg >/dev/null 2>&1; then
+    if ! ffmpeg -version >/dev/null 2>&1; then
+        REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'ffmpeg is broken, reinstalling' || echo 'ffmpeg сломан, переустанавливаю' )"
+        apk add --no-cache --force-overwrite ffmpeg >/dev/null 2>&1 || true
+        if ffmpeg -version >/dev/null 2>&1; then
+            REP ok "ffmpeg reinstalled"
+        else
+            REP err "$( [ "$VD_LANG" = "en" ] && echo 'ffmpeg still broken' || echo 'ffmpeg всё ещё сломан' )"
+        fi
+    else
+        FFVER=$(ffmpeg -version 2>/dev/null | head -1 | awk '{print $3}')
+        REP ok "ffmpeg $FFVER"
+    fi
+fi
+
 if [ -n "$FAILED" ]; then
     REP wrn "$( [ "$VD_LANG" = "en" ] && echo "missing:$FAILED" || echo "не установлены:$FAILED" )"
     if [ "$VD_LANG" = "en" ]; then printf 'Retry? [y/N]: '; else printf 'Повторить? [y/N]: '; fi
@@ -120,10 +135,12 @@ if [ -n "$FAILED" ]; then
 fi
 
 if command -v python3 >/dev/null 2>&1; then
-    REP inf "$( [ "$VD_LANG" = "en" ] && echo 'pip: upgrading pip/setuptools/wheel...' || echo 'pip: обновление pip/setuptools/wheel...' )"
-    python3 -m pip install --upgrade pip setuptools wheel >/dev/null 2>&1 && \
-        REP ok "pip/setuptools/wheel" || \
-        REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'pip tools not updated' || echo 'pip tools не обновлены' )"
+    if python3 -m pip install --upgrade --break-system-packages pip setuptools wheel >/dev/null 2>&1 \
+       || python3 -m pip install --upgrade pip setuptools wheel >/dev/null 2>&1; then
+        REP ok "pip/setuptools/wheel"
+    else
+        REP inf "$( [ "$VD_LANG" = "en" ] && echo 'pip tools skipped (not critical)' || echo 'pip tools пропущены (не критично)' )"
+    fi
 
     REP inf "$( [ "$VD_LANG" = "en" ] && echo 'pip: installing yt-dlp...' || echo 'pip: установка yt-dlp...' )"
     python3 -m pip install -U --no-deps --break-system-packages yt-dlp tqdm >/dev/null 2>&1 \
@@ -141,7 +158,7 @@ if command -v python3 >/dev/null 2>&1; then
     if python3 -c 'import yt_dlp_ejs' >/dev/null 2>&1; then
         REP ok "yt-dlp-ejs"
     else
-        REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'yt-dlp-ejs not installed (optional)' || echo 'yt-dlp-ejs не установлен (опционально)' )"
+        REP inf "$( [ "$VD_LANG" = "en" ] && echo 'yt-dlp-ejs not installed (optional)' || echo 'yt-dlp-ejs не установлен (опционально)' )"
     fi
 fi
 
@@ -158,7 +175,6 @@ import re
 import json
 import time
 import ssl
-import shlex
 import socket
 import struct
 import random
@@ -183,11 +199,8 @@ HOME = Path.home()
 LANG_FILE = HOME / ".video_downloader_lang"
 SETTINGS_FILE = HOME / ".video_downloader_settings.json"
 SCRIPT_PATH = os.environ.get("VD_SCRIPT_PATH", "")
-VD_VERSION = os.environ.get("VD_VERSION", "0")
-UPDATE_URL = os.environ.get("UPDATE_URL", "")
+UPDATE_URL = os.environ.get("VD_UPDATE_URL", "")
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
-HAS_FFMPEG = shutil.which("ffmpeg") is not None
-PIP_CMD_FILE = Path("/tmp/vd_pip_cmd")
 
 RED, GREEN, YELLOW, BLUE, CYAN, NC = ("\033[0;31m", "\033[0;32m", "\033[1;33m",
                                       "\033[0;34m", "\033[0;36m", "\033[0m")
@@ -221,6 +234,49 @@ if LANG_FILE.exists():
         LANG = "ru"
 else:
     LANG = "ru"
+
+def _detect_ffmpeg():
+    cands = []
+    w = shutil.which("ffmpeg")
+    if w:
+        cands.append(w)
+    for p in ("/usr/bin/ffmpeg", "/usr/local/bin/ffmpeg", "/bin/ffmpeg"):
+        if p not in cands and os.path.exists(p):
+            cands.append(p)
+    for p in cands:
+        if os.path.exists(p) and os.access(p, os.X_OK):
+            try:
+                r = subprocess.run([p, "-version"], capture_output=True, timeout=15)
+                if r.returncode == 0 and b"ffmpeg version" in r.stdout:
+                    return p
+            except Exception:
+                pass
+    return None
+
+def _detect_ffprobe():
+    w = shutil.which("ffprobe")
+    if w:
+        return w
+    for p in ("/usr/bin/ffprobe", "/usr/local/bin/ffprobe", "/bin/ffprobe"):
+        if os.path.exists(p) and os.access(p, os.X_OK):
+            return p
+    return None
+
+FFMPEG_BIN = _detect_ffmpeg()
+FFPROBE_BIN = _detect_ffprobe()
+HAS_FFMPEG = FFMPEG_BIN is not None
+
+def refresh_ffmpeg():
+    global FFMPEG_BIN, FFPROBE_BIN, HAS_FFMPEG, _encoders_cache
+    new_ff = _detect_ffmpeg()
+    new_fp = _detect_ffprobe()
+    if new_ff != FFMPEG_BIN:
+        FFMPEG_BIN = new_ff
+        FFPROBE_BIN = new_fp
+        HAS_FFMPEG = new_ff is not None
+        _encoders_cache = None
+        if HAS_FFMPEG:
+            ok_line(f"ffmpeg: {new_ff}")
 
 TEXTS = {
     "ru": {
@@ -262,7 +318,7 @@ TEXTS = {
         "extracting": "Извлечение информации",
         "downloading": "Начинаю скачивание",
         "download_done": "Скачано",
-        "no_ffmpeg_warn": "ffmpeg не установлен — только комбинированные форматы (до 720p)",
+        "no_ffmpeg_warn": "ffmpeg не найден — только комбинированные форматы (до 720p)",
         "fm_title": "Управление файлами",
         "fm_choose_dir": "Выберите папку",
         "fm_videos": "videos",
@@ -397,9 +453,7 @@ TEXTS = {
         "ytdlp_missing": "yt-dlp нет",
         "dl_dest": "Сохранено в",
         "selfupd_title": "Обновление скрипта",
-        "selfupd_current": "Текущая версия",
         "selfupd_checking": "Проверка GitHub",
-        "selfupd_remote": "Удалённая версия",
         "selfupd_uptodate": "Уже последняя версия",
         "selfupd_check_failed": "Не удалось проверить",
         "selfupd_prompt": "Скачать и обновить скрипт?",
@@ -408,8 +462,7 @@ TEXTS = {
         "selfupd_no_path": "Не удалось определить путь скрипта",
         "selfupd_downloading": "Скачивание новой версии",
         "templates_custom": "Ввести вручную",
-        "templates_all_dns": "ВСЕ (объединить)",
-        "templates_current": "текущее",
+        "templates_multi_hint": "Можно: 2 или 1,3,5 или 1-3 или all",
     },
     "en": {
         "app_title": "Universal Video Downloader",
@@ -585,9 +638,7 @@ TEXTS = {
         "ytdlp_missing": "yt-dlp missing",
         "dl_dest": "Saved to",
         "selfupd_title": "Update script",
-        "selfupd_current": "Current version",
         "selfupd_checking": "Checking GitHub",
-        "selfupd_remote": "Remote version",
         "selfupd_uptodate": "Already latest version",
         "selfupd_check_failed": "Check failed",
         "selfupd_prompt": "Download and update script?",
@@ -596,8 +647,7 @@ TEXTS = {
         "selfupd_no_path": "Cannot determine script path",
         "selfupd_downloading": "Downloading new version",
         "templates_custom": "Custom",
-        "templates_all_dns": "ALL (combined)",
-        "templates_current": "current",
+        "templates_multi_hint": "Allowed: 2 or 1,3,5 or 1-3 or all",
     },
 }
 
@@ -626,6 +676,32 @@ def ask_input(prompt, default=None):
         return input(prompt)
     except (EOFError, KeyboardInterrupt):
         return default
+
+def parse_multi(text, n):
+    text = text.strip().lower()
+    if text in ("all", "a", "*"):
+        return list(range(1, n + 1))
+    result = []
+    for part in text.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if "-" in part:
+            try:
+                a, b = part.split("-", 1)
+                a, b = int(a), int(b)
+                if a > b:
+                    a, b = b, a
+                for i in range(a, b + 1):
+                    if 1 <= i <= n and i not in result:
+                        result.append(i)
+            except ValueError:
+                continue
+        elif part.isdigit():
+            i = int(part)
+            if 1 <= i <= n and i not in result:
+                result.append(i)
+    return result
 
 PROXY_TEMPLATES = [
     "http://127.0.0.1:1082",
@@ -822,7 +898,10 @@ def dns_servers():
 def doh_urls():
     urls = []
     if SETTINGS["doh_url"]:
-        urls.append(SETTINGS["doh_url"])
+        for u in SETTINGS["doh_url"].split(","):
+            u = u.strip()
+            if u:
+                urls.append(u)
     if SETTINGS["doh_fallback"]:
         urls += DOH_FALLBACK
     return list(dict.fromkeys(urls))
@@ -1044,7 +1123,10 @@ def is_net_error(text):
 
 def is_format_error(text):
     t = str(text).lower()
-    return "requested format is not available" in t or "no video formats" in t
+    return ("requested format is not available" in t
+            or "no video formats" in t
+            or "merging of multiple formats" in t
+            or "ffmpeg is not installed" in t)
 
 def trunc(s, n):
     s = str(s)
@@ -1138,7 +1220,7 @@ def available_encoders():
     if not HAS_FFMPEG:
         return _encoders_cache
     try:
-        r = subprocess.run(["ffmpeg", "-hide_banner", "-encoders"], capture_output=True, text=True, timeout=30)
+        r = subprocess.run([FFMPEG_BIN, "-hide_banner", "-encoders"], capture_output=True, text=True, timeout=30)
         for line in r.stdout.splitlines():
             m = re.match(r"^ [A-Z.]{6} (\S+)", line)
             if m:
@@ -1180,8 +1262,8 @@ def default_selector():
 def selector_chain(chosen):
     h = height_filter()
     if not HAS_FFMPEG:
-        return [f"b[ext=mp4]{h}/b{h}", "b"]
-    items = [chosen, default_selector(), f"bv*{h}+ba/b{h}", "b/w"]
+        return [f"b[ext=mp4]{h}", "b"]
+    items = [chosen, default_selector(), f"bv*{h}+ba/b{h}", f"b[ext=mp4]{h}/b{h}", "b/w"]
     return list(dict.fromkeys(items))
 
 class Log:
@@ -1364,7 +1446,7 @@ def run_binary(url, selector, strategy, job, extra_flags=(), outtmpl=None):
         return False, ""
     s = SETTINGS
     base_cmd = ["yt-dlp"] if shutil.which("yt-dlp") else [sys.executable, "-m", "yt_dlp"]
-    cmd = base_cmd + ["-f", selector, "--no-playlist", "--quiet", "--no-progress",
+    cmd = base_cmd + ["-f", selector, "--no-playlist", "--newline", "--no-warnings",
                       "-o", str(outtmpl or (job["dir"] / OUT_TMPL)),
                       "--socket-timeout", str(15 if QUICK["on"] else s["socket_timeout"]),
                       "--retries", str(1 if QUICK["on"] else s["retries"]),
@@ -1396,20 +1478,42 @@ def run_binary(url, selector, strategy, job, extra_flags=(), outtmpl=None):
         cmd += ["--remote-components", "ejs:github"]
     cmd += list(extra_flags) + [url]
     env = dict(os.environ, VD_DNS_ORDER=",".join(dns_order()), PYTHONUTF8="1")
+    err_lines = []
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=7200, env=env)
+        proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+                                text=True, bufsize=1, env=env)
     except Exception as e:
         err_line(f"{type(e).__name__}: {e}")
         return False, str(e)
-    text = (r.stderr or "").strip()
-    if text:
-        for line in text.splitlines():
+    try:
+        for line in proc.stderr:
+            line = line.rstrip("\r\n")
+            if not line:
+                continue
             if "Deprecated Feature" in line or "Support for Python version" in line:
                 continue
             if "PO Token" in line or "SABR" in line or "n challenge" in line:
                 continue
-            (err_line if r.returncode else warn_line)(line)
-    return r.returncode == 0, text
+            if "[download]" in line and "%" in line:
+                short = line[:SETTINGS["progress_width"] + 10]
+                sys.stdout.write("\r" + short)
+                sys.stdout.flush()
+                continue
+            err_lines.append(line)
+        try:
+            proc.wait(timeout=7200)
+        except Exception:
+            proc.kill()
+    finally:
+        sys.stdout.write("\n")
+        sys.stdout.flush()
+    text = "\n".join(err_lines)
+    for line in err_lines:
+        if proc.returncode != 0:
+            err_line(line)
+        else:
+            warn_line(line)
+    return proc.returncode == 0, text
 
 def run_any(url, selector, strategy, job, extra=None, flags=(), outtmpl=None):
     if yt_dlp is not None:
@@ -1451,17 +1555,26 @@ def newest_changed(d, before, exts=None):
         pass
     return best
 
-def cleanup_junk(verbose=False):
+def cleanup_junk(aggressive=False):
     removed = []
+    now = time.time()
     for d in (VIDEOS_DIR, AUDIO_DIR):
         try:
             for f in d.iterdir():
                 if not f.is_file():
                     continue
-                junk = f.suffix in (".part", ".ytdl") or ".temp." in f.name
-                if not junk and re.search(r"\.f\d+$", f.stem) and f.suffix.lower() in (".mp4", ".m4a", ".webm", ".mkv"):
-                    junk = True
-                if junk:
+                try:
+                    age = now - f.stat().st_mtime
+                except OSError:
+                    continue
+                is_part = f.suffix in (".part", ".ytdl") or ".temp." in f.name
+                is_frag = bool(re.search(r"\.f\d+$", f.stem)) and f.suffix.lower() in (".mp4", ".m4a", ".webm", ".mkv")
+                delete = False
+                if is_part and age > 120:
+                    delete = True
+                elif is_frag and aggressive and age > 3600:
+                    delete = True
+                if delete:
                     try:
                         f.unlink()
                         removed.append(f.name)
@@ -1471,19 +1584,28 @@ def cleanup_junk(verbose=False):
             pass
     try:
         for d in TMP_DIR.iterdir():
-            shutil.rmtree(d, ignore_errors=True) if d.is_dir() else d.unlink()
-            removed.append(d.name)
+            try:
+                age = now - d.stat().st_mtime
+            except OSError:
+                age = 0
+            if age > 600:
+                try:
+                    if d.is_dir():
+                        shutil.rmtree(d, ignore_errors=True)
+                    else:
+                        d.unlink()
+                    removed.append(d.name)
+                except OSError:
+                    pass
     except OSError:
         pass
-    if removed and verbose:
-        info_line(f"{T('junk_cleaned')}: {len(removed)}")
     return removed
 
 def get_duration(path):
-    if not HAS_FFMPEG:
+    if not HAS_FFMPEG or not FFPROBE_BIN:
         return None
     try:
-        r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+        r = subprocess.run([FFPROBE_BIN, "-v", "error", "-show_entries", "format=duration",
                             "-of", "default=noprint_wrappers=1:nokey=1", str(path)],
                            capture_output=True, text=True, timeout=30)
         return float(r.stdout.strip())
@@ -1491,10 +1613,10 @@ def get_duration(path):
         return None
 
 def probe_codec(path, stream):
-    if not HAS_FFMPEG:
+    if not HAS_FFMPEG or not FFPROBE_BIN:
         return ""
     try:
-        r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", stream,
+        r = subprocess.run([FFPROBE_BIN, "-v", "error", "-select_streams", stream,
                             "-show_entries", "stream=codec_name", "-of", "default=nw=1:nk=1", str(path)],
                            capture_output=True, text=True, timeout=30)
         return r.stdout.strip().lower()
@@ -1562,7 +1684,7 @@ def check_compat(path, vkey):
 
 def build_ffmpeg_cmd(src, dst, vkey):
     v = VIDEO_CODECS.get(vkey, VIDEO_CODECS["iphone"])
-    cmd = ["ffmpeg", "-y", "-i", str(src)]
+    cmd = [FFMPEG_BIN, "-y", "-i", str(src)]
     if v.get("encoder") == "copy":
         cmd += ["-c:v", "copy"]
     else:
@@ -1643,7 +1765,7 @@ def convert_audio(src, akey):
     dst = src.with_suffix("." + a["ext"])
     if dst == src:
         dst = src.with_name(src.stem + ".vdtmp." + a["ext"])
-    cmd = ["ffmpeg", "-y", "-i", str(src), "-vn", "-c:a", a["encoder"]]
+    cmd = [FFMPEG_BIN, "-y", "-i", str(src), "-vn", "-c:a", a["encoder"]]
     if a["bitrate"]:
         cmd += ["-b:a", a["bitrate"]]
     cmd.append(str(dst))
@@ -1697,8 +1819,10 @@ def select_format(info):
     vid = str(sel["format_id"])
     if sel.get("acodec") not in (None, "none"):
         return vid
-    if not audios:
-        return f"{vid}+ba/b"
+    if not audios or not HAS_FFMPEG:
+        if not HAS_FFMPEG and audios:
+            warn_line(T("no_ffmpeg_warn"))
+        return vid if not audios else default
     print(c(f"\n{T('select_audio_track')}:", CYAN))
     for i, f in enumerate(audios, 1):
         abr = f.get("abr")
@@ -1771,7 +1895,7 @@ def rutube_download(url, job):
     if HAS_FFMPEG:
         out = job["dir"] / f"{title} [{vid}].mp4"
         hs = "".join(f"{k}: {v}\r\n" for k, v in hdrs.items())
-        cmd = ["ffmpeg", "-y", "-headers", hs, "-i", m3u8, "-c", "copy", "-bsf:a", "aac_adtstoasc", str(out)]
+        cmd = [FFMPEG_BIN, "-y", "-headers", hs, "-i", m3u8, "-c", "copy", "-bsf:a", "aac_adtstoasc", str(out)]
         try:
             r = subprocess.run(cmd, capture_output=True, text=True, timeout=7200)
             if r.returncode == 0 and out.exists() and out.stat().st_size > 0:
@@ -1851,7 +1975,7 @@ def external_download(url, info, job):
             out = job["dir"] / f"{title} [{vid}].mp4"
             headers = f.get("http_headers") or {}
             hs = "".join(f"{k}: {v}\r\n" for k, v in headers.items())
-            cmd = ["ffmpeg", "-y"]
+            cmd = [FFMPEG_BIN, "-y"]
             if hs:
                 cmd += ["-headers", hs]
             cmd += ["-i", f["url"], "-c", "copy", "-bsf:a", "aac_adtstoasc", str(out)]
@@ -1928,19 +2052,23 @@ def download_chain(url, job, chosen, info, win, allow_proxy=True):
     first = strategies[0]
     if shutil.which("yt-dlp"):
         info_line(T("trying_binary"))
-        ok, err = run_binary(url, selectors[0], first, job)
-        if ok:
-            return True
-        if is_net_error(err):
-            net_fail += 1
+        for sel in selectors:
+            ok, err = run_binary(url, sel, first, job)
+            if ok:
+                return True
+            if not is_format_error(err) and not is_net_error(err):
+                break
     if job["kind"] == "video" and "rutube.ru" in url:
         if rutube_download(url, job):
             return True
     info_line(T("trying_generic"))
-    ok, err = run_any(url, selectors[-1], None, job, extra={"force_generic_extractor": True},
-                      flags=("--force-generic-extractor",))
-    if ok:
-        return True
+    for sel in selectors:
+        ok, err = run_any(url, sel, None, job, extra={"force_generic_extractor": True},
+                          flags=("--force-generic-extractor",))
+        if ok:
+            return True
+        if not is_format_error(err) and not is_net_error(err):
+            break
     if info:
         info_line(T("trying_external"))
         if external_download(url, info, job):
@@ -1948,10 +2076,11 @@ def download_chain(url, job, chosen, info, win, allow_proxy=True):
     if net_fail and allow_proxy and prompt_proxy():
         return download_chain(url, job, chosen, info, win, allow_proxy=False)
     if SETTINGS["verify_tls"] and confirm(T("retry_tls")):
-        ok, err = run_any(url, selectors[-1], first, job, extra={"nocheckcertificate": True},
-                          flags=("--no-check-certificate",))
-        if ok:
-            return True
+        for sel in selectors:
+            ok, err = run_any(url, sel, first, job, extra={"nocheckcertificate": True},
+                              flags=("--no-check-certificate",))
+            if ok:
+                return True
     return False
 
 def make_job(kind):
@@ -1963,6 +2092,7 @@ def attempt_download_video(url):
     if not valid_url(url):
         err_line(f"{T('invalid_url')}: {url}")
         return False, None
+    refresh_ffmpeg()
     if not prepare_network(url):
         return False, None
     if not HAS_FFMPEG:
@@ -1976,14 +2106,12 @@ def attempt_download_video(url):
     info_line(f"{T('selector')}: {chosen}")
     if not download_chain(url, job, chosen, info, win):
         err_line(T("all_exhausted"))
-        cleanup_junk()
         return False, None
     f = newest_changed(VIDEOS_DIR, before, VIDEO_EXTS)
     if f is None:
         err_line(T("all_exhausted"))
         return False, None
     ok_line(f"{T('download_done')}: {f.name}")
-    cleanup_junk()
     vkey = SETTINGS["video_codec"]
     mode = SETTINGS["auto_convert"]
     if mode != "never" and HAS_FFMPEG and not check_compat(f, vkey):
@@ -1999,6 +2127,7 @@ def attempt_download_audio(url):
     if not valid_url(url):
         err_line(f"{T('invalid_url')}: {url}")
         return False, None
+    refresh_ffmpeg()
     if not prepare_network(url):
         return False, None
     job = make_job("audio")
@@ -2008,14 +2137,12 @@ def attempt_download_audio(url):
     info_line(f"{T('downloading')}: {trunc(title, 50)}")
     if not download_chain(url, job, "bestaudio/best", info, win):
         err_line(T("all_exhausted"))
-        cleanup_junk()
         return False, None
     f = newest_changed(AUDIO_DIR, before)
     if f is None:
         err_line(T("all_exhausted"))
         return False, None
     ok_line(f"{T('download_done')}: {f.name}")
-    cleanup_junk()
     f = convert_audio(f, SETTINGS["audio_codec"])
     return True, f
 
@@ -2335,30 +2462,89 @@ def pick_from(title, labels, current_index):
         return None
     return idx if 0 <= idx < len(labels) else None
 
-def edit_with_templates(key, templates, current_value, on_set=None):
+def edit_with_templates(key, templates, current_value, on_set=None, multi=False):
     print(c(f"\n{T('set_' + key)}:", CYAN))
     for i, t in enumerate(templates, 1):
         disp = t if t else T("empty")
         cur = " [*]" if t == current_value else ""
         print(f"  {i}. {disp}{cur}")
     print(f"  0. {T('templates_custom')}")
+    if multi:
+        print(f"  {T('templates_multi_hint')}")
     ch = ask_input(c(f"{T('choice')} [0]: ", YELLOW))
     if ch is None:
         return False
     ch = ch.strip()
     new_val = None
-    if ch.isdigit() and 1 <= int(ch) <= len(templates):
-        new_val = templates[int(ch) - 1]
-    else:
+    if not ch or ch == "0":
         raw = ask_input(c(f"{T('set_' + key)} [{current_value or T('empty')}]\n{T('set_enter_value')}: ", YELLOW))
         if raw is None or not raw.strip():
             return False
         new_val = raw.strip()
         if new_val == "-":
             new_val = ""
-    if on_set:
-        if not on_set(new_val):
+    elif ch.isdigit() and 1 <= int(ch) <= len(templates):
+        new_val = templates[int(ch) - 1]
+    elif multi and ("," in ch or "-" in ch or ch.lower() in ("all", "a", "*")):
+        nums = parse_multi(ch, len(templates))
+        if not nums:
+            err_line(T("invalid_choice"))
             return False
+        selected = [templates[i - 1] for i in nums]
+        if key == "dns_servers":
+            parts = []
+            for s in selected:
+                for ip in s.split(","):
+                    ip = ip.strip()
+                    if ip and ip not in parts:
+                        parts.append(ip)
+            new_val = ",".join(parts)
+        elif key == "yt_clients":
+            parts = []
+            for s in selected:
+                for cc in s.split(","):
+                    cc = cc.strip()
+                    if cc and cc not in parts:
+                        parts.append(cc)
+            new_val = ",".join(parts)
+        elif key == "doh_url":
+            parts = [s for s in selected if s]
+            new_val = ",".join(parts)
+        else:
+            new_val = selected[0] if selected else ""
+    elif multi:
+        nums = parse_multi(ch, len(templates))
+        if nums:
+            selected = [templates[i - 1] for i in nums]
+            if key == "dns_servers":
+                parts = []
+                for s in selected:
+                    for ip in s.split(","):
+                        ip = ip.strip()
+                        if ip and ip not in parts:
+                            parts.append(ip)
+                new_val = ",".join(parts)
+            elif key == "yt_clients":
+                parts = []
+                for s in selected:
+                    for cc in s.split(","):
+                        cc = cc.strip()
+                        if cc and cc not in parts:
+                            parts.append(cc)
+                new_val = ",".join(parts)
+            elif key == "doh_url":
+                parts = [s for s in selected if s]
+                new_val = ",".join(parts)
+            else:
+                new_val = selected[0] if selected else ""
+        else:
+            new_val = ch
+    else:
+        new_val = ch
+    if new_val is None:
+        return False
+    if on_set and not on_set(new_val):
+        return False
     SETTINGS[key] = new_val
     save_settings(SETTINGS)
     if key in ("proxy", "dns_servers", "doh_url", "doh_fallback", "ip_version", "verify_tls"):
@@ -2377,13 +2563,13 @@ def edit_setting(key):
             on_set=lambda nv: (not nv) or bool(re.match(r"^(https?|socks4a?|socks5h?)://\S+$", nv, re.I)))
         return
     if key == "dns_servers":
-        edit_with_templates("dns_servers", DNS_TEMPLATES, v)
+        edit_with_templates("dns_servers", DNS_TEMPLATES, v, multi=True)
         return
     if key == "doh_url":
-        edit_with_templates("doh_url", DOH_TEMPLATES, v)
+        edit_with_templates("doh_url", DOH_TEMPLATES, v, multi=True)
         return
     if key == "yt_clients":
-        edit_with_templates("yt_clients", YT_CLIENTS_TEMPLATES, v)
+        edit_with_templates("yt_clients", YT_CLIENTS_TEMPLATES, v, multi=True)
         return
     if key in ("video_codec", "audio_codec"):
         table = VIDEO_CODECS if key == "video_codec" else AUDIO_CODECS
@@ -2473,7 +2659,7 @@ def settings_menu():
             err_line(T("invalid_choice"))
 
 def trigger_pip(args):
-    PIP_CMD_FILE.write_text(" ".join(args), encoding="utf-8")
+    Path("/tmp/vd_pip_cmd").write_text(" ".join(args), encoding="utf-8")
     sys.exit(98)
 
 def update_menu():
@@ -2494,30 +2680,22 @@ def update_menu():
 
 def check_remote_version():
     if not UPDATE_URL:
-        return None, None
+        return None
     try:
         req = urllib.request.Request(UPDATE_URL, headers={"User-Agent": UA})
         with urllib.request.urlopen(req, timeout=30) as r:
             content = r.read().decode("utf-8", "replace")
-        m = re.search(r'^VD_VERSION="([^"]+)"', content, re.MULTILINE)
-        return (m.group(1) if m else None), content
+        return content
     except Exception as e:
         err_line(f"{type(e).__name__}: {e}")
-        return None, None
+        return None
 
 def self_update_menu():
     header(T("selfupd_title"))
-    print(c(f"  {T('selfupd_current')}: {VD_VERSION}", CYAN))
     info_line(T("selfupd_checking"))
-    remote, content = check_remote_version()
-    if remote is None or content is None:
+    content = check_remote_version()
+    if content is None:
         err_line(T("selfupd_check_failed"))
-        return False
-    ok_line(f"{T('selfupd_remote')}: {remote}")
-    if remote == VD_VERSION:
-        info_line(T("selfupd_uptodate"))
-        return False
-    if not confirm(T("selfupd_prompt")):
         return False
     if not content.startswith("#!/bin/sh"):
         err_line(T("selfupd_invalid"))
@@ -2525,6 +2703,15 @@ def self_update_menu():
     shell_path = SCRIPT_PATH
     if not shell_path or not Path(shell_path).exists():
         err_line(T("selfupd_no_path"))
+        return False
+    try:
+        old = Path(shell_path).read_text(encoding="utf-8")
+        if old == content:
+            info_line(T("selfupd_uptodate"))
+            return False
+    except Exception:
+        pass
+    if not confirm(T("selfupd_prompt")):
         return False
     info_line(T("selfupd_downloading"))
     try:
@@ -2547,7 +2734,7 @@ def diagnostics():
     print(f"  python {sys.version.split()[0]}")
     print(f"  yt-dlp {getattr(getattr(yt_dlp, 'version', None), '__version__', T('ytdlp_missing'))}")
     print(f"  yt-dlp-ejs: {T('on') if has_ejs() else T('off')}")
-    print(f"  ffmpeg: {shutil.which('ffmpeg') or T('ffmpeg_missing')}")
+    print(f"  ffmpeg: {FFMPEG_BIN or T('ffmpeg_missing')}")
     print(f"  JS: {js_runtime() or T('js_none')}")
     print(f"  proxy: {SETTINGS['proxy'] or T('empty')}")
     print(f"  DNS mode: {SETTINGS['dns_mode']}")
@@ -2563,13 +2750,17 @@ def diagnostics():
             answers["udp " + srv] = ips
             print(f"  udp {srv}: {', '.join(ips) if ips else (err or T('diag_fail'))}")
         if SETTINGS["doh_url"]:
-            try:
-                ips = doh_query(SETTINGS["doh_url"], host)
-                err = ""
-            except Exception as e:
-                ips, err = [], f"{type(e).__name__}: {e}"
-            answers["doh " + SETTINGS["doh_url"]] = ips
-            print(f"  doh {SETTINGS['doh_url']}: {', '.join(ips) if ips else (err or T('diag_fail'))}")
+            for u in SETTINGS["doh_url"].split(","):
+                u = u.strip()
+                if not u:
+                    continue
+                try:
+                    ips = doh_query(u, host)
+                    err = ""
+                except Exception as e:
+                    ips, err = [], f"{type(e).__name__}: {e}"
+                answers["doh " + u] = ips
+                print(f"  doh {u}: {', '.join(ips) if ips else (err or T('diag_fail'))}")
         sets = {tuple(sorted(v)) for v in answers.values() if v}
         if len(sets) > 1:
             warn_line(T("diag_mismatch"))
@@ -2596,14 +2787,14 @@ def diagnostics():
 
 def main_menu():
     ensure_dir()
-    cleanup_junk()
+    cleanup_junk(aggressive=True)
+    refresh_ffmpeg()
     if not HAS_FFMPEG:
         warn_line(T("no_ffmpeg_warn"))
     while True:
         header(T("app_title"))
         print(c(f"{T('videos_dir')}: {VIDEOS_DIR}", CYAN))
         print(c(f"{T('audio_dir')}: {AUDIO_DIR}", CYAN))
-        print(c(f"v{VD_VERSION}", CYAN))
         print("-" * 40)
         print(f"  1. {T('menu_download_video')}\n  2. {T('menu_download_audio')}\n  3. {T('menu_files')}")
         print(f"  4. {T('menu_settings')}\n  5. {T('menu_diag')}\n  6. {T('menu_update')}")
@@ -2668,10 +2859,9 @@ CODE=$?
 if [ $CODE -eq 98 ] && [ -f /tmp/vd_pip_cmd ]; then
     PIPE_ARGS=$(cat /tmp/vd_pip_cmd)
     rm -f /tmp/vd_pip_cmd
-    if [ "$VD_LANG" = "en" ]; then say "${BLUE}[*] pip install $PIPE_ARGS${NC}"; else say "${BLUE}[*] pip install $PIPE_ARGS${NC}"; fi
-    python3 -m pip install -U --no-deps --break-system-packages $PIPE_ARGS 2>&1 | tail -5
-    if [ $? -eq 0 ]; then
-        if [ "$VD_LANG" = "en" ]; then say "${GREEN}[+] pip install OK${NC}"; else say "${GREEN}[+] pip install OK${NC}"; fi
+    say "${BLUE}[*] pip install $PIPE_ARGS${NC}"
+    if python3 -m pip install -U --no-deps --break-system-packages $PIPE_ARGS 2>&1 | tail -5; then
+        say "${GREEN}[+] pip install OK${NC}"
     else
         python3 -m pip install -U --no-deps $PIPE_ARGS 2>&1 | tail -5
     fi
@@ -2679,7 +2869,7 @@ if [ $CODE -eq 98 ] && [ -f /tmp/vd_pip_cmd ]; then
 fi
 
 if [ $CODE -eq 99 ]; then
-    if [ "$VD_LANG" = "en" ]; then say "${GREEN}[+] Self-updated, restarting...${NC}"; else say "${GREEN}[+] Скрипт обновлён, перезапуск...${NC}"; fi
+    say "${GREEN}[+] Скрипт обновлён, перезапуск...${NC}"
     exec sh "$0"
 fi
 
