@@ -61,6 +61,12 @@ nameserver 94.140.14.14
 EOF
 }
 
+keep_alive() {
+    if [ -e /dev/location ]; then
+        ( cat /dev/location > /dev/null 2>&1 ) &
+    fi
+}
+
 have_ytdlp() {
     python3 - << 'EOF' >/dev/null 2>&1
 import yt_dlp, tqdm
@@ -85,6 +91,7 @@ say "${YELLOW}========================================${NC}"
 say "${YELLOW}  $(T setup_header)${NC}"
 say "${YELLOW}========================================${NC}"
 setup_dns
+keep_alive
 
 if ! have_ytdlp; then
     say "${YELLOW}$(T installing)${NC}"
@@ -127,7 +134,6 @@ else:
 TEXTS = {
     "ru": {
         "app_title": "Универсальный загрузчик видео",
-        "main_menu": "Главное меню",
         "menu_download": "Скачать видео",
         "menu_files": "Управление файлами",
         "menu_language": "Сменить язык",
@@ -138,13 +144,12 @@ TEXTS = {
         "enter_urls": "Введите ссылки на видео (по одной на строку).",
         "enter_urls_hint": "Пустая строка — начать загрузку. 'q' — меню.",
         "available_formats": "Доступные форматы видео",
-        "select_video": "Выберите номер видеоформата (Enter — лучший)",
+        "select_video": "Номер видеоформата (Enter — лучший)",
         "available_audio": "Доступные аудиодорожки",
-        "select_audio": "Выберите номер аудио (Enter — лучшее)",
+        "select_audio": "Номер аудио (Enter — лучшее)",
         "with_audio": "со звуком",
         "no_audio": "без звука",
         "invalid_default": "Неверный выбор, используется формат по умолчанию",
-        "invalid_audio_default": "Неверный выбор аудио, используется лучшее",
         "selector": "Селектор",
         "finished": "Загрузка завершена",
         "trying_generic": "Пробую generic-экстрактор...",
@@ -156,7 +161,6 @@ TEXTS = {
         "multiple_videos": "Найдено несколько видео",
         "number_or_all": "Номер или 'all'",
         "invalid_url": "Некорректная ссылка",
-        "invalid_number": "Неверный номер",
         "stopped": "Работа остановлена",
         "fm_title": "Управление файлами",
         "fm_path": "Папка",
@@ -165,6 +169,7 @@ TEXTS = {
         "fm_1": "Удалить по номеру",
         "fm_2": "Удалить несколько (1,3-5)",
         "fm_3": "Удалить все",
+        "fm_4": "Переименовать файл",
         "fm_back": "Назад",
         "fm_delete_file": "Удалить файл",
         "fm_delete_all": "Удалить ВСЕ файлы?",
@@ -175,11 +180,21 @@ TEXTS = {
         "lang_ru": "Русский",
         "lang_en": "English",
         "lang_saved": "Язык сохранён",
-        "confirm_yes": "y",
+        "video_ready": "Видео готово",
+        "file": "Файл",
+        "size": "Размер",
+        "rename_prompt": "Переименовать файл?",
+        "rename_new_name": "Новое имя (с расширением или без, Enter — отмена)",
+        "renamed": "Переименовано в",
+        "rename_exists": "Файл с таким именем уже существует",
+        "rename_failed": "Не удалось переименовать",
+        "rename_empty": "Пустое имя",
+        "junk_cleaned": "Очищено временных файлов",
+        "press_enter": "Enter — продолжить",
+        "file_index": "Номер файла",
     },
     "en": {
         "app_title": "Universal Video Downloader",
-        "main_menu": "Main menu",
         "menu_download": "Download video",
         "menu_files": "File manager",
         "menu_language": "Change language",
@@ -190,13 +205,12 @@ TEXTS = {
         "enter_urls": "Enter video URLs (one per line).",
         "enter_urls_hint": "Empty line to start download. 'q' to menu.",
         "available_formats": "Available video formats",
-        "select_video": "Select video format number (Enter = best)",
+        "select_video": "Video format number (Enter = best)",
         "available_audio": "Available audio tracks",
-        "select_audio": "Select audio number (Enter = best)",
+        "select_audio": "Audio number (Enter = best)",
         "with_audio": "with audio",
         "no_audio": "no audio",
         "invalid_default": "Invalid choice, using default format",
-        "invalid_audio_default": "Invalid audio choice, using best",
         "selector": "Selector",
         "finished": "Download finished",
         "trying_generic": "Trying generic extractor...",
@@ -208,7 +222,6 @@ TEXTS = {
         "multiple_videos": "Multiple videos found",
         "number_or_all": "Number or 'all'",
         "invalid_url": "Invalid URL",
-        "invalid_number": "Invalid number",
         "stopped": "Stopped",
         "fm_title": "File manager",
         "fm_path": "Directory",
@@ -217,6 +230,7 @@ TEXTS = {
         "fm_1": "Delete by number",
         "fm_2": "Delete multiple (1,3-5)",
         "fm_3": "Delete all",
+        "fm_4": "Rename file",
         "fm_back": "Back",
         "fm_delete_file": "Delete file",
         "fm_delete_all": "Delete ALL files?",
@@ -227,7 +241,18 @@ TEXTS = {
         "lang_ru": "Русский",
         "lang_en": "English",
         "lang_saved": "Language saved",
-        "confirm_yes": "y",
+        "video_ready": "Video ready",
+        "file": "File",
+        "size": "Size",
+        "rename_prompt": "Rename file?",
+        "rename_new_name": "New name (with or without extension, Enter = cancel)",
+        "renamed": "Renamed to",
+        "rename_exists": "File with this name already exists",
+        "rename_failed": "Failed to rename",
+        "rename_empty": "Empty name",
+        "junk_cleaned": "Cleaned temp files",
+        "press_enter": "Enter — continue",
+        "file_index": "File number",
     },
 }
 
@@ -251,6 +276,10 @@ RED, GREEN, YELLOW, BLUE, CYAN, NC = ("\033[0;31m", "\033[0;32m", "\033[1;33m",
                                       "\033[0;34m", "\033[0;36m", "\033[0m")
 def c(t, col): return f"{col}{t}{NC}"
 
+def trunc(s, n):
+    s = str(s)
+    return s if len(s) <= n else s[:n-3] + "..."
+
 def header(title):
     line = "=" * 40
     print(c(line, YELLOW))
@@ -272,7 +301,8 @@ def ensure_dir():
 def fmt_size(n):
     if n < 1024: return f"{n} B"
     if n < 1024 * 1024: return f"{n/1024:.1f} KiB"
-    return f"{n/1048576:.2f} MiB"
+    if n < 1024 * 1024 * 1024: return f"{n/1048576:.1f} MiB"
+    return f"{n/1073741824:.2f} GiB"
 
 def confirm(prompt):
     try:
@@ -286,6 +316,49 @@ def valid_url(u):
         return p.scheme in ("http", "https") and bool(p.netloc)
     except (ValueError, TypeError):
         return False
+
+def cleanup_junk():
+    removed = []
+    patterns = ["*.part", "*.ytdl", "*.temp.mp4", "*.temp.m4a", "*.temp.webm"]
+    for pat in patterns:
+        try:
+            for f in VIDEOS_DIR.glob(pat):
+                try:
+                    if f.is_file():
+                        f.unlink()
+                        removed.append(f.name)
+                except OSError:
+                    pass
+        except OSError:
+            pass
+    try:
+        for f in VIDEOS_DIR.iterdir():
+            if not f.is_file():
+                continue
+            stem = f.stem
+            if re.search(r'\.f\d+$', stem) and f.suffix in (".mp4", ".m4a", ".webm"):
+                try:
+                    f.unlink()
+                    removed.append(f.name)
+                except OSError:
+                    pass
+    except OSError:
+        pass
+    if removed:
+        print(c(f"[*] {T('junk_cleaned')}: {len(removed)}", YELLOW))
+    return removed
+
+def find_newest_mp4():
+    try:
+        files = [f for f in VIDEOS_DIR.glob("*.mp4") if f.is_file()]
+    except OSError:
+        return None
+    if not files:
+        return None
+    try:
+        return max(files, key=lambda p: p.stat().st_mtime)
+    except OSError:
+        return files[0]
 
 def base_opts(**extra):
     o = {
@@ -308,7 +381,7 @@ def get_video_info(url, **extra):
             with yt_dlp.YoutubeDL(base_opts(**extra)) as ydl:
                 return first_entry(ydl.extract_info(url, download=False))
         except Exception as e:
-            print(c(f"[!] info: {type(e).__name__}: {str(e)[:200]}", YELLOW))
+            print(c(f"[!] info: {trunc(str(e), 60)}", YELLOW))
     return None
 
 def select_format(url):
@@ -330,10 +403,10 @@ def select_format(url):
     print(c(f"\n{T('available_formats')}:", CYAN))
     for i, f in enumerate(vlist, 1):
         size = f.get("filesize") or f.get("filesize_approx")
-        size_t = f", {size/1048576:.1f} MiB" if isinstance(size, (int, float)) else ""
-        fps_t = f", {f['fps']} fps" if f.get("fps") else ""
-        aud = T("with_audio") if f.get("acodec") not in (None, "none") else T("no_audio")
-        print(f"  {i}. {f.get('height') or '?'}p ({f.get('ext') or '?'}, {aud}{fps_t}{size_t})")
+        size_t = f", {size/1048576:.0f}M" if isinstance(size, (int, float)) else ""
+        fps_t = f", {f['fps']}fps" if f.get("fps") else ""
+        aud = "+" if f.get("acodec") not in (None, "none") else "-"
+        print(f"  {i}. {f.get('height') or '?'}p {f.get('ext') or '?'} {aud}{fps_t}{size_t}")
     try:
         ch = input(c(f"\n{T('select_video')}: ", YELLOW)).strip()
     except (EOFError, KeyboardInterrupt):
@@ -354,8 +427,8 @@ def select_format(url):
     print(c(f"\n{T('available_audio')}:", CYAN))
     for i, f in enumerate(audios, 1):
         abr = f.get("abr")
-        abr_t = f", {abr:g} kbps" if isinstance(abr, (int, float)) else ""
-        print(f"  {i}. {f.get('language') or 'unknown'}, {f.get('ext') or '?'}{abr_t}")
+        abr_t = f", {abr:g}kbps" if isinstance(abr, (int, float)) else ""
+        print(f"  {i}. {trunc(f.get('language') or 'unknown', 15)}, {f.get('ext') or '?'}{abr_t}")
     try:
         a = input(c(f"{T('select_audio')}: ", YELLOW)).strip()
         if not a:
@@ -373,16 +446,18 @@ def progress_hook():
         if st == "downloading":
             total = d.get("total_bytes") or d.get("total_bytes_estimate")
             if state["bar"] is None:
-                state["bar"] = tqdm(total=total, unit="B", unit_scale=True, leave=False)
+                state["bar"] = tqdm(total=total, unit="B", unit_scale=True,
+                                    leave=False, ncols=42, desc="dl")
             elif total:
                 state["bar"].total = total
             dl = d.get("downloaded_bytes") or 0
             state["bar"].update(max(0, dl - state["bar"].n))
         elif st in ("finished", "error"):
             if state["bar"]:
-                state["bar"].close(); state["bar"] = None
-            if st == "finished":
-                print(c(f"[+] {T('finished')}: {d.get('filename','')}", GREEN))
+                state["bar"].close()
+                state["bar"] = None
+                sys.stdout.write("\n")
+                sys.stdout.flush()
     return hook
 
 OUT_TMPL = "%(title).150B [%(id)s].%(ext)s"
@@ -399,18 +474,24 @@ def run_module(url, selector, **extra):
         with yt_dlp.YoutubeDL(opts) as ydl:
             return ydl.download([url]) in (None, 0)
     except Exception as e:
-        print(c(f"[!] yt-dlp: {type(e).__name__}: {str(e)[:250]}", RED))
+        print(c(f"[!] yt-dlp: {trunc(str(e), 70)}", RED))
         return False
 
 def run_binary(url, selector, *flags):
     if not YTDLP_BINARY:
         return False
     cmd = [YTDLP_BINARY, "-f", selector, "--merge-output-format", "mp4", "--force-ipv4",
+           "--quiet", "--no-progress",
            "-o", str(VIDEOS_DIR / OUT_TMPL), "--no-warnings", "--no-playlist", *flags, url]
     try:
-        return subprocess.run(cmd, timeout=3600).returncode == 0
+        result = subprocess.run(cmd, timeout=3600, capture_output=True, text=True)
+        if result.returncode != 0 and result.stderr:
+            for line in result.stderr.strip().split("\n")[:2]:
+                if line.strip():
+                    print(c(f"[!] {trunc(line, 70)}", RED))
+        return result.returncode == 0
     except Exception as e:
-        print(c(f"[!] yt-dlp binary: {e}", RED))
+        print(c(f"[!] binary: {trunc(str(e), 70)}", RED))
         return False
 
 def http_json(url, referer="https://rutube.ru/"):
@@ -425,14 +506,14 @@ def rutube_download(url):
     vid = m.group(1)
     p = re.search(r"[?&]p=([\w-]+)", url)
     private = f"&p={p.group(1)}" if p else ""
-    print(c("[*] RuTube: пробую API напрямую...", BLUE))
+    print(c("[*] RuTube: API...", BLUE))
 
     title = vid
     try:
         meta = http_json(f"https://rutube.ru/api/video/{vid}/?format=json")
         title = meta.get("title") or vid
-    except Exception as e:
-        print(c(f"[!] meta: {str(e)[:120]}", YELLOW))
+    except Exception:
+        pass
     title = re.sub(r'[\\/:*?"<>|%\n\r]+', "_", title).strip()[:150] or vid
 
     m3u8 = None
@@ -447,16 +528,16 @@ def rutube_download(url):
         try:
             data = http_json(u)
             vb = data.get("video_balancer") or {}
-            m3u8 = vb.get("m3u8") or vb.get("default") if isinstance(vb, dict) else None
+            m3u8 = (vb.get("m3u8") or vb.get("default")) if isinstance(vb, dict) else None
             if m3u8:
                 break
-        except Exception as e:
-            print(c(f"[!] api: {str(e)[:120]}", YELLOW))
+        except Exception:
+            pass
     if not m3u8:
-        print(c("[!] RuTube API не вернул ссылку на поток", YELLOW))
+        print(c("[!] RuTube: no m3u8", YELLOW))
         return False
 
-    print(c("[*] RuTube: найден HLS-поток, качаю...", BLUE))
+    print(c("[*] RuTube: HLS...", BLUE))
     hdrs = {"User-Agent": UA, "Referer": "https://rutube.ru/", "Origin": "https://rutube.ru"}
     out = VIDEOS_DIR / f"{title} [{vid}].mp4"
     if yt_dlp is not None:
@@ -470,52 +551,128 @@ def rutube_download(url):
                 with yt_dlp.YoutubeDL(opts) as ydl:
                     if ydl.download([m3u8]) in (None, 0):
                         return True
-            except Exception as e:
-                print(c(f"[!] hls ({sel}): {str(e)[:200]}", YELLOW))
+            except Exception:
+                pass
     if shutil.which("ffmpeg"):
-        print(c("[*] запасной вариант: ffmpeg", BLUE))
+        print(c("[*] RuTube: ffmpeg", BLUE))
         hs = "".join(f"{k}: {v}\r\n" for k, v in hdrs.items())
         cmd = ["ffmpeg", "-y", "-headers", hs, "-i", m3u8, "-c", "copy", "-bsf:a", "aac_adtstoasc", str(out)]
         try:
-            if subprocess.run(cmd, timeout=7200).returncode == 0 and out.exists() and out.stat().st_size > 0:
-                print(c(f"[+] saved: {out}", GREEN))
+            if subprocess.run(cmd, timeout=7200, capture_output=True).returncode == 0 \
+               and out.exists() and out.stat().st_size > 0:
                 return True
-        except Exception as e:
-            print(c(f"[!] ffmpeg: {e}", RED))
+        except Exception:
+            pass
     return False
 
 def attempt_download(url):
     if not valid_url(url):
-        print(c(f"[!] {T('invalid_url')}: {url}", RED)); return False
+        print(c(f"[!] {T('invalid_url')}: {trunc(url, 40)}", RED))
+        return False, None
+
+    before = {}
+    try:
+        for f in VIDEOS_DIR.glob("*.mp4"):
+            try:
+                before[f.name] = f.stat().st_mtime
+            except OSError:
+                pass
+    except OSError:
+        pass
 
     selector = select_format(url)
-    print(c(f"[*] {T('selector')}: {selector}", BLUE))
+    print(c(f"[*] {T('selector')}: {trunc(selector, 35)}", BLUE))
+
+    success = False
     if run_module(url, selector) or run_binary(url, selector):
-        return True
+        success = True
+    elif "rutube.ru" in url and rutube_download(url):
+        success = True
+    else:
+        print(c(f"[!] {T('trying_generic')}", YELLOW))
+        if run_module(url, "bv*+ba/b", force_generic_extractor=True) or \
+           run_binary(url, "bv*+ba/b", "--force-generic-extractor"):
+            success = True
+        elif confirm(T("retry_tls")):
+            if run_module(url, "bv*+ba/b", nocheckcertificate=True) or \
+               run_binary(url, "bv*+ba/b", "--no-check-certificate"):
+                success = True
 
-    if "rutube.ru" in url and rutube_download(url):
-        return True
+    if not success:
+        print(c(f"[!] {T('all_exhausted')}", RED))
+        return False, None
 
-    print(c(f"[!] {T('trying_generic')}", YELLOW))
-    if run_module(url, "bv*+ba/b", force_generic_extractor=True) or run_binary(url, "bv*+ba/b", "--force-generic-extractor"):
-        return True
+    cleanup_junk()
 
-    if confirm(T("retry_tls")):
-        if run_module(url, "bv*+ba/b", nocheckcertificate=True) or run_binary(url, "bv*+ba/b", "--no-check-certificate"):
-            return True
+    newest_file = None
+    newest_mtime = 0
+    try:
+        for f in VIDEOS_DIR.glob("*.mp4"):
+            try:
+                mt = f.stat().st_mtime
+                if mt > before.get(f.name, 0) and mt > newest_mtime:
+                    newest_mtime = mt
+                    newest_file = f
+            except OSError:
+                pass
+    except OSError:
+        pass
 
-    print(c(f"[!] {T('all_exhausted')}", RED))
-    return False
+    if newest_file is None:
+        newest_file = find_newest_mp4()
+    return True, newest_file
+
+def show_ready_and_rename(filepath):
+    if not filepath or not filepath.exists():
+        return filepath
+    try:
+        size = filepath.stat().st_size
+    except OSError:
+        size = 0
+    print()
+    print(c("=" * 40, GREEN))
+    print(c(f"  {T('video_ready')}", GREEN))
+    print(c("=" * 40, GREEN))
+    print(c(f"  {T('file')}: {trunc(filepath.name, 34)}", CYAN))
+    print(c(f"  {T('size')}: {fmt_size(size)}", CYAN))
+    print()
+    try:
+        do_rename = confirm(T("rename_prompt"))
+    except (EOFError, KeyboardInterrupt):
+        return filepath
+    if not do_rename:
+        return filepath
+    try:
+        new_name = input(c(f"{T('rename_new_name')}: ", YELLOW)).strip()
+    except (EOFError, KeyboardInterrupt):
+        return filepath
+    if not new_name:
+        return filepath
+    if not new_name.endswith(filepath.suffix):
+        new_name += filepath.suffix
+    new_name = re.sub(r'[\\/:*?"<>|]', "_", new_name)
+    new_path = filepath.parent / new_name
+    if new_path.exists() and new_path != filepath:
+        print(c(f"[!] {T('rename_exists')}", RED))
+        return filepath
+    try:
+        filepath.rename(new_path)
+        print(c(f"[+] {T('renamed')}: {trunc(new_name, 34)}", GREEN))
+        return new_path
+    except OSError as e:
+        print(c(f"[!] {T('rename_failed')}: {trunc(str(e), 50)}", RED))
+        return filepath
 
 def find_videos_on_page(page_url):
-    print(c(f"\n[*] {T('scanning')}: {page_url}", BLUE))
+    print(c(f"\n[*] {T('scanning')}: {trunc(page_url, 40)}", BLUE))
     if yt_dlp is None:
         return []
     try:
         with yt_dlp.YoutubeDL(base_opts(extract_flat=True, noplaylist=False)) as ydl:
             info = ydl.extract_info(page_url, download=False)
     except Exception as e:
-        print(c(f"[!] scan: {str(e)[:200]}", YELLOW)); return []
+        print(c(f"[!] scan: {trunc(str(e), 60)}", YELLOW))
+        return []
     if not isinstance(info, dict):
         return []
     if info.get("entries") is not None:
@@ -536,26 +693,38 @@ DIRECT = ("youtube.com/", "youtu.be/", "rutube.ru/video/", "rutube.ru/play/", ".
 def process_links(links):
     for url in links:
         if not valid_url(url):
-            print(c(f"[!] {T('invalid_url')}: {url}", RED)); continue
+            print(c(f"[!] {T('invalid_url')}: {trunc(url, 40)}", RED))
+            continue
         if not any(m in url.lower() for m in DIRECT):
             found = find_videos_on_page(url)
             if not found:
-                print(c(f"[!] {T('no_videos')}: {url}", YELLOW)); continue
+                print(c(f"[!] {T('no_videos')}: {trunc(url, 40)}", YELLOW))
+                continue
             if len(found) == 1:
-                attempt_download(found[0]); continue
+                ok, fp = attempt_download(found[0])
+                if ok and fp:
+                    show_ready_and_rename(fp)
+                continue
             print(c(f"\n{T('multiple_videos')}:", CYAN))
             for i, u in enumerate(found, 1):
-                print(f"  {i}. {u}")
+                print(f"  {i}. {trunc(u, 38)}")
             try:
                 ch = input(c(f"{T('number_or_all')}: ", YELLOW)).strip().lower()
                 if ch == "all":
-                    for u in found: attempt_download(u)
+                    for u in found:
+                        ok, fp = attempt_download(u)
+                        if ok and fp:
+                            show_ready_and_rename(fp)
                 else:
-                    attempt_download(found[int(ch) - 1])
+                    ok, fp = attempt_download(found[int(ch) - 1])
+                    if ok and fp:
+                        show_ready_and_rename(fp)
             except (ValueError, IndexError, EOFError, KeyboardInterrupt):
                 print(c(f"[!] {T('invalid_choice')}", RED))
         else:
-            attempt_download(url)
+            ok, fp = attempt_download(url)
+            if ok and fp:
+                show_ready_and_rename(fp)
 
 def list_video_files():
     try:
@@ -597,7 +766,7 @@ def file_manager():
     while True:
         files = list_video_files()
         header(T("fm_title"))
-        print(c(f"{T('fm_path')}: {VIDEOS_DIR}", CYAN))
+        print(c(f"{T('fm_path')}: {trunc(str(VIDEOS_DIR), 34)}", CYAN))
         print(c(f"{T('fm_count')}: {len(files)}", CYAN))
         print("-" * 40)
         if not files:
@@ -608,11 +777,12 @@ def file_manager():
                     size = f.stat().st_size
                 except OSError:
                     size = 0
-                print(f"  {i}. {f.name} ({fmt_size(size)})")
+                print(f"  {i}. {trunc(f.name, 28)} ({fmt_size(size)})")
         print("-" * 40)
         print(f"  1. {T('fm_1')}")
         print(f"  2. {T('fm_2')}")
         print(f"  3. {T('fm_3')}")
+        print(f"  4. {T('fm_4')}")
         print(f"  0. {T('fm_back')}")
         try:
             ch = input(c(f"{T('choice')}: ", GREEN)).strip().lower()
@@ -620,7 +790,7 @@ def file_manager():
             return
         if ch in ("0", "q", "back", "назад"):
             return
-        if ch not in ("1", "2", "3"):
+        if ch not in ("1", "2", "3", "4"):
             print(c(f"[!] {T('invalid_choice')}", RED))
             continue
         if not files:
@@ -633,12 +803,12 @@ def file_manager():
                 print(c(f"[!] {T('invalid_choice')}", RED))
                 continue
             target = files[nums[0] - 1]
-            if confirm(f"{T('fm_delete_file')} '{target.name}'?"):
+            if confirm(f"{T('fm_delete_file')} '{trunc(target.name, 25)}'?"):
                 try:
                     target.unlink()
-                    print(c(f"[+] {T('fm_deleted')}: {target.name}", GREEN))
+                    print(c(f"[+] {T('fm_deleted')}: {trunc(target.name, 34)}", GREEN))
                 except OSError as e:
-                    print(c(f"[!] {T('fm_failed')}: {e}", RED))
+                    print(c(f"[!] {T('fm_failed')}: {trunc(str(e), 50)}", RED))
         elif ch == "2":
             try:
                 idx = input(c(f"{T('fm_numbers')} (1,3-5): ", YELLOW)).strip()
@@ -653,7 +823,7 @@ def file_manager():
                         files[n - 1].unlink()
                         count += 1
                     except OSError as e:
-                        print(c(f"[!] {T('fm_failed')}: {e}", RED))
+                        print(c(f"[!] {T('fm_failed')}: {trunc(str(e), 50)}", RED))
                 print(c(f"[+] {T('fm_deleted')}: {count}", GREEN))
         elif ch == "3":
             if confirm(f"{T('fm_delete_all')} ({len(files)})?"):
@@ -663,8 +833,34 @@ def file_manager():
                         f.unlink()
                         count += 1
                     except OSError as e:
-                        print(c(f"[!] {T('fm_failed')}: {e}", RED))
+                        print(c(f"[!] {T('fm_failed')}: {trunc(str(e), 50)}", RED))
                 print(c(f"[+] {T('fm_deleted')}: {count}", GREEN))
+        elif ch == "4":
+            try:
+                idx = input(c(f"{T('file_index')} (1-{len(files)}): ", YELLOW)).strip()
+                nums = parse_numbers(idx, len(files))
+            except (ValueError, EOFError, KeyboardInterrupt):
+                print(c(f"[!] {T('invalid_choice')}", RED))
+                continue
+            target = files[nums[0] - 1]
+            try:
+                new_name = input(c(f"{T('rename_new_name')}: ", YELLOW)).strip()
+            except (EOFError, KeyboardInterrupt):
+                continue
+            if not new_name:
+                continue
+            if not new_name.endswith(target.suffix):
+                new_name += target.suffix
+            new_name = re.sub(r'[\\/:*?"<>|]', "_", new_name)
+            new_path = target.parent / new_name
+            if new_path.exists() and new_path != target:
+                print(c(f"[!] {T('rename_exists')}", RED))
+                continue
+            try:
+                target.rename(new_path)
+                print(c(f"[+] {T('renamed')}: {trunc(new_name, 34)}", GREEN))
+            except OSError as e:
+                print(c(f"[!] {T('rename_failed')}: {trunc(str(e), 50)}", RED))
 
 def language_menu():
     while True:
@@ -691,10 +887,12 @@ def main_menu():
     try:
         ensure_dir()
     except OSError as e:
-        print(c(f"[!] directory error: {e}", RED)); return
+        print(c(f"[!] directory error: {trunc(str(e), 60)}", RED))
+        return
     while True:
+        cleanup_junk()
         header(T("app_title"))
-        print(c(f"{T('videos_dir')}: {VIDEOS_DIR}", CYAN))
+        print(c(f"{T('videos_dir')}: {trunc(str(VIDEOS_DIR), 34)}", CYAN))
         print("-" * 40)
         print(f"  1. {T('menu_download')}")
         print(f"  2. {T('menu_files')}")
@@ -722,14 +920,15 @@ def main_menu():
         print(c(f"[*] {T('enter_urls_hint')}", YELLOW))
         while True:
             try:
-                l = input(c("> ", GREEN)).strip()
+                line = input(c("> ", GREEN)).strip()
             except (EOFError, KeyboardInterrupt):
                 break
-            if not l or l.lower() == "q":
+            if not line or line.lower() == "q":
                 break
-            links.append(l)
+            links.append(line)
         if links:
             process_links(links)
+            print()
 
 if __name__ == "__main__":
     try:
