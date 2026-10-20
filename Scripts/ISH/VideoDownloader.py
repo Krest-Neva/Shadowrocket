@@ -18,6 +18,7 @@ fi
 export VD_UPDATE_URL="https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/ISH/VideoDownloader.py"
 
 LANG_FILE="$HOME/.video_downloader_lang"
+ALPINE_VERSION_FILE="$HOME/.video_downloader_alpine_version"
 
 if [ -f "$LANG_FILE" ]; then
     VD_LANG=$(cat "$LANG_FILE" 2>/dev/null)
@@ -59,33 +60,82 @@ else
 fi
 say "${YELLOW}========================================${NC}"
 
+set_repos() {
+    ver=$1
+    printf 'https://dl-cdn.alpinelinux.org/alpine/v%s/main\nhttps://dl-cdn.alpinelinux.org/alpine/v%s/community\n' "$ver" "$ver" > /etc/apk/repositories
+    if ! apk update >/dev/null 2>&1; then
+        printf 'https://mirror.yandex.ru/mirrors/alpine/v%s/main\nhttps://mirror.yandex.ru/mirrors/alpine/v%s/community\n' "$ver" "$ver" > /etc/apk/repositories
+        if ! apk update >/dev/null 2>&1; then
+            return 1
+        fi
+    fi
+    return 0
+}
+
+install_pkgs() {
+    for pkg in python3 py3-pip curl wget ca-certificates nodejs ffmpeg; do
+        apk add --no-cache "$pkg" >/dev/null 2>&1 || true
+    done
+}
+
+check_python() {
+    if ! command -v python3 >/dev/null 2>&1; then
+        return 1
+    fi
+    if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3,10) else 1)' 2>/dev/null; then
+        return 1
+    fi
+    return 0
+}
+
+check_ffmpeg_works() {
+    if command -v ffmpeg >/dev/null 2>&1; then
+        if ffmpeg -version >/dev/null 2>&1; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+find_alpine() {
+    if [ -f "$ALPINE_VERSION_FILE" ]; then
+        saved=$(cat "$ALPINE_VERSION_FILE" 2>/dev/null)
+        if [ -n "$saved" ]; then
+            if set_repos "$saved" && install_pkgs && check_python; then
+                echo "$saved"
+                return 0
+            fi
+        fi
+    fi
+    for ver in 3.18 3.19 3.17 3.20 3.16; do
+        if set_repos "$ver" && install_pkgs && check_python; then
+            echo "$ver" > "$ALPINE_VERSION_FILE"
+            echo "$ver"
+            return 0
+        fi
+    done
+    return 1
+}
+
 PY_OK=0
 if command -v python3 >/dev/null 2>&1; then
-    if python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null; then
+    if python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3,10) else 1)' 2>/dev/null; then
         PY_OK=1
     fi
 fi
 
 if [ "$PY_OK" = "0" ]; then
     if [ "$VD_LANG" = "en" ]; then
-        REP inf "Upgrading Alpine to v3.19 (Python 3.11+)..."
+        REP inf "Finding working Alpine version with Python 3.10+..."
     else
-        REP inf "Обновление Alpine до v3.19 (Python 3.11+)..."
+        REP inf "Поиск рабочей версии Alpine с Python 3.10+..."
     fi
-    rm -rf /ish 2>/dev/null
-    printf 'https://dl-cdn.alpinelinux.org/alpine/v3.19/main\nhttps://dl-cdn.alpinelinux.org/alpine/v3.19/community\n' > /etc/apk/repositories
-    if apk update >/dev/null 2>&1; then
-        REP ok "$( [ "$VD_LANG" = "en" ] && echo 'repos updated' || echo 'репозитории обновлены' )"
-    else
-        printf 'https://mirror.yandex.ru/mirrors/alpine/v3.19/main\nhttps://mirror.yandex.ru/mirrors/alpine/v3.19/community\n' > /etc/apk/repositories
-        if apk update >/dev/null 2>&1; then
-            REP ok "$( [ "$VD_LANG" = "en" ] && echo 'repos updated (mirror)' || echo 'репозитории обновлены (зеркало)' )"
-        else
-            REP err "$( [ "$VD_LANG" = "en" ] && echo 'repo update failed' || echo 'репозитории не обновились' )"
-        fi
+    ALPINE_VER=$(find_alpine)
+    if [ -z "$ALPINE_VER" ]; then
+        REP err "$( [ "$VD_LANG" = "en" ] && echo 'No working Alpine version found' || echo 'Не найдено рабочей версии Alpine' )"
+        exit 1
     fi
-    apk upgrade --available >/dev/null 2>&1 && \
-        REP ok "$( [ "$VD_LANG" = "en" ] && echo 'system upgraded' || echo 'система обновлена' )"
+    REP ok "$( [ "$VD_LANG" = "en" ] && echo "Alpine $ALPINE_VER works" || echo "Alpine $ALPINE_VER работает" )"
 fi
 
 apk update >/dev/null 2>&1 || true
@@ -104,21 +154,6 @@ for pkg in python3 py3-pip curl wget ca-certificates nodejs ffmpeg; do
     fi
 done
 
-if command -v ffmpeg >/dev/null 2>&1; then
-    if ! ffmpeg -version >/dev/null 2>&1; then
-        REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'ffmpeg is broken, reinstalling' || echo 'ffmpeg сломан, переустанавливаю' )"
-        apk add --no-cache --force-overwrite ffmpeg >/dev/null 2>&1 || true
-        if ffmpeg -version >/dev/null 2>&1; then
-            REP ok "ffmpeg reinstalled"
-        else
-            REP err "$( [ "$VD_LANG" = "en" ] && echo 'ffmpeg still broken' || echo 'ffmpeg всё ещё сломан' )"
-        fi
-    else
-        FFVER=$(ffmpeg -version 2>/dev/null | head -1 | awk '{print $3}')
-        REP ok "ffmpeg $FFVER"
-    fi
-fi
-
 if [ -n "$FAILED" ]; then
     REP wrn "$( [ "$VD_LANG" = "en" ] && echo "missing:$FAILED" || echo "не установлены:$FAILED" )"
     if [ "$VD_LANG" = "en" ]; then printf 'Retry? [y/N]: '; else printf 'Повторить? [y/N]: '; fi
@@ -134,17 +169,35 @@ if [ -n "$FAILED" ]; then
     esac
 fi
 
-if command -v python3 >/dev/null 2>&1; then
-    if python3 -m pip install --upgrade --break-system-packages pip setuptools wheel >/dev/null 2>&1 \
-       || python3 -m pip install --upgrade pip setuptools wheel >/dev/null 2>&1; then
-        REP ok "pip/setuptools/wheel"
+if command -v ffmpeg >/dev/null 2>&1; then
+    if ! ffmpeg -version >/dev/null 2>&1; then
+        REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'ffmpeg broken, trying legacy from iSH repo' || echo 'ffmpeg сломан, пробую legacy из репозитория iSH' )"
+        cp /etc/apk/repositories /tmp/vd_repos.bak
+        printf 'http://apk.ish.app/v3.14-2023-05-19/main\nhttp://apk.ish.app/v3.14-2023-05-19/community\n' > /etc/apk/repositories
+        apk update >/dev/null 2>&1
+        apk add --no-cache ffmpeg >/dev/null 2>&1
+        if ffmpeg -version >/dev/null 2>&1; then
+            mkdir -p /opt/ffmpeg-legacy
+            cp /usr/bin/ffmpeg /opt/ffmpeg-legacy/ffmpeg 2>/dev/null || true
+            cp /usr/bin/ffprobe /opt/ffmpeg-legacy/ffprobe 2>/dev/null || true
+            REP ok "$( [ "$VD_LANG" = "en" ] && echo 'legacy ffmpeg works, saved to /opt/ffmpeg-legacy' || echo 'legacy ffmpeg работает, сохранён в /opt/ffmpeg-legacy' )"
+        else
+            REP err "$( [ "$VD_LANG" = "en" ] && echo 'legacy ffmpeg also broken' || echo 'legacy ffmpeg тоже сломан' )"
+        fi
+        cp /tmp/vd_repos.bak /etc/apk/repositories
+        apk update >/dev/null 2>&1 || true
     else
-        REP inf "$( [ "$VD_LANG" = "en" ] && echo 'pip tools skipped (not critical)' || echo 'pip tools пропущены (не критично)' )"
+        FFVER=$(ffmpeg -version 2>/dev/null | head -1 | awk '{print $3}')
+        REP ok "ffmpeg $FFVER"
     fi
+fi
 
-    REP inf "$( [ "$VD_LANG" = "en" ] && echo 'pip: installing yt-dlp...' || echo 'pip: установка yt-dlp...' )"
-    python3 -m pip install -U --no-deps --break-system-packages yt-dlp tqdm >/dev/null 2>&1 \
-        || python3 -m pip install -U --no-deps yt-dlp tqdm >/dev/null 2>&1
+if command -v python3 >/dev/null 2>&1; then
+    if ! python3 -c 'import yt_dlp, tqdm' >/dev/null 2>&1; then
+        REP inf "$( [ "$VD_LANG" = "en" ] && echo 'pip: installing yt-dlp...' || echo 'pip: установка yt-dlp...' )"
+        python3 -m pip install -U --no-deps --break-system-packages yt-dlp tqdm >/dev/null 2>&1 \
+            || python3 -m pip install -U --no-deps yt-dlp tqdm >/dev/null 2>&1
+    fi
     if python3 -c 'import yt_dlp, tqdm' >/dev/null 2>&1; then
         YTV=$(python3 -c 'import yt_dlp; print(yt_dlp.version.__version__)' 2>/dev/null || echo "?")
         REP ok "yt-dlp $YTV"
@@ -152,9 +205,11 @@ if command -v python3 >/dev/null 2>&1; then
         REP err "$( [ "$VD_LANG" = "en" ] && echo 'yt-dlp not installed' || echo 'yt-dlp не установлен' )"
     fi
 
-    REP inf "$( [ "$VD_LANG" = "en" ] && echo 'pip: installing yt-dlp-ejs...' || echo 'pip: установка yt-dlp-ejs...' )"
-    python3 -m pip install -U --break-system-packages yt-dlp-ejs >/dev/null 2>&1 \
-        || python3 -m pip install -U yt-dlp-ejs >/dev/null 2>&1
+    if ! python3 -c 'import yt_dlp_ejs' >/dev/null 2>&1; then
+        REP inf "$( [ "$VD_LANG" = "en" ] && echo 'pip: installing yt-dlp-ejs...' || echo 'pip: установка yt-dlp-ejs...' )"
+        python3 -m pip install -U --break-system-packages yt-dlp-ejs >/dev/null 2>&1 \
+            || python3 -m pip install -U yt-dlp-ejs >/dev/null 2>&1
+    fi
     if python3 -c 'import yt_dlp_ejs' >/dev/null 2>&1; then
         REP ok "yt-dlp-ejs"
     else
@@ -240,7 +295,7 @@ def _detect_ffmpeg():
     w = shutil.which("ffmpeg")
     if w:
         cands.append(w)
-    for p in ("/usr/bin/ffmpeg", "/usr/local/bin/ffmpeg", "/bin/ffmpeg"):
+    for p in ("/opt/ffmpeg-legacy/ffmpeg", "/usr/bin/ffmpeg", "/usr/local/bin/ffmpeg", "/bin/ffmpeg"):
         if p not in cands and os.path.exists(p):
             cands.append(p)
     for p in cands:
@@ -254,12 +309,21 @@ def _detect_ffmpeg():
     return None
 
 def _detect_ffprobe():
+    cands = []
     w = shutil.which("ffprobe")
     if w:
-        return w
-    for p in ("/usr/bin/ffprobe", "/usr/local/bin/ffprobe", "/bin/ffprobe"):
+        cands.append(w)
+    for p in ("/opt/ffmpeg-legacy/ffprobe", "/usr/bin/ffprobe", "/usr/local/bin/ffprobe", "/bin/ffprobe"):
+        if p not in cands and os.path.exists(p):
+            cands.append(p)
+    for p in cands:
         if os.path.exists(p) and os.access(p, os.X_OK):
-            return p
+            try:
+                r = subprocess.run([p, "-version"], capture_output=True, timeout=15)
+                if r.returncode == 0 and b"ffprobe version" in r.stdout:
+                    return p
+            except Exception:
+                pass
     return None
 
 FFMPEG_BIN = _detect_ffmpeg()
@@ -443,7 +507,6 @@ TEXTS = {
         "upd_stable": "Стабильная",
         "upd_nightly": "Nightly",
         "upd_ejs": "Только yt-dlp-ejs",
-        "upd_pip_info": "Запускаю pip install",
         "upd_done": "Обновление завершено, перезапуск",
         "upd_failed": "Не удалось",
         "ejs_installing": "Устанавливаю yt-dlp-ejs",
@@ -628,7 +691,6 @@ TEXTS = {
         "upd_stable": "Stable",
         "upd_nightly": "Nightly",
         "upd_ejs": "yt-dlp-ejs only",
-        "upd_pip_info": "Running pip install",
         "upd_done": "Update done, restarting",
         "upd_failed": "Failed",
         "ejs_installing": "Installing yt-dlp-ejs",
@@ -2485,7 +2547,7 @@ def edit_with_templates(key, templates, current_value, on_set=None, multi=False)
             new_val = ""
     elif ch.isdigit() and 1 <= int(ch) <= len(templates):
         new_val = templates[int(ch) - 1]
-    elif multi and ("," in ch or "-" in ch or ch.lower() in ("all", "a", "*")):
+    elif multi:
         nums = parse_multi(ch, len(templates))
         if not nums:
             err_line(T("invalid_choice"))
@@ -2512,33 +2574,6 @@ def edit_with_templates(key, templates, current_value, on_set=None, multi=False)
             new_val = ",".join(parts)
         else:
             new_val = selected[0] if selected else ""
-    elif multi:
-        nums = parse_multi(ch, len(templates))
-        if nums:
-            selected = [templates[i - 1] for i in nums]
-            if key == "dns_servers":
-                parts = []
-                for s in selected:
-                    for ip in s.split(","):
-                        ip = ip.strip()
-                        if ip and ip not in parts:
-                            parts.append(ip)
-                new_val = ",".join(parts)
-            elif key == "yt_clients":
-                parts = []
-                for s in selected:
-                    for cc in s.split(","):
-                        cc = cc.strip()
-                        if cc and cc not in parts:
-                            parts.append(cc)
-                new_val = ",".join(parts)
-            elif key == "doh_url":
-                parts = [s for s in selected if s]
-                new_val = ",".join(parts)
-            else:
-                new_val = selected[0] if selected else ""
-        else:
-            new_val = ch
     else:
         new_val = ch
     if new_val is None:
