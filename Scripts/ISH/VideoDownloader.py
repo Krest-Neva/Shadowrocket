@@ -72,12 +72,6 @@ set_repos() {
     return 0
 }
 
-install_pkgs() {
-    for pkg in python3 py3-pip curl wget ca-certificates nodejs ffmpeg; do
-        apk add --no-cache "$pkg" >/dev/null 2>&1 || true
-    done
-}
-
 check_python() {
     if ! command -v python3 >/dev/null 2>&1; then
         return 1
@@ -88,33 +82,82 @@ check_python() {
     return 0
 }
 
-check_ffmpeg_works() {
+find_alpine() {
+    if [ -f "$ALPINE_VERSION_FILE" ]; then
+        saved=$(cat "$ALPINE_VERSION_FILE" 2>/dev/null)
+        if [ -n "$saved" ]; then
+            if set_repos "$saved"; then
+                apk add --no-cache python3 >/dev/null 2>&1
+                if check_python; then
+                    echo "$saved"
+                    return 0
+                fi
+            fi
+        fi
+    fi
+    for ver in 3.18 3.19 3.17 3.20 3.16; do
+        if set_repos "$ver"; then
+            apk add --no-cache python3 >/dev/null 2>&1
+            if check_python; then
+                echo "$ver" > "$ALPINE_VERSION_FILE"
+                echo "$ver"
+                return 0
+            fi
+        fi
+    done
+    return 1
+}
+
+fix_ffmpeg() {
     if command -v ffmpeg >/dev/null 2>&1; then
         if ffmpeg -version >/dev/null 2>&1; then
             return 0
         fi
     fi
-    return 1
-}
-
-find_alpine() {
-    if [ -f "$ALPINE_VERSION_FILE" ]; then
-        saved=$(cat "$ALPINE_VERSION_FILE" 2>/dev/null)
-        if [ -n "$saved" ]; then
-            if set_repos "$saved" && install_pkgs && check_python; then
-                echo "$saved"
-                return 0
-            fi
-        fi
+    REAL_FF=$(command -v ffmpeg 2>/dev/null)
+    if [ -z "$REAL_FF" ]; then
+        return 1
     fi
-    for ver in 3.18 3.19 3.17 3.20 3.16; do
-        if set_repos "$ver" && install_pkgs && check_python; then
-            echo "$ver" > "$ALPINE_VERSION_FILE"
-            echo "$ver"
-            return 0
-        fi
-    done
-    return 1
+    if [ "$VD_LANG" = "en" ]; then
+        REP wrn "ffmpeg broken (Bad system call), compiling LD_PRELOAD hack..."
+    else
+        REP wrn "ffmpeg сломан (Bad system call), компилирую LD_PRELOAD хак..."
+    fi
+    apk add --no-cache gcc musl-dev >/dev/null 2>&1 || true
+    HACK_C="/tmp/ffmpeg-hack.c"
+    HACK_SO="/usr/local/lib/ffmpeg-hack.so"
+    curl -fsSL "https://raw.githubusercontent.com/tjcaul/iSH-LD_PRELOAD-Hack/main/ffmpeg-hack.c" -o "$HACK_C" 2>/dev/null || true
+    if [ ! -f "$HACK_C" ]; then
+        REP err "Could not download ffmpeg-hack.c"
+        return 1
+    fi
+    mkdir -p /usr/local/lib
+    if ! gcc -O2 -shared -fPIC -o "$HACK_SO" "$HACK_C" -ldl >/dev/null 2>&1; then
+        REP err "Could not compile ffmpeg-hack.so"
+        return 1
+    fi
+    WRAP="/usr/local/bin/ffmpeg"
+    cat > "$WRAP" << WRAP_EOF
+#!/bin/sh
+exec env LD_PRELOAD="$HACK_SO" "$REAL_FF" "\$@"
+WRAP_EOF
+    chmod +x "$WRAP"
+    REAL_FP=$(command -v ffprobe 2>/dev/null)
+    if [ -n "$REAL_FP" ]; then
+        WRAP_FP="/usr/local/bin/ffprobe"
+        cat > "$WRAP_FP" << WRAP_FP_EOF
+#!/bin/sh
+exec env LD_PRELOAD="$HACK_SO" "$REAL_FP" "\$@"
+WRAP_FP_EOF
+        chmod +x "$WRAP_FP"
+    fi
+    if ffmpeg -version >/dev/null 2>&1; then
+        REP ok "ffmpeg now works via LD_PRELOAD (slow but functional)"
+        return 0
+    else
+        REP err "ffmpeg still broken after hack"
+        return 1
+    fi
 }
 
 PY_OK=0
@@ -140,61 +183,17 @@ fi
 
 apk update >/dev/null 2>&1 || true
 
-FAILED=""
 for pkg in python3 py3-pip curl wget ca-certificates nodejs ffmpeg; do
     if apk info -e "$pkg" >/dev/null 2>&1; then
-        REP ok "$( [ "$VD_LANG" = "en" ] && echo "$pkg already installed" || echo "$pkg уже установлен" )"
         continue
     fi
-    if apk add --no-cache "$pkg" >/dev/null 2>&1; then
-        REP ok "$( [ "$VD_LANG" = "en" ] && echo "$pkg installed" || echo "$pkg установлен" )"
-    else
-        FAILED="$FAILED $pkg"
-        REP err "$( [ "$VD_LANG" = "en" ] && echo "$pkg failed" || echo "$pkg не установился" )"
-    fi
+    apk add --no-cache "$pkg" >/dev/null 2>&1 || true
 done
 
-if [ -n "$FAILED" ]; then
-    REP wrn "$( [ "$VD_LANG" = "en" ] && echo "missing:$FAILED" || echo "не установлены:$FAILED" )"
-    if [ "$VD_LANG" = "en" ]; then printf 'Retry? [y/N]: '; else printf 'Повторить? [y/N]: '; fi
-    read -r ANS
-    case "$ANS" in
-        y|Y|yes|YES|д|Д|да|ДА)
-            for pkg in $FAILED; do
-                apk add --no-cache "$pkg" >/dev/null 2>&1 && \
-                    REP ok "$( [ "$VD_LANG" = "en" ] && echo "$pkg installed" || echo "$pkg установлен" )" || \
-                    REP err "$( [ "$VD_LANG" = "en" ] && echo "$pkg still failed" || echo "$pkg всё ещё не установлен" )"
-            done
-            ;;
-    esac
-fi
-
-if command -v ffmpeg >/dev/null 2>&1; then
-    if ! ffmpeg -version >/dev/null 2>&1; then
-        REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'ffmpeg broken, trying legacy from iSH repo' || echo 'ffmpeg сломан, пробую legacy из репозитория iSH' )"
-        cp /etc/apk/repositories /tmp/vd_repos.bak
-        printf 'http://apk.ish.app/v3.14-2023-05-19/main\nhttp://apk.ish.app/v3.14-2023-05-19/community\n' > /etc/apk/repositories
-        apk update >/dev/null 2>&1
-        apk add --no-cache ffmpeg >/dev/null 2>&1
-        if ffmpeg -version >/dev/null 2>&1; then
-            mkdir -p /opt/ffmpeg-legacy
-            cp /usr/bin/ffmpeg /opt/ffmpeg-legacy/ffmpeg 2>/dev/null || true
-            cp /usr/bin/ffprobe /opt/ffmpeg-legacy/ffprobe 2>/dev/null || true
-            REP ok "$( [ "$VD_LANG" = "en" ] && echo 'legacy ffmpeg works, saved to /opt/ffmpeg-legacy' || echo 'legacy ffmpeg работает, сохранён в /opt/ffmpeg-legacy' )"
-        else
-            REP err "$( [ "$VD_LANG" = "en" ] && echo 'legacy ffmpeg also broken' || echo 'legacy ffmpeg тоже сломан' )"
-        fi
-        cp /tmp/vd_repos.bak /etc/apk/repositories
-        apk update >/dev/null 2>&1 || true
-    else
-        FFVER=$(ffmpeg -version 2>/dev/null | head -1 | awk '{print $3}')
-        REP ok "ffmpeg $FFVER"
-    fi
-fi
+fix_ffmpeg
 
 if command -v python3 >/dev/null 2>&1; then
     if ! python3 -c 'import yt_dlp, tqdm' >/dev/null 2>&1; then
-        REP inf "$( [ "$VD_LANG" = "en" ] && echo 'pip: installing yt-dlp...' || echo 'pip: установка yt-dlp...' )"
         python3 -m pip install -U --no-deps --break-system-packages yt-dlp tqdm >/dev/null 2>&1 \
             || python3 -m pip install -U --no-deps yt-dlp tqdm >/dev/null 2>&1
     fi
@@ -202,18 +201,14 @@ if command -v python3 >/dev/null 2>&1; then
         YTV=$(python3 -c 'import yt_dlp; print(yt_dlp.version.__version__)' 2>/dev/null || echo "?")
         REP ok "yt-dlp $YTV"
     else
-        REP err "$( [ "$VD_LANG" = "en" ] && echo 'yt-dlp not installed' || echo 'yt-dlp не установлен' )"
+        REP err "yt-dlp not installed"
     fi
-
     if ! python3 -c 'import yt_dlp_ejs' >/dev/null 2>&1; then
-        REP inf "$( [ "$VD_LANG" = "en" ] && echo 'pip: installing yt-dlp-ejs...' || echo 'pip: установка yt-dlp-ejs...' )"
         python3 -m pip install -U --break-system-packages yt-dlp-ejs >/dev/null 2>&1 \
             || python3 -m pip install -U yt-dlp-ejs >/dev/null 2>&1
     fi
     if python3 -c 'import yt_dlp_ejs' >/dev/null 2>&1; then
         REP ok "yt-dlp-ejs"
-    else
-        REP inf "$( [ "$VD_LANG" = "en" ] && echo 'yt-dlp-ejs not installed (optional)' || echo 'yt-dlp-ejs не установлен (опционально)' )"
     fi
 fi
 
@@ -295,7 +290,7 @@ def _detect_ffmpeg():
     w = shutil.which("ffmpeg")
     if w:
         cands.append(w)
-    for p in ("/opt/ffmpeg-legacy/ffmpeg", "/usr/bin/ffmpeg", "/usr/local/bin/ffmpeg", "/bin/ffmpeg"):
+    for p in ("/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg", "/bin/ffmpeg"):
         if p not in cands and os.path.exists(p):
             cands.append(p)
     for p in cands:
@@ -313,7 +308,7 @@ def _detect_ffprobe():
     w = shutil.which("ffprobe")
     if w:
         cands.append(w)
-    for p in ("/opt/ffmpeg-legacy/ffprobe", "/usr/bin/ffprobe", "/usr/local/bin/ffprobe", "/bin/ffprobe"):
+    for p in ("/usr/local/bin/ffprobe", "/usr/bin/ffprobe", "/bin/ffprobe"):
         if p not in cands and os.path.exists(p):
             cands.append(p)
     for p in cands:
