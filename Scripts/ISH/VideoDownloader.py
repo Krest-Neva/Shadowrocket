@@ -3,6 +3,8 @@
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
 say() { printf '%b\n' "$1"; }
 
+printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\nnameserver 94.140.14.14\n' > /etc/resolv.conf 2>/dev/null
+
 LANG_FILE="$HOME/.video_downloader_lang"
 KA_PID=""
 
@@ -24,45 +26,29 @@ fi
 T() {
     if [ "$VD_LANG" = "en" ]; then
         case "$1" in
-            apk_update) echo "[*] apk update..." ;;
-            apk_fail) echo "[!] apk update failed, continuing" ;;
-            apk_skip) echo "[!] apk package not installed" ;;
+            setup_header) echo "=== Video Downloader ===" ;;
+            repo_upgrade) echo "[*] Upgrading Alpine repositories to v3.19..." ;;
+            repo_fail) echo "[!] Repository upgrade failed, continuing" ;;
+            installing) echo "[*] yt-dlp not found — installing" ;;
             pip_install) echo "[*] pip: installing yt-dlp..." ;;
             pip_fail) echo "[!] pip install failed" ;;
-            setup_header) echo "=== Video Downloader ===" ;;
-            installing) echo "[*] yt-dlp not found — installing" ;;
-            not_imported) echo "[!] yt-dlp/tqdm not importable, fallbacks will be tried" ;;
             no_python) echo "[!] python3 not found" ;;
-            repo_upgrade) echo "[*] Upgrading Alpine repositories to v3.19 (Python 3.11)..." ;;
-            repo_fail) echo "[!] Repository upgrade failed, continuing with current" ;;
-            python_upgrade) echo "[*] Upgrading Python..." ;;
+            not_imported) echo "[!] yt-dlp/tqdm not importable, fallbacks will be tried" ;;
             *) echo "$1" ;;
         esac
     else
         case "$1" in
-            apk_update) echo "[*] Обновление apk..." ;;
-            apk_fail) echo "[!] apk update не удался, продолжаем" ;;
-            apk_skip) echo "[!] apk-пакет не установлен" ;;
+            setup_header) echo "=== Универсальный загрузчик видео ===" ;;
+            repo_upgrade) echo "[*] Обновление репозиториев Alpine до v3.19..." ;;
+            repo_fail) echo "[!] Обновление репозиториев не удалось, продолжаем" ;;
+            installing) echo "[*] yt-dlp не найден — устанавливаю" ;;
             pip_install) echo "[*] pip: установка yt-dlp..." ;;
             pip_fail) echo "[!] pip install не удался" ;;
-            setup_header) echo "=== Универсальный загрузчик видео ===" ;;
-            installing) echo "[*] yt-dlp не найден — устанавливаю" ;;
-            not_imported) echo "[!] yt-dlp/tqdm не импортируются, будут использованы запасные методы" ;;
             no_python) echo "[!] python3 не найден" ;;
-            repo_upgrade) echo "[*] Обновление репозиториев Alpine до v3.19 (Python 3.11)..." ;;
-            repo_fail) echo "[!] Обновление репозиториев не удалось, продолжаем с текущими" ;;
-            python_upgrade) echo "[*] Обновление Python..."    ;;
+            not_imported) echo "[!] yt-dlp/tqdm не импортируются, будут использованы запасные методы" ;;
             *) echo "$1" ;;
         esac
-    ap fi
-}
-
-setupk_dns() {
-    cat > /etc/resol updatev.conf << 'EOF'
-names ||erver 1.1.1.1
-nameserver 8.8.8.8
-nameserver 94.140.14.14
-EOF
+    fi
 }
 
 keep_alive() {
@@ -72,62 +58,42 @@ keep_alive() {
     fi
 }
 
+python_ok() {
+    command -v python3 >/dev/null 2>&1 && python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null
+}
+
 upgrade_repos() {
     say "${BLUE}$(T repo_upgrade)${NC}"
-    rm -rf /ish
+    rm -rf /ish 2>/dev/null
     printf 'https://dl-cdn.alpinelinux.org/alpine/v3.19/main\nhttps://dl-cdn.alpinelinux.org/alpine/v3.19/community\n' > /etc/apk/repositories
- { say "${RED}$(T repo_fail)${NC}"; return 1; }
-    apk upgrade --available || { say "${RED}$(T repo_fail)${NC}"; return 1; }
+    if ! apk update >/dev/null 2>&1; then
+        printf 'https://mirror.yandex.ru/mirrors/alpine/v3.19/main\nhttps://mirror.yandex.ru/mirrors/alpine/v3.19/community\n' > /etc/apk/repositories
+        if ! apk update >/dev/null 2>&1; then
+            say "${RED}$(T repo_fail)${NC}"
+            return 1
+        fi
+    fi
+    apk upgrade --available >/dev/null 2>&1
     say "${GREEN}[+] Repositories upgraded.${NC}"
-    return 0
-}
-
-python_version_ok() {
-    python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null
-}
-
-install_packages() {
-    say "${BLUE}$(T apk_update)${NC}"
-    apk update || say "${YELLOW}$(T apk_fail)${NC}"
-    for p in python3 py3-pip ffmpeg ca-certificates curl wget nodejs \
-             py3-brotli py3-pycryptodomex py3-mutagen py3-websockets; do
-        apk add --no-cache "$p" >/dev/null 2>&1 || say "${YELLOW}$(T apk_skip): $p${NC}"
-    done
-    apk add --no-cache quickjs >/dev/null 2>&1 || true
-
-    say "${BLUE}$(T python_upgrade)${NC}"
-    python3 -m pip install --upgrade pip setuptools wheel >/dev/null 2>&1 || true
-
-    say "${BLUE}$(T pip_install)${NC}"
-    python3 -m pip install -U --no-deps --disable-pip-version-check yt-dlp tqdm \
-      || python3 -m pip install -U --no-deps --break-system-packages yt-dlp tqdm \
-      || say "${RED}$(T pip_fail)${NC}"
-
-    python3 -m pip install -U yt-dlp-ejs >/dev/null 2>&1 || true
 }
 
 say "${YELLOW}========================================${NC}"
 say "${YELLOW}  $(T setup_header)${NC}"
 say "${YELLOW}========================================${NC}"
-setup_dns
 keep_alive
 
-if ! command -v python3 >/dev/null 2>&1; then
-    say "${RED}$(T no_python)${NC}"
-    install_packages
-elif ! python_version_ok; then
-    upgrade_repos
-    install_packages
-else
-    if ! python3 -c 'import yt_dlp, tqdm' >/dev/null 2>&1; then
-        say "${YELLOW}$(T installing)${NC}"
-        install_packages
-    elif [ "${1:-}" = "--update" ]; then
-        install_packages
-    fi
+if ! python_ok; then
+    upgrade_repos || true
 fi
 
-python3 -c 'import yt_dlp, tqdm' >/dev/null 2>&1 || say "${RED}$(T not_imported)${NC}"
+apk update >/dev/null 2>&1 || true
+apk add --no-cache python3 py3-pip ffmpeg ca-certificates curl wget nodejs >/dev/null 2>&1 || true
+
+python3 -m pip install --upgrade pip setuptools wheel >/dev/null 2>&1 || true
+python3 -m pip install -U --no-deps --disable-pip-version-check yt-dlp tqdm >/dev/null 2>&1 \
+    || python3 -m pip install -U --no-deps --break-system-packages yt-dlp tqdm >/dev/null 2>&1 \
+    || say "${RED}$(T pip_fail)${NC}"
+python3 -m pip install -U yt-dlp-ejs >/dev/null 2>&1 || true
 
 command -v python3 >/dev/null 2>&1 || { say "${RED}$(T no_python)${NC}"; exit 1; }
 
@@ -146,9 +112,7 @@ import struct
 import random
 import shutil
 import subprocess
-import importlib
 import importlib.util
-import importlib.metadata
 import urllib.request
 import urllib.error
 from pathlib import Path
@@ -166,7 +130,6 @@ except ImportError:
 HOME = Path.home()
 LANG_FILE = HOME / ".video_downloader_lang"
 SETTINGS_FILE = HOME / ".video_downloader_settings.json"
-EJS_MARK = HOME / ".video_downloader_ejs_tried"
 SCRIPT_PATH = os.path.abspath(sys.argv[0])
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 
@@ -225,7 +188,6 @@ TEXTS = {
         "invalid_default": "Неверный выбор, используется формат по умолчанию",
         "selector": "Селектор",
         "strategy": "Способ",
-        "trying": "Пробую",
         "trying_generic": "Пробую generic-экстрактор...",
         "trying_binary": "Пробую yt-dlp отдельным процессом...",
         "trying_manual": "Пробую скачать видео и аудио отдельно и склеить через ffmpeg...",
@@ -312,15 +274,15 @@ TEXTS = {
         "preset_iphone": "iPhone (H.264 + AAC)",
         "preset_android": "Android (H.264 + AAC)",
         "preset_universal": "Универсальный (H.264 Baseline + AAC)",
-        "preset_h265": "H.265 / HEVC (меньше размер, медленно на iSH)",
-        "preset_vp9": "VP9 (Web, медленно на iSH)",
-        "preset_av1": "AV1 (макс. сжатие, очень медленно на iSH)",
+        "preset_h265": "H.265 / HEVC",
+        "preset_vp9": "VP9 (Web)",
+        "preset_av1": "AV1",
         "preset_original": "Оригинал (без перекодирования)",
         "audio_aac": "AAC 128 kbps (iPhone)",
-        "audio_ac3": "AC3 192 kbps (не для Quick Look)",
+        "audio_ac3": "AC3 192 kbps",
         "audio_mp3": "MP3 192 kbps",
         "audio_opus": "Opus 160 kbps",
-        "audio_flac": "FLAC (lossless, большой)",
+        "audio_flac": "FLAC (lossless)",
         "audio_original": "Оригинал (без конвертации)",
         "lang_ru": "Русский",
         "lang_en": "English",
@@ -338,11 +300,11 @@ TEXTS = {
         "ffmpeg_missing": "ffmpeg не найден",
         "compat_warning": "Формат может быть несовместим с выбранным устройством.",
         "junk_cleaned": "Очищено временных файлов",
-        "encoder_missing": "Кодек не поддерживается этой сборкой ffmpeg. Выберите другой.",
+        "encoder_missing": "Кодек не поддерживается этой сборкой ffmpeg.",
         "preflight_title": "Проверка сети для",
         "preflight_ok": "Сеть доступна, DNS-режим",
-        "preflight_fail": "Не удалось установить TLS-соединение ни одним способом",
-        "preflight_blocked": "Похоже на блокировку или подмену DNS у провайдера (DPI). Обычно помогает только прокси/VPN.",
+        "preflight_fail": "Не удалось установить TLS-соединение",
+        "preflight_blocked": "Похоже на блокировку или подмену DNS (DPI). Обычно помогает только прокси/VPN.",
         "preflight_continue": "Всё равно попробовать (быстрые попытки)?",
         "net_help": "Сетевые ошибки. Задайте прокси (http://host:port, socks5://host:port) или Enter — пропустить.",
         "proxy_prompt": "Прокси",
@@ -392,7 +354,6 @@ TEXTS = {
         "invalid_default": "Invalid choice, using default",
         "selector": "Selector",
         "strategy": "Method",
-        "trying": "Trying",
         "trying_generic": "Trying generic extractor...",
         "trying_binary": "Trying yt-dlp as a separate process...",
         "trying_manual": "Trying separate video and audio download with ffmpeg merge...",
@@ -479,15 +440,15 @@ TEXTS = {
         "preset_iphone": "iPhone (H.264 + AAC)",
         "preset_android": "Android (H.264 + AAC)",
         "preset_universal": "Universal (H.264 Baseline + AAC)",
-        "preset_h265": "H.265 / HEVC (smaller, slow on iSH)",
-        "preset_vp9": "VP9 (Web, slow on iSH)",
-        "preset_av1": "AV1 (max compression, very slow on iSH)",
+        "preset_h265": "H.265 / HEVC",
+        "preset_vp9": "VP9 (Web)",
+        "preset_av1": "AV1",
         "preset_original": "Original (no re-encode)",
         "audio_aac": "AAC 128 kbps (iPhone)",
-        "audio_ac3": "AC3 192 kbps (not for Quick Look)",
+        "audio_ac3": "AC3 192 kbps",
         "audio_mp3": "MP3 192 kbps",
         "audio_opus": "Opus 160 kbps",
-        "audio_flac": "FLAC (lossless, large)",
+        "audio_flac": "FLAC (lossless)",
         "audio_original": "Original (no conversion)",
         "lang_ru": "Русский",
         "lang_en": "English",
@@ -505,7 +466,7 @@ TEXTS = {
         "ffmpeg_missing": "ffmpeg not found",
         "compat_warning": "Format may be incompatible with selected device.",
         "junk_cleaned": "Cleaned temp files",
-        "encoder_missing": "Codec not supported by this ffmpeg build. Choose another.",
+        "encoder_missing": "Codec not supported by this ffmpeg build.",
         "preflight_title": "Network check for",
         "preflight_ok": "Network reachable, DNS mode",
         "preflight_fail": "TLS connection failed with every method",
@@ -702,7 +663,6 @@ def parse_response(data, tid):
     rid, flags, qd, an, ns, ar = struct.unpack(">HHHHHH", data[:12])
     if rid != tid or (flags & 0x000F):
         return []
-
     def skip_name(p):
         while True:
             if p >= len(data):
@@ -713,7 +673,6 @@ def parse_response(data, tid):
             if n & 0xC0 == 0xC0:
                 return p + 2
             p += n + 1
-
     pos = 12
     for _ in range(qd):
         pos = skip_name(pos) + 4
@@ -1033,7 +992,7 @@ class Log:
 
     def warning(self, m):
         m = str(m)
-        if "Deprecated Feature: Support for Python version" in m:
+        if "Deprecated Feature" in m or "Support for Python version" in m:
             return
         self.msgs.append(m)
         if m not in SEEN_WARNINGS:
@@ -1042,7 +1001,7 @@ class Log:
 
     def error(self, m):
         m = str(m)
-        if "Deprecated Feature: Support for Python version" in m:
+        if "Deprecated Feature" in m or "Support for Python version" in m:
             return
         self.msgs.append(m)
         err_line(m)
@@ -1052,7 +1011,7 @@ class Log:
 
 def report(e, lg):
     msg = str(e).strip()
-    if msg and "Deprecated Feature: Support for Python version" not in msg:
+    if msg and "Deprecated Feature" not in msg and "Support for Python version" not in msg:
         if not any(msg in m or m.strip() in msg for m in lg.msgs):
             err_line(f"{type(e).__name__}: {msg}")
     return lg.text() + "\n" + msg
@@ -1128,7 +1087,10 @@ def base_opts(strategy=None, **extra):
         o["extractor_args"] = {"youtube": {"player_client": list(strategy["clients"])}}
     rt = js_runtime()
     if rt:
-        o["js_runtimes"] = {rt: {}}
+        try:
+            o["js_runtimes"] = {rt: {}}
+        except Exception:
+            pass
     if s["remote_ejs"]:
         o["remote_components"] = ["ejs:github"]
     o.update(extra)
@@ -1165,12 +1127,6 @@ def extract_info_smart(url):
             break
     return None, None
 
-def ytdlp_cmd():
-    if yt_dlp is not None:
-        return [sys.executable, SCRIPT_PATH, "--ytdlp"]
-    b = shutil.which("yt-dlp")
-    return [b] if b else None
-
 def run_module(url, selector, strategy, job, extra=None, outtmpl=None):
     if yt_dlp is None:
         return False, ""
@@ -1193,16 +1149,16 @@ def run_module(url, selector, strategy, job, extra=None, outtmpl=None):
         pg.close()
 
 def run_binary(url, selector, strategy, job, extra_flags=(), outtmpl=None):
-    cmd0 = ytdlp_cmd()
-    if not cmd0:
+    if not shutil.which("yt-dlp") and yt_dlp is None:
         return False, ""
     s = SETTINGS
-    cmd = cmd0 + ["-f", selector, "--no-playlist", "--quiet", "--no-progress",
-                  "-o", str(outtmpl or (job["dir"] / OUT_TMPL)),
-                  "--socket-timeout", str(15 if QUICK["on"] else s["socket_timeout"]),
-                  "--retries", str(1 if QUICK["on"] else s["retries"]),
-                  "--fragment-retries", str(1 if QUICK["on"] else s["retries"]),
-                  "-N", str(max(1, s["concurrent_fragments"]))]
+    base_cmd = ["yt-dlp"] if shutil.which("yt-dlp") else [sys.executable, "-m", "yt_dlp"]
+    cmd = base_cmd + ["-f", selector, "--no-playlist", "--quiet", "--no-progress",
+                      "-o", str(outtmpl or (job["dir"] / OUT_TMPL)),
+                      "--socket-timeout", str(15 if QUICK["on"] else s["socket_timeout"]),
+                      "--retries", str(1 if QUICK["on"] else s["retries"]),
+                      "--fragment-retries", str(1 if QUICK["on"] else s["retries"]),
+                      "-N", str(max(1, s["concurrent_fragments"]))]
     if job["merge"]:
         cmd += ["--merge-output-format", "mp4"]
     if s["ipv4_only"]:
@@ -1216,7 +1172,7 @@ def run_binary(url, selector, strategy, job, extra_flags=(), outtmpl=None):
     if strategy and strategy.get("clients"):
         cmd += ["--extractor-args", "youtube:player_client=" + ",".join(strategy["clients"])]
     rt = js_runtime()
-    if rt:
+    if rt and "--js-runtimes" in (subprocess.run([base_cmd[0], "--help"], capture_output=True, text=True).stdout or ""):
         cmd += ["--js-runtimes", rt]
     if s["remote_ejs"]:
         cmd += ["--remote-components", "ejs:github"]
@@ -1230,14 +1186,18 @@ def run_binary(url, selector, strategy, job, extra_flags=(), outtmpl=None):
     text = (r.stderr or "").strip()
     if text:
         for line in text.splitlines():
-            if "Deprecated Feature: Support for Python version" in line:
+            if "Deprecated Feature" in line or "Support for Python version" in line:
                 continue
             (err_line if r.returncode else warn_line)(line)
     return r.returncode == 0, text
 
 def run_any(url, selector, strategy, job, extra=None, flags=(), outtmpl=None):
     if yt_dlp is not None:
-        return run_module(url, selector, strategy, job, extra, outtmpl)
+        ok, err = run_module(url, selector, strategy, job, extra, outtmpl)
+        if ok:
+            return True, err
+        if not shutil.which("yt-dlp"):
+            return False, err
     return run_binary(url, selector, strategy, job, flags, outtmpl)
 
 def snapshot(d):
@@ -1694,15 +1654,6 @@ def external_download(url, info, job):
             for k, v in headers.items():
                 cmd.append(f"--header={k}: {v}")
             tools.append(("wget", cmd + [furl]))
-        if shutil.which("aria2c"):
-            cmd = ["aria2c", "-x", "4", "-d", str(job["dir"]), "-o", out.name]
-            if s["proxy"]:
-                cmd.append(f"--all-proxy={s['proxy']}")
-            if not s["verify_tls"]:
-                cmd.append("--check-certificate=false")
-            for k, v in headers.items():
-                cmd.append(f"--header={k}: {v}")
-            tools.append(("aria2c", cmd + [furl]))
         for name, cmd in tools:
             info_line(name)
             try:
@@ -1788,7 +1739,7 @@ def download_chain(url, job, chosen, info, win, allow_proxy=True):
     if net_fail >= 2:
         QUICK["on"] = True
     first = strategies[0]
-    if yt_dlp is not None and ytdlp_cmd():
+    if shutil.which("yt-dlp"):
         info_line(T("trying_binary"))
         ok, err = run_binary(url, selectors[0], first, job)
         if ok:
@@ -2285,12 +2236,10 @@ def settings_menu():
             err_line(T("invalid_choice"))
 
 def pip_run(args):
-    cmd = [sys.executable, SCRIPT_PATH, "--pip"] + args
-    env = dict(os.environ, VD_DNS_ORDER=",".join(dns_order()), PYTHONUTF8="1")
     base = ["install", "-U", "--no-deps", "--disable-pip-version-check"]
     for extra in ([], ["--break-system-packages"]):
         try:
-            r = subprocess.run(cmd[:3] + base + extra + args, env=env)
+            r = subprocess.run([sys.executable, "-m", "pip"] + base + extra + args)
         except Exception as e:
             err_line(f"{type(e).__name__}: {e}")
             return False
@@ -2300,27 +2249,13 @@ def pip_run(args):
 
 def install_ejs():
     spec = "yt-dlp-ejs"
-    try:
-        r = subprocess.run([sys.executable, "-c",
-                            "import importlib.metadata as m;print(chr(10).join(m.requires('yt-dlp') or []))"],
-                           capture_output=True, text=True, timeout=60)
-        for line in r.stdout.splitlines():
-            if line.strip().startswith("yt-dlp-ejs"):
-                spec = line.split(";")[0].strip()
-                break
-    except Exception as e:
-        warn_line(f"{type(e).__name__}: {e}")
     return pip_run([spec])
 
 def ensure_ejs():
-    if yt_dlp is None or has_ejs() or EJS_MARK.exists():
+    if yt_dlp is None or has_ejs():
         return
     info_line(T("ejs_installing"))
     ok = install_ejs()
-    try:
-        EJS_MARK.write_text("1")
-    except OSError:
-        pass
     if not ok:
         warn_line(T("ejs_failed"))
 
@@ -2339,12 +2274,8 @@ def update_menu():
     ok = True
     if ch in ("1", "2"):
         ok = pip_run((["--pre"] if ch == "2" else []) + ["yt-dlp", "tqdm"])
-    if ok:
-        try:
-            EJS_MARK.unlink()
-        except OSError:
-            pass
-        ok = install_ejs()
+    if ok and (ch == "3" or not SETTINGS.get("remote_ejs")):
+        install_ejs()
     if ok:
         ok_line(T("upd_done"))
         restart()
@@ -2463,16 +2394,6 @@ def main():
     if order:
         parsed = [x for x in order.split(",") if x in ("system", "udp", "doh")]
         DNS_STATE["order"] = parsed or None
-    if argv and argv[0] == "--ytdlp":
-        if yt_dlp is None:
-            sys.exit(1)
-        yt_dlp.main(argv[1:])
-        return
-    if argv and argv[0] == "--pip":
-        import runpy
-        sys.argv = ["pip"] + argv[1:]
-        runpy.run_module("pip", run_name="__main__", alter_sys=True)
-        return
     ensure_dir()
     ensure_ejs()
     main_menu()
