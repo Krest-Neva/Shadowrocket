@@ -1,39 +1,23 @@
 #!/bin/sh
 
-set -u
+VD_VERSION="2.2"
+UPDATE_URL="https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/ISH/VideoDownloader.py"
+export VD_VERSION UPDATE_URL
 
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; CYAN='\033[0;36m'; NC='\033[0m'
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
 say() { printf '%b\n' "$1"; }
-
-spinner() {
-    pid=$1
-    delay=0.1
-    frames='|/-\'
-    while kill -0 "$pid" 2>/dev/null; do
-        for f in $(echo "$frames" | fold -w1); do
-            printf '\r%s %s' "$f" "$2" >&2
-            sleep "$delay"
-            kill -0 "$pid" 2>/dev/null || break
-        done
-    done
-    printf '\r\033[K' >&2
-}
-
-run_with_spinner() {
-    msg=$1
-    shift
-    "$@" &
-    pid=$!
-    spinner "$pid" "$msg"
-    wait "$pid"
-    rc=$?
-    return $rc
-}
 
 printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\nnameserver 94.140.14.14\nnameserver 9.9.9.9\n' > /etc/resolv.conf 2>/dev/null
 
+if [ -f "$0" ]; then
+    SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+    SCRIPT_NAME="$(basename "$0")"
+    export VD_SCRIPT_PATH="$SCRIPT_DIR/$SCRIPT_NAME"
+else
+    export VD_SCRIPT_PATH=""
+fi
+
 LANG_FILE="$HOME/.video_downloader_lang"
-KA_PID=""
 
 if [ -f "$LANG_FILE" ]; then
     VD_LANG=$(cat "$LANG_FILE" 2>/dev/null)
@@ -50,74 +34,122 @@ else
     echo "$VD_LANG" > "$LANG_FILE"
 fi
 
-keep_alive() {
-    if [ -e /dev/location ]; then
-        ( cat /dev/location > /dev/null 2>&1 ) &
-        KA_PID=$!
-    fi
+REP() {
+    case "$VD_LANG:$1" in
+        en:ok)  shift; say "${GREEN}[+] $*${NC}" ;;
+        en:err) shift; say "${RED}[!] $*${NC}" ;;
+        en:inf) shift; say "${BLUE}[*] $*${NC}" ;;
+        en:wrn) shift; say "${YELLOW}[!] $*${NC}" ;;
+        ru:ok)  shift; say "${GREEN}[+] $*${NC}" ;;
+        ru:err) shift; say "${RED}[!] $*${NC}" ;;
+        ru:inf) shift; say "${BLUE}[*] $*${NC}" ;;
+        ru:wrn) shift; say "${YELLOW}[!] $*${NC}" ;;
+    esac
 }
 
-python_ok() {
-    command -v python3 >/dev/null 2>&1 && python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null
-}
-
-upgrade_repos() {
-    rm -rf /ish 2>/dev/null
-    printf 'https://dl-cdn.alpinelinux.org/alpine/v3.19/main\nhttps://dl-cdn.alpinelinux.org/alpine/v3.19/community\n' > /etc/apk/repositories
-    if ! run_with_spinner "apk update..." apk update >/dev/null 2>&1; then
-        printf 'https://mirror.yandex.ru/mirrors/alpine/v3.19/main\nhttps://mirror.yandex.ru/mirrors/alpine/v3.19/community\n' > /etc/apk/repositories
-        run_with_spinner "apk update (mirror)..." apk update >/dev/null 2>&1 || return 1
-    fi
-    run_with_spinner "apk upgrade..." apk upgrade --available >/dev/null 2>&1
-    return 0
-}
+if [ -e /dev/location ]; then
+    ( cat /dev/location > /dev/null 2>&1 ) &
+fi
 
 say "${YELLOW}========================================${NC}"
 if [ "$VD_LANG" = "en" ]; then
-    say "${YELLOW}  === Universal Video Downloader ===${NC}"
+    say "${YELLOW}  === Universal Video Downloader v$VD_VERSION ===${NC}"
 else
-    say "${YELLOW}  === Универсальный загрузчик видео ===${NC}"
+    say "${YELLOW}  === Универсальный загрузчик видео v$VD_VERSION ===${NC}"
 fi
 say "${YELLOW}========================================${NC}"
-keep_alive
 
-if ! python_ok; then
-    if [ "$VD_LANG" = "en" ]; then
-        say "${BLUE}[*] Upgrading repositories to v3.19 for Python 3.11+...${NC}"
-    else
-        say "${BLUE}[*] Обновление репозиториев до v3.19 для Python 3.11+...${NC}"
+PY_OK=0
+if command -v python3 >/dev/null 2>&1; then
+    if python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null; then
+        PY_OK=1
     fi
-    upgrade_repos || say "${YELLOW}[!] Repository upgrade failed, continuing${NC}"
 fi
 
-run_with_spinner "apk update..." apk update >/dev/null 2>&1 || true
-
-for pkg in python3 py3-pip curl wget ca-certificates nodejs ffmpeg; do
-    apk info -e "$pkg" >/dev/null 2>&1 && continue
-    run_with_spinner "Installing $pkg..." apk add --no-cache "$pkg" >/dev/null 2>&1
-    if ! apk info -e "$pkg" >/dev/null 2>&1; then
-        if [ "$VD_LANG" = "en" ]; then
-            say "${YELLOW}[!] $pkg not installed. Retry? [y/N]${NC}"
+if [ "$PY_OK" = "0" ]; then
+    if [ "$VD_LANG" = "en" ]; then
+        REP inf "Upgrading Alpine to v3.19 (Python 3.11+)..."
+    else
+        REP inf "Обновление Alpine до v3.19 (Python 3.11+)..."
+    fi
+    rm -rf /ish 2>/dev/null
+    printf 'https://dl-cdn.alpinelinux.org/alpine/v3.19/main\nhttps://dl-cdn.alpinelinux.org/alpine/v3.19/community\n' > /etc/apk/repositories
+    if apk update >/dev/null 2>&1; then
+        REP ok "$( [ "$VD_LANG" = "en" ] && echo 'repos updated' || echo 'репозитории обновлены' )"
+    else
+        printf 'https://mirror.yandex.ru/mirrors/alpine/v3.19/main\nhttps://mirror.yandex.ru/mirrors/alpine/v3.19/community\n' > /etc/apk/repositories
+        if apk update >/dev/null 2>&1; then
+            REP ok "$( [ "$VD_LANG" = "en" ] && echo 'repos updated (mirror)' || echo 'репозитории обновлены (зеркало)' )"
         else
-            say "${YELLOW}[!] $pkg не установлен. Повторить? [y/N]${NC}"
+            REP err "$( [ "$VD_LANG" = "en" ] && echo 'repo update failed' || echo 'репозитории не обновились' )"
         fi
-        read -r ans
-        case "$ans" in y|Y|yes|YES|д|Д|да|ДА) apk add --no-cache "$pkg" >/dev/null 2>&1 || true ;; esac
+    fi
+    apk upgrade --available >/dev/null 2>&1 && \
+        REP ok "$( [ "$VD_LANG" = "en" ] && echo 'system upgraded' || echo 'система обновлена' )"
+fi
+
+apk update >/dev/null 2>&1 || true
+
+FAILED=""
+for pkg in python3 py3-pip curl wget ca-certificates nodejs ffmpeg; do
+    if apk info -e "$pkg" >/dev/null 2>&1; then
+        REP ok "$( [ "$VD_LANG" = "en" ] && echo "$pkg already installed" || echo "$pkg уже установлен" )"
+        continue
+    fi
+    if apk add --no-cache "$pkg" >/dev/null 2>&1; then
+        REP ok "$( [ "$VD_LANG" = "en" ] && echo "$pkg installed" || echo "$pkg установлен" )"
+    else
+        FAILED="$FAILED $pkg"
+        REP err "$( [ "$VD_LANG" = "en" ] && echo "$pkg failed" || echo "$pkg не установился" )"
     fi
 done
 
-if command -v python3 >/dev/null 2>&1; then
-    python3 -m pip install --upgrade pip setuptools wheel >/dev/null 2>&1 || true
-    run_with_spinner "pip install yt-dlp..." python3 -m pip install -U --no-deps --break-system-packages yt-dlp tqdm >/dev/null 2>&1 \
-        || python3 -m pip install -U --no-deps yt-dlp tqdm >/dev/null 2>&1 || true
-    run_with_spinner "pip install yt-dlp-ejs..." python3 -m pip install -U --break-system-packages yt-dlp-ejs >/dev/null 2>&1 \
-        || python3 -m pip install -U yt-dlp-ejs >/dev/null 2>&1 || true
+if [ -n "$FAILED" ]; then
+    REP wrn "$( [ "$VD_LANG" = "en" ] && echo "missing:$FAILED" || echo "не установлены:$FAILED" )"
+    if [ "$VD_LANG" = "en" ]; then printf 'Retry? [y/N]: '; else printf 'Повторить? [y/N]: '; fi
+    read -r ANS
+    case "$ANS" in
+        y|Y|yes|YES|д|Д|да|ДА)
+            for pkg in $FAILED; do
+                apk add --no-cache "$pkg" >/dev/null 2>&1 && \
+                    REP ok "$( [ "$VD_LANG" = "en" ] && echo "$pkg installed" || echo "$pkg установлен" )" || \
+                    REP err "$( [ "$VD_LANG" = "en" ] && echo "$pkg still failed" || echo "$pkg всё ещё не установлен" )"
+            done
+            ;;
+    esac
 fi
 
-command -v python3 >/dev/null 2>&1 || { say "${RED}[!] python3 not found${NC}"; exit 1; }
+if command -v python3 >/dev/null 2>&1; then
+    REP inf "$( [ "$VD_LANG" = "en" ] && echo 'pip: upgrading pip/setuptools/wheel...' || echo 'pip: обновление pip/setuptools/wheel...' )"
+    python3 -m pip install --upgrade pip setuptools wheel >/dev/null 2>&1 && \
+        REP ok "pip/setuptools/wheel" || \
+        REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'pip tools not updated' || echo 'pip tools не обновлены' )"
+
+    REP inf "$( [ "$VD_LANG" = "en" ] && echo 'pip: installing yt-dlp...' || echo 'pip: установка yt-dlp...' )"
+    python3 -m pip install -U --no-deps --break-system-packages yt-dlp tqdm >/dev/null 2>&1 \
+        || python3 -m pip install -U --no-deps yt-dlp tqdm >/dev/null 2>&1
+    if python3 -c 'import yt_dlp, tqdm' >/dev/null 2>&1; then
+        YTV=$(python3 -c 'import yt_dlp; print(yt_dlp.version.__version__)' 2>/dev/null || echo "?")
+        REP ok "yt-dlp $YTV"
+    else
+        REP err "$( [ "$VD_LANG" = "en" ] && echo 'yt-dlp not installed' || echo 'yt-dlp не установлен' )"
+    fi
+
+    REP inf "$( [ "$VD_LANG" = "en" ] && echo 'pip: installing yt-dlp-ejs...' || echo 'pip: установка yt-dlp-ejs...' )"
+    python3 -m pip install -U --break-system-packages yt-dlp-ejs >/dev/null 2>&1 \
+        || python3 -m pip install -U yt-dlp-ejs >/dev/null 2>&1
+    if python3 -c 'import yt_dlp_ejs' >/dev/null 2>&1; then
+        REP ok "yt-dlp-ejs"
+    else
+        REP wrn "$( [ "$VD_LANG" = "en" ] && echo 'yt-dlp-ejs not installed (optional)' || echo 'yt-dlp-ejs не установлен (опционально)' )"
+    fi
+fi
+
+command -v python3 >/dev/null 2>&1 || { REP err "python3 missing"; exit 1; }
 
 export PYTHONUTF8=1
 export PYTHONIOENCODING=utf-8
+export PYTHONHASHSEED=0
 
 cat > /tmp/video_downloader.py << 'PYEOF'
 import sys
@@ -126,13 +158,13 @@ import re
 import json
 import time
 import ssl
+import shlex
 import socket
 import struct
 import random
 import shutil
 import subprocess
 import importlib.util
-import threading
 import urllib.request
 import urllib.error
 from pathlib import Path
@@ -150,9 +182,12 @@ except ImportError:
 HOME = Path.home()
 LANG_FILE = HOME / ".video_downloader_lang"
 SETTINGS_FILE = HOME / ".video_downloader_settings.json"
-SCRIPT_PATH = os.path.abspath(sys.argv[0])
+SCRIPT_PATH = os.environ.get("VD_SCRIPT_PATH", "")
+VD_VERSION = os.environ.get("VD_VERSION", "0")
+UPDATE_URL = os.environ.get("UPDATE_URL", "")
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 HAS_FFMPEG = shutil.which("ffmpeg") is not None
+PIP_CMD_FILE = Path("/tmp/vd_pip_cmd")
 
 RED, GREEN, YELLOW, BLUE, CYAN, NC = ("\033[0;31m", "\033[0;32m", "\033[1;33m",
                                       "\033[0;34m", "\033[0;36m", "\033[0m")
@@ -178,32 +213,6 @@ def header(title):
     print(c("  " + str(title), YELLOW))
     print(c(line, YELLOW))
 
-class Spinner:
-    def __init__(self, message="working"):
-        self.message = message
-        self.stop = False
-        self.thread = None
-
-    def start(self):
-        self.thread = threading.Thread(target=self._run, daemon=True)
-        self.thread.start()
-
-    def _run(self):
-        frames = "|/-\\"
-        i = 0
-        while not self.stop:
-            sys.stdout.write(f"\r{frames[i % len(frames)]} {self.message}... ")
-            sys.stdout.flush()
-            time.sleep(0.1)
-            i += 1
-
-    def stop_spinner(self):
-        self.stop = True
-        if self.thread:
-            self.thread.join(timeout=1)
-        sys.stdout.write("\r\033[K")
-        sys.stdout.flush()
-
 if LANG_FILE.exists():
     try:
         _l = LANG_FILE.read_text(encoding="utf-8").strip()
@@ -222,6 +231,7 @@ TEXTS = {
         "menu_settings": "Настройки",
         "menu_diag": "Диагностика сети",
         "menu_update": "Обновить yt-dlp",
+        "menu_selfupdate": "Обновить скрипт с GitHub",
         "menu_exit": "Выход (q)",
         "choice": "Ваш выбор",
         "invalid_choice": "Неверный выбор",
@@ -230,16 +240,16 @@ TEXTS = {
         "enter_urls": "Введите ссылки (по одной на строку).",
         "enter_urls_hint": "Пустая строка — начать. 'q' — меню.",
         "available_formats": "Доступные форматы видео",
-        "select_video": "Номер видеоформата (Enter — лучший совместимый)",
+        "select_video": "Номер видеоформата (Enter — лучший)",
         "select_audio_track": "Номер аудиодорожки (Enter — лучшая)",
-        "invalid_default": "Неверный выбор, используется формат по умолчанию",
+        "invalid_default": "Неверный выбор, формат по умолчанию",
         "selector": "Селектор",
         "strategy": "Способ",
         "trying_generic": "Пробую generic-экстрактор...",
         "trying_binary": "Пробую yt-dlp отдельным процессом...",
-        "trying_manual": "Пробую скачать видео и аудио отдельно и склеить через ffmpeg...",
-        "trying_external": "Пробую прямую загрузку через curl/wget/ffmpeg...",
-        "trying_rutube": "Пробую RuTube API напрямую...",
+        "trying_manual": "Скачиваю видео и аудио отдельно...",
+        "trying_external": "Прямая загрузка через curl/wget/ffmpeg...",
+        "trying_rutube": "RuTube API напрямую...",
         "retry_tls": "Повторить без проверки TLS?",
         "all_exhausted": "Все попытки исчерпаны",
         "scanning": "Сканирование страницы",
@@ -249,12 +259,10 @@ TEXTS = {
         "number_or_all": "Номер или 'all'",
         "invalid_url": "Некорректная ссылка",
         "stopped": "Работа остановлена",
-        "finished": "Загрузка завершена",
         "extracting": "Извлечение информации",
         "downloading": "Начинаю скачивание",
-        "download_done": "Видео скачано",
-        "no_ffmpeg": "ffmpeg не найден — только комбинированные форматы (до 720p)",
-        "no_ffmpeg_warn": "ffmpeg не установлен — склейка видео и аудио недоступна",
+        "download_done": "Скачано",
+        "no_ffmpeg_warn": "ffmpeg не установлен — только комбинированные форматы (до 720p)",
         "fm_title": "Управление файлами",
         "fm_choose_dir": "Выберите папку",
         "fm_videos": "videos",
@@ -262,7 +270,7 @@ TEXTS = {
         "fm_fix": "fix",
         "fm_back": "Назад",
         "fm_empty": "Папка пуста",
-        "fm_delete": "Удалить файл",
+        "fm_delete": "Удалить",
         "fm_delete_multi": "Удалить несколько (1,3-5)",
         "fm_delete_all": "Удалить все",
         "fm_rename": "Переименовать",
@@ -280,38 +288,38 @@ TEXTS = {
         "grp_media": "Видео и аудио",
         "grp_network": "Сеть и YouTube",
         "grp_interface": "Интерфейс и папки",
-        "set_reset": "Сбросить все настройки",
-        "set_saved": "Настройки сохранены",
+        "set_reset": "Сбросить настройки",
+        "set_saved": "Сохранено",
         "set_enter_value": "Новое значение (Enter — оставить, '-' — очистить)",
         "set_bad_value": "Недопустимое значение",
         "set_video_codec": "Видеокодек",
         "set_audio_codec": "Аудиокодек",
-        "set_max_height": "Макс. высота видео (0 — без ограничения)",
+        "set_max_height": "Макс. высота (0 — без ограничения)",
         "set_auto_convert": "Конвертация несовместимых",
         "set_concurrent_fragments": "Параллельных фрагментов",
-        "set_cookies_file": "Файл cookies (cookies.txt)",
-        "set_proxy": "Прокси (http/https/socks5)",
+        "set_cookies_file": "Файл cookies",
+        "set_proxy": "Прокси",
         "set_dns_mode": "Режим DNS",
-        "set_dns_servers": "DNS-серверы (через запятую)",
-        "set_doh_url": "Свой DoH-адрес",
-        "set_doh_fallback": "DoH fallback (пробовать другие при ошибке)",
-        "set_ip_version": "Предпочтение IP (auto/ipv4/ipv6)",
-        "set_verify_tls": "Проверка TLS-сертификатов",
+        "set_dns_servers": "DNS-серверы",
+        "set_doh_url": "DoH-адрес",
+        "set_doh_fallback": "DoH fallback",
+        "set_ip_version": "Предпочтение IP",
+        "set_verify_tls": "Проверка TLS",
         "set_preflight": "Предпроверка сети",
-        "set_socket_timeout": "Таймаут сокета, сек",
-        "set_retries": "Число повторов",
-        "set_yt_clients": "Клиенты YouTube (tv,ios+web,...)",
-        "set_js_runtime": "JS-движок для YouTube",
-        "set_remote_ejs": "Загружать EJS-компоненты с GitHub",
-        "set_progress_width": "Ширина прогресс-бара",
-        "set_ask_rename": "Спрашивать о переименовании",
-        "set_ask_fix": "Спрашивать о переносе в fix",
+        "set_socket_timeout": "Таймаут, сек",
+        "set_retries": "Повторов",
+        "set_yt_clients": "Клиенты YouTube",
+        "set_js_runtime": "JS-движок",
+        "set_remote_ejs": "EJS с GitHub",
+        "set_progress_width": "Ширина прогресса",
+        "set_ask_rename": "Спрашивать переименование",
+        "set_ask_fix": "Спрашивать перенос в fix",
         "set_base_dir": "Основная папка",
         "set_language": "Язык",
         "opt_auto": "авто",
-        "opt_system": "только системный",
-        "opt_udp": "UDP-DNS в приоритете",
-        "opt_doh": "DoH в приоритете",
+        "opt_system": "system",
+        "opt_udp": "udp",
+        "opt_doh": "doh",
         "opt_none": "нет",
         "opt_ask": "спрашивать",
         "opt_always": "всегда",
@@ -328,17 +336,17 @@ TEXTS = {
         "empty": "не задано",
         "preset_iphone": "iPhone (H.264 + AAC)",
         "preset_android": "Android (H.264 + AAC)",
-        "preset_universal": "Универсальный (H.264 Baseline + AAC)",
+        "preset_universal": "Универсальный (H.264 Baseline)",
         "preset_h265": "H.265 / HEVC",
-        "preset_vp9": "VP9 (Web)",
+        "preset_vp9": "VP9",
         "preset_av1": "AV1",
-        "preset_original": "Оригинал (без перекодирования)",
-        "audio_aac": "AAC 128 kbps (iPhone)",
-        "audio_ac3": "AC3 192 kbps",
-        "audio_mp3": "MP3 192 kbps",
-        "audio_opus": "Opus 160 kbps",
-        "audio_flac": "FLAC (lossless)",
-        "audio_original": "Оригинал (без конвертации)",
+        "preset_original": "Оригинал",
+        "audio_aac": "AAC 128k",
+        "audio_ac3": "AC3 192k",
+        "audio_mp3": "MP3 192k",
+        "audio_opus": "Opus 160k",
+        "audio_flac": "FLAC",
+        "audio_original": "Оригинал",
         "lang_ru": "Русский",
         "lang_en": "English",
         "video_ready": "Видео готово",
@@ -346,47 +354,62 @@ TEXTS = {
         "file": "Файл",
         "size": "Размер",
         "rename_prompt": "Переименовать?",
-        "move_fix_prompt": "Переместить в fix (если не открывается)?",
+        "move_fix_prompt": "В fix (если не открывается)?",
         "converting": "Конвертация",
-        "convert_prompt": "Формат несовместим. Конвертировать?",
+        "convert_prompt": "Конвертировать?",
         "convert_done": "Конвертация завершена",
         "convert_failed": "Ошибка конвертации",
-        "convert_cancelled": "Конвертация отменена",
+        "convert_cancelled": "Отменено",
         "ffmpeg_missing": "ffmpeg не найден",
-        "compat_warning": "Формат может быть несовместим с выбранным устройством.",
-        "junk_cleaned": "Очищено временных файлов",
-        "encoder_missing": "Кодек не поддерживается этой сборкой ffmpeg.",
-        "preflight_title": "Проверка сети для",
-        "preflight_ok": "Сеть доступна, DNS-режим",
-        "preflight_fail": "Не удалось установить TLS-соединение",
-        "preflight_blocked": "Похоже на блокировку или подмену DNS (DPI). Обычно помогает только прокси/VPN.",
-        "preflight_continue": "Всё равно попробовать (быстрые попытки)?",
-        "net_help": "Сетевые ошибки. Задайте прокси (http://host:port, socks5://host:port) или Enter — пропустить.",
+        "compat_warning": "Формат может быть несовместим",
+        "junk_cleaned": "Очищено временных",
+        "encoder_missing": "Кодек не поддерживается",
+        "preflight_title": "Проверка сети",
+        "preflight_ok": "Сеть ОК, DNS",
+        "preflight_fail": "TLS не удалось",
+        "preflight_blocked": "Похоже на DPI. Нужен прокси/VPN.",
+        "preflight_continue": "Попробовать всё равно?",
+        "net_help": "Сетевые ошибки. Задайте прокси или Enter — пропустить.",
         "proxy_prompt": "Прокси",
-        "proxy_invalid": "Неверный формат прокси",
+        "proxy_invalid": "Неверный формат",
         "proxy_set": "Прокси сохранён, повторяю",
         "diag_title": "Диагностика сети",
         "diag_system": "система",
         "diag_fail": "нет ответа",
-        "diag_mismatch": "Ответы DNS различаются — возможна подмена DNS",
-        "diag_tls_ok": "TLS-соединение установлено",
-        "diag_tls_fail": "TLS-соединение не удалось",
+        "diag_mismatch": "DNS-ответы различаются",
+        "diag_tls_ok": "TLS ОК",
+        "diag_tls_fail": "TLS провал",
         "diag_proxy": "Проверка прокси",
-        "diag_proxy_socks": "SOCKS-прокси проверяется только при загрузке",
+        "diag_proxy_socks": "SOCKS проверяется при загрузке",
         "diag_env": "Окружение",
         "diag_press": "Enter — продолжить",
         "upd_title": "Обновление yt-dlp",
-        "upd_stable": "Стабильная версия",
-        "upd_nightly": "Nightly (свежие исправления YouTube)",
-        "upd_ejs": "Только компонент yt-dlp-ejs",
+        "upd_stable": "Стабильная",
+        "upd_nightly": "Nightly",
+        "upd_ejs": "Только yt-dlp-ejs",
+        "upd_pip_info": "Запускаю pip install",
         "upd_done": "Обновление завершено, перезапуск",
-        "upd_failed": "Обновление не удалось",
-        "ejs_installing": "Устанавливаю yt-dlp-ejs (нужен для YouTube)",
-        "ejs_failed": "Не удалось установить yt-dlp-ejs",
-        "js_none": "JS-движок не найден: YouTube может отдавать не все форматы",
-        "rutube_no_m3u8": "RuTube: ссылка на поток не получена",
-        "ytdlp_missing": "yt-dlp не установлен",
+        "upd_failed": "Не удалось",
+        "ejs_installing": "Устанавливаю yt-dlp-ejs",
+        "ejs_failed": "yt-dlp-ejs не установился",
+        "js_none": "JS-движок не найден",
+        "rutube_no_m3u8": "RuTube: нет m3u8",
+        "ytdlp_missing": "yt-dlp нет",
         "dl_dest": "Сохранено в",
+        "selfupd_title": "Обновление скрипта",
+        "selfupd_current": "Текущая версия",
+        "selfupd_checking": "Проверка GitHub",
+        "selfupd_remote": "Удалённая версия",
+        "selfupd_uptodate": "Уже последняя версия",
+        "selfupd_check_failed": "Не удалось проверить",
+        "selfupd_prompt": "Скачать и обновить скрипт?",
+        "selfupd_done": "Скрипт обновлён, перезапуск",
+        "selfupd_invalid": "Неверный формат удалённого файла",
+        "selfupd_no_path": "Не удалось определить путь скрипта",
+        "selfupd_downloading": "Скачивание новой версии",
+        "templates_custom": "Ввести вручную",
+        "templates_all_dns": "ВСЕ (объединить)",
+        "templates_current": "текущее",
     },
     "en": {
         "app_title": "Universal Video Downloader",
@@ -396,6 +419,7 @@ TEXTS = {
         "menu_settings": "Settings",
         "menu_diag": "Network diagnostics",
         "menu_update": "Update yt-dlp",
+        "menu_selfupdate": "Update script from GitHub",
         "menu_exit": "Exit (q)",
         "choice": "Choice",
         "invalid_choice": "Invalid choice",
@@ -404,16 +428,16 @@ TEXTS = {
         "enter_urls": "Enter URLs (one per line).",
         "enter_urls_hint": "Empty line — start. 'q' — menu.",
         "available_formats": "Available video formats",
-        "select_video": "Video format number (Enter = best compatible)",
+        "select_video": "Format number (Enter = best)",
         "select_audio_track": "Audio track number (Enter = best)",
         "invalid_default": "Invalid choice, using default",
         "selector": "Selector",
         "strategy": "Method",
         "trying_generic": "Trying generic extractor...",
         "trying_binary": "Trying yt-dlp as separate process...",
-        "trying_manual": "Trying separate video and audio download with ffmpeg merge...",
-        "trying_external": "Trying direct download via curl/wget/ffmpeg...",
-        "trying_rutube": "Trying RuTube API directly...",
+        "trying_manual": "Trying separate video and audio download...",
+        "trying_external": "Direct download via curl/wget/ffmpeg...",
+        "trying_rutube": "RuTube API directly...",
         "retry_tls": "Retry without TLS verification?",
         "all_exhausted": "All attempts exhausted",
         "scanning": "Scanning page",
@@ -423,69 +447,67 @@ TEXTS = {
         "number_or_all": "Number or 'all'",
         "invalid_url": "Invalid URL",
         "stopped": "Stopped",
-        "finished": "Download finished",
         "extracting": "Extracting info",
         "downloading": "Starting download",
-        "download_done": "Video downloaded",
-        "no_ffmpeg": "ffmpeg missing — only combined formats (up to 720p)",
-        "no_ffmpeg_warn": "ffmpeg not installed — video/audio merge unavailable",
+        "download_done": "Downloaded",
+        "no_ffmpeg_warn": "ffmpeg missing — only combined formats (up to 720p)",
         "fm_title": "File manager",
         "fm_choose_dir": "Choose directory",
         "fm_videos": "videos",
         "fm_audio": "audio",
         "fm_fix": "fix",
         "fm_back": "Back",
-        "fm_empty": "Directory is empty",
-        "fm_delete": "Delete file",
+        "fm_empty": "Directory empty",
+        "fm_delete": "Delete",
         "fm_delete_multi": "Delete multiple (1,3-5)",
         "fm_delete_all": "Delete all",
         "fm_rename": "Rename",
         "fm_move_to_fix": "Move to fix",
         "fm_restore": "Restore from fix",
         "fm_deleted": "Deleted",
-        "fm_failed": "Failed",
+        "fm_failed": "Error",
         "fm_numbers": "Numbers",
         "fm_new_name": "New name",
         "fm_renamed": "Renamed",
         "fm_moved": "Moved",
         "fm_file_index": "File number",
-        "fm_exists": "File already exists",
+        "fm_exists": "File exists",
         "settings_title": "Settings",
         "grp_media": "Video and audio",
         "grp_network": "Network and YouTube",
         "grp_interface": "Interface and folders",
-        "set_reset": "Reset all settings",
-        "set_saved": "Settings saved",
+        "set_reset": "Reset settings",
+        "set_saved": "Saved",
         "set_enter_value": "New value (Enter = keep, '-' = clear)",
         "set_bad_value": "Invalid value",
         "set_video_codec": "Video codec",
         "set_audio_codec": "Audio codec",
-        "set_max_height": "Max video height (0 = unlimited)",
-        "set_auto_convert": "Convert incompatible files",
+        "set_max_height": "Max height (0 = unlimited)",
+        "set_auto_convert": "Convert incompatible",
         "set_concurrent_fragments": "Parallel fragments",
-        "set_cookies_file": "Cookies file (cookies.txt)",
-        "set_proxy": "Proxy (http/https/socks5)",
+        "set_cookies_file": "Cookies file",
+        "set_proxy": "Proxy",
         "set_dns_mode": "DNS mode",
-        "set_dns_servers": "DNS servers (comma separated)",
-        "set_doh_url": "Custom DoH URL",
-        "set_doh_fallback": "DoH fallback (try others on failure)",
-        "set_ip_version": "IP preference (auto/ipv4/ipv6)",
-        "set_verify_tls": "Verify TLS certificates",
-        "set_preflight": "Network preflight check",
-        "set_socket_timeout": "Socket timeout, sec",
+        "set_dns_servers": "DNS servers",
+        "set_doh_url": "DoH URL",
+        "set_doh_fallback": "DoH fallback",
+        "set_ip_version": "IP preference",
+        "set_verify_tls": "Verify TLS",
+        "set_preflight": "Network preflight",
+        "set_socket_timeout": "Timeout, sec",
         "set_retries": "Retries",
-        "set_yt_clients": "YouTube clients (tv,ios+web,...)",
-        "set_js_runtime": "JS runtime for YouTube",
-        "set_remote_ejs": "Fetch EJS components from GitHub",
-        "set_progress_width": "Progress bar width",
+        "set_yt_clients": "YouTube clients",
+        "set_js_runtime": "JS runtime",
+        "set_remote_ejs": "Remote EJS",
+        "set_progress_width": "Progress width",
         "set_ask_rename": "Ask to rename",
         "set_ask_fix": "Ask to move to fix",
         "set_base_dir": "Base folder",
         "set_language": "Language",
         "opt_auto": "auto",
-        "opt_system": "system only",
-        "opt_udp": "UDP DNS first",
-        "opt_doh": "DoH first",
+        "opt_system": "system",
+        "opt_udp": "udp",
+        "opt_doh": "doh",
         "opt_none": "none",
         "opt_ask": "ask",
         "opt_always": "always",
@@ -502,17 +524,17 @@ TEXTS = {
         "empty": "not set",
         "preset_iphone": "iPhone (H.264 + AAC)",
         "preset_android": "Android (H.264 + AAC)",
-        "preset_universal": "Universal (H.264 Baseline + AAC)",
+        "preset_universal": "Universal (H.264 Baseline)",
         "preset_h265": "H.265 / HEVC",
-        "preset_vp9": "VP9 (Web)",
+        "preset_vp9": "VP9",
         "preset_av1": "AV1",
-        "preset_original": "Original (no re-encode)",
-        "audio_aac": "AAC 128 kbps (iPhone)",
-        "audio_ac3": "AC3 192 kbps",
-        "audio_mp3": "MP3 192 kbps",
-        "audio_opus": "Opus 160 kbps",
-        "audio_flac": "FLAC (lossless)",
-        "audio_original": "Original (no conversion)",
+        "preset_original": "Original",
+        "audio_aac": "AAC 128k",
+        "audio_ac3": "AC3 192k",
+        "audio_mp3": "MP3 192k",
+        "audio_opus": "Opus 160k",
+        "audio_flac": "FLAC",
+        "audio_original": "Original",
         "lang_ru": "Русский",
         "lang_en": "English",
         "video_ready": "Video ready",
@@ -522,56 +544,71 @@ TEXTS = {
         "rename_prompt": "Rename?",
         "move_fix_prompt": "Move to fix (if it won't open)?",
         "converting": "Converting",
-        "convert_prompt": "Format is incompatible. Convert?",
+        "convert_prompt": "Convert?",
         "convert_done": "Conversion done",
         "convert_failed": "Conversion failed",
-        "convert_cancelled": "Conversion cancelled",
+        "convert_cancelled": "Cancelled",
         "ffmpeg_missing": "ffmpeg not found",
-        "compat_warning": "Format may be incompatible with selected device.",
+        "compat_warning": "Format may be incompatible",
         "junk_cleaned": "Cleaned temp files",
-        "encoder_missing": "Codec not supported by this ffmpeg build.",
-        "preflight_title": "Network check for",
-        "preflight_ok": "Network reachable, DNS mode",
-        "preflight_fail": "TLS connection failed with every method",
-        "preflight_blocked": "Looks like ISP blocking or DNS spoofing (DPI). Usually only a proxy/VPN helps.",
-        "preflight_continue": "Try anyway (quick attempts)?",
-        "net_help": "Network errors. Set a proxy (http://host:port, socks5://host:port) or press Enter to skip.",
+        "encoder_missing": "Codec not supported",
+        "preflight_title": "Network check",
+        "preflight_ok": "Network OK, DNS",
+        "preflight_fail": "TLS failed",
+        "preflight_blocked": "Looks like DPI. Need proxy/VPN.",
+        "preflight_continue": "Try anyway?",
+        "net_help": "Network errors. Set proxy or Enter to skip.",
         "proxy_prompt": "Proxy",
-        "proxy_invalid": "Invalid proxy format",
+        "proxy_invalid": "Invalid format",
         "proxy_set": "Proxy saved, retrying",
         "diag_title": "Network diagnostics",
         "diag_system": "system",
         "diag_fail": "no answer",
-        "diag_mismatch": "DNS answers differ — DNS spoofing is possible",
-        "diag_tls_ok": "TLS connection established",
-        "diag_tls_fail": "TLS connection failed",
+        "diag_mismatch": "DNS answers differ",
+        "diag_tls_ok": "TLS OK",
+        "diag_tls_fail": "TLS failed",
         "diag_proxy": "Proxy check",
-        "diag_proxy_socks": "SOCKS proxy is only checked during download",
+        "diag_proxy_socks": "SOCKS checked on download",
         "diag_env": "Environment",
         "diag_press": "Enter — continue",
         "upd_title": "Update yt-dlp",
-        "upd_stable": "Stable release",
-        "upd_nightly": "Nightly (latest YouTube fixes)",
-        "upd_ejs": "yt-dlp-ejs component only",
-        "upd_done": "Update finished, restarting",
-        "upd_failed": "Update failed",
-        "ejs_installing": "Installing yt-dlp-ejs (required for YouTube)",
-        "ejs_failed": "Could not install yt-dlp-ejs",
-        "js_none": "No JS runtime found: YouTube may return incomplete formats",
-        "rutube_no_m3u8": "RuTube: stream link not received",
-        "ytdlp_missing": "yt-dlp is not installed",
+        "upd_stable": "Stable",
+        "upd_nightly": "Nightly",
+        "upd_ejs": "yt-dlp-ejs only",
+        "upd_pip_info": "Running pip install",
+        "upd_done": "Update done, restarting",
+        "upd_failed": "Failed",
+        "ejs_installing": "Installing yt-dlp-ejs",
+        "ejs_failed": "yt-dlp-ejs install failed",
+        "js_none": "No JS runtime",
+        "rutube_no_m3u8": "RuTube: no m3u8",
+        "ytdlp_missing": "yt-dlp missing",
         "dl_dest": "Saved to",
+        "selfupd_title": "Update script",
+        "selfupd_current": "Current version",
+        "selfupd_checking": "Checking GitHub",
+        "selfupd_remote": "Remote version",
+        "selfupd_uptodate": "Already latest version",
+        "selfupd_check_failed": "Check failed",
+        "selfupd_prompt": "Download and update script?",
+        "selfupd_done": "Script updated, restarting",
+        "selfupd_invalid": "Invalid remote file",
+        "selfupd_no_path": "Cannot determine script path",
+        "selfupd_downloading": "Downloading new version",
+        "templates_custom": "Custom",
+        "templates_all_dns": "ALL (combined)",
+        "templates_current": "current",
     },
 }
 
 def T(key):
     return TEXTS.get(LANG, TEXTS["ru"]).get(key, key)
 
-def save_lang(new_lang):
+def save_lang(nl):
     global LANG
-    LANG = new_lang
+    LANG = nl
     try:
-        LANG_FILE.write_text(new_lang, encoding="utf-8")
+        LANG_FILE.write_text(nl, encoding="utf-8")
     except Exception:
         pass
 
@@ -592,11 +629,20 @@ def ask_input(prompt, default=None):
 
 PROXY_TEMPLATES = [
     "http://127.0.0.1:1082",
+    "http://127.0.0.1:8080",
+    "http://127.0.0.1:8081",
+    "http://127.0.0.1:1080",
     "socks5://127.0.0.1:1080",
     "socks5h://127.0.0.1:1080",
-    "http://127.0.0.1:8080",
     "socks5://127.0.0.1:10808",
     "socks5h://127.0.0.1:10808",
+    "socks5://127.0.0.1:1081",
+    "socks5h://127.0.0.1:1081",
+    "socks5://127.0.0.1:1086",
+    "socks5h://127.0.0.1:1086",
+    "socks5://127.0.0.1:9050",
+    "socks5h://127.0.0.1:9050",
+    "",
 ]
 
 DNS_TEMPLATES = [
@@ -605,21 +651,27 @@ DNS_TEMPLATES = [
     "8.8.8.8,8.8.4.4",
     "94.140.14.14,94.140.15.15",
     "9.9.9.9,149.112.112.112",
-    "1.1.1.1,8.8.8.8,9.9.9.9,94.140.14.14,208.67.222.222",
+    "208.67.222.222,208.67.220.220",
+    "76.76.2.0,76.76.10.0",
+    "77.88.8.8,77.88.8.1",
+    "1.1.1.1,1.0.0.1,8.8.8.8,8.8.4.4,9.9.9.9,149.112.112.112,94.140.14.14,94.140.15.15",
 ]
 
 DOH_TEMPLATES = [
+    "",
     "https://cloudflare-dns.com/dns-query",
     "https://dns.google/dns-query",
     "https://dns.quad9.net/dns-query",
     "https://dns.adguard-dns.com/dns-query",
     "https://unfiltered.adguard-dns.com/dns-query",
-    "https://doh.cleanbrowsing.org/doh/security-filter/",
-    "https://freedns.controld.com/p0",
     "https://dns.comss.one/dns-query",
     "https://dns.sb/dns-query",
     "https://doh.libredns.gr/dns-query",
     "https://dns.alidns.com/dns-query",
+    "https://1.1.1.1/dns-query",
+    "https://8.8.8.8/dns-query",
+    "https://9.9.9.9/dns-query",
+    "https://94.140.14.14/dns-query",
 ]
 
 DOH_FALLBACK = [
@@ -628,20 +680,20 @@ DOH_FALLBACK = [
     "https://8.8.8.8/dns-query",
     "https://8.8.4.4/dns-query",
     "https://9.9.9.9/dns-query",
-    "https://94.140.14.14/dns-query",
     "https://dns.quad9.net/dns-query",
     "https://cloudflare-dns.com/dns-query",
 ]
 
-YT_CLIENT_TEMPLATES = [
+YT_CLIENTS_TEMPLATES = [
+    "",
     "tv,mweb",
     "tv,ios",
     "tv,android_vr",
-    "default",
-    "all",
-    "web_safari,android_vr",
-    "ios,android",
     "tv,web_safari,mweb,android_vr,ios",
+    "android_vr,web_safari",
+    "ios,android",
+    "web_safari",
+    "all",
 ]
 
 DEFAULT_SETTINGS = {
@@ -653,7 +705,7 @@ DEFAULT_SETTINGS = {
     "cookies_file": "",
     "proxy": "",
     "dns_mode": "auto",
-    "dns_servers": "1.1.1.1,8.8.8.8,94.140.14.14",
+    "dns_servers": "1.1.1.1,8.8.8.8,94.140.14.14,9.9.9.9",
     "doh_url": "",
     "doh_fallback": True,
     "ip_version": "auto",
@@ -771,7 +823,6 @@ def doh_urls():
     urls = []
     if SETTINGS["doh_url"]:
         urls.append(SETTINGS["doh_url"])
-    urls += DOH_TEMPLATES
     if SETTINGS["doh_fallback"]:
         urls += DOH_FALLBACK
     return list(dict.fromkeys(urls))
@@ -852,26 +903,27 @@ def doh_query(url, host, qtype=1, timeout=10):
     rtype = 1 if qtype == 1 else 28
     return [a["data"] for a in data.get("Answer", []) if a.get("type") == rtype]
 
-def resolve_with(mode, host):
+def qtypes():
     ipv = SETTINGS["ip_version"]
-    qtypes = []
     if ipv == "ipv4":
-        qtypes = [1]
-    elif ipv == "ipv6":
-        qtypes = [28]
-    else:
-        qtypes = [1, 28]
-    results = []
+        return [1]
+    if ipv == "ipv6":
+        return [28]
+    return [1, 28]
+
+def resolve_with(mode, host):
+    qs = qtypes()
     if mode == "system":
         try:
-            fam = socket.AF_INET6 if ipv == "ipv6" else (socket.AF_INET if ipv == "ipv4" else 0)
+            fam = socket.AF_INET6 if SETTINGS["ip_version"] == "ipv6" else (socket.AF_INET if SETTINGS["ip_version"] == "ipv4" else 0)
             res = _orig_gai(host, 443, fam, socket.SOCK_STREAM)
             return list(dict.fromkeys(r[4][0] for r in res))
         except Exception:
             return []
+    results = []
     if mode == "udp":
         for srv in dns_servers():
-            for qt in qtypes:
+            for qt in qs:
                 ips, _ = udp_query(srv, host, qt)
                 if ips:
                     results.extend(ips)
@@ -882,7 +934,7 @@ def resolve_with(mode, host):
         DNS_STATE["busy"] = True
         try:
             for u in doh_urls():
-                for qt in qtypes:
+                for qt in qs:
                     try:
                         ips = doh_query(u, host, qt)
                         if ips:
@@ -940,7 +992,6 @@ def tls_probe(host, ip, timeout=15):
     ctx = ssl.create_default_context() if SETTINGS["verify_tls"] else ssl._create_unverified_context()
     sock = None
     try:
-        fam = socket.AF_INET6 if ":" in ip else socket.AF_INET
         sock = socket.create_connection((ip, 443), timeout)
         wrapped = ctx.wrap_socket(sock, server_hostname=host)
         wrapped.close()
@@ -984,7 +1035,7 @@ NET_PATTERNS = (
     "name does not resolve", "name or service not known", "temporary failure in name resolution",
     "try again", "handshake", "timed out", "timeout", "connection refused", "connection reset",
     "connection aborted", "network is unreachable", "no route to host", "transporterror",
-    "errno -2", "errno -3", "errno 110", "errno 111", "errno 113", "eof occurred", "ssl",
+    "errno -2", "errno -3", "errno 110", "errno 111", "errno 113", "eof occurred",
 )
 
 def is_net_error(text):
@@ -1035,45 +1086,31 @@ def safe_name(s, limit=150):
     return s[:limit] or "video"
 
 VIDEO_CODECS = {
-    "iphone": {
-        "label_key": "preset_iphone", "encoder": "libx264",
-        "profile": "high", "level": "4.0", "crf": "23", "pix_fmt": "yuv420p", "preset": "medium",
-        "audio_codec": "aac", "audio_bitrate": "128k", "movflags": "+faststart",
-        "compat": ("h264", "avc1"),
-    },
-    "android": {
-        "label_key": "preset_android", "encoder": "libx264",
-        "profile": "high", "level": "4.0", "crf": "23", "pix_fmt": "yuv420p", "preset": "medium",
-        "audio_codec": "aac", "audio_bitrate": "128k", "movflags": "+faststart",
-        "compat": ("h264", "avc1"),
-    },
-    "universal": {
-        "label_key": "preset_universal", "encoder": "libx264",
-        "profile": "baseline", "level": "3.0", "crf": "23", "pix_fmt": "yuv420p", "preset": "medium",
-        "audio_codec": "aac", "audio_bitrate": "128k", "movflags": "+faststart",
-        "compat": ("h264", "avc1"),
-    },
-    "h265": {
-        "label_key": "preset_h265", "encoder": "libx265",
-        "crf": "28", "preset": "fast", "pix_fmt": "yuv420p",
-        "audio_codec": "aac", "audio_bitrate": "128k", "movflags": "+faststart",
-        "compat": ("hevc", "h265"),
-    },
-    "vp9": {
-        "label_key": "preset_vp9", "encoder": "libvpx-vp9",
-        "crf": "32", "speed": "6", "row_mt": "1", "pix_fmt": "yuv420p",
-        "audio_codec": "opus", "audio_bitrate": "128k", "container": "webm",
-        "compat": ("vp9",),
-    },
-    "av1": {
-        "label_key": "preset_av1", "encoder": "libsvtav1",
-        "crf": "35", "preset": "10", "pix_fmt": "yuv420p",
-        "audio_codec": "opus", "audio_bitrate": "128k", "container": "mkv",
-        "compat": ("av1",),
-    },
-    "original": {
-        "label_key": "preset_original", "encoder": "copy", "audio_codec": "copy",
-    },
+    "iphone": {"label_key": "preset_iphone", "encoder": "libx264",
+               "profile": "high", "level": "4.0", "crf": "23", "pix_fmt": "yuv420p", "preset": "medium",
+               "audio_codec": "aac", "audio_bitrate": "128k", "movflags": "+faststart",
+               "compat": ("h264", "avc1")},
+    "android": {"label_key": "preset_android", "encoder": "libx264",
+                "profile": "high", "level": "4.0", "crf": "23", "pix_fmt": "yuv420p", "preset": "medium",
+                "audio_codec": "aac", "audio_bitrate": "128k", "movflags": "+faststart",
+                "compat": ("h264", "avc1")},
+    "universal": {"label_key": "preset_universal", "encoder": "libx264",
+                  "profile": "baseline", "level": "3.0", "crf": "23", "pix_fmt": "yuv420p", "preset": "medium",
+                  "audio_codec": "aac", "audio_bitrate": "128k", "movflags": "+faststart",
+                  "compat": ("h264", "avc1")},
+    "h265": {"label_key": "preset_h265", "encoder": "libx265",
+             "crf": "28", "preset": "fast", "pix_fmt": "yuv420p",
+             "audio_codec": "aac", "audio_bitrate": "128k", "movflags": "+faststart",
+             "compat": ("hevc", "h265")},
+    "vp9": {"label_key": "preset_vp9", "encoder": "libvpx-vp9",
+            "crf": "32", "speed": "6", "row_mt": "1", "pix_fmt": "yuv420p",
+            "audio_codec": "opus", "audio_bitrate": "128k", "container": "webm",
+            "compat": ("vp9",)},
+    "av1": {"label_key": "preset_av1", "encoder": "libsvtav1",
+            "crf": "35", "preset": "10", "pix_fmt": "yuv420p",
+            "audio_codec": "opus", "audio_bitrate": "128k", "container": "mkv",
+            "compat": ("av1",)},
+    "original": {"label_key": "preset_original", "encoder": "copy", "audio_codec": "copy"},
 }
 
 AUDIO_CODECS = {
@@ -1151,13 +1188,10 @@ class Log:
     def __init__(self):
         self.msgs = []
         self.summary = []
-
     def debug(self, m):
         pass
-
     def info(self, m):
         pass
-
     def warning(self, m):
         m = str(m)
         if "Deprecated Feature" in m or "Support for Python version" in m:
@@ -1178,14 +1212,12 @@ class Log:
         if m not in SEEN_WARNINGS:
             SEEN_WARNINGS.add(m)
             warn_line(m)
-
     def error(self, m):
         m = str(m)
         if "Deprecated Feature" in m or "Support for Python version" in m:
             return
         self.msgs.append(m)
         err_line(m)
-
     def text(self):
         return "\n".join(self.msgs)
 
@@ -1199,7 +1231,6 @@ def report(e, lg):
 class Progress:
     def __init__(self):
         self.bar = None
-
     def __call__(self, d):
         if tqdm is None:
             return
@@ -1215,7 +1246,6 @@ class Progress:
             self.bar.update(max(0, dl - self.bar.n))
         elif st in ("finished", "error"):
             self.close()
-
     def close(self):
         if self.bar is not None:
             self.bar.close()
@@ -1295,23 +1325,18 @@ def get_info(url, strategy):
 
 def extract_info_smart(url):
     info_line(f"{T('extracting')}: {trunc(url, 60)}")
-    sp = Spinner(T("extracting"))
-    sp.start()
     net_fail = 0
-    try:
-        for st in build_strategies(url):
-            if net_fail >= 2:
-                break
-            info, err = get_info(url, st)
-            if isinstance(info, dict) and (info.get("formats") or info.get("url")):
-                return info, st["name"]
-            if is_net_error(err):
-                net_fail += 1
-            if not is_youtube(url):
-                break
-        return None, None
-    finally:
-        sp.stop_spinner()
+    for st in build_strategies(url):
+        if net_fail >= 2:
+            break
+        info, err = get_info(url, st)
+        if isinstance(info, dict) and (info.get("formats") or info.get("url")):
+            return info, st["name"]
+        if is_net_error(err):
+            net_fail += 1
+        if not is_youtube(url):
+            break
+    return None, None
 
 def run_module(url, selector, strategy, job, extra=None, outtmpl=None):
     if yt_dlp is None:
@@ -1660,16 +1685,12 @@ def select_format(info):
         fps_t = f", {f['fps']}fps" if f.get("fps") else ""
         aud = "+" if f.get("acodec") not in (None, "none") else "-"
         print(f"  {i}. {f.get('height') or '?'}p {f.get('ext') or '?'} {aud}{fps_t}{size_t}")
-    print()
     sys.stdout.flush()
     ch = ask_input(c(f"{T('select_video')}: ", YELLOW))
-    if ch is None:
-        return default
-    ch = ch.strip()
-    if not ch:
+    if ch is None or not ch.strip():
         return default
     try:
-        sel = vlist[int(ch) - 1]
+        sel = vlist[int(ch.strip()) - 1]
     except (ValueError, IndexError):
         warn_line(T("invalid_default"))
         return default
@@ -1755,10 +1776,8 @@ def rutube_download(url, job):
             r = subprocess.run(cmd, capture_output=True, text=True, timeout=7200)
             if r.returncode == 0 and out.exists() and out.stat().st_size > 0:
                 return True
-            if r.stderr:
-                err_line(r.stderr.strip()[-1500:])
-        except Exception as e:
-            err_line(f"{type(e).__name__}: {e}")
+        except Exception:
+            pass
     return False
 
 def external_download(url, info, job):
@@ -1840,31 +1859,30 @@ def external_download(url, info, job):
                 r = subprocess.run(cmd, capture_output=True, text=True, timeout=7200)
                 if r.returncode == 0 and out.exists() and out.stat().st_size > 0:
                     return True
-                if r.stderr:
-                    err_line(r.stderr.strip()[-1500:])
-            except Exception as e:
-                err_line(f"{type(e).__name__}: {e}")
+            except Exception:
+                pass
     return False
 
 def prompt_proxy():
     warn_line(T("net_help"))
-    print(c("\nШаблоны прокси / Proxy templates:", CYAN))
+    print(c(f"\n{T('set_proxy')}:", CYAN))
     for i, t in enumerate(PROXY_TEMPLATES, 1):
-        print(f"  {i}. {t}")
-    print("  0. Свой / Custom")
-    ch = ask_input(c("Выбор / Choice [0]: ", YELLOW))
+        disp = t if t else T("empty")
+        cur = " [*]" if t == SETTINGS.get("proxy", "") else ""
+        print(f"  {i}. {disp}{cur}")
+    print(f"  0. {T('templates_custom')}")
+    ch = ask_input(c(f"{T('choice')} [0]: ", YELLOW))
     if ch is None:
         return False
     ch = ch.strip()
+    v = ""
     if ch.isdigit() and 1 <= int(ch) <= len(PROXY_TEMPLATES):
         v = PROXY_TEMPLATES[int(ch) - 1]
-    elif ch in ("0", ""):
-        v = ask_input(c(T("proxy_prompt") + ": ", YELLOW))
-        if v is None:
-            return False
-        v = v.strip()
     else:
-        v = ch
+        raw = ask_input(c(T("proxy_prompt") + ": ", YELLOW))
+        if raw is None:
+            return False
+        v = raw.strip()
     if not v:
         return False
     if not re.match(r"^(https?|socks4a?|socks5h?)://\S+$", v, re.I):
@@ -1958,14 +1976,14 @@ def attempt_download_video(url):
     info_line(f"{T('selector')}: {chosen}")
     if not download_chain(url, job, chosen, info, win):
         err_line(T("all_exhausted"))
-        cleanup_junk(verbose=False)
+        cleanup_junk()
         return False, None
     f = newest_changed(VIDEOS_DIR, before, VIDEO_EXTS)
     if f is None:
         err_line(T("all_exhausted"))
         return False, None
     ok_line(f"{T('download_done')}: {f.name}")
-    cleanup_junk(verbose=False)
+    cleanup_junk()
     vkey = SETTINGS["video_codec"]
     mode = SETTINGS["auto_convert"]
     if mode != "never" and HAS_FFMPEG and not check_compat(f, vkey):
@@ -1990,16 +2008,15 @@ def attempt_download_audio(url):
     info_line(f"{T('downloading')}: {trunc(title, 50)}")
     if not download_chain(url, job, "bestaudio/best", info, win):
         err_line(T("all_exhausted"))
-        cleanup_junk(verbose=False)
+        cleanup_junk()
         return False, None
     f = newest_changed(AUDIO_DIR, before)
     if f is None:
         err_line(T("all_exhausted"))
         return False, None
     ok_line(f"{T('download_done')}: {f.name}")
-    cleanup_junk(verbose=False)
-    if f is not None:
-        f = convert_audio(f, SETTINGS["audio_codec"])
+    cleanup_junk()
+    f = convert_audio(f, SETTINGS["audio_codec"])
     return True, f
 
 def move_to_fix(path):
@@ -2318,12 +2335,56 @@ def pick_from(title, labels, current_index):
         return None
     return idx if 0 <= idx < len(labels) else None
 
+def edit_with_templates(key, templates, current_value, on_set=None):
+    print(c(f"\n{T('set_' + key)}:", CYAN))
+    for i, t in enumerate(templates, 1):
+        disp = t if t else T("empty")
+        cur = " [*]" if t == current_value else ""
+        print(f"  {i}. {disp}{cur}")
+    print(f"  0. {T('templates_custom')}")
+    ch = ask_input(c(f"{T('choice')} [0]: ", YELLOW))
+    if ch is None:
+        return False
+    ch = ch.strip()
+    new_val = None
+    if ch.isdigit() and 1 <= int(ch) <= len(templates):
+        new_val = templates[int(ch) - 1]
+    else:
+        raw = ask_input(c(f"{T('set_' + key)} [{current_value or T('empty')}]\n{T('set_enter_value')}: ", YELLOW))
+        if raw is None or not raw.strip():
+            return False
+        new_val = raw.strip()
+        if new_val == "-":
+            new_val = ""
+    if on_set:
+        if not on_set(new_val):
+            return False
+    SETTINGS[key] = new_val
+    save_settings(SETTINGS)
+    if key in ("proxy", "dns_servers", "doh_url", "doh_fallback", "ip_version", "verify_tls"):
+        reset_dns()
+    ok_line(T("set_saved"))
+    return True
+
 def edit_setting(key):
     if key == "language":
         language_menu()
         return
     title = T("set_" + key)
     v = SETTINGS[key]
+    if key == "proxy":
+        edit_with_templates("proxy", PROXY_TEMPLATES, v,
+            on_set=lambda nv: (not nv) or bool(re.match(r"^(https?|socks4a?|socks5h?)://\S+$", nv, re.I)))
+        return
+    if key == "dns_servers":
+        edit_with_templates("dns_servers", DNS_TEMPLATES, v)
+        return
+    if key == "doh_url":
+        edit_with_templates("doh_url", DOH_TEMPLATES, v)
+        return
+    if key == "yt_clients":
+        edit_with_templates("yt_clients", YT_CLIENTS_TEMPLATES, v)
+        return
     if key in ("video_codec", "audio_codec"):
         table = VIDEO_CODECS if key == "video_codec" else AUDIO_CODECS
         keys = list(table.keys())
@@ -2360,14 +2421,11 @@ def edit_setting(key):
         raw = raw.strip()
         if raw == "-":
             raw = ""
-        if key == "proxy" and raw and not re.match(r"^(https?|socks4a?|socks5h?)://\S+$", raw, re.I):
-            err_line(T("proxy_invalid"))
-            return
         SETTINGS[key] = raw
     save_settings(SETTINGS)
     if key == "base_dir":
         ensure_dir()
-    if key in ("proxy", "dns_mode", "dns_servers", "doh_url", "doh_fallback", "ip_version", "verify_tls"):
+    if key in ("dns_mode", "doh_fallback", "ip_version", "verify_tls"):
         reset_dns()
     ok_line(T("set_saved"))
 
@@ -2414,36 +2472,9 @@ def settings_menu():
         else:
             err_line(T("invalid_choice"))
 
-def pip_run(args):
-    base = ["install", "-U", "--no-deps", "--disable-pip-version-check"]
-    for extra in ([], ["--break-system-packages"]):
-        try:
-            r = subprocess.run([sys.executable, "-m", "pip"] + base + extra + args)
-        except Exception as e:
-            err_line(f"{type(e).__name__}: {e}")
-            return False
-        if r.returncode == 0:
-            return True
-    return False
-
-def install_ejs():
-    return pip_run(["yt-dlp-ejs"])
-
-def ensure_ejs():
-    if yt_dlp is None or has_ejs():
-        return
-    info_line(T("ejs_installing"))
-    sp = Spinner(T("ejs_installing"))
-    sp.start()
-    try:
-        ok = install_ejs()
-    finally:
-        sp.stop_spinner()
-    if not ok:
-        warn_line(T("ejs_failed"))
-
-def restart():
-    os.execv(sys.executable, [sys.executable, SCRIPT_PATH])
+def trigger_pip(args):
+    PIP_CMD_FILE.write_text(" ".join(args), encoding="utf-8")
+    sys.exit(98)
 
 def update_menu():
     header(T("upd_title"))
@@ -2452,28 +2483,60 @@ def update_menu():
     if ch is None:
         return
     ch = ch.strip().lower()
-    if ch not in ("1", "2", "3"):
-        return
-    ok = True
-    if ch in ("1", "2"):
-        sp = Spinner("pip update")
-        sp.start()
-        try:
-            ok = pip_run((["--pre"] if ch == "2" else []) + ["yt-dlp", "tqdm"])
-        finally:
-            sp.stop_spinner()
-    if ok and (ch == "3" or not SETTINGS.get("remote_ejs")):
-        sp = Spinner("installing ejs")
-        sp.start()
-        try:
-            install_ejs()
-        finally:
-            sp.stop_spinner()
-    if ok:
-        ok_line(T("upd_done"))
-        restart()
+    if ch == "1":
+        trigger_pip(["yt-dlp", "tqdm"])
+    elif ch == "2":
+        trigger_pip(["--pre", "yt-dlp", "tqdm"])
+    elif ch == "3":
+        trigger_pip(["yt-dlp-ejs"])
     else:
-        err_line(T("upd_failed"))
+        return
+
+def check_remote_version():
+    if not UPDATE_URL:
+        return None, None
+    try:
+        req = urllib.request.Request(UPDATE_URL, headers={"User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            content = r.read().decode("utf-8", "replace")
+        m = re.search(r'^VD_VERSION="([^"]+)"', content, re.MULTILINE)
+        return (m.group(1) if m else None), content
+    except Exception as e:
+        err_line(f"{type(e).__name__}: {e}")
+        return None, None
+
+def self_update_menu():
+    header(T("selfupd_title"))
+    print(c(f"  {T('selfupd_current')}: {VD_VERSION}", CYAN))
+    info_line(T("selfupd_checking"))
+    remote, content = check_remote_version()
+    if remote is None or content is None:
+        err_line(T("selfupd_check_failed"))
+        return False
+    ok_line(f"{T('selfupd_remote')}: {remote}")
+    if remote == VD_VERSION:
+        info_line(T("selfupd_uptodate"))
+        return False
+    if not confirm(T("selfupd_prompt")):
+        return False
+    if not content.startswith("#!/bin/sh"):
+        err_line(T("selfupd_invalid"))
+        return False
+    shell_path = SCRIPT_PATH
+    if not shell_path or not Path(shell_path).exists():
+        err_line(T("selfupd_no_path"))
+        return False
+    info_line(T("selfupd_downloading"))
+    try:
+        new_path = shell_path + ".new"
+        Path(new_path).write_text(content, encoding="utf-8")
+        os.chmod(new_path, 0o755)
+        os.replace(new_path, shell_path)
+        ok_line(T("selfupd_done"))
+        return True
+    except Exception as e:
+        err_line(f"{type(e).__name__}: {e}")
+        return False
 
 def diag_hosts():
     return ["rutube.ru", "www.youtube.com", "i.ytimg.com", "redirector.googlevideo.com", "www.google.com"]
@@ -2487,7 +2550,7 @@ def diagnostics():
     print(f"  ffmpeg: {shutil.which('ffmpeg') or T('ffmpeg_missing')}")
     print(f"  JS: {js_runtime() or T('js_none')}")
     print(f"  proxy: {SETTINGS['proxy'] or T('empty')}")
-    print(f"  DNS: {','.join(dns_order())}")
+    print(f"  DNS mode: {SETTINGS['dns_mode']}")
     print(f"  IP: {SETTINGS['ip_version']}")
     for host in diag_hosts():
         print(c(f"\n{host}", CYAN))
@@ -2499,18 +2562,14 @@ def diagnostics():
             ips, err = udp_query(srv, host)
             answers["udp " + srv] = ips
             print(f"  udp {srv}: {', '.join(ips) if ips else (err or T('diag_fail'))}")
-        DNS_STATE["busy"] = True
-        try:
-            for u in doh_urls()[:5]:
-                try:
-                    ips = doh_query(u, host)
-                    err = ""
-                except Exception as e:
-                    ips, err = [], f"{type(e).__name__}: {e}"
-                answers["doh " + u] = ips
-                print(f"  doh {u}: {', '.join(ips) if ips else (err or T('diag_fail'))}")
-        finally:
-            DNS_STATE["busy"] = False
+        if SETTINGS["doh_url"]:
+            try:
+                ips = doh_query(SETTINGS["doh_url"], host)
+                err = ""
+            except Exception as e:
+                ips, err = [], f"{type(e).__name__}: {e}"
+            answers["doh " + SETTINGS["doh_url"]] = ips
+            print(f"  doh {SETTINGS['doh_url']}: {', '.join(ips) if ips else (err or T('diag_fail'))}")
         sets = {tuple(sorted(v)) for v in answers.values() if v}
         if len(sets) > 1:
             warn_line(T("diag_mismatch"))
@@ -2537,16 +2596,18 @@ def diagnostics():
 
 def main_menu():
     ensure_dir()
-    cleanup_junk(verbose=False)
+    cleanup_junk()
     if not HAS_FFMPEG:
         warn_line(T("no_ffmpeg_warn"))
     while True:
         header(T("app_title"))
         print(c(f"{T('videos_dir')}: {VIDEOS_DIR}", CYAN))
         print(c(f"{T('audio_dir')}: {AUDIO_DIR}", CYAN))
+        print(c(f"v{VD_VERSION}", CYAN))
         print("-" * 40)
         print(f"  1. {T('menu_download_video')}\n  2. {T('menu_download_audio')}\n  3. {T('menu_files')}")
-        print(f"  4. {T('menu_settings')}\n  5. {T('menu_diag')}\n  6. {T('menu_update')}\n  0. {T('menu_exit')}")
+        print(f"  4. {T('menu_settings')}\n  5. {T('menu_diag')}\n  6. {T('menu_update')}")
+        print(f"  7. {T('menu_selfupdate')}\n  0. {T('menu_exit')}")
         ch = ask_input(c(f"{T('choice')}: ", GREEN))
         if ch is None:
             print(c(f"\n[+] {T('stopped')}", GREEN))
@@ -2563,6 +2624,9 @@ def main_menu():
             diagnostics()
         elif ch == "6":
             update_menu()
+        elif ch == "7":
+            if self_update_menu():
+                sys.exit(99)
         elif ch in ("1", "2"):
             links = []
             info_line(T("enter_urls"))
@@ -2588,7 +2652,6 @@ def main():
         parsed = [x for x in order.split(",") if x in ("system", "udp", "doh")]
         DNS_STATE["order"] = parsed or None
     ensure_dir()
-    ensure_ejs()
     main_menu()
 
 if __name__ == "__main__":
@@ -2601,5 +2664,23 @@ PYEOF
 chmod 700 /tmp/video_downloader.py
 python3 /tmp/video_downloader.py
 CODE=$?
-if [ -n "$KA_PID" ]; then kill "$KA_PID" 2>/dev/null; fi
+
+if [ $CODE -eq 98 ] && [ -f /tmp/vd_pip_cmd ]; then
+    PIPE_ARGS=$(cat /tmp/vd_pip_cmd)
+    rm -f /tmp/vd_pip_cmd
+    if [ "$VD_LANG" = "en" ]; then say "${BLUE}[*] pip install $PIPE_ARGS${NC}"; else say "${BLUE}[*] pip install $PIPE_ARGS${NC}"; fi
+    python3 -m pip install -U --no-deps --break-system-packages $PIPE_ARGS 2>&1 | tail -5
+    if [ $? -eq 0 ]; then
+        if [ "$VD_LANG" = "en" ]; then say "${GREEN}[+] pip install OK${NC}"; else say "${GREEN}[+] pip install OK${NC}"; fi
+    else
+        python3 -m pip install -U --no-deps $PIPE_ARGS 2>&1 | tail -5
+    fi
+    exec sh "$0"
+fi
+
+if [ $CODE -eq 99 ]; then
+    if [ "$VD_LANG" = "en" ]; then say "${GREEN}[+] Self-updated, restarting...${NC}"; else say "${GREEN}[+] Скрипт обновлён, перезапуск...${NC}"; fi
+    exec sh "$0"
+fi
+
 exit $CODE
