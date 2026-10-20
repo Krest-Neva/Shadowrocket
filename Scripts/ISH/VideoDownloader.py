@@ -32,7 +32,7 @@ T() {
             pip_fail) echo "[!] pip install failed" ;;
             setup_header) echo "=== Video Downloader ===" ;;
             installing) echo "[*] yt-dlp not found — installing" ;;
-            not_imported) echo "[!] yt-dlp/tqdm not importable, but fallback methods will be tried" ;;
+            not_imported) echo "[!] yt-dlp/tqdm not importable, fallback will be tried" ;;
             no_python) echo "[!] python3 not found" ;;
             *) echo "$1" ;;
         esac
@@ -122,6 +122,8 @@ except ImportError:
     tqdm = None
 
 LANG_FILE = Path.home() / ".video_downloader_lang"
+SETTINGS_FILE = Path.home() / ".video_downloader_settings.json"
+
 if LANG_FILE.exists():
     try:
         _l = LANG_FILE.read_text(encoding="utf-8").strip()
@@ -134,21 +136,20 @@ else:
 TEXTS = {
     "ru": {
         "app_title": "Универсальный загрузчик видео",
-        "menu_download": "Скачать видео",
+        "menu_download_video": "Скачать видео",
+        "menu_download_audio": "Скачать аудио",
         "menu_files": "Управление файлами",
-        "menu_language": "Сменить язык",
+        "menu_settings": "Настройки",
         "menu_exit": "Выход (q)",
         "choice": "Ваш выбор",
         "invalid_choice": "Неверный выбор",
         "videos_dir": "Видео сохраняются в",
-        "enter_urls": "Введите ссылки на видео (по одной на строку).",
-        "enter_urls_hint": "Пустая строка — начать загрузку. 'q' — меню.",
+        "audio_dir": "Аудио сохраняются в",
+        "enter_urls": "Введите ссылки (по одной на строку).",
+        "enter_urls_hint": "Пустая строка — начать. 'q' — меню.",
         "available_formats": "Доступные форматы видео",
-        "select_video": "Номер видеоформата (Enter — совместимый с iPhone)",
-        "available_audio": "Доступные аудиодорожки",
-        "select_audio": "Номер аудио (Enter — лучшее)",
-        "with_audio": "со звуком",
-        "no_audio": "без звука",
+        "select_video": "Номер видеоформата (Enter — лучший совместимый)",
+        "select_audio_track": "Номер аудиодорожки (Enter — лучшая)",
         "invalid_default": "Неверный выбор, используется формат по умолчанию",
         "selector": "Селектор",
         "finished": "Загрузка завершена",
@@ -163,66 +164,85 @@ TEXTS = {
         "invalid_url": "Некорректная ссылка",
         "stopped": "Работа остановлена",
         "fm_title": "Управление файлами",
-        "fm_path": "Папка",
+        "fm_choose_dir": "Выберите папку",
+        "fm_videos": "videos",
+        "fm_audio": "audio",
+        "fm_fix": "fix",
+        "fm_back": "Назад",
         "fm_count": "Файлов",
         "fm_empty": "Папка пуста",
-        "fm_1": "Удалить по номеру",
-        "fm_2": "Удалить несколько (1,3-5)",
-        "fm_3": "Удалить все",
-        "fm_4": "Переименовать файл",
-        "fm_5": "Переместить в fix (если видео не открывается)",
-        "fm_6": "Вернуть из fix",
-        "fm_back": "Назад",
-        "fm_delete_file": "Удалить файл",
-        "fm_delete_all": "Удалить ВСЕ файлы?",
+        "fm_delete": "Удалить файл",
+        "fm_delete_multi": "Удалить несколько (1,3-5)",
+        "fm_delete_all": "Удалить все",
+        "fm_rename": "Переименовать",
+        "fm_move_to_fix": "Переместить в fix",
+        "fm_restore": "Вернуть из fix",
         "fm_deleted": "Удалено",
-        "fm_numbers": "Номера для удаления",
-        "fm_failed": "Не удалось удалить",
-        "lang_title": "Выбор языка",
+        "fm_failed": "Ошибка",
+        "fm_numbers": "Номера",
+        "fm_new_name": "Новое имя",
+        "fm_renamed": "Переименовано",
+        "fm_moved": "Перемещено",
+        "fm_file_index": "Номер файла",
+        "settings_title": "Настройки",
+        "set_video_preset": "Видеокодек",
+        "set_audio_preset": "Аудиокодек",
+        "set_language": "Язык",
+        "set_reset": "Сбросить настройки",
+        "set_saved": "Настройки сохранены",
+        "preset_iphone": "iPhone (H.264 + AAC)",
+        "preset_android": "Android (H.264 + AAC)",
+        "preset_universal": "Универсальный (H.264 Baseline + AAC)",
+        "preset_h265": "H.265 / HEVC (меньше размер, медленно на iSH)",
+        "preset_vp9": "VP9 (Web, медленно на iSH)",
+        "preset_av1": "AV1 (макс. сжатие, очень медленно на iSH)",
+        "preset_original": "Оригинал (без перекодирования)",
+        "audio_aac": "AAC 128 kbps (iPhone)",
+        "audio_ac3": "AC3 192 kbps (не для Quick Look)",
+        "audio_mp3": "MP3 192 kbps",
+        "audio_opus": "Opus 160 kbps",
+        "audio_flac": "FLAC (lossless, большой)",
+        "audio_original": "Оригинал (без конвертации)",
         "lang_ru": "Русский",
         "lang_en": "English",
-        "lang_saved": "Язык сохранён",
         "video_ready": "Видео готово",
+        "audio_ready": "Аудио готово",
         "file": "Файл",
         "size": "Размер",
-        "rename_prompt": "Переименовать файл?",
-        "rename_new_name": "Новое имя (с расширением или без, Enter — отмена)",
-        "renamed": "Переименовано в",
-        "rename_exists": "Файл с таким именем уже существует",
-        "rename_failed": "Не удалось переименовать",
-        "rename_empty": "Пустое имя",
+        "rename_prompt": "Переименовать?",
+        "move_fix_prompt": "Переместить в fix (если не открывается)?",
+        "converting": "Конвертация",
+        "convert_prompt": "Формат несовместим. Конвертировать?",
+        "convert_done": "Конвертация завершена",
+        "convert_failed": "Ошибка конвертации",
+        "convert_cancelled": "Конвертация отменена",
+        "ffmpeg_missing": "ffmpeg не найден",
+        "compat_warning": "Формат может быть несовместим с выбранным устройством.",
         "junk_cleaned": "Очищено временных файлов",
         "press_enter": "Enter — продолжить",
-        "file_index": "Номер файла",
-        "move_to_fix_prompt": "Если видео не открывается в Files, переместить в папку fix?",
-        "moved_to_fix": "Перемещено в fix",
-        "fix_empty": "Папка fix пуста",
-        "fix_dir": "Папка fix",
-        "move_failed": "Не удалось переместить",
-        "compat_warning": "Формат может быть несовместим с iPhone (не H.264/AAC). Рекомендуется VLC или переместить в fix.",
+        "encoder_missing": "Кодек не поддерживается этой сборкой ffmpeg. Выберите другой.",
     },
     "en": {
         "app_title": "Universal Video Downloader",
-        "menu_download": "Download video",
+        "menu_download_video": "Download video",
+        "menu_download_audio": "Download audio",
         "menu_files": "File manager",
-        "menu_language": "Change language",
+        "menu_settings": "Settings",
         "menu_exit": "Exit (q)",
         "choice": "Choice",
         "invalid_choice": "Invalid choice",
         "videos_dir": "Videos saved to",
-        "enter_urls": "Enter video URLs (one per line).",
-        "enter_urls_hint": "Empty line to start download. 'q' to menu.",
+        "audio_dir": "Audio saved to",
+        "enter_urls": "Enter URLs (one per line).",
+        "enter_urls_hint": "Empty line — start. 'q' — menu.",
         "available_formats": "Available video formats",
-        "select_video": "Video format number (Enter = iPhone-compatible)",
-        "available_audio": "Available audio tracks",
-        "select_audio": "Audio number (Enter = best)",
-        "with_audio": "with audio",
-        "no_audio": "no audio",
-        "invalid_default": "Invalid choice, using default format",
+        "select_video": "Video format number (Enter = best compatible)",
+        "select_audio_track": "Audio track number (Enter = best)",
+        "invalid_default": "Invalid choice, using default",
         "selector": "Selector",
         "finished": "Download finished",
         "trying_generic": "Trying generic extractor...",
-        "retry_tls": "Retry without TLS verification?",
+        "retry_tls": "Retry without TLS?",
         "all_exhausted": "All attempts exhausted",
         "scanning": "Scanning page",
         "found_videos": "Videos found",
@@ -232,43 +252,63 @@ TEXTS = {
         "invalid_url": "Invalid URL",
         "stopped": "Stopped",
         "fm_title": "File manager",
-        "fm_path": "Directory",
+        "fm_choose_dir": "Choose directory",
+        "fm_videos": "videos",
+        "fm_audio": "audio",
+        "fm_fix": "fix",
+        "fm_back": "Back",
         "fm_count": "Files",
         "fm_empty": "Directory is empty",
-        "fm_1": "Delete by number",
-        "fm_2": "Delete multiple (1,3-5)",
-        "fm_3": "Delete all",
-        "fm_4": "Rename file",
-        "fm_5": "Move to fix (if video won't open)",
-        "fm_6": "Restore from fix",
-        "fm_back": "Back",
-        "fm_delete_file": "Delete file",
-        "fm_delete_all": "Delete ALL files?",
+        "fm_delete": "Delete file",
+        "fm_delete_multi": "Delete multiple (1,3-5)",
+        "fm_delete_all": "Delete all",
+        "fm_rename": "Rename",
+        "fm_move_to_fix": "Move to fix",
+        "fm_restore": "Restore from fix",
         "fm_deleted": "Deleted",
-        "fm_numbers": "Numbers to delete",
-        "fm_failed": "Failed to delete",
-        "lang_title": "Language selection",
+        "fm_failed": "Failed",
+        "fm_numbers": "Numbers",
+        "fm_new_name": "New name",
+        "fm_renamed": "Renamed",
+        "fm_moved": "Moved",
+        "fm_file_index": "File number",
+        "settings_title": "Settings",
+        "set_video_preset": "Video codec",
+        "set_audio_preset": "Audio codec",
+        "set_language": "Language",
+        "set_reset": "Reset settings",
+        "set_saved": "Settings saved",
+        "preset_iphone": "iPhone (H.264 + AAC)",
+        "preset_android": "Android (H.264 + AAC)",
+        "preset_universal": "Universal (H.264 Baseline + AAC)",
+        "preset_h265": "H.265 / HEVC (smaller, slow on iSH)",
+        "preset_vp9": "VP9 (Web, slow on iSH)",
+        "preset_av1": "AV1 (max compression, very slow on iSH)",
+        "preset_original": "Original (no re-encode)",
+        "audio_aac": "AAC 128 kbps (iPhone)",
+        "audio_ac3": "AC3 192 kbps (not for Quick Look)",
+        "audio_mp3": "MP3 192 kbps",
+        "audio_opus": "Opus 160 kbps",
+        "audio_flac": "FLAC (lossless, large)",
+        "audio_original": "Original (no conversion)",
         "lang_ru": "Русский",
         "lang_en": "English",
-        "lang_saved": "Language saved",
         "video_ready": "Video ready",
+        "audio_ready": "Audio ready",
         "file": "File",
         "size": "Size",
-        "rename_prompt": "Rename file?",
-        "rename_new_name": "New name (with or without extension, Enter = cancel)",
-        "renamed": "Renamed to",
-        "rename_exists": "File with this name already exists",
-        "rename_failed": "Failed to rename",
-        "rename_empty": "Empty name",
+        "rename_prompt": "Rename?",
+        "move_fix_prompt": "Move to fix (if it won't open)?",
+        "converting": "Converting",
+        "convert_prompt": "Format is incompatible. Convert?",
+        "convert_done": "Conversion done",
+        "convert_failed": "Conversion failed",
+        "convert_cancelled": "Conversion cancelled",
+        "ffmpeg_missing": "ffmpeg not found",
+        "compat_warning": "Format may be incompatible with selected device.",
         "junk_cleaned": "Cleaned temp files",
         "press_enter": "Enter — continue",
-        "file_index": "File number",
-        "move_to_fix_prompt": "If video won't open in Files, move to fix folder?",
-        "moved_to_fix": "Moved to fix",
-        "fix_empty": "fix folder is empty",
-        "fix_dir": "fix folder",
-        "move_failed": "Failed to move",
-        "compat_warning": "Format may be incompatible with iPhone (not H.264/AAC). Use VLC or move to fix.",
+        "encoder_missing": "Codec not supported by this ffmpeg build. Choose another.",
     },
 }
 
@@ -286,8 +326,127 @@ def save_lang(new_lang):
 YTDLP_BINARY = shutil.which("yt-dlp")
 BASE_DIR = Path("/root/VideoDownloader")
 VIDEOS_DIR = BASE_DIR / "videos"
+AUDIO_DIR = BASE_DIR / "audio"
 FIX_DIR = BASE_DIR / "fix"
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+
+VIDEO_CODECS = {
+    "iphone": {
+        "label_key": "preset_iphone",
+        "encoder": "libx264",
+        "profile": "high", "level": "4.0", "crf": "23",
+        "pix_fmt": "yuv420p", "preset": "medium",
+        "audio_codec": "aac", "audio_bitrate": "128k",
+        "movflags": "+faststart",
+        "compat": ("h264", "avc1"),
+    },
+    "android": {
+        "label_key": "preset_android",
+        "encoder": "libx264",
+        "profile": "high", "level": "4.0", "crf": "23",
+        "pix_fmt": "yuv420p", "preset": "medium",
+        "audio_codec": "aac", "audio_bitrate": "128k",
+        "movflags": "+faststart",
+        "compat": ("h264", "avc1"),
+    },
+    "universal": {
+        "label_key": "preset_universal",
+        "encoder": "libx264",
+        "profile": "baseline", "level": "3.0", "crf": "23",
+        "pix_fmt": "yuv420p", "preset": "medium",
+        "audio_codec": "aac", "audio_bitrate": "128k",
+        "movflags": "+faststart",
+        "compat": ("h264", "avc1"),
+    },
+    "h265": {
+        "label_key": "preset_h265",
+        "encoder": "libx265",
+        "crf": "28", "preset": "fast",
+        "pix_fmt": "yuv420p",
+        "audio_codec": "aac", "audio_bitrate": "128k",
+        "movflags": "+faststart",
+        "compat": ("hevc", "h265"),
+    },
+    "vp9": {
+        "label_key": "preset_vp9",
+        "encoder": "libvpx-vp9",
+        "crf": "32", "speed": "6", "row_mt": "1",
+        "pix_fmt": "yuv420p",
+        "audio_codec": "opus", "audio_bitrate": "128k",
+        "container": "webm",
+        "compat": ("vp9",),
+    },
+    "av1": {
+        "label_key": "preset_av1",
+        "encoder": "libsvtav1",
+        "crf": "35", "preset": "10",
+        "pix_fmt": "yuv420p",
+        "audio_codec": "opus", "audio_bitrate": "128k",
+        "container": "mkv",
+        "compat": ("av1",),
+    },
+    "original": {
+        "label_key": "preset_original",
+        "encoder": "copy",
+        "audio_codec": "copy",
+    },
+}
+
+AUDIO_CODECS = {
+    "aac":  {"label_key": "audio_aac",  "encoder": "aac",     "bitrate": "128k", "ext": "m4a"},
+    "ac3":  {"label_key": "audio_ac3",  "encoder": "ac3",     "bitrate": "192k", "ext": "ac3"},
+    "mp3":  {"label_key": "audio_mp3",  "encoder": "libmp3lame", "bitrate": "192k", "ext": "mp3"},
+    "opus": {"label_key": "audio_opus", "encoder": "libopus", "bitrate": "160k", "ext": "opus"},
+    "flac": {"label_key": "audio_flac", "encoder": "flac",    "bitrate": None,   "ext": "flac"},
+    "original": {"label_key": "audio_original", "encoder": "copy", "bitrate": None, "ext": None},
+}
+
+DEFAULT_SETTINGS = {"video_codec": "iphone", "audio_codec": "aac"}
+
+def load_settings():
+    if SETTINGS_FILE.exists():
+        try:
+            data = json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                for k, v in DEFAULT_SETTINGS.items():
+                    if k not in data:
+                        data[k] = v
+                return data
+        except Exception:
+            pass
+    return dict(DEFAULT_SETTINGS)
+
+def save_settings(s):
+    try:
+        SETTINGS_FILE.write_text(json.dumps(s, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
+SETTINGS = load_settings()
+_encoders_cache = None
+
+def available_encoders():
+    global _encoders_cache
+    if _encoders_cache is not None:
+        return _encoders_cache
+    _encoders_cache = set()
+    if not shutil.which("ffmpeg"):
+        return _encoders_cache
+    try:
+        r = subprocess.run(["ffmpeg", "-hide_banner", "-encoders"],
+                           capture_output=True, text=True, timeout=30)
+        for line in r.stdout.splitlines():
+            m = re.match(r'^ [A-Z.]{6} (\S+)', line)
+            if m:
+                _encoders_cache.add(m.group(1))
+    except Exception:
+        pass
+    return _encoders_cache
+
+def encoder_ok(name):
+    if name == "copy":
+        return True
+    return name in available_encoders()
 
 COMPAT_FORMAT = "bv*[vcodec^=avc1]+ba[ext=m4a]/b[ext=mp4]/bv*+ba/b"
 
@@ -306,8 +465,7 @@ def header(title):
     print(c(line, YELLOW))
 
 def ensure_dir():
-    global VIDEOS_DIR, FIX_DIR
-    for d in (VIDEOS_DIR, FIX_DIR):
+    for d in (VIDEOS_DIR, AUDIO_DIR, FIX_DIR):
         d.mkdir(parents=True, exist_ok=True)
     return VIDEOS_DIR
 
@@ -332,7 +490,7 @@ def valid_url(u):
 
 def cleanup_junk():
     removed = []
-    patterns = ["*.part", "*.ytdl", "*.temp.mp4", "*.temp.m4a", "*.temp.webm"]
+    patterns = ["*.part", "*.ytdl", "*.temp.mp4", "*.temp.m4a", "*.temp.webm", "*.temp.mkv"]
     for pat in patterns:
         try:
             for f in VIDEOS_DIR.glob(pat):
@@ -349,7 +507,7 @@ def cleanup_junk():
             if not f.is_file():
                 continue
             stem = f.stem
-            if re.search(r'\.f\d+$', stem) and f.suffix in (".mp4", ".m4a", ".webm"):
+            if re.search(r'\.f\d+$', stem) and f.suffix in (".mp4", ".m4a", ".webm", ".mkv"):
                 try:
                     f.unlink()
                     removed.append(f.name)
@@ -361,9 +519,9 @@ def cleanup_junk():
         print(c(f"[*] {T('junk_cleaned')}: {len(removed)}", YELLOW))
     return removed
 
-def find_newest_mp4():
+def find_newest(directory, pattern="*.mp4"):
     try:
-        files = [f for f in VIDEOS_DIR.glob("*.mp4") if f.is_file()]
+        files = [f for f in directory.glob(pattern) if f.is_file()]
     except OSError:
         return None
     if not files:
@@ -397,16 +555,154 @@ def get_video_info(url, **extra):
             print(c(f"[!] info: {trunc(str(e), 60)}", YELLOW))
     return None
 
+def get_duration(path):
+    if not shutil.which("ffprobe"):
+        return None
+    try:
+        r = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1", str(path)],
+            capture_output=True, text=True, timeout=30
+        )
+        return float(r.stdout.strip())
+    except Exception:
+        return None
+
+def run_ffmpeg_with_progress(cmd, duration, desc):
+    if tqdm is None:
+        return subprocess.run(cmd, timeout=14400).returncode == 0
+    full = cmd[:1] + ["-nostats", "-progress", "pipe:1"] + cmd[1:]
+    try:
+        proc = subprocess.Popen(full, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    except Exception as e:
+        print(c(f"[!] ffmpeg: {trunc(str(e), 60)}", RED))
+        return False
+    pbar = tqdm(total=duration or 0, unit="s", desc=desc, leave=False, ncols=42)
+    last_time = 0
+    try:
+        for line in proc.stdout:
+            line = line.strip()
+            if line.startswith("out_time_ms="):
+                try:
+                    secs = int(line.split("=", 1)[1]) / 1000000.0
+                    if secs > last_time:
+                        pbar.update(secs - last_time)
+                        last_time = secs
+                except Exception:
+                    pass
+            elif line.startswith("progress=") and line.endswith("end"):
+                break
+    except Exception:
+        pass
+    finally:
+        try:
+            proc.wait(timeout=60)
+        except Exception:
+            proc.kill()
+        if duration and last_time < duration:
+            pbar.update(duration - last_time)
+        pbar.close()
+        sys.stdout.write("\n")
+        sys.stdout.flush()
+    return proc.returncode == 0
+
+def check_compat(filepath, codec_key):
+    if not filepath or not filepath.exists():
+        return True
+    codec = VIDEO_CODECS.get(codec_key, VIDEO_CODECS["iphone"])
+    if codec.get("encoder") == "copy":
+        return True
+    if not shutil.which("ffprobe"):
+        return True
+    try:
+        r = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "v:0",
+             "-show_entries", "stream=codec_name", "-of", "default=nw=1:nk=1",
+             str(filepath)],
+            capture_output=True, text=True, timeout=30
+        )
+        vcodec = r.stdout.strip().lower()
+        r2 = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "a:0",
+             "-show_entries", "stream=codec_name", "-of", "default=nw=1:nk=1",
+             str(filepath)],
+            capture_output=True, text=True, timeout=30
+        )
+        acodec = r2.stdout.strip().lower()
+        return vcodec in codec.get("compat", ()) and acodec in ("aac", "mp4a", "")
+    except Exception:
+        return True
+
+def build_ffmpeg_cmd(src, dst, vkey, akey):
+    v = VIDEO_CODECS.get(vkey, VIDEO_CODECS["iphone"])
+    a = AUDIO_CODECS.get(akey, AUDIO_CODECS["aac"])
+    cmd = ["ffmpeg", "-y", "-i", str(src)]
+
+    if v.get("encoder") == "copy":
+        cmd += ["-c:v", "copy"]
+    else:
+        cmd += ["-c:v", v["encoder"]]
+        if v.get("preset"):
+            cmd += ["-preset", v["preset"]]
+        if v.get("crf") and v["encoder"] not in ("libvpx-vp9", "libsvtav1"):
+            cmd += ["-crf", v["crf"]]
+        if v.get("profile"):
+            cmd += ["-profile:v", v["profile"]]
+        if v.get("level"):
+            cmd += ["-level", v["level"]]
+        if v.get("pix_fmt"):
+            cmd += ["-pix_fmt", v["pix_fmt"]]
+        if v.get("speed"):
+            cmd += ["-speed", v["speed"]]
+        if v.get("row_mt"):
+            cmd += ["-row-mt", v["row_mt"]]
+        if v["encoder"] == "libvpx-vp9":
+            cmd += ["-crf", v["crf"], "-b:v", "0"]
+        if v["encoder"] == "libsvtav1":
+            cmd += ["-crf", v["crf"]]
+
+    if a.get("encoder") == "copy":
+        cmd += ["-c:a", "copy"]
+    else:
+        cmd += ["-c:a", a["encoder"]]
+        if a.get("bitrate"):
+            cmd += ["-b:a", a["bitrate"]]
+
+    if v.get("movflags"):
+        cmd += ["-movflags", v["movflags"]]
+    cmd += [str(dst)]
+    return cmd
+
+def convert_file(src, vkey, akey):
+    v = VIDEO_CODECS.get(vkey, VIDEO_CODECS["iphone"])
+    container = v.get("container", "mp4")
+    dst = src.with_name(src.stem + f"_conv.{container}")
+    if not encoder_ok(v.get("encoder", "copy")) or not encoder_ok(AUDIO_CODECS.get(akey, AUDIO_CODECS["aac"])["encoder"]):
+        print(c(f"[!] {T('encoder_missing')}", YELLOW))
+        return src
+    duration = get_duration(src)
+    cmd = build_ffmpeg_cmd(src, dst, vkey, akey)
+    print(c(f"\n[*] {T('converting')}: {trunc(src.name, 30)}", BLUE))
+    ok = run_ffmpeg_with_progress(cmd, duration, T("converting"))
+    if ok and dst.exists() and dst.stat().st_size > 0:
+        try:
+            src.unlink()
+        except OSError:
+            pass
+        return dst
+    print(c(f"[!] {T('convert_failed')}", RED))
+    return src
+
 def select_format(url):
     default = COMPAT_FORMAT
     info = get_video_info(url)
     if not isinstance(info, dict):
-        return default
+        return default, None
     formats = info.get("formats") or []
     videos = [f for f in formats if isinstance(f, dict) and f.get("format_id") and f.get("vcodec") not in (None, "none")]
     audios = [f for f in formats if isinstance(f, dict) and f.get("format_id") and f.get("vcodec") == "none" and f.get("acodec") not in (None, "none")]
     if not videos:
-        return default
+        return default, None
 
     uniq = {}
     for f in videos:
@@ -423,32 +719,32 @@ def select_format(url):
     try:
         ch = input(c(f"\n{T('select_video')}: ", YELLOW)).strip()
     except (EOFError, KeyboardInterrupt):
-        return default
+        return default, None
     if not ch:
-        return default
+        return default, info
     try:
         sel = vlist[int(ch) - 1]
     except (ValueError, IndexError):
         print(c(f"[!] {T('invalid_default')}", YELLOW))
-        return default
+        return default, info
 
     vid = str(sel["format_id"])
     if sel.get("acodec") not in (None, "none"):
-        return vid
+        return vid, info
     if not audios:
-        return f"{vid}+ba/b"
-    print(c(f"\n{T('available_audio')}:", CYAN))
+        return f"{vid}+ba/b", info
+    print(c(f"\n{T('select_audio_track')}:", CYAN))
     for i, f in enumerate(audios, 1):
         abr = f.get("abr")
         abr_t = f", {abr:g}kbps" if isinstance(abr, (int, float)) else ""
         print(f"  {i}. {trunc(f.get('language') or 'unknown', 15)}, {f.get('ext') or '?'}{abr_t}")
     try:
-        a = input(c(f"{T('select_audio')}: ", YELLOW)).strip()
+        a = input(c(f"{T('select_audio_track')}: ", YELLOW)).strip()
         if not a:
-            return f"{vid}+ba/b"
-        return f"{vid}+{audios[int(a)-1]['format_id']}"
+            return f"{vid}+ba/b", info
+        return f"{vid}+{audios[int(a)-1]['format_id']}", info
     except (ValueError, IndexError, EOFError, KeyboardInterrupt):
-        return f"{vid}+ba/b"
+        return f"{vid}+ba/b", info
 
 def progress_hook():
     if tqdm is None:
@@ -507,10 +803,122 @@ def run_binary(url, selector, *flags):
         print(c(f"[!] binary: {trunc(str(e), 70)}", RED))
         return False
 
-def http_json(url, referer="https://rutube.ru/"):
-    req = urllib.request.Request(url, headers={"User-Agent": UA, "Referer": referer, "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        return json.loads(r.read().decode("utf-8", "replace"))
+def run_audio_module(url, akey):
+    if yt_dlp is None:
+        return False
+    a = AUDIO_CODECS.get(akey, AUDIO_CODECS["aac"])
+    fmt = a["ext"] if a["ext"] else "best"
+    opts = base_opts(
+        format="bestaudio/best",
+        outtmpl=str(AUDIO_DIR / "%(title).150B [%(id)s].%(ext)s"),
+        extractaudio=True,
+        audioformat=fmt if fmt != "best" else None,
+        audioquality="0" if a["bitrate"] is None else a["bitrate"],
+        continuedl=True,
+        overwrites=False,
+    )
+    h = progress_hook()
+    if h:
+        opts["progress_hooks"] = [h]
+    try:
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            return ydl.download([url]) in (None, 0)
+    except Exception as e:
+        print(c(f"[!] audio: {trunc(str(e), 70)}", RED))
+        return False
+
+def run_audio_binary(url, akey):
+    if not YTDLP_BINARY:
+        return False
+    a = AUDIO_CODECS.get(akey, AUDIO_CODECS["aac"])
+    cmd = [YTDLP_BINARY, "-f", "bestaudio/best", "--force-ipv4",
+           "--quiet", "--no-progress",
+           "-o", str(AUDIO_DIR / "%(title).150B [%(id)s].%(ext)s"),
+           "--no-warnings", "--no-playlist", "-x"]
+    if a["ext"]:
+        cmd += ["--audio-format", a["ext"]]
+    if a["bitrate"]:
+        cmd += ["--audio-quality", a["bitrate"]]
+    cmd.append(url)
+    try:
+        result = subprocess.run(cmd, timeout=3600, capture_output=True, text=True)
+        if result.returncode != 0 and result.stderr:
+            for line in result.stderr.strip().split("\n")[:2]:
+                if line.strip():
+                    print(c(f"[!] {trunc(line, 70)}", RED))
+        return result.returncode == 0
+    except Exception as e:
+        print(c(f"[!] audio binary: {trunc(str(e), 70)}", RED))
+        return False
+
+def attempt_download_video(url):
+    if not valid_url(url):
+        print(c(f"[!] {T('invalid_url')}: {trunc(url, 40)}", RED))
+        return False, None
+
+    vkey = SETTINGS.get("video_codec", "iphone")
+    akey = SETTINGS.get("audio_codec", "aac")
+
+    before = {}
+    try:
+        for f in VIDEOS_DIR.glob("*.mp4"):
+            try:
+                before[f.name] = f.stat().st_mtime
+            except OSError:
+                pass
+    except OSError:
+        pass
+
+    selector, info = select_format(url)
+    print(c(f"[*] {T('selector')}: {trunc(selector, 35)}", BLUE))
+
+    success = False
+    if run_module(url, selector) or run_binary(url, selector):
+        success = True
+    elif "rutube.ru" in url:
+        success = rutube_download(url)
+    else:
+        print(c(f"[!] {T('trying_generic')}", YELLOW))
+        if run_module(url, COMPAT_FORMAT, force_generic_extractor=True) or \
+           run_binary(url, COMPAT_FORMAT, "--force-generic-extractor"):
+            success = True
+        elif confirm(T("retry_tls")):
+            if run_module(url, COMPAT_FORMAT, nocheckcertificate=True) or \
+               run_binary(url, COMPAT_FORMAT, "--no-check-certificate"):
+                success = True
+
+    if not success:
+        print(c(f"[!] {T('all_exhausted')}", RED))
+        return False, None
+
+    cleanup_junk()
+
+    newest_file = None
+    newest_mtime = 0
+    try:
+        for f in VIDEOS_DIR.glob("*.mp4"):
+            try:
+                mt = f.stat().st_mtime
+                if mt > before.get(f.name, 0) and mt > newest_mtime:
+                    newest_mtime = mt
+                    newest_file = f
+            except OSError:
+                pass
+    except OSError:
+        pass
+
+    if newest_file is None:
+        newest_file = find_newest(VIDEOS_DIR, "*.mp4")
+
+    if newest_file and not check_compat(newest_file, vkey):
+        print(c(f"[!] {T('compat_warning')}", YELLOW))
+        if confirm(T("convert_prompt")):
+            newest_file = convert_file(newest_file, vkey, akey)
+            print(c(f"[+] {T('convert_done')}: {trunc(newest_file.name, 34)}", GREEN))
+        else:
+            print(c(f"[*] {T('convert_cancelled')}", YELLOW))
+
+    return True, newest_file
 
 def rutube_download(url):
     m = re.search(r"rutube\.ru/(?:video|play/embed|video/private)/([0-9a-f]{32})", url)
@@ -578,68 +986,45 @@ def rutube_download(url):
             pass
     return False
 
-def check_compat(filepath):
-    if not filepath or not filepath.exists():
-        return False
-    if not shutil.which("ffprobe"):
-        return True
-    try:
-        r = subprocess.run(
-            ["ffprobe", "-v", "error", "-select_streams", "v:0",
-             "-show_entries", "stream=codec_name", "-of", "default=nw=1:nk=1",
-             str(filepath)],
-            capture_output=True, text=True, timeout=30
-        )
-        vcodec = r.stdout.strip().lower()
-        if vcodec and vcodec not in ("h264", "avc1"):
-            return False
-    except Exception:
-        pass
-    return True
+def http_json(url, referer="https://rutube.ru/"):
+    req = urllib.request.Request(url, headers={"User-Agent": UA, "Referer": referer, "Accept": "application/json"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.loads(r.read().decode("utf-8", "replace"))
 
-def attempt_download(url):
+def attempt_download_audio(url):
     if not valid_url(url):
         print(c(f"[!] {T('invalid_url')}: {trunc(url, 40)}", RED))
         return False, None
 
+    akey = SETTINGS.get("audio_codec", "aac")
     before = {}
     try:
-        for f in VIDEOS_DIR.glob("*.mp4"):
-            try:
-                before[f.name] = f.stat().st_mtime
-            except OSError:
-                pass
+        for f in AUDIO_DIR.iterdir():
+            if f.is_file():
+                try:
+                    before[f.name] = f.stat().st_mtime
+                except OSError:
+                    pass
     except OSError:
         pass
 
-    selector = select_format(url)
-    print(c(f"[*] {T('selector')}: {trunc(selector, 35)}", BLUE))
-
     success = False
-    if run_module(url, selector) or run_binary(url, selector):
+    if run_audio_module(url, akey) or run_audio_binary(url, akey):
         success = True
-    elif "rutube.ru" in url and rutube_download(url):
-        success = True
-    else:
-        print(c(f"[!] {T('trying_generic')}", YELLOW))
-        if run_module(url, COMPAT_FORMAT, force_generic_extractor=True) or \
-           run_binary(url, COMPAT_FORMAT, "--force-generic-extractor"):
+    elif confirm(T("retry_tls")):
+        if run_audio_module(url, akey):
             success = True
-        elif confirm(T("retry_tls")):
-            if run_module(url, COMPAT_FORMAT, nocheckcertificate=True) or \
-               run_binary(url, COMPAT_FORMAT, "--no-check-certificate"):
-                success = True
 
     if not success:
         print(c(f"[!] {T('all_exhausted')}", RED))
         return False, None
 
-    cleanup_junk()
-
     newest_file = None
     newest_mtime = 0
     try:
-        for f in VIDEOS_DIR.glob("*.mp4"):
+        for f in AUDIO_DIR.iterdir():
+            if not f.is_file():
+                continue
             try:
                 mt = f.stat().st_mtime
                 if mt > before.get(f.name, 0) and mt > newest_mtime:
@@ -651,10 +1036,7 @@ def attempt_download(url):
         pass
 
     if newest_file is None:
-        newest_file = find_newest_mp4()
-
-    if newest_file and not check_compat(newest_file):
-        print(c(f"[!] {T('compat_warning')}", YELLOW))
+        newest_file = find_newest(AUDIO_DIR, "*")
 
     return True, newest_file
 
@@ -671,13 +1053,13 @@ def move_to_fix(filepath):
                 dest = FIX_DIR / f"{stem}_{counter}{suffix}"
                 counter += 1
         filepath.rename(dest)
-        print(c(f"[+] {T('moved_to_fix')}: {trunc(dest.name, 34)}", GREEN))
+        print(c(f"[+] {T('fm_moved')}: {trunc(dest.name, 34)}", GREEN))
         return True
     except OSError as e:
-        print(c(f"[!] {T('move_failed')}: {trunc(str(e), 50)}", RED))
+        print(c(f"[!] {T('fm_failed')}: {trunc(str(e), 50)}", RED))
         return False
 
-def show_ready_and_rename(filepath):
+def show_ready_and_rename(filepath, is_audio=False):
     if not filepath or not filepath.exists():
         return filepath
     try:
@@ -686,7 +1068,7 @@ def show_ready_and_rename(filepath):
         size = 0
     print()
     print(c("=" * 40, GREEN))
-    print(c(f"  {T('video_ready')}", GREEN))
+    print(c(f"  {T('audio_ready' if is_audio else 'video_ready')}", GREEN))
     print(c("=" * 40, GREEN))
     print(c(f"  {T('file')}: {trunc(filepath.name, 34)}", CYAN))
     print(c(f"  {T('size')}: {fmt_size(size)}", CYAN))
@@ -697,7 +1079,7 @@ def show_ready_and_rename(filepath):
         return filepath
     if do_rename:
         try:
-            new_name = input(c(f"{T('rename_new_name')}: ", YELLOW)).strip()
+            new_name = input(c(f"{T('fm_new_name')}: ", YELLOW)).strip()
         except (EOFError, KeyboardInterrupt):
             new_name = ""
         if new_name:
@@ -706,16 +1088,16 @@ def show_ready_and_rename(filepath):
             new_name = re.sub(r'[\\/:*?"<>|]', "_", new_name)
             new_path = filepath.parent / new_name
             if new_path.exists() and new_path != filepath:
-                print(c(f"[!] {T('rename_exists')}", RED))
+                print(c(f"[!] {T('fm_failed')}: exists", RED))
             else:
                 try:
                     filepath.rename(new_path)
-                    print(c(f"[+] {T('renamed')}: {trunc(new_name, 34)}", GREEN))
+                    print(c(f"[+] {T('fm_renamed')}: {trunc(new_name, 34)}", GREEN))
                     filepath = new_path
                 except OSError as e:
-                    print(c(f"[!] {T('rename_failed')}: {trunc(str(e), 50)}", RED))
+                    print(c(f"[!] {T('fm_failed')}: {trunc(str(e), 50)}", RED))
 
-    if confirm(T("move_to_fix_prompt")):
+    if not is_audio and confirm(T("move_fix_prompt")):
         move_to_fix(filepath)
     return filepath
 
@@ -746,10 +1128,15 @@ def find_videos_on_page(page_url):
 
 DIRECT = ("youtube.com/", "youtu.be/", "rutube.ru/video/", "rutube.ru/play/", ".mp4", ".m3u8")
 
-def process_links(links):
+def process_links(links, audio_only=False):
     for url in links:
         if not valid_url(url):
             print(c(f"[!] {T('invalid_url')}: {trunc(url, 40)}", RED))
+            continue
+        if audio_only:
+            ok, fp = attempt_download_audio(url)
+            if ok and fp:
+                show_ready_and_rename(fp, is_audio=True)
             continue
         if not any(m in url.lower() for m in DIRECT):
             found = find_videos_on_page(url)
@@ -757,7 +1144,7 @@ def process_links(links):
                 print(c(f"[!] {T('no_videos')}: {trunc(url, 40)}", YELLOW))
                 continue
             if len(found) == 1:
-                ok, fp = attempt_download(found[0])
+                ok, fp = attempt_download_video(found[0])
                 if ok and fp:
                     show_ready_and_rename(fp)
                 continue
@@ -768,23 +1155,23 @@ def process_links(links):
                 ch = input(c(f"{T('number_or_all')}: ", YELLOW)).strip().lower()
                 if ch == "all":
                     for u in found:
-                        ok, fp = attempt_download(u)
+                        ok, fp = attempt_download_video(u)
                         if ok and fp:
                             show_ready_and_rename(fp)
                 else:
-                    ok, fp = attempt_download(found[int(ch) - 1])
+                    ok, fp = attempt_download_video(found[int(ch) - 1])
                     if ok and fp:
                         show_ready_and_rename(fp)
             except (ValueError, IndexError, EOFError, KeyboardInterrupt):
                 print(c(f"[!] {T('invalid_choice')}", RED))
         else:
-            ok, fp = attempt_download(url)
+            ok, fp = attempt_download_video(url)
             if ok and fp:
                 show_ready_and_rename(fp)
 
-def list_video_files():
+def list_files(directory):
     try:
-        files = sorted(VIDEOS_DIR.iterdir(), key=lambda p: p.name.lower())
+        files = sorted(directory.iterdir(), key=lambda p: p.name.lower())
     except OSError:
         return []
     return [f for f in files if f.is_file() and not f.name.startswith(".")]
@@ -814,13 +1201,36 @@ def parse_numbers(text, max_index):
         raise ValueError
     return result
 
+def file_manager_choose_dir():
+    while True:
+        header(T("fm_choose_dir"))
+        print(f"  1. {T('fm_videos')}")
+        print(f"  2. {T('fm_audio')}")
+        print(f"  3. {T('fm_fix')}")
+        print(f"  0. {T('fm_back')}")
+        try:
+            ch = input(c(f"{T('choice')}: ", GREEN)).strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            return None
+        if ch in ("0", "q"):
+            return None
+        if ch == "1":
+            return VIDEOS_DIR
+        if ch == "2":
+            return AUDIO_DIR
+        if ch == "3":
+            return FIX_DIR
+        print(c(f"[!] {T('invalid_choice')}", RED))
+
 def file_manager():
     ensure_dir()
+    current_dir = file_manager_choose_dir()
+    if current_dir is None:
+        return
     while True:
-        files = list_video_files()
+        files = list_files(current_dir)
         header(T("fm_title"))
-        print(c(f"{T('fm_path')}: {trunc(str(VIDEOS_DIR), 34)}", CYAN))
-        print(c(f"{T('fm_count')}: {len(files)}", CYAN))
+        print(c(f"{current_dir.name} ({len(files)})", CYAN))
         print("-" * 40)
         if not files:
             print(c(f"[!] {T('fm_empty')}", YELLOW))
@@ -832,19 +1242,25 @@ def file_manager():
                     size = 0
                 print(f"  {i}. {trunc(f.name, 28)} ({fmt_size(size)})")
         print("-" * 40)
-        print(f"  1. {T('fm_1')}")
-        print(f"  2. {T('fm_2')}")
-        print(f"  3. {T('fm_3')}")
-        print(f"  4. {T('fm_4')}")
-        print(f"  5. {T('fm_5')}")
-        print(f"  6. {T('fm_6')}")
+        print(f"  1. {T('fm_delete')}")
+        print(f"  2. {T('fm_delete_multi')}")
+        print(f"  3. {T('fm_delete_all')}")
+        print(f"  4. {T('fm_rename')}")
+        print(f"  5. {T('fm_move_to_fix')}")
+        print(f"  6. {T('fm_restore')}")
+        print(f"  7. {T('fm_choose_dir')}")
         print(f"  0. {T('fm_back')}")
         try:
             ch = input(c(f"{T('choice')}: ", GREEN)).strip().lower()
         except (EOFError, KeyboardInterrupt):
             return
-        if ch in ("0", "q", "back", "назад"):
+        if ch in ("0", "q"):
             return
+        if ch == "7":
+            new_dir = file_manager_choose_dir()
+            if new_dir:
+                current_dir = new_dir
+            continue
         if ch not in ("1", "2", "3", "4", "5", "6"):
             print(c(f"[!] {T('invalid_choice')}", RED))
             continue
@@ -858,7 +1274,7 @@ def file_manager():
                 print(c(f"[!] {T('invalid_choice')}", RED))
                 continue
             target = files[nums[0] - 1]
-            if confirm(f"{T('fm_delete_file')} '{trunc(target.name, 25)}'?"):
+            if confirm(f"{T('fm_delete')} '{trunc(target.name, 25)}'?"):
                 try:
                     target.unlink()
                     print(c(f"[+] {T('fm_deleted')}: {trunc(target.name, 34)}", GREEN))
@@ -871,14 +1287,14 @@ def file_manager():
             except (ValueError, EOFError, KeyboardInterrupt):
                 print(c(f"[!] {T('invalid_choice')}", RED))
                 continue
-            if confirm(f"{T('fm_delete_file')} {len(nums)}?"):
+            if confirm(f"{T('fm_delete_multi')} {len(nums)}?"):
                 count = 0
                 for n in sorted(nums, reverse=True):
                     try:
                         files[n - 1].unlink()
                         count += 1
-                    except OSError as e:
-                        print(c(f"[!] {T('fm_failed')}: {trunc(str(e), 50)}", RED))
+                    except OSError:
+                        pass
                 print(c(f"[+] {T('fm_deleted')}: {count}", GREEN))
         elif ch == "3":
             if confirm(f"{T('fm_delete_all')} ({len(files)})?"):
@@ -887,19 +1303,19 @@ def file_manager():
                     try:
                         f.unlink()
                         count += 1
-                    except OSError as e:
-                        print(c(f"[!] {T('fm_failed')}: {trunc(str(e), 50)}", RED))
+                    except OSError:
+                        pass
                 print(c(f"[+] {T('fm_deleted')}: {count}", GREEN))
         elif ch == "4":
             try:
-                idx = input(c(f"{T('file_index')} (1-{len(files)}): ", YELLOW)).strip()
+                idx = input(c(f"{T('fm_file_index')} (1-{len(files)}): ", YELLOW)).strip()
                 nums = parse_numbers(idx, len(files))
             except (ValueError, EOFError, KeyboardInterrupt):
                 print(c(f"[!] {T('invalid_choice')}", RED))
                 continue
             target = files[nums[0] - 1]
             try:
-                new_name = input(c(f"{T('rename_new_name')}: ", YELLOW)).strip()
+                new_name = input(c(f"{T('fm_new_name')}: ", YELLOW)).strip()
             except (EOFError, KeyboardInterrupt):
                 continue
             if not new_name:
@@ -909,31 +1325,27 @@ def file_manager():
             new_name = re.sub(r'[\\/:*?"<>|]', "_", new_name)
             new_path = target.parent / new_name
             if new_path.exists() and new_path != target:
-                print(c(f"[!] {T('rename_exists')}", RED))
+                print(c(f"[!] {T('fm_failed')}: exists", RED))
                 continue
             try:
                 target.rename(new_path)
-                print(c(f"[+] {T('renamed')}: {trunc(new_name, 34)}", GREEN))
+                print(c(f"[+] {T('fm_renamed')}: {trunc(new_name, 34)}", GREEN))
             except OSError as e:
-                print(c(f"[!] {T('rename_failed')}: {trunc(str(e), 50)}", RED))
+                print(c(f"[!] {T('fm_failed')}: {trunc(str(e), 50)}", RED))
         elif ch == "5":
             try:
-                idx = input(c(f"{T('file_index')} (1-{len(files)}): ", YELLOW)).strip()
+                idx = input(c(f"{T('fm_file_index')} (1-{len(files)}): ", YELLOW)).strip()
                 nums = parse_numbers(idx, len(files))
             except (ValueError, EOFError, KeyboardInterrupt):
                 print(c(f"[!] {T('invalid_choice')}", RED))
                 continue
             move_to_fix(files[nums[0] - 1])
         elif ch == "6":
-            try:
-                fix_files = sorted(FIX_DIR.iterdir(), key=lambda p: p.name.lower())
-            except OSError:
-                fix_files = []
-            fix_files = [f for f in fix_files if f.is_file() and not f.name.startswith(".")]
+            fix_files = list_files(FIX_DIR)
             if not fix_files:
-                print(c(f"[!] {T('fix_empty')}", YELLOW))
+                print(c(f"[!] {T('fm_empty')}", YELLOW))
                 continue
-            header(T("fix_dir"))
+            header(T("fm_restore"))
             for i, f in enumerate(fix_files, 1):
                 try:
                     size = f.stat().st_size
@@ -941,21 +1353,82 @@ def file_manager():
                     size = 0
                 print(f"  {i}. {trunc(f.name, 28)} ({fmt_size(size)})")
             try:
-                idx = input(c(f"{T('file_index')} (1-{len(fix_files)}): ", YELLOW)).strip()
+                idx = input(c(f"{T('fm_file_index')} (1-{len(fix_files)}): ", YELLOW)).strip()
                 nums = parse_numbers(idx, len(fix_files))
             except (ValueError, EOFError, KeyboardInterrupt):
                 print(c(f"[!] {T('invalid_choice')}", RED))
                 continue
             target = fix_files[nums[0] - 1]
+            dest_dir = AUDIO_DIR if target.suffix.lower() in (".mp3", ".m4a", ".opus", ".flac", ".ac3") else VIDEOS_DIR
             try:
-                target.rename(VIDEOS_DIR / target.name)
-                print(c(f"[+] {T('renamed')}: {trunc(target.name, 34)}", GREEN))
+                target.rename(dest_dir / target.name)
+                print(c(f"[+] {T('fm_moved')}: {trunc(target.name, 34)}", GREEN))
             except OSError as e:
-                print(c(f"[!] {T('move_failed')}: {trunc(str(e), 50)}", RED))
+                print(c(f"[!] {T('fm_failed')}: {trunc(str(e), 50)}", RED))
+
+def settings_menu():
+    global SETTINGS
+    while True:
+        header(T("settings_title"))
+        vkey = SETTINGS.get("video_codec", "iphone")
+        akey = SETTINGS.get("audio_codec", "aac")
+        print(f"  1. {T('set_video_preset')}: {T(VIDEO_CODECS[vkey]['label_key'])}")
+        print(f"  2. {T('set_audio_preset')}: {T(AUDIO_CODECS[akey]['label_key'])}")
+        print(f"  3. {T('set_language')}: {T('lang_ru' if LANG=='ru' else 'lang_en')}")
+        print(f"  4. {T('set_reset')}")
+        print(f"  0. {T('fm_back')}")
+        try:
+            ch = input(c(f"{T('choice')}: ", GREEN)).strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            return
+        if ch in ("0", "q"):
+            return
+        if ch == "1":
+            keys = list(VIDEO_CODECS.keys())
+            for i, k in enumerate(keys, 1):
+                mark = " [*]" if k == vkey else ""
+                print(f"  {i}. {T(VIDEO_CODECS[k]['label_key'])}{mark}")
+            try:
+                v = input(c(f"{T('choice')}: ", YELLOW)).strip()
+                idx = int(v) - 1
+                if 0 <= idx < len(keys):
+                    enc = VIDEO_CODECS[keys[idx]].get("encoder")
+                    if encoder_ok(enc):
+                        SETTINGS["video_codec"] = keys[idx]
+                        save_settings(SETTINGS)
+                        print(c(f"[+] {T('set_saved')}", GREEN))
+                    else:
+                        print(c(f"[!] {T('encoder_missing')}", RED))
+            except (ValueError, EOFError, KeyboardInterrupt):
+                pass
+        elif ch == "2":
+            keys = list(AUDIO_CODECS.keys())
+            for i, k in enumerate(keys, 1):
+                mark = " [*]" if k == akey else ""
+                print(f"  {i}. {T(AUDIO_CODECS[k]['label_key'])}{mark}")
+            try:
+                v = input(c(f"{T('choice')}: ", YELLOW)).strip()
+                idx = int(v) - 1
+                if 0 <= idx < len(keys):
+                    enc = AUDIO_CODECS[keys[idx]].get("encoder")
+                    if encoder_ok(enc):
+                        SETTINGS["audio_codec"] = keys[idx]
+                        save_settings(SETTINGS)
+                        print(c(f"[+] {T('set_saved')}", GREEN))
+                    else:
+                        print(c(f"[!] {T('encoder_missing')}", RED))
+            except (ValueError, EOFError, KeyboardInterrupt):
+                pass
+        elif ch == "3":
+            language_menu()
+        elif ch == "4":
+            SETTINGS = dict(DEFAULT_SETTINGS)
+            save_settings(SETTINGS)
+            print(c(f"[+] {T('set_saved')}", GREEN))
 
 def language_menu():
     while True:
-        header(T("lang_title"))
+        header(T("set_language"))
         print(f"  1. {T('lang_ru')}")
         print(f"  2. {T('lang_en')}")
         print(f"  0. {T('fm_back')}")
@@ -967,11 +1440,11 @@ def language_menu():
             return
         if ch == "1":
             save_lang("ru")
-            print(c(f"[+] {T('lang_saved')}: {T('lang_ru')}", GREEN))
+            print(c(f"[+] {T('set_saved')}: {T('lang_ru')}", GREEN))
             return
         if ch == "2":
             save_lang("en")
-            print(c(f"[+] {T('lang_saved')}: {T('lang_en')}", GREEN))
+            print(c(f"[+] {T('set_saved')}: {T('lang_en')}", GREEN))
             return
 
 def main_menu():
@@ -980,10 +1453,12 @@ def main_menu():
         cleanup_junk()
         header(T("app_title"))
         print(c(f"{T('videos_dir')}: {trunc(str(VIDEOS_DIR), 34)}", CYAN))
+        print(c(f"{T('audio_dir')}: {trunc(str(AUDIO_DIR), 34)}", CYAN))
         print("-" * 40)
-        print(f"  1. {T('menu_download')}")
-        print(f"  2. {T('menu_files')}")
-        print(f"  3. {T('menu_language')}")
+        print(f"  1. {T('menu_download_video')}")
+        print(f"  2. {T('menu_download_audio')}")
+        print(f"  3. {T('menu_files')}")
+        print(f"  4. {T('menu_settings')}")
         print(f"  0. {T('menu_exit')}")
         try:
             ch = input(c(f"{T('choice')}: ", GREEN)).strip().lower()
@@ -993,15 +1468,16 @@ def main_menu():
         if ch in ("0", "q", "quit", "exit"):
             print(c(f"[+] {T('menu_exit')}", GREEN))
             break
-        if ch == "2":
+        if ch == "3":
             file_manager()
             continue
-        if ch == "3":
-            language_menu()
+        if ch == "4":
+            settings_menu()
             continue
-        if ch != "1":
+        if ch not in ("1", "2"):
             print(c(f"[!] {T('invalid_choice')}", RED))
             continue
+        audio_only = ch == "2"
         links = []
         print(c(f"\n[*] {T('enter_urls')}", YELLOW))
         print(c(f"[*] {T('enter_urls_hint')}", YELLOW))
@@ -1014,7 +1490,7 @@ def main_menu():
                 break
             links.append(line)
         if links:
-            process_links(links)
+            process_links(links, audio_only=audio_only)
             print()
 
 if __name__ == "__main__":
