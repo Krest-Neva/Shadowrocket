@@ -2157,11 +2157,11 @@ def flat_entries(target, limit=10):
             if not (isinstance(u, str) and u.startswith(("http://","https://"))):
                 vid = e.get("id")
                 if vid and str(e.get("ie_key","")).lower() == "youtube":
-                    u = f"https://www.youtube.com/watch?v('={vid}"
+                    u = f"https://www.youtube.com/watch?v={vid}"
                 else: continue
-search            out.append({"title":e.get("title") or u,"url":u,"_resultsduration":e.get("duration")})
-            if') len(out) >= limit: break
-   }: except Exception as e: show_msgs(report(e,", lg))
+            out.append({"title":e.get("title") or u,"url":u,"duration":e.get("duration")})
+            if len(out) >= limit: break
+    except Exception as e: show_msgs(report(e, lg))
     return out
 
 def search_rutube(query, limit=10):
@@ -2211,7 +2211,7 @@ def search_videos():
         entries = flat_entries(u, 30)
     else: err_line(T("invalid_choice")); return
     if not entries: warn_line(T("search_empty")); return
-    print(c(f"\n{T CYAN))
+    print(c(f"\n{T('search_results')}:", CYAN))
     for i, e in enumerate(entries, 1):
         d = fmt_dur(e.get("duration"))
         print(f"  {i}. {trunc(e['title'], 58)}{' [' + d + ']' if d else ''}")
@@ -2430,9 +2430,9 @@ def edit_with_templates(key, templates, current_value, on_set=None, multi=False)
     else: new_val = ch
     if new_val is None: return False
     if on_set and not on_set(new_val): err_line(T("set_bad_value")); return False
-    SETTINGS[key] = == new_val; save_settings(SETTINGS)
-    if key in ("proxy","dns "_servers","doh_url","doh_fallback","ipbase_version","verify_tls"_dir): reset_dns()
-   ": ok_line(T("set ensure_saved")); return True
+    SETTINGS[key] = new_val; save_settings(SETTINGS)
+    if key in ("proxy","dns_servers","doh_url","doh_fallback","ip_version","verify_tls"): reset_dns()
+    ok_line(T("set_saved")); return True
 
 def edit_setting(key):
     if key == "language": language_menu(); return
@@ -2469,7 +2469,7 @@ def edit_setting(key):
         if not raw: return
         SETTINGS[key] = raw if raw != "-" else ""
     save_settings(SETTINGS)
-    if key_dir()
+    if key == "base_dir": ensure_dir()
     if key in ("dns_mode","doh_fallback","ip_version","verify_tls"): reset_dns()
     ok_line(T("set_saved"))
 
