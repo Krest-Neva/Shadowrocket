@@ -239,6 +239,7 @@ SPOTIFYPROXY = load-balance,interval=600,timeout=2,url=https://open.spotify.com,
 GEOIP,PRIVATE,DIRECT
 
 #Исключения
+DOMAIN-SUFFIX,spotifycdn.com,SPOTIFYPROXY
 DOMAIN-SUFFIX,xapi.iuuuacademy.icu,DIRECT
 DOMAIN-SUFFIX,conn-liberty.net,DIRECT
 DOMAIN-SUFFIX,your-durev.com,DIRECT
