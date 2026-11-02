@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=Pro-grade networking for iOS/macOS
 
-#Последние изменения 02.11.2026 20:00
+#Последние изменения 02.11.2026 21:00
 #Фильтры обновлены 26.09.2026 12:00
 
 #==================================================
@@ -923,7 +923,7 @@ DOMAIN-SUFFIX,tenor.com,METAPROXY
 #Spotify🎶
 AND,((DOMAIN-SUFFIX,spotify.com), (PROTOCOL,UDP)),REJECT
 AND,((USER-AGENT,Spotify*), (PROTOCOL,UDP)),REJECT
-URL-REGEX,^https?:\/\/(.*-ad-logic.*|crashdump\.spotify\.com|log\.spotify\.com|([^\/]+\.)?spotify\.com\/.*\b(ads|ad-logic)\b|[^\/]*\b(ads|ad-logic)\b[^\/]*\.spotify\.com),REJECT
+URL-REGEX,^https?:\/\/(?!.*\/ad-logic\/v\d+\/config)(.*-ad-logic.*|crashdump\.spotify\.com|log\.spotify\.com|([^\/]+\.)?spotify\.com\/.*\b(ads|ad-logic)\b|[^\/]*\b(ads|ad-logic)\b[^\/]*\.spotify\.com),REJECT
 DOMAIN-SUFFIX,pscdn.co,SPOTIFYPROXY
 DOMAIN-SUFFIX,spoti.fi,SPOTIFYPROXY
 DOMAIN-KEYWORD,spotify,SPOTIFYPROXY
@@ -1411,8 +1411,8 @@ YT-Premium = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/(y
 SoundCloudGoPlus = type=http-response,pattern=https://api-mobile.soundcloud.com/configuration/ios,requires-body=1,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/SoundCloud_Go_Plus.js
 
 #Spotify🎶
-Spotify-premium-patch = type=http-response,pattern=^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/(bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$,requires-body=1,binary-body-mode=1,max-size=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_premium_patch.js,timeout=10
-Spotify-content-patch = type=http-request,pattern=^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/(artistview\/v1\/artist|album-entity-view\/v2\/album)\/,requires-body=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_content_patch.js,timeout=10
+Spotify-premium-patch = type=http-response,pattern=^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/(bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$,requires-body=1,binary-body-mode=1,max-size=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_premium_patch.js,timeout=30
+Spotify-content-patch = type=http-request,pattern=^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/(artistview\/v1\/artist|album-entity-view\/v2\/album)\/,requires-body=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_content_patch.js,timeout=30
 Spotify-request-patch = type=http-request, pattern=^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/user-customization-service\/v1\/customize$,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_request_patch.js,timeout=60
 
 #FatSecret🍏
