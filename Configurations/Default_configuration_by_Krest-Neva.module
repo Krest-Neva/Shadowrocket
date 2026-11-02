@@ -1370,6 +1370,9 @@ localhost = 127.0.0.1
 ^https?:\/\/s\.youtube\.com\/api\/stats\/qoe\?adcontext _ reject-200
 (^https?:\/\/[\w-]+\.googlevideo\.com\/(?!dclk_video_ads).+?)&ctier=L(&.+?),ctier,(.+) $1$2$3 302
 
+#Spotify
+^(https?://([^/]+\.)?spotify\.com/.*[?&]timezone=)[^&]+(.*)$ $1Europe/Amsterdam$3 302
+
 #YANDEX каки✴️
 #Регионы
 ^https?://(www\.)?(yandex\.(ru|kz|az|by|co\.il|com\.am|com\.ge|com\.tr|ee|fr|lt|lv|md|tj|tm|uz)|ya\.ru)(.*)$ https://yandex.com$4 302
