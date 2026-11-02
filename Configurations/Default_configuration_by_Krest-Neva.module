@@ -1371,7 +1371,7 @@ localhost = 127.0.0.1
 (^https?:\/\/[\w-]+\.googlevideo\.com\/(?!dclk_video_ads).+?)&ctier=L(&.+?),ctier,(.+) $1$2$3 302
 
 #Spotify
-^(https?://([^/]+\.)?spotify\.com/.*[?&]timezone=)[^&]+(.*)$ $1Europe/Amsterdam$3 302
+^(https?://([^/]+\.)?spotify\.com/.*[?&]timezone=)(?!Europe/Amsterdam(&|$))([^&]+)(.*)$ $1Europe/Amsterdam$4 302
 
 #YANDEX каки✴️
 #Регионы
