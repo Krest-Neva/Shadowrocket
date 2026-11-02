@@ -923,7 +923,7 @@ DOMAIN-SUFFIX,tenor.com,METAPROXY
 #Spotify🎶
 AND,((DOMAIN-SUFFIX,spotify.com), (PROTOCOL,UDP)),REJECT
 AND,((USER-AGENT,Spotify*), (PROTOCOL,UDP)),REJECT
-URL-REGEX,^https?:\/\/(crashdump\.spotify\.com|log\.spotify\.com|ads\.spotify\.com|([^\/]+\.)?spotify\.com\/ads\/),REJECT-DICT
+#URL-REGEX,^https?:\/\/(crashdump\.spotify\.com|log\.spotify\.com|ads\.spotify\.com|([^\/]+\.)?spotify\.com\/ads\/),REJECT-DICT
 DOMAIN-SUFFIX,pscdn.co,SPOTIFYPROXY
 DOMAIN-SUFFIX,spoti.fi,SPOTIFYPROXY
 DOMAIN-KEYWORD,spotify,SPOTIFYPROXY
@@ -1411,7 +1411,7 @@ SoundCloudGoPlus = type=http-response,pattern=https://api-mobile.soundcloud.com/
 Spotify-premium-patch = type=http-response,pattern=^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/(bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$,requires-body=1,binary-body-mode=1,max-size=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_premium_patch.js,timeout=30
 Spotify-content-patch = type=http-request,pattern=^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/(artistview\/v1\/artist|album-entity-view\/v2\/album)\/,requires-body=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_content_patch.js,timeout=30
 Spotify-request-patch = type=http-request, pattern=^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/user-customization-service\/v1\/customize$,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_request_patch.js,timeout=60
-Spotify-timezone = type=http-request,pattern=^https?:\/\/([^/]+\.)?spotify\.com\/.*[?&](?:client-)?timezone=,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_Timezone.js,requires-body=0,binary-body-mode=0,timeout=20
+#Spotify-timezone = type=http-request,pattern=^https?:\/\/([^/]+\.)?spotify\.com\/.*[?&](?:client-)?timezone=,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_Timezone.js,requires-body=0,binary-body-mode=0,timeout=20
 
 #FatSecret🍏
 FatSecret-Premium = type=http-response,pattern=^https:\/\/app\.ftscrt\.com\/api\/(user\/v3\/user-account-details|user-settings\/v1\/select),requires-body=true,timeout=10,max-size=131072,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/FatSecret_Premium.js
