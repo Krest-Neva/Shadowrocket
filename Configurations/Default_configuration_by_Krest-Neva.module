@@ -923,7 +923,7 @@ DOMAIN-SUFFIX,tenor.com,METAPROXY
 #Spotify🎶
 AND,((DOMAIN-SUFFIX,spotify.com), (PROTOCOL,UDP)),REJECT
 AND,((USER-AGENT,Spotify*), (PROTOCOL,UDP)),REJECT
-URL-REGEX,^https?:\/\/(?!.*\/ad-logic\/v\d+\/config)(.*-ad-logic.*|crashdump\.spotify\.com|log\.spotify\.com|([^\/]+\.)?spotify\.com\/.*\b(ads|ad-logic)\b|[^\/]*\b(ads|ad-logic)\b[^\/]*\.spotify\.com),REJECT
+URL-REGEX,^https?:\/\/(crashdump\.spotify\.com|log\.spotify\.com|ads\.spotify\.com|([^\/]+\.)?spotify\.com\/ads\/),REJECT-DICT
 DOMAIN-SUFFIX,pscdn.co,SPOTIFYPROXY
 DOMAIN-SUFFIX,spoti.fi,SPOTIFYPROXY
 DOMAIN-KEYWORD,spotify,SPOTIFYPROXY
