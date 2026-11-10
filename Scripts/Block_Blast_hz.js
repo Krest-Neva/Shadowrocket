@@ -28,7 +28,7 @@
             showEmptyBinary: true,
             repairMojibake: true,
             patchBlockBlast: true,
-            blockBlastScore: "Дохуя"
+            blockBlastScore: 9999999999
         };
         try {
             var raw = typeof $argument !== 'undefined' ? $argument : '{}';
@@ -103,6 +103,11 @@
     var patchedBytes = null;
     var patchDetail = '';
 
+    var scoreValue = OPT.blockBlastScore;
+    if (typeof scoreValue === 'string' && /^-?\d+$/.test(scoreValue)) {
+        scoreValue = parseInt(scoreValue, 10);
+    }
+
     var shouldPatch = hasResponse && OPT.patchBlockBlast &&
         /hella-game-gateway-server\.afafb\.com\/ug\/get_universal_data/i.test(url);
 
@@ -110,16 +115,16 @@
         try {
             var pd = JSON.parse(resBodyForLog);
             if (pd && pd.history_data) {
-                pd.history_data.his_max_score = OPT.blockBlastScore;
+                pd.history_data.his_max_score = scoreValue;
                 pd.history_data.his_active_days = 999999;
                 pd.history_data.day_7_game_time = 9999999;
                 pd.history_data.device_type = "Nokia 3310";
-                pd.history_data.day_7_game_avg_score = 999999;
-                pd.history_data.day_1_game_avg_score = 999999;
+                pd.history_data.day_7_game_avg_score = scoreValue;
+                pd.history_data.day_1_game_avg_score = scoreValue;
                 patchedString = JSON.stringify(pd);
                 patchedBytes = utf8Encode(patchedString);
                 patchApplied = true;
-                patchDetail = 'his_max_score="' + OPT.blockBlastScore + '", his_active_days=999999, day_7_game_time=9999999, device_type="Nokia 3310", avg_scores=999999';
+                patchDetail = 'his_max_score=' + scoreValue + ', his_active_days=999999, day_7_game_time=9999999, device_type="Nokia 3310", avg_scores=' + scoreValue;
             }
         } catch (e) {
             patchDetail = 'failed: ' + e.message;
@@ -206,9 +211,10 @@
     var sp = hasResponse && OPT.color ? ' ' + getStatusPrefix(resStatus) : '';
     var tstr = OPT.time ? ' [' + new Date().toISOString() + ']' : '';
     var lines = [];
+    var headerTag = patchApplied ? ', PATCHED' : '';
     lines.push('+---' + counter + ' [Spylog] ' + mp + method + ' ' + url + sp + tstr);
     if (!hasResponse) lines.push('| [REQ] ИСХОДЯЩИЙ ЗАПРОС');
-    else lines.push('| [REQ/RES] ЗАПРОС И ОТВЕТ (статус: ' + resStatus + ')');
+    else lines.push('| [REQ/RES] ЗАПРОС И ОТВЕТ (статус: ' + resStatus + headerTag + ')');
 
     if (OPT.showUrlParts) {
         var up = formatUrlParts(url);
@@ -230,7 +236,8 @@
         if (ct2) lines.push('| TYPE: ' + ct2);
     }
     if (OPT.size) {
-        lines.push('| SIZE (Res): ' + formatSize(resBodyForLog ? resBodyForLog.length : 0));
+        var finalSize = patchApplied ? patchedString.length : (resBodyForLog ? resBodyForLog.length : 0);
+        lines.push('| SIZE (Res): ' + formatSize(finalSize) + (patchApplied ? ' (patched)' : ''));
     }
 
     if (OPT.showBody) {
@@ -246,7 +253,7 @@
         }
 
         if (hasResponse) {
-            var resLog = safeString(resBodyForLog);
+            var resLog = safeString(patchApplied ? patchedString : resBodyForLog);
             if (isLikelyBinary(resLog, resHeaders)) {
                 lines.push('| < Body: binary[len=' + resLog.length + '] ascii:"' + asciiPreview(resLog, OPT.binaryPreviewLength) + '"');
             } else if (resLog) {
