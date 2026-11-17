@@ -1,7 +1,7 @@
 #!name=😻Config by Krest_Neva😻
 #!desc=Pro-grade networking for iOS/macOS
 
-#Последние изменения 15.11.2026 04:00
+#Последние изменения 17.11.2026 12:00
 #Фильтры обновлены 11.11.2026 18:00
 
 #==================================================
@@ -921,9 +921,9 @@ DOMAIN-SUFFIX,giphy.com,METAPROXY
 DOMAIN-SUFFIX,tenor.com,METAPROXY
 
 #Spotify🎶
-AND,((DOMAIN-SUFFIX,spotify.com), (PROTOCOL,UDP)),REJECT
-AND,((USER-AGENT,Spotify*), (PROTOCOL,UDP)),REJECT
-URL-REGEX,^https?:\/\/(.*-ad-logic.*|crashdump\.spotify\.com|log\.spotify\.com|spclient\.wg\.spotify\.com\/(ad-logic|ads))\/,REJECT
+#AND,((DOMAIN-SUFFIX,spotify.com), (PROTOCOL,UDP)),REJECT
+#AND,((USER-AGENT,Spotify*), (PROTOCOL,UDP)),REJECT
+#URL-REGEX,^https?:\/\/(.*-ad-logic.*|crashdump\.spotify\.com|log\.spotify\.com|spclient\.wg\.spotify\.com\/(ad-logic|ads))\/,REJECT
 DOMAIN-SUFFIX,pscdn.co,SPOTIFYPROXY
 DOMAIN-SUFFIX,spoti.fi,SPOTIFYPROXY
 DOMAIN-KEYWORD,spotify,SPOTIFYPROXY
@@ -1408,9 +1408,9 @@ YT-Premium = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/(y
 SoundCloudGoPlus = type=http-response,pattern=https://api-mobile.soundcloud.com/configuration/ios,requires-body=1,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/SoundCloud_Go_Plus.js
 
 #Spotify🎶
-Spotify-premium-patch = type=http-response,pattern=^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/(bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$,requires-body=1,binary-body-mode=1,max-size=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_premium_patch.js,timeout=30
-Spotify-content-patch = type=http-request,pattern=^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/(artistview\/v1\/artist|album-entity-view\/v2\/album)\/,requires-body=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_content_patch.js,timeout=30
-Spotify-request-patch = type=http-request, pattern=^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/user-customization-service\/v1\/customize$,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_request_patch.js,timeout=60
+#Spotify-premium-patch = type=http-response,pattern=^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/(bootstrap\/v1\/bootstrap|user-customization-service\/v1\/customize)$,requires-body=1,binary-body-mode=1,max-size=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_premium_patch.js,timeout=30
+#Spotify-content-patch = type=http-request,pattern=^https?:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com)(:443)?\/(artistview\/v1\/artist|album-entity-view\/v2\/album)\/,requires-body=0,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_content_patch.js,timeout=30
+#Spotify-request-patch = type=http-request, pattern=^https:\/\/(spclient\.wg\.spotify\.com|.*-spclient\.spotify\.com(:443)?)\/user-customization-service\/v1\/customize$,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/Spotify_request_patch.js,timeout=60
 
 #FatSecret🍏
 FatSecret-Premium = type=http-response,pattern=^https:\/\/app\.ftscrt\.com\/api\/(user\/v3\/user-account-details|user-settings\/v1\/select),requires-body=true,timeout=10,max-size=131072,script-path=https://raw.githubusercontent.com/Krest-Neva/Shadowrocket/refs/heads/main/Scripts/FatSecret_Premium.js
@@ -1424,7 +1424,7 @@ PicsArt = type=http-request,pattern=^https:\/\/api\.picsart\.com\/gw-v2\/shop\/s
 [MITM]
 enable = true
 h2 = false
-hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com,*.yandex.*,*.ya.ru,*.yastatic.net,api-mobile.soundcloud.com,spclient.wg.spotify.com,*-spclient.spotify.com,*.spotify.com,app.ftscrt.com,api.picsart.com,api.lingualeo.com,*.pornhub.com,pornhub.com
+hostname = %APPEND% -redirector*.googlevideo.com,*.googlevideo.com,www.youtube.com,s.youtube.com,youtubei.googleapis.com,*.yandex.*,*.ya.ru,*.yastatic.net,api-mobile.soundcloud.com,app.ftscrt.com,api.picsart.com,api.lingualeo.com,*.pornhub.com,pornhub.com
 
 # ╱|、           ∧＿∧
 #(˚ˎ 。7        (｡･ω･｡)つ━☆・*。
